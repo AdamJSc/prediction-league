@@ -1,7 +1,12 @@
 # prediction-league-service
 
+## Requirements
+
+* Docker
+* Docker Compose
+
 ## Getting Started
 
 ```bash
-go run service/main.go
+docker-compose up
 ```

@@ -1,0 +1,12 @@
+version: '3'
+services:
+
+  app:
+    image: golang:1.14
+    container_name: pl-service-app
+    volumes:
+      - ${PWD}/service:/go/src/app
+    working_dir: /go/src/app
+    ports:
+      - 80:80
+    command: go run main.go
