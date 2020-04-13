@@ -9,6 +9,12 @@ import (
 	"strings"
 )
 
+type BadRequestError struct{ Err error }
+
+func (e BadRequestError) Error() string {
+	return e.Err.Error()
+}
+
 type ValidationError struct {
 	Reason string
 	Fields []string

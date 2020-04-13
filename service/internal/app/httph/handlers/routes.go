@@ -44,4 +44,8 @@ func showDatabasesEndpoint(c *httph.HTTPAppContainer) func(w http.ResponseWriter
 func RegisterRoutes(c *httph.HTTPAppContainer) {
 	// unauthenticated endpoints
 	c.Router().HandleFunc("/{anything}", showDatabasesEndpoint(c)).Methods(http.MethodGet)
+
+	// api endpoints
+	api := c.Router().PathPrefix("/api").Subrouter()
+	api.HandleFunc("/season", createSeasonHandler(c)).Methods(http.MethodPost)
 }
