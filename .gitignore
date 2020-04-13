@@ -1,4 +1,5 @@
 .idea/
 docker/db/data/*
 !docker/db/data/.gitkeep
-service/.env
+infra/.env
+vendor/

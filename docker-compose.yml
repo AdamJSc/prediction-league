@@ -20,8 +20,8 @@ services:
     depends_on:
       - db
     volumes:
-      - ${PWD}/service:/go/src/app
+      - ${PWD}:/go/src/app
     working_dir: /go/src/app
     ports:
       - 3000:3000
-    command: go run main.go
+    command: go run service/main.go

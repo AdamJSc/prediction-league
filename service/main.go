@@ -60,10 +60,14 @@ func main() {
 }
 
 func mustLoadEnv(requiredKeys []string) {
-	if err := godotenv.Load(".env"); err != nil {
-		log.Fatal(err)
+	envFiles := []string{".env", "infra/.env"}
+
+	// try loading env files
+	for _, file := range envFiles {
+		godotenv.Load(file)
 	}
 
+	// check that we now have all the values that we require
 	for _, key := range requiredKeys {
 		if os.Getenv(key) == "" {
 			log.Fatal(fmt.Errorf("missing env var '%s'", key))
