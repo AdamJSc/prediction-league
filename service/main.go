@@ -1,76 +1,69 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
+	"prediction-league-service/service/app/httph"
+	"prediction-league-service/service/app/httph/handlers"
 
+	"github.com/LUSHDigital/core"
 	coresql "github.com/LUSHDigital/core-sql"
-	"github.com/LUSHDigital/core/rest"
+	"github.com/LUSHDigital/core/workers/httpsrv"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
-)
-
-const (
-	envServicePort = "SERVICE_PORT"
-	envMySQLURL    = "MYSQL_URL"
+	"github.com/kelseyhightower/envconfig"
 )
 
 func main() {
-	// setup
-	mustLoadEnv([]string{envServicePort})
-	db := coresql.MustOpen("mysql", os.Getenv(envMySQLURL))
+	loadEnv()
 
-	r := mux.NewRouter()
-	r.HandleFunc("/{anything}", func(w http.ResponseWriter, r *http.Request) {
-		pathVal, ok := mux.Vars(r)["anything"]
-		if !ok {
-			rest.JSONError("vars went wrong").WriteTo(w)
-			return
-		}
+	config := struct {
+		ServicePort string `envconfig:"SERVICE_PORT" required:"true"`
+		MySQLURL    string `envconfig:"MYSQL_URL" required:"true"`
+	}{}
+	if err := envconfig.Process("", &config); err != nil {
+		log.Fatal(err)
+	}
 
-		rows, err := db.Query("SHOW DATABASES")
-		if err != nil {
-			rest.JSONError(err).WriteTo(w)
-			return
-		}
+	db := coresql.MustOpen("mysql", config.MySQLURL)
 
-		var results []string
-		var result string
+	httpAppContainer := httph.NewHTTPAppContainer(dependencies{
+		mysql:  db,
+		router: mux.NewRouter(),
+	})
+	handlers.RegisterRoutes(httpAppContainer)
 
-		for rows.Next() {
-			if err := rows.Scan(&result); err != nil {
-				rest.JSONError(err).WriteTo(w)
-				return
-			}
-			results = append(results, result)
-		}
-
-		rest.OKResponse(&rest.Data{
-			Type:    pathVal,
-			Content: results,
-		}, nil).WriteTo(w)
+	httpServer := httpsrv.New(&http.Server{
+		Addr:    fmt.Sprintf(":%s", config.ServicePort),
+		Handler: httpAppContainer.Router(),
 	})
 
-	port := os.Getenv(envServicePort)
-	fmt.Printf("Listening on port %s...\n", port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), r))
+	svc := &core.Service{
+		Name: "prediction-league",
+		Type: "service",
+	}
+	svc.MustRun(
+		context.Background(),
+		httpServer,
+	)
 }
 
-func mustLoadEnv(requiredKeys []string) {
+func loadEnv() {
 	envFiles := []string{".env", "infra/.env"}
-
-	// try loading env files
 	for _, file := range envFiles {
-		godotenv.Load(file)
-	}
-
-	// check that we now have all the values that we require
-	for _, key := range requiredKeys {
-		if os.Getenv(key) == "" {
-			log.Fatal(fmt.Errorf("missing env var '%s'", key))
+		if err := godotenv.Load(file); err != nil {
+			log.Printf("could not find '%s', skipping...", file)
 		}
 	}
 }
+
+type dependencies struct {
+	mysql  coresql.Agent
+	router *mux.Router
+}
+
+func (d dependencies) MySQL() coresql.Agent { return d.mysql }
+func (d dependencies) Router() *mux.Router  { return d.router }
