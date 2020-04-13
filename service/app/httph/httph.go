@@ -1,6 +1,6 @@
 package httph
 
-import "prediction-league-service/service/app"
+import "prediction-league/service/app"
 
 // HTTPAppContainer defines the http application dependencies
 type HTTPAppContainer struct {

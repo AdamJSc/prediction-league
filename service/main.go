@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"prediction-league-service/service/app/httph"
-	"prediction-league-service/service/app/httph/handlers"
+	"prediction-league/service/app/httph"
+	"prediction-league/service/app/httph/handlers"
 
 	"github.com/LUSHDigital/core"
 	coresql "github.com/LUSHDigital/core-sql"

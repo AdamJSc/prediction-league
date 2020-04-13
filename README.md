@@ -1,4 +1,4 @@
-# prediction-league-service
+# prediction-league
 
 ## Requirements
 

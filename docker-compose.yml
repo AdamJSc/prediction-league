@@ -3,20 +3,20 @@ services:
 
   db:
     image: mysql:5.7
-    container_name: pl-service-db
+    container_name: prediction-league-db
     volumes:
       - ${PWD}/docker/db/data:/var/lib/mysql
     ports:
       - 3306:3306
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: pl_service
-      MYSQL_USER: pl_service_user
-      MYSQL_PASSWORD: pl_service_user
+      MYSQL_DATABASE: prediction-league
+      MYSQL_USER: pl_user
+      MYSQL_PASSWORD: pl_pwd
 
   app:
     image: golang:1.14
-    container_name: pl-service-app
+    container_name: prediction-league-app
     depends_on:
       - db
     volumes:

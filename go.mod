@@ -1,4 +1,4 @@
-module prediction-league-service
+module prediction-league
 
 go 1.14
 
