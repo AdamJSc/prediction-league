@@ -1,8 +1,12 @@
 package domain
 
 import (
+	"context"
 	"fmt"
 	"github.com/LUSHDigital/core-sql/sqltypes"
+	"github.com/ladydascalie/v"
+	"prediction-league/service/internal/app"
+	"strconv"
 	"time"
 )
 
@@ -21,4 +25,76 @@ type Season struct {
 
 func (s Season) GenerateID() string {
 	return fmt.Sprintf("%d_%d", s.YearRef, s.Variant)
+}
+
+type SeasonAgentInjector interface {
+	app.MySQLInjector
+}
+
+type SeasonAgent struct {
+	SeasonAgentInjector
+}
+
+func (a SeasonAgent) InsertSeason(ctx context.Context, s *Season) error {
+	if err := sanitiseSeason(s); err != nil {
+		return err
+	}
+
+	if err := insertSeason(a.MySQL(), s); err != nil {
+		return domainErrorFromDBError(err)
+	}
+
+	return nil
+}
+
+func sanitiseSeason(s *Season) error {
+	if err := v.Struct(s); err != nil {
+		return ValidationError{
+			Reason: err.Error(),
+			Fields: fieldsFromValidationPackageError(err, *s),
+		}
+	}
+
+	startRef := s.StartDate.Format("2006")
+	endRef := s.EndDate.Format("06")
+
+	yearRef, err := strconv.Atoi(fmt.Sprintf("%s%s", startRef, endRef))
+	if err != nil {
+		return InternalError{err}
+	}
+
+	s.YearRef = yearRef
+
+	if s.Variant == 0 {
+		s.Variant = 1
+	}
+
+	s.ID = s.GenerateID()
+
+	if s.EndDate.Before(s.StartDate) {
+		return ValidationError{
+			Reason: "end date cannot occur before start date",
+			Fields: []string{"start_date", "end_date"},
+		}
+	}
+
+	if !s.EntriesUntil.Valid {
+		s.EntriesUntil = sqltypes.ToNullTime(s.StartDate)
+	}
+
+	if s.EntriesUntil.Time.Before(s.EntriesFrom) {
+		return ValidationError{
+			Reason: "entry period must end before it begins",
+			Fields: []string{"entries_until", "start_date"},
+		}
+	}
+
+	if s.EntriesUntil.Time.After(s.StartDate) {
+		return ValidationError{
+			Reason: "entry period must end before start date commences",
+			Fields: []string{"entries_until", "start_date"},
+		}
+	}
+
+	return nil
 }
