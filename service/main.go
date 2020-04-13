@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/app/httph/handlers"
+	"prediction-league/service/internal/domain"
 
 	"github.com/LUSHDigital/core"
 	coresql "github.com/LUSHDigital/core-sql"
@@ -20,8 +21,8 @@ import (
 )
 
 func main() {
+	// setup env
 	loadEnv()
-
 	config := struct {
 		ServicePort   string `envconfig:"SERVICE_PORT" required:"true"`
 		MySQLURL      string `envconfig:"MYSQL_URL" required:"true"`
@@ -31,6 +32,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// setup db connection
 	db := coresql.MustOpen("mysql", config.MySQLURL)
 	driver, _ := mysql.WithInstance(db.DB, &mysql.Config{})
 	mig, _ := migrate.NewWithDatabaseInstance(
@@ -40,6 +42,9 @@ func main() {
 	)
 	coresql.MustMigrateUp(mig)
 
+	domain.RegisterCustomValidators()
+
+	// setup server
 	httpAppContainer := httph.NewHTTPAppContainer(dependencies{
 		mysql:  db,
 		router: mux.NewRouter(),
@@ -51,6 +56,7 @@ func main() {
 		Handler: httpAppContainer.Router(),
 	})
 
+	// run service
 	svc := &core.Service{
 		Name: "prediction-league",
 		Type: "service",
