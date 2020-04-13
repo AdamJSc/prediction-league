@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"net/http"
-	"prediction-league/service/app/httph"
+	"prediction-league/service/internal/app/httph"
 
 	"github.com/LUSHDigital/core/rest"
 	"github.com/gorilla/mux"
