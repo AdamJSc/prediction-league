@@ -19,10 +19,10 @@ func responseFromError(err error) *rest.Response {
 		if vErr, ok := err.(domain.ValidationError); ok {
 			return &rest.Response{
 				Code:    http.StatusUnprocessableEntity,
-				Message: vErr.Reason,
+				Message: "validation error",
 				Data: &rest.Data{
-					Type:    "fields",
-					Content: vErr.Fields,
+					Type:    "error",
+					Content: vErr,
 				},
 			}
 		}

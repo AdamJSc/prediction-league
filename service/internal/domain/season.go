@@ -49,10 +49,7 @@ func (a SeasonAgent) InsertSeason(ctx context.Context, s *Season) error {
 
 func sanitiseSeason(s *Season) error {
 	if err := v.Struct(s); err != nil {
-		return ValidationError{
-			Reason: err.Error(),
-			Fields: fieldsFromValidationPackageError(err, *s),
-		}
+		return vPackageErrorToValidationError(err, *s)
 	}
 
 	startRef := s.StartDate.Format("2006")
@@ -73,7 +70,7 @@ func sanitiseSeason(s *Season) error {
 
 	if s.EndDate.Before(s.StartDate) {
 		return ValidationError{
-			Reason: "end date cannot occur before start date",
+			Reasons: []string{"End date cannot occur before start date"},
 			Fields: []string{"start_date", "end_date"},
 		}
 	}
@@ -84,14 +81,14 @@ func sanitiseSeason(s *Season) error {
 
 	if s.EntriesUntil.Time.Before(s.EntriesFrom) {
 		return ValidationError{
-			Reason: "entry period must end before it begins",
+			Reasons: []string{"Entry period must end before it begins"},
 			Fields: []string{"entries_until", "start_date"},
 		}
 	}
 
 	if s.EntriesUntil.Time.After(s.StartDate) {
 		return ValidationError{
-			Reason: "entry period must end before start date commences",
+			Reasons: []string{"Entry period must end before start date commences"},
 			Fields: []string{"entries_until", "start_date"},
 		}
 	}

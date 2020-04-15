@@ -16,12 +16,14 @@ func (e BadRequestError) Error() string {
 }
 
 type ValidationError struct {
-	Reason string
-	Fields []string
+	Reasons []string `json:"reasons"`
+	Fields  []string `json:"fields"`
 }
 
 func (e ValidationError) Error() string {
-	return fmt.Sprintf("reason: %s, with fields: %v", e.Reason, strings.Join(e.Fields, ","))
+	reasons := strings.Join(e.Reasons, " | ")
+	fields := strings.Join(e.Fields, " | ")
+	return fmt.Sprintf("reasons: %s, with fields: %v", strings.ToLower(reasons), strings.ToLower(fields))
 }
 
 type ConflictError struct{ error }
@@ -30,29 +32,43 @@ type NotFoundError struct{ error }
 
 type InternalError struct{ error }
 
-func fieldsFromValidationPackageError(err error, structure interface{}) []string {
-	var fields []string
+func vPackageErrorToValidationError(err error, structure interface{}) ValidationError {
+	var reasons, fields []string
 
-	for _, validation := range strings.Split(err.Error(), "[validation]") {
-		fieldName := strings.Trim(strings.Split(validation, ":")[0], " ")
-		if fieldName == "" {
+	for _, validationPart := range strings.Split(err.Error(), "[validation]") {
+		// reason is the full validation text
+		reason := strings.Trim(validationPart, " ")
+		if reason == "" {
 			continue
 		}
 
-		field := fieldName
-		if structField, ok := reflect.TypeOf(structure).FieldByName(fieldName); ok {
-			// try and get an annotation for the struct field
-			if tag := structField.Tag.Get("json"); tag != "" {
+		reasons = append(reasons, reason)
+
+		// structFieldName is the first part of the validation text, up to the colon delimiter
+		structFieldName := strings.Trim(strings.Split(reason, ":")[0], " ")
+		if structFieldName == "" {
+			continue
+		}
+
+		// fallback to the original struct field name
+		field := structFieldName
+		if structField, ok := reflect.TypeOf(structure).FieldByName(structFieldName); ok {
+			// try to get a db annotation for the struct field
+			if tag := structField.Tag.Get("db"); tag != "" {
 				field = tag
 			}
-			if tag := structField.Tag.Get("db"); tag != "" {
+			// try to get a json annotation
+			if tag := structField.Tag.Get("json"); tag != "" {
 				field = tag
 			}
 		}
 		fields = append(fields, field)
 	}
 
-	return fields
+	return ValidationError{
+		Reasons: reasons,
+		Fields:  fields,
+	}
 }
 
 type dbMissingRecordError struct {
