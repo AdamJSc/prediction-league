@@ -4,9 +4,10 @@
 
 * Docker
 * Docker Compose
+* Makefile
 
 ## Getting Started
 
 ```bash
-docker-compose up
+make restart
 ```
