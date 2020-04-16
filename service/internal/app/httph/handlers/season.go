@@ -23,7 +23,6 @@ type createSeasonRequest struct {
 func (r createSeasonRequest) ToSeasonModel() domain.Season {
 	return domain.Season{
 		Name:         r.Name,
-		Variant:      r.Variant,
 		EntriesFrom:  r.EntriesFrom,
 		EntriesUntil: sqltypes.ToNullTime(r.EntriesUntil),
 		StartDate:    r.StartDate,
@@ -49,7 +48,7 @@ func createSeasonHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, 
 		}
 
 		season := input.ToSeasonModel()
-		if err := agent.InsertSeason(r.Context(), &season); err != nil {
+		if err := agent.CreateSeason(r.Context(), &season, input.Variant); err != nil {
 			responseFromError(err).WriteTo(w)
 			return
 		}

@@ -1,7 +1,5 @@
 CREATE TABLE IF NOT EXISTS `season` (
     `id` VARCHAR(10) NOT NULL,
-    `year_ref` INT NOT NULL,
-    `variant` INT NOT NULL,
     `name` VARCHAR(255) NOT NULL,
     `entries_from` DATETIME NOT NULL,
     `entries_until` DATETIME,
