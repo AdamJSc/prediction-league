@@ -3,26 +3,25 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
-	"net/http"
-	"prediction-league/service/internal/app/httph"
-	"prediction-league/service/internal/app/httph/handlers"
-	"prediction-league/service/internal/domain"
-
 	"github.com/LUSHDigital/core"
+	"github.com/LUSHDigital/core-mage/env"
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core/workers/httpsrv"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
+	"log"
+	"net/http"
+	"prediction-league/service/internal/app/httph"
+	"prediction-league/service/internal/app/httph/handlers"
+	"prediction-league/service/internal/domain"
 )
 
 func main() {
 	// setup env
-	loadEnv()
+	env.Load("infra/app.env")
 	config := struct {
 		ServicePort   string `envconfig:"SERVICE_PORT" required:"true"`
 		MySQLURL      string `envconfig:"MYSQL_URL" required:"true"`
@@ -65,15 +64,6 @@ func main() {
 		context.Background(),
 		httpServer,
 	)
-}
-
-func loadEnv() {
-	envFiles := []string{".env", "infra/app.env"}
-	for _, file := range envFiles {
-		if err := godotenv.Load(file); err != nil {
-			log.Printf("could not find '%s', skipping...", file)
-		}
-	}
 }
 
 type dependencies struct {
