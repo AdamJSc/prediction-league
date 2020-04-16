@@ -12,4 +12,5 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/ladydascalie/v v1.0.0
+	gotest.tools v2.2.0+incompatible
 )
