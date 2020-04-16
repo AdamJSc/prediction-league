@@ -68,7 +68,7 @@ func main() {
 }
 
 func loadEnv() {
-	envFiles := []string{".env", "infra/.env"}
+	envFiles := []string{".env", "infra/app.env"}
 	for _, file := range envFiles {
 		if err := godotenv.Load(file); err != nil {
 			log.Printf("could not find '%s', skipping...", file)
