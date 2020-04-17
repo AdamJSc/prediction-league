@@ -56,21 +56,26 @@ func TestMain(m *testing.M) {
 }
 
 func truncate(t *testing.T) {
+	t.Helper()
 	truncator.MustTruncateTables(t, "season")
 }
 
 func expectedGot(t *testing.T, expected interface{}, got interface{}) {
+	t.Helper()
 	t.Fatalf("expected %+v, got %+v", expected, got)
 }
 
 func expectedTypeOfGot(t *testing.T, expected interface{}, got interface{}) {
+	t.Helper()
 	t.Fatalf("expected %+v, got %+v", reflect.TypeOf(expected), reflect.TypeOf(got))
 }
 
 func expectedEmpty(t *testing.T, expectedType string, got interface{}) {
+	t.Helper()
 	t.Fatalf("expected empty %s, got %+v", expectedType, got)
 }
 
 func expectedNonEmpty(t *testing.T, expectedType string) {
+	t.Helper()
 	t.Fatalf("expected non-empty %s, got an empty one", expectedType)
 }

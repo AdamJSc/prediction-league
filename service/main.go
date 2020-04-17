@@ -23,9 +23,10 @@ func main() {
 	// setup env
 	env.Load("infra/app.env")
 	config := struct {
-		ServicePort   string `envconfig:"SERVICE_PORT" required:"true"`
-		MySQLURL      string `envconfig:"MYSQL_URL" required:"true"`
-		MigrationsURL string `envconfig:"MIGRATIONS_URL" required:"true"`
+		ServicePort    string `envconfig:"SERVICE_PORT" required:"true"`
+		MySQLURL       string `envconfig:"MYSQL_URL" required:"true"`
+		MigrationsURL  string `envconfig:"MIGRATIONS_URL" required:"true"`
+		AdminBasicAuth string `envconfig:"ADMIN_BASIC_AUTH" required:"true"`
 	}{}
 	if err := envconfig.Process("", &config); err != nil {
 		log.Fatal(err)

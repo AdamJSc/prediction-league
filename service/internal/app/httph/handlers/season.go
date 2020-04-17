@@ -48,7 +48,7 @@ func createSeasonHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, 
 		}
 
 		season := input.ToSeasonModel()
-		if err := agent.CreateSeason(r.Context(), &season, input.Variant); err != nil {
+		if err := agent.CreateSeason(domain.GetContextFromRequest(r), &season, input.Variant); err != nil {
 			responseFromError(err).WriteTo(w)
 			return
 		}

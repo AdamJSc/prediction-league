@@ -29,6 +29,10 @@ type SeasonAgent struct {
 }
 
 func (a SeasonAgent) CreateSeason(ctx context.Context, s *Season, variant int) error {
+	if err := validateBasicAuth(ctx); err != nil {
+		return err
+	}
+
 	if variant == 0 {
 		variant = 1
 	}

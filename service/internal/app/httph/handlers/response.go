@@ -2,17 +2,16 @@ package handlers
 
 import (
 	"github.com/LUSHDigital/core/rest"
-	"log"
 	"net/http"
 	"prediction-league/service/internal/domain"
 )
 
 func responseFromError(err error) *rest.Response {
-	log.Println(err)
-
 	switch err.(type) {
 	case domain.NotFoundError:
 		return rest.NotFoundError(err)
+	case domain.UnauthorizedError:
+		return rest.UnauthorizedError()
 	case domain.ConflictError:
 		return rest.ConflictError(err)
 	case domain.ValidationError:

@@ -1,13 +1,19 @@
 package domain
 
 import (
+	"context"
 	"database/sql"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
+	"net/http"
+	"os"
 	"reflect"
 	"strings"
 )
+
+const envKeyAdminBasicAuth = "ADMIN_BASIC_AUTH"
 
 type BadRequestError struct{ Err error }
 
@@ -25,6 +31,8 @@ func (e ValidationError) Error() string {
 	fields := strings.Join(e.Fields, " | ")
 	return fmt.Sprintf("reasons: %s, with fields: %v", strings.ToLower(reasons), strings.ToLower(fields))
 }
+
+type UnauthorizedError struct{ error }
 
 type ConflictError struct{ error }
 
@@ -105,4 +113,29 @@ func domainErrorFromDBError(err error) error {
 	}
 
 	return InternalError{err}
+}
+
+func GetContextFromRequest(r *http.Request) context.Context {
+	ctx := context.Background()
+
+	var userPass []byte
+	authHeader := r.Header.Get("Authorization")
+	headerParts := strings.Split(authHeader, "Basic ")
+	if len(headerParts) == 2 {
+		userPass, _ = base64.StdEncoding.DecodeString(headerParts[1])
+	}
+	ctx = context.WithValue(ctx, envKeyAdminBasicAuth, string(userPass))
+
+	return ctx
+}
+
+func validateBasicAuth(ctx context.Context) error {
+	expected := os.Getenv(envKeyAdminBasicAuth)
+	actual := ctx.Value(envKeyAdminBasicAuth).(string)
+
+	if actual != expected {
+		return UnauthorizedError{errors.New("unauthorized")}
+	}
+
+	return nil
 }

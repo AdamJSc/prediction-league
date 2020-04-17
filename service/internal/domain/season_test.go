@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"gotest.tools/assert/cmp"
+	"os"
 	"prediction-league/service/internal/domain"
 	"testing"
 	"time"
@@ -16,11 +17,12 @@ func TestSeasonAgent_CreateSeason(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	os.Setenv("ADMIN_BASIC_AUTH", "user:123456789")
+	ctx := context.WithValue(context.Background(), "ADMIN_BASIC_AUTH", "user:123456789")
 
 	agent := domain.SeasonAgent{SeasonAgentInjector: injector{db: db}}
-	ctx := context.Background()
 
-	t.Run("creating a valid season must succeed", func(t *testing.T) {
+	t.Run("creating a valid season with valid credentials must succeed", func(t *testing.T) {
 		name := "My Season"
 		entriesFrom := time.Date(1992, 7, 1, 0, 0, 0, 0, loc)
 		startDate := time.Date(1992, 8, 15, 15, 0, 0, 0, loc)
@@ -67,6 +69,15 @@ func TestSeasonAgent_CreateSeason(t *testing.T) {
 		}
 		if !cmp.Equal(sqltypes.NullTime{}, s.UpdatedAt)().Success() {
 			expectedEmpty(t, "nulltime", s.UpdatedAt)
+		}
+	})
+
+	t.Run("creating a season with invalid credentials must fail", func(t *testing.T) {
+		ctxWithInvalidCredentials := context.WithValue(context.Background(), "ADMIN_BASIC_AUTH", "not_valid_basic_auth_credentials")
+
+		err = agent.CreateSeason(ctxWithInvalidCredentials, &domain.Season{}, 0)
+		if !cmp.ErrorType(err, domain.UnauthorizedError{})().Success() {
+			expectedTypeOfGot(t, domain.UnauthorizedError{}, err)
 		}
 	})
 
