@@ -18,6 +18,7 @@ func TestSeasonAgent_CreateSeason(t *testing.T) {
 	}
 
 	agent := domain.SeasonAgent{SeasonAgentInjector: injector{db: db}}
+	ctx := context.Background()
 
 	t.Run("creating a valid season must succeed", func(t *testing.T) {
 		name := "My Season"
@@ -33,22 +34,22 @@ func TestSeasonAgent_CreateSeason(t *testing.T) {
 		}
 
 		// should succeed
-		if err := agent.CreateSeason(context.Background(), &s, 0); err != nil {
+		if err := agent.CreateSeason(ctx, &s, 0); err != nil {
 			t.Fatal(err)
 		}
 
 		// check raw values that shouldn't have changed
 		if !cmp.Equal(name, s.Name)().Success() {
-			t.Fatalf("expected '%s', got '%s'", name, s.Name)
+			expectedGot(t, name, s.Name)
 		}
 		if !cmp.Equal(entriesFrom, s.EntriesFrom)().Success() {
-			t.Fatalf("expected %+v, got %+v", entriesFrom, s.EntriesFrom)
+			expectedGot(t, entriesFrom, s.EntriesFrom)
 		}
 		if !cmp.Equal(startDate, s.StartDate)().Success() {
-			t.Fatalf("expected %+v, got %+v", startDate, s.StartDate)
+			expectedGot(t, startDate, s.StartDate)
 		}
 		if !cmp.Equal(endDate, s.EndDate)().Success() {
-			t.Fatalf("expected %+v, got %+v", endDate, s.EndDate)
+			expectedGot(t, endDate, s.EndDate)
 		}
 
 		// check sanitised values
@@ -56,16 +57,101 @@ func TestSeasonAgent_CreateSeason(t *testing.T) {
 		expectedEntriesUntil := sqltypes.ToNullTime(s.StartDate)
 
 		if !cmp.Equal(expectedID, s.ID)().Success() {
-			t.Fatalf("expected '%s', got '%s'", expectedID, s.ID)
+			expectedGot(t, expectedID, s.ID)
 		}
 		if !cmp.Equal(expectedEntriesUntil, s.EntriesUntil)().Success() {
-			t.Fatalf("expected %+v, got %+v", expectedEntriesUntil, s.EntriesUntil)
+			expectedGot(t, expectedEntriesUntil, s.EntriesUntil)
 		}
 		if cmp.Equal(time.Time{}, s.CreatedAt)().Success() {
-			t.Fatal("expected non-empty time, but got an empty one")
+			expectedNonEmpty(t, "time")
 		}
 		if !cmp.Equal(sqltypes.NullTime{}, s.UpdatedAt)().Success() {
-			t.Fatalf("expected empty nulltime, got %+v", s.UpdatedAt)
+			expectedEmpty(t, "nulltime", s.UpdatedAt)
+		}
+	})
+
+	t.Run("creating a season with missing required values must fail", func(t *testing.T) {
+		var s domain.Season
+		var err error
+
+		// missing name
+		err = agent.CreateSeason(ctx, &s, 0)
+		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+
+		// missing entries_from
+		s = domain.Season{
+			Name: "My Season",
+		}
+		err = agent.CreateSeason(ctx, &s, 0)
+		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+
+		// missing start_date
+		s = domain.Season{
+			Name:        "My Season",
+			EntriesFrom: time.Now(),
+		}
+		err = agent.CreateSeason(ctx, &s, 0)
+		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+
+		// missing end_date
+		s = domain.Season{
+			Name:        "My Season",
+			EntriesFrom: time.Now(),
+			StartDate:   time.Now(),
+		}
+		err = agent.CreateSeason(ctx, &s, 0)
+		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+	})
+
+	t.Run("creating a season with an end date before start date must fail", func(t *testing.T) {
+		startDate := time.Now()
+		s := domain.Season{
+			Name:        "My Season",
+			EntriesFrom: time.Now(),
+			StartDate:   startDate,
+			EndDate:     startDate.Add(-24 * time.Hour),
+		}
+		err = agent.CreateSeason(ctx, &s, 0)
+		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+	})
+
+	t.Run("creating a season with an entries until date before an entries from date must fail", func(t *testing.T) {
+		entriesFrom := time.Now()
+		s := domain.Season{
+			Name:         "My Season",
+			EntriesFrom:  entriesFrom,
+			EntriesUntil: sqltypes.ToNullTime(entriesFrom.Add(-24 * time.Hour)),
+			StartDate:    time.Now(),
+			EndDate:      time.Now(),
+		}
+		err = agent.CreateSeason(ctx, &s, 0)
+		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+	})
+
+	t.Run("creating a season with a start date before entries until date must fail", func(t *testing.T) {
+		entriesUntil := sqltypes.ToNullTime(time.Now())
+		s := domain.Season{
+			Name:         "My Season",
+			EntriesFrom:  time.Now(),
+			EntriesUntil: entriesUntil,
+			StartDate:    entriesUntil.Time.Add(-24 * time.Hour),
+			EndDate:      time.Now(),
+		}
+		err = agent.CreateSeason(ctx, &s, 0)
+		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
 		}
 	})
 }
