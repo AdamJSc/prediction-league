@@ -13,7 +13,12 @@ import (
 	"strings"
 )
 
-const envKeyAdminBasicAuth = "ADMIN_BASIC_AUTH"
+const (
+	ctxKeyRealm    = "REALM"
+	ctxKeyRealmPIN = "REALM_PIN"
+
+	envKeyAdminBasicAuth = "ADMIN_BASIC_AUTH"
+)
 
 type BadRequestError struct{ Err error }
 
@@ -115,16 +120,28 @@ func domainErrorFromDBError(err error) error {
 	return InternalError{err}
 }
 
-func GetContextFromRequest(r *http.Request) context.Context {
-	ctx := context.Background()
+func ContextFromRequest(r *http.Request) Context {
+	ctx := Context{context.Background()}
 
+	// get realm from host (strip port)
+	realm := strings.Trim(strings.Split(r.Host, ":")[0], " ")
+	ctx.setRealm(realm)
+
+	// get realm PIN from env
+	realmFormattedForEnvKey := strings.ToUpper(strings.Replace(realm, ".", "_", -1))
+	envKeyForRealmPIN := strings.ToUpper(fmt.Sprintf("%s_%s", ctxKeyRealmPIN, realmFormattedForEnvKey))
+
+	realmPIN := os.Getenv(envKeyForRealmPIN)
+	ctx.setRealmPIN(realmPIN)
+
+	// set basic auth username/password requirements
 	var userPass []byte
 	authHeader := r.Header.Get("Authorization")
 	headerParts := strings.Split(authHeader, "Basic ")
 	if len(headerParts) == 2 {
 		userPass, _ = base64.StdEncoding.DecodeString(headerParts[1])
 	}
-	ctx = context.WithValue(ctx, envKeyAdminBasicAuth, string(userPass))
+	ctx.Context = context.WithValue(ctx.Context, envKeyAdminBasicAuth, string(userPass))
 
 	return ctx
 }
@@ -138,4 +155,39 @@ func validateBasicAuth(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+type Context struct {
+	context.Context
+}
+
+func (c *Context) setRealm(realm string) {
+	c.setString(ctxKeyRealm, realm)
+}
+
+func (c *Context) getRealm() string {
+	return c.getString(ctxKeyRealm)
+}
+
+func (c *Context) setRealmPIN(pin string) {
+	c.setString(ctxKeyRealmPIN, pin)
+}
+
+func (c *Context) getRealmPIN() string {
+	return c.getString(ctxKeyRealmPIN)
+}
+
+func (c *Context) setString(key string, value string) {
+	c.Context = context.WithValue(c.Context, key, value)
+}
+
+func (c *Context) getString(key string) string {
+	var value string
+	ctxValue := c.Context.Value(key)
+
+	if ctxValue != nil {
+		value = ctxValue.(string)
+	}
+
+	return value
 }

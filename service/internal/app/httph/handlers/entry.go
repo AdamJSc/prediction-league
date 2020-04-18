@@ -25,6 +25,7 @@ func (r createEntryRequest) ToEntryModel() domain.Entry {
 
 func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	agent := domain.EntryAgent{EntryAgentInjector: c}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		var input createEntryRequest
 
@@ -42,7 +43,7 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 
 		entry := input.ToEntryModel()
 
-		createdEntry, err := agent.CreateEntry(domain.GetContextFromRequest(r), entry)
+		createdEntry, err := agent.CreateEntry(domain.ContextFromRequest(r), entry)
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return
