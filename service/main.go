@@ -3,34 +3,36 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
-	"net/http"
-	"prediction-league-service/service/app/httph"
-	"prediction-league-service/service/app/httph/handlers"
-
 	"github.com/LUSHDigital/core"
+	"github.com/LUSHDigital/core-mage/env"
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core/workers/httpsrv"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
+	"log"
+	"net/http"
+	"prediction-league/service/internal/app/httph"
+	"prediction-league/service/internal/app/httph/handlers"
+	"prediction-league/service/internal/domain"
 )
 
 func main() {
-	loadEnv()
-
+	// setup env
+	env.Load("infra/app.env")
 	config := struct {
-		ServicePort   string `envconfig:"SERVICE_PORT" required:"true"`
-		MySQLURL      string `envconfig:"MYSQL_URL" required:"true"`
-		MigrationsURL string `envconfig:"MIGRATIONS_URL" required:"true"`
+		ServicePort    string `envconfig:"SERVICE_PORT" required:"true"`
+		MySQLURL       string `envconfig:"MYSQL_URL" required:"true"`
+		MigrationsURL  string `envconfig:"MIGRATIONS_URL" required:"true"`
+		AdminBasicAuth string `envconfig:"ADMIN_BASIC_AUTH" required:"true"`
 	}{}
 	if err := envconfig.Process("", &config); err != nil {
 		log.Fatal(err)
 	}
 
+	// setup db connection
 	db := coresql.MustOpen("mysql", config.MySQLURL)
 	driver, _ := mysql.WithInstance(db.DB, &mysql.Config{})
 	mig, _ := migrate.NewWithDatabaseInstance(
@@ -40,6 +42,9 @@ func main() {
 	)
 	coresql.MustMigrateUp(mig)
 
+	domain.RegisterCustomValidators()
+
+	// setup server
 	httpAppContainer := httph.NewHTTPAppContainer(dependencies{
 		mysql:  db,
 		router: mux.NewRouter(),
@@ -51,6 +56,7 @@ func main() {
 		Handler: httpAppContainer.Router(),
 	})
 
+	// run service
 	svc := &core.Service{
 		Name: "prediction-league",
 		Type: "service",
@@ -59,15 +65,6 @@ func main() {
 		context.Background(),
 		httpServer,
 	)
-}
-
-func loadEnv() {
-	envFiles := []string{".env", "infra/.env"}
-	for _, file := range envFiles {
-		if err := godotenv.Load(file); err != nil {
-			log.Printf("could not find '%s', skipping...", file)
-		}
-	}
 }
 
 type dependencies struct {

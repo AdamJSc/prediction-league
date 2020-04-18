@@ -3,20 +3,21 @@ services:
 
   db:
     image: mysql:5.7
-    container_name: pl-service-db
+    container_name: prediction-league-db
     volumes:
       - ${PWD}/docker/db/data:/var/lib/mysql
     ports:
-      - 3306:3306
+      - 33060:3306
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: pl_service
-      MYSQL_USER: pl_service_user
-      MYSQL_PASSWORD: pl_service_user
+      MYSQL_DATABASE: prediction-league
+      MYSQL_USER: pl_user
+      MYSQL_PASSWORD: pl_pwd
 
   app:
     image: golang:1.14
-    container_name: pl-service-app
+    container_name: prediction-league-app
+    env_file: ${PWD}/infra/app.docker.env
     depends_on:
       - db
     volumes:
@@ -25,3 +26,25 @@ services:
     ports:
       - 3000:3000
     command: go run service/main.go
+
+  db_test:
+    image: mysql:5.7
+    container_name: prediction-league-db-test
+    ports:
+      - 33070:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: prediction-league-test
+      MYSQL_USER: pl_test_user
+      MYSQL_PASSWORD: pl_test_pwd
+
+  app_test:
+    image: golang:1.14
+    container_name: prediction-league-app-test
+    env_file: ${PWD}/infra/test.docker.env
+    depends_on:
+      - db_test
+    volumes:
+      - ${PWD}:/go/src/app
+    working_dir: /go/src/app
+    command: go test -v ./...

@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"net/http"
-	"prediction-league-service/service/app/httph"
+	"prediction-league/service/internal/app/httph"
 
 	"github.com/LUSHDigital/core/rest"
 	"github.com/gorilla/mux"
@@ -44,4 +44,8 @@ func showDatabasesEndpoint(c *httph.HTTPAppContainer) func(w http.ResponseWriter
 func RegisterRoutes(c *httph.HTTPAppContainer) {
 	// unauthenticated endpoints
 	c.Router().HandleFunc("/{anything}", showDatabasesEndpoint(c)).Methods(http.MethodGet)
+
+	// api endpoints
+	api := c.Router().PathPrefix("/api").Subrouter()
+	api.HandleFunc("/season", createSeasonHandler(c)).Methods(http.MethodPost)
 }
