@@ -13,6 +13,7 @@ type createEntryRequest struct {
 	Name     string `json:"name"`
 	Nickname string `json:"nickname"`
 	Email    string `json:"email"`
+	PIN      int    `json:"pin"`
 }
 
 func (r createEntryRequest) ToEntryModel() domain.Entry {
@@ -43,7 +44,7 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 
 		entry := input.ToEntryModel()
 
-		createdEntry, err := agent.CreateEntry(domain.ContextFromRequest(r), entry)
+		createdEntry, err := agent.CreateEntry(domain.ContextFromRequest(r), entry, input.PIN)
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return

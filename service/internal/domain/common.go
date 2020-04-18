@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -130,8 +131,7 @@ func ContextFromRequest(r *http.Request) Context {
 	// get realm PIN from env
 	realmFormattedForEnvKey := strings.ToUpper(strings.Replace(realm, ".", "_", -1))
 	envKeyForRealmPIN := strings.ToUpper(fmt.Sprintf("%s_%s", ctxKeyRealmPIN, realmFormattedForEnvKey))
-
-	realmPIN := os.Getenv(envKeyForRealmPIN)
+	realmPIN, _ := strconv.Atoi(os.Getenv(envKeyForRealmPIN))
 	ctx.setRealmPIN(realmPIN)
 
 	// set basic auth username/password requirements
@@ -157,36 +157,44 @@ func validateBasicAuth(ctx context.Context) error {
 	return nil
 }
 
+func validateRealmPIN(ctx Context, pin int) error {
+	realmPIN := ctx.getRealmPIN()
+	if realmPIN == 0 || realmPIN != pin {
+		return UnauthorizedError{errors.New("unauthorized")}
+	}
+
+	return nil
+}
+
 type Context struct {
 	context.Context
 }
 
 func (c *Context) setRealm(realm string) {
-	c.setString(ctxKeyRealm, realm)
+	c.Context = context.WithValue(c.Context, ctxKeyRealm, realm)
 }
 
 func (c *Context) getRealm() string {
-	return c.getString(ctxKeyRealm)
-}
-
-func (c *Context) setRealmPIN(pin string) {
-	c.setString(ctxKeyRealmPIN, pin)
-}
-
-func (c *Context) getRealmPIN() string {
-	return c.getString(ctxKeyRealmPIN)
-}
-
-func (c *Context) setString(key string, value string) {
-	c.Context = context.WithValue(c.Context, key, value)
-}
-
-func (c *Context) getString(key string) string {
 	var value string
-	ctxValue := c.Context.Value(key)
+	ctxValue := c.Context.Value(ctxKeyRealm)
 
 	if ctxValue != nil {
 		value = ctxValue.(string)
+	}
+
+	return value
+}
+
+func (c *Context) setRealmPIN(pin int) {
+	c.Context = context.WithValue(c.Context, ctxKeyRealmPIN, pin)
+}
+
+func (c *Context) getRealmPIN() int {
+	var value int
+	ctxValue := c.Context.Value(ctxKeyRealmPIN)
+
+	if ctxValue != nil {
+		value = ctxValue.(int)
 	}
 
 	return value

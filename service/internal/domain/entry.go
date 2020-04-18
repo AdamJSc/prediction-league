@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"context"
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"time"
@@ -27,7 +26,11 @@ type EntryAgentInjector interface {
 
 type EntryAgent struct{ EntryAgentInjector }
 
-func (a EntryAgent) CreateEntry(ctx context.Context, e Entry) (Entry, error) {
+func (a EntryAgent) CreateEntry(ctx Context, e Entry, realmPIN int) (Entry, error) {
+	if err := validateRealmPIN(ctx, realmPIN); err != nil {
+		return Entry{}, err
+	}
+
 	if err := sanitiseEntry(&e); err != nil {
 		return Entry{}, err
 	}
