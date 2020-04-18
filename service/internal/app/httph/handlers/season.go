@@ -1,5 +1,7 @@
 package handlers
 
+// TODO - remove season-related handles and routes
+
 import (
 	"encoding/json"
 	"github.com/LUSHDigital/core-sql/sqltypes"

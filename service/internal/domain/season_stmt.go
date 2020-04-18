@@ -1,5 +1,7 @@
 package domain
 
+// TODO - remove db transactions for seasons
+
 import (
 	coresql "github.com/LUSHDigital/core-sql"
 	"time"

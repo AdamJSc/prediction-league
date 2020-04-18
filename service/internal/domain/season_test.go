@@ -1,5 +1,7 @@
 package domain_test
 
+// TODO - replace agent-related tests with SeasonCollection tests (sanitisation etc.)
+
 import (
 	"context"
 	"github.com/LUSHDigital/core-sql/sqltypes"

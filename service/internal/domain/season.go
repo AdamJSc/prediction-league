@@ -5,11 +5,32 @@ import (
 	"fmt"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/ladydascalie/v"
+	"log"
 	"prediction-league/service/internal/app"
 	"time"
 )
 
+type SeasonCollection map[string]Season
+
+func Seasons() SeasonCollection {
+	ukLoc, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return map[string]Season{
+		"201920_1": {
+			ID:          "201920_1",
+			Name:        "Premier League 2019/20",
+			EntriesFrom: time.Date(2019, 7, 1, 0, 0, 0, 0, ukLoc),
+			StartDate:   time.Date(2019, 8, 9, 19, 0, 0, 0, ukLoc),
+			EndDate:     time.Date(2020, 5, 17, 23, 59, 59, 0, ukLoc),
+		},
+	}
+}
+
 type Season struct {
+	// TODO - remove unneeded fields
 	ID           string            `json:"id" db:"id" v:"func:notempty"`
 	Name         string            `json:"name" db:"name" v:"func:notempty"`
 	EntriesFrom  time.Time         `json:"entries_from" db:"entries_from" v:"func:notempty"`
@@ -20,6 +41,8 @@ type Season struct {
 	UpdatedAt    sqltypes.NullTime `json:"updated_at" db:"updated_at"`
 }
 
+
+// TODO - remove season agent
 type SeasonAgentInjector interface {
 	app.MySQLInjector
 }
