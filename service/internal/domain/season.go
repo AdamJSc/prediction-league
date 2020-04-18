@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/ladydascalie/v"
@@ -11,6 +12,16 @@ import (
 )
 
 type SeasonCollection map[string]Season
+
+func (c SeasonCollection) GetByTimestamp(ts time.Time) (Season, error) {
+	for _, season := range c {
+		if season.EntriesFrom.Before(ts) && season.EndDate.After(ts) {
+			return season, nil
+		}
+	}
+
+	return Season{}, errors.New("not found")
+}
 
 func Seasons() SeasonCollection {
 	ukLoc, err := time.LoadLocation("Europe/London")
@@ -40,7 +51,6 @@ type Season struct {
 	CreatedAt    time.Time         `json:"created_at" db:"created_at"`
 	UpdatedAt    sqltypes.NullTime `json:"updated_at" db:"updated_at"`
 }
-
 
 // TODO - remove season agent
 type SeasonAgentInjector interface {

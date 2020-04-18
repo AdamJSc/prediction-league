@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/domain"
+	"time"
 )
 
 type createEntryRequest struct {
@@ -44,7 +45,16 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 
 		entry := input.ToEntryModel()
 
-		createdEntry, err := agent.CreateEntry(domain.ContextFromRequest(r), entry, input.PIN)
+		// retrieve current season
+		season, err := domain.Seasons().GetByTimestamp(time.Now())
+		if err != nil {
+			responseFromError(domain.ValidationError{
+				Reasons: []string{"No current season"},
+			}).WriteTo(w)
+			return
+		}
+
+		createdEntry, err := agent.CreateEntryForSeason(domain.ContextFromRequest(r), entry, season, input.PIN)
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return
