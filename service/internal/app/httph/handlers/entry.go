@@ -11,17 +11,17 @@ import (
 )
 
 type createEntryRequest struct {
-	Name     string `json:"name"`
-	Nickname string `json:"nickname"`
-	Email    string `json:"email"`
-	PIN      int    `json:"pin"`
+	EntrantName     string `json:"entrant_name"`
+	EntrantNickname string `json:"entrant_nickname"`
+	EntrantEmail    string `json:"entrant_email"`
+	PIN             int    `json:"pin"`
 }
 
 func (r createEntryRequest) ToEntryModel() domain.Entry {
 	return domain.Entry{
-		EntrantName:     r.Name,
-		EntrantNickname: r.Nickname,
-		EntrantEmail:    r.Email,
+		EntrantName:     r.EntrantName,
+		EntrantNickname: r.EntrantNickname,
+		EntrantEmail:    r.EntrantEmail,
 	}
 }
 
@@ -50,6 +50,7 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 		if err != nil {
 			responseFromError(domain.ValidationError{
 				Reasons: []string{"No current season"},
+				Fields:  []string{"season_id"},
 			}).WriteTo(w)
 			return
 		}

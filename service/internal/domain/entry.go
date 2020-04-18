@@ -37,7 +37,10 @@ type EntryAgent struct{ EntryAgentInjector }
 
 func (a EntryAgent) CreateEntryForSeason(ctx Context, e Entry, s Season, realmPIN int) (Entry, error) {
 	if err := validateRealmPIN(ctx, realmPIN); err != nil {
-		return Entry{}, err
+		return Entry{}, ValidationError{
+			Reasons: []string{"Invalid PIN"},
+			Fields:  []string{"pin"},
+		}
 	}
 
 	uuid, err := uuid.NewV4()
