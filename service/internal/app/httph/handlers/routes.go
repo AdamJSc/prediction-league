@@ -48,4 +48,6 @@ func RegisterRoutes(c *httph.HTTPAppContainer) {
 	// api endpoints
 	api := c.Router().PathPrefix("/api").Subrouter()
 	api.HandleFunc("/season", createSeasonHandler(c)).Methods(http.MethodPost)
+
+	api.HandleFunc("/entry", createEntryHandler(c)).Methods(http.MethodPost)
 }
