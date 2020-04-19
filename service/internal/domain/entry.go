@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"errors"
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
@@ -55,6 +56,30 @@ func (a EntryAgent) CreateEntryForSeason(ctx Context, e Entry, s Season, realmPI
 
 	if err := sanitiseEntry(&e); err != nil {
 		return Entry{}, err
+	}
+
+	// check for existing nickname
+	existingNicknameEntries, err := dbSelectEntries(a.MySQL(), map[string]interface{}{
+		"season_id":        e.SeasonID,
+		"realm":            e.Realm,
+		"entrant_nickname": e.EntrantNickname,
+	}, false)
+	if err != nil {
+		return Entry{}, err
+	}
+
+	// check for existing email
+	existingEmailEntries, err := dbSelectEntries(a.MySQL(), map[string]interface{}{
+		"season_id":     e.SeasonID,
+		"realm":         e.Realm,
+		"entrant_email": e.EntrantEmail,
+	}, false)
+	if err != nil {
+		return Entry{}, err
+	}
+
+	if len(existingNicknameEntries) > 0 || len(existingEmailEntries) > 0 {
+		return Entry{}, ConflictError{errors.New("entry already exists")}
 	}
 
 	if err := dbInsertEntry(a.MySQL(), &e); err != nil {

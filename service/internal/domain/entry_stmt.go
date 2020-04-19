@@ -39,3 +39,45 @@ func dbInsertEntry(db coresql.Agent, e *Entry) error {
 
 	return nil
 }
+
+func dbSelectEntries(db coresql.Agent, criteria map[string]interface{}, matchAny bool) ([]Entry, error) {
+	whereStmt, params := dbWhereStmt(criteria, matchAny)
+
+	stmt := `SELECT id, ` + dbEntryFields + ` created_at, updated_at FROM entry ` + whereStmt
+
+	rows, err := db.Query(stmt, params...)
+	if err != nil {
+		return []Entry{}, wrapDBError(err)
+	}
+
+	var entries []Entry
+	for rows.Next() {
+		entry := Entry{}
+
+		var teamIDSequence []byte
+
+		if err := rows.Scan(
+			&entry.ID,
+			&entry.SeasonID,
+			&entry.Realm,
+			&entry.EntrantName,
+			&entry.EntrantNickname,
+			&entry.EntrantEmail,
+			&teamIDSequence,
+			&entry.Status,
+			&entry.PaymentRef,
+			&entry.CreatedAt,
+			&entry.UpdateAt,
+		); err != nil {
+			return []Entry{}, err
+		}
+
+		if err := json.Unmarshal(teamIDSequence, &entry.TeamIDSequence); err != nil {
+			return []Entry{}, err
+		}
+
+		entries = append(entries, entry)
+	}
+
+	return entries, nil
+}

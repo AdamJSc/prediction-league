@@ -27,6 +27,12 @@ func (e BadRequestError) Error() string {
 	return e.Err.Error()
 }
 
+type UnauthorizedError struct{ error }
+
+type NotFoundError struct{ error }
+
+type ConflictError struct{ error }
+
 type ValidationError struct {
 	Reasons []string `json:"reasons"`
 	Fields  []string `json:"fields"`
@@ -37,12 +43,6 @@ func (e ValidationError) Error() string {
 	fields := strings.Join(e.Fields, " | ")
 	return fmt.Sprintf("reasons: %s, with fields: %v", strings.ToLower(reasons), strings.ToLower(fields))
 }
-
-type UnauthorizedError struct{ error }
-
-type ConflictError struct{ error }
-
-type NotFoundError struct{ error }
 
 type InternalError struct{ error }
 
@@ -119,6 +119,26 @@ func domainErrorFromDBError(err error) error {
 	}
 
 	return InternalError{err}
+}
+
+func dbWhereStmt(criteria map[string]interface{}, matchAny bool) (stmt string, params []interface{}) {
+	var conditions []string
+
+	for field, value := range criteria {
+		conditions = append(conditions, fmt.Sprintf("(%s = ?)", field))
+		params = append(params, value)
+	}
+
+	comparison := " AND "
+	if matchAny {
+		comparison = " OR "
+	}
+
+	if len(conditions) > 0 {
+		stmt = `WHERE ` + strings.Join(conditions, comparison)
+	}
+
+	return stmt, params
 }
 
 func ContextFromRequest(r *http.Request) Context {
