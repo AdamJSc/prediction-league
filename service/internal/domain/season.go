@@ -51,7 +51,7 @@ func Seasons() SeasonCollection {
 			ID:          "201920_1",
 			Name:        "Premier League 2019/20",
 			EntriesFrom: time.Date(2019, 7, 1, 0, 0, 0, 0, ukLoc),
-			StartDate:   time.Date(2019, 8, 9, 19, 0, 0, 0, ukLoc),
+			StartDate:   time.Date(2020, 8, 9, 19, 0, 0, 0, ukLoc),
 			EndDate:     time.Date(2020, 5, 17, 23, 59, 59, 0, ukLoc),
 		},
 	}

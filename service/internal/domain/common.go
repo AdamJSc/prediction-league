@@ -7,10 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
+	"math/rand"
 	"net/http"
 	"os"
 	"reflect"
 	"strings"
+	"time"
 )
 
 const (
@@ -139,6 +141,18 @@ func dbWhereStmt(criteria map[string]interface{}, matchAny bool) (stmt string, p
 	}
 
 	return stmt, params
+}
+
+func generateRandomAlphaNumericString(length int) string {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	charset := "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[r.Intn(len(charset))]
+	}
+
+	return string(b)
 }
 
 func ContextFromRequest(r *http.Request) Context {

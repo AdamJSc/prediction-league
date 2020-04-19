@@ -18,6 +18,7 @@ const (
 
 type Entry struct {
 	ID              uuid.UUID           `json:"id" db:"id" v:"func:notEmpty"`
+	LookupRef       string              `json:"lookup_ref" db:"lookup_ref" v:"func:notEmpty"`
 	SeasonID        string              `json:"season_id" db:"season_id" v:"func:notEmpty"`
 	Realm           string              `json:"realm" db:"realm" v:"func:notEmpty"`
 	EntrantName     string              `json:"entrant_name" db:"entrant_name" v:"func:notEmpty"`
@@ -61,6 +62,11 @@ func (a EntryAgent) CreateEntry(ctx Context, e *Entry, s *Season, realmPIN strin
 	e.SeasonID = s.ID
 	e.Realm = ctx.GetRealm()
 	e.Status = entryStatusPending
+
+	e.LookupRef, err = generateUniqueLookupRef(a.MySQL())
+	if err != nil {
+		return err
+	}
 
 	if err := sanitiseEntry(e); err != nil {
 		return err
@@ -106,4 +112,21 @@ func sanitiseEntry(e *Entry) error {
 	e.EntrantEmail = strings.Trim(e.EntrantEmail, " ")
 
 	return nil
+}
+
+func generateUniqueLookupRef(db coresql.Agent) (string, error) {
+	lookupRef := generateRandomAlphaNumericString(6)
+
+	existingLookupRefEntries, err := dbSelectEntries(db, map[string]interface{}{
+		"lookup_ref": lookupRef,
+	}, false)
+	if err != nil {
+		return "", err
+	}
+
+	if len(existingLookupRefEntries) > 0 {
+		return generateUniqueLookupRef(db)
+	}
+
+	return lookupRef, nil
 }

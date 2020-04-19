@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS `entry` (
     `id` VARCHAR(36) NOT NULL,
+    `lookup_ref` VARCHAR(255) NOT NULL,
     `season_id` VARCHAR(10) NOT NULL,
     `realm` VARCHAR(255) NOT NULL,
     `entrant_name` VARCHAR(255) NOT NULL,

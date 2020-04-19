@@ -6,11 +6,11 @@ import (
 	"time"
 )
 
-var dbEntryFields = "season_id, realm, entrant_name, entrant_nickname, entrant_email, team_id_sequence, status, payment_ref,"
+var dbEntryFields = "lookup_ref, season_id, realm, entrant_name, entrant_nickname, entrant_email, team_id_sequence, status, payment_ref,"
 
 func dbInsertEntry(db coresql.Agent, e *Entry) error {
 	stmt := `INSERT INTO entry (id, ` + dbEntryFields + ` created_at)
-					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now().Truncate(time.Second)
 
@@ -22,6 +22,7 @@ func dbInsertEntry(db coresql.Agent, e *Entry) error {
 	if _, err := db.Query(
 		stmt,
 		e.ID,
+		e.LookupRef,
 		e.SeasonID,
 		e.Realm,
 		e.EntrantName,
@@ -58,6 +59,7 @@ func dbSelectEntries(db coresql.Agent, criteria map[string]interface{}, matchAny
 
 		if err := rows.Scan(
 			&entry.ID,
+			&entry.LookupRef,
 			&entry.SeasonID,
 			&entry.Realm,
 			&entry.EntrantName,
