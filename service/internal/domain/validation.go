@@ -31,7 +31,7 @@ func RegisterCustomValidators() {
 
 	v.Set("isEntryStatus", func(args string, value, structure interface{}) error {
 		switch value {
-		case entryStatusPending, entryStatusPaid, entryStatusComplete:
+		case EntryStatusPending, EntryStatusPaid, EntryStatusComplete:
 			return nil
 		}
 

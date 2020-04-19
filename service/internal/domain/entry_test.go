@@ -57,7 +57,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		expectedSeasonID := season.ID
 		expectedRealm := ctx.GetRealm()
 		expectedNickname := "MrHarryR"
-		expectedStatus := "pending"
+		expectedStatus := domain.EntryStatusPending
 
 		if cmp.Equal("", createdEntry.ID)().Success() {
 			expectedNonEmpty(t, "Entry.ID")

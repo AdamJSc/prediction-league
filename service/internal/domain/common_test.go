@@ -70,12 +70,12 @@ func expectedTypeOfGot(t *testing.T, expectedValue interface{}, gotValue interfa
 	t.Fatalf("expected type %+v, got type %+v", reflect.TypeOf(expectedValue), reflect.TypeOf(gotValue))
 }
 
-func expectedEmpty(t *testing.T, fieldName string, gotValue interface{}) {
+func expectedEmpty(t *testing.T, ref string, gotValue interface{}) {
 	t.Helper()
-	t.Fatalf("expected empty field %s, got %+v", fieldName, gotValue)
+	t.Fatalf("expected empty %s, got %+v", ref, gotValue)
 }
 
-func expectedNonEmpty(t *testing.T, fieldName string) {
+func expectedNonEmpty(t *testing.T, ref string) {
 	t.Helper()
-	t.Fatalf("expected non-empty field %s, got an empty value", fieldName)
+	t.Fatalf("expected non-empty %s, got an empty value", ref)
 }

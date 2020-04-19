@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	entryStatusPending  = "pending"
-	entryStatusPaid     = "paid"
-	entryStatusComplete = "complete"
+	EntryStatusPending  = "pending"
+	EntryStatusPaid     = "paid"
+	EntryStatusComplete = "complete"
 )
 
 type Entry struct {
@@ -46,7 +46,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string
 		return Entry{}, UnauthorizedError{errors.New("invalid PIN")}
 	}
 
-	if s.GetStatus(time.Now()) != seasonStatusAcceptingEntries {
+	if s.GetStatus(time.Now()) != SeasonStatusAcceptingEntries {
 		return Entry{}, ConflictError{errors.New("season is not currently accepting entries")}
 	}
 
@@ -58,7 +58,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string
 	e.ID = uuid
 	e.SeasonID = s.ID
 	e.Realm = ctx.GetRealm()
-	e.Status = entryStatusPending
+	e.Status = EntryStatusPending
 
 	e.LookupRef, err = generateUniqueLookupRef(a.MySQL())
 	if err != nil {

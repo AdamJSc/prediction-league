@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	seasonStatusForthcoming      = "forthcoming"
-	seasonStatusAcceptingEntries = "accepting_entries"
-	seasonStatusActive           = "active"
-	seasonStatusElapsed          = "elapsed"
+	SeasonStatusForthcoming      = "forthcoming"
+	SeasonStatusAcceptingEntries = "accepting_entries"
+	SeasonStatusActive           = "active"
+	SeasonStatusElapsed          = "elapsed"
 )
 
 type SeasonCollection map[string]Season
@@ -19,16 +19,6 @@ type SeasonCollection map[string]Season
 func (c SeasonCollection) GetByID(seasonID string) (Season, error) {
 	for id, season := range c {
 		if id == seasonID {
-			return season, nil
-		}
-	}
-
-	return Season{}, errors.New("not found")
-}
-
-func (c SeasonCollection) GetByTimestamp(ts time.Time) (Season, error) {
-	for _, season := range c {
-		if season.EntriesFrom.Before(ts) && season.EndDate.After(ts) {
 			return season, nil
 		}
 	}
@@ -64,13 +54,13 @@ type Season struct {
 func (s Season) GetStatus(ts time.Time) string {
 	switch {
 	case ts.Before(s.EntriesFrom):
-		return seasonStatusForthcoming
+		return SeasonStatusForthcoming
 	case ts.Before(s.StartDate):
-		return seasonStatusAcceptingEntries
+		return SeasonStatusAcceptingEntries
 	case ts.Before(s.EndDate):
-		return seasonStatusActive
+		return SeasonStatusActive
 	}
-	return seasonStatusElapsed
+	return SeasonStatusElapsed
 }
 
 func ValidateSeason(s Season) error {
