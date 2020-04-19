@@ -54,3 +54,13 @@ A season represents a real-world tournament (such as "Premier League 1992/93"), 
 This is intended as a one-off action once a year, immediately prior to accepting entries into a game.
 
 For this reason, full CRUD has not been enabled for Seasons - only a create endpoint.
+
+## Maintenace
+
+### To add a new Season
+
+Include a new `Season` struct in the map returned by `domain.Seasons()`.
+
+This struct must adhere to the validation rules found within `domain.ValidateSeason()`.
+
+Running the testsuite again will apply the rules to each `Season` in the map and fail if any aren't met.

@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"github.com/LUSHDigital/core-sql/sqltypes"
 	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
 	"testing"
@@ -78,6 +79,9 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		}
 		if cmp.Equal(time.Time{}, createdEntry.CreatedAt)().Success() {
 			expectedNonEmpty(t, "Entry.CreatedAt")
+		}
+		if !cmp.Equal(sqltypes.NullTime{}, createdEntry.UpdatedAt)().Success() {
+			expectedEmpty(t, "Entry.UpdatedAt", createdEntry.UpdatedAt)
 		}
 
 		// inserting same entry a second time should fail
