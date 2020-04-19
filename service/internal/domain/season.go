@@ -1,13 +1,10 @@
 package domain
 
 import (
-	"context"
 	"errors"
-	"fmt"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/ladydascalie/v"
 	"log"
-	"prediction-league/service/internal/app"
 	"time"
 )
 
@@ -81,38 +78,7 @@ func (s Season) GetStatus(ts time.Time) string {
 	return seasonStatusElapsed
 }
 
-// TODO - remove season agent
-type SeasonAgentInjector interface {
-	app.MySQLInjector
-}
-
-type SeasonAgent struct {
-	SeasonAgentInjector
-}
-
-func (a SeasonAgent) CreateSeason(ctx context.Context, s *Season, variant int) error {
-	if err := validateBasicAuth(ctx); err != nil {
-		return err
-	}
-
-	if variant == 0 {
-		variant = 1
-	}
-
-	s.ID = generateSeasonID(*s, variant)
-
-	if err := sanitiseSeason(s); err != nil {
-		return err
-	}
-
-	if err := insertSeason(a.MySQL(), s); err != nil {
-		return domainErrorFromDBError(err)
-	}
-
-	return nil
-}
-
-func sanitiseSeason(s *Season) error {
+func SanitiseSeason(s *Season) error {
 	if err := v.Struct(s); err != nil {
 		return vPackageErrorToValidationError(err, *s)
 	}
@@ -143,10 +109,4 @@ func sanitiseSeason(s *Season) error {
 	}
 
 	return nil
-}
-
-func generateSeasonID(s Season, variant int) string {
-	startYYYY := s.StartDate.Format("2006")
-	endYY := s.EndDate.Format("06")
-	return fmt.Sprintf("%s%s_%d", startYYYY, endYY, variant)
 }
