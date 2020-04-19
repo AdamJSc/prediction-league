@@ -14,8 +14,10 @@ const (
 	SeasonStatusElapsed          = "elapsed"
 )
 
+// SeasonCollection is map of Seasons
 type SeasonCollection map[string]Season
 
+// GetByID retrieves a matching Season from the collection by its ID
 func (c SeasonCollection) GetByID(seasonID string) (Season, error) {
 	for id, season := range c {
 		if id == seasonID {
@@ -26,6 +28,7 @@ func (c SeasonCollection) GetByID(seasonID string) (Season, error) {
 	return Season{}, errors.New("not found")
 }
 
+// Seasons returns a pre-determined data structure of all Seasons that can be referenced within the system
 func Seasons() SeasonCollection {
 	ukLoc, err := time.LoadLocation("Europe/London")
 	if err != nil {
@@ -43,6 +46,7 @@ func Seasons() SeasonCollection {
 	}
 }
 
+// Season defines the structure of a Season against which Entries are played
 type Season struct {
 	ID          string    `v:"func:notEmpty"`
 	Name        string    `v:"func:notEmpty"`
@@ -51,6 +55,7 @@ type Season struct {
 	EndDate     time.Time `v:"func:notEmpty"`
 }
 
+// GetStatus determines a Season's status based on a supplied timestamp/object
 func (s Season) GetStatus(ts time.Time) string {
 	switch {
 	case ts.Before(s.EntriesFrom):
@@ -63,6 +68,7 @@ func (s Season) GetStatus(ts time.Time) string {
 	return SeasonStatusElapsed
 }
 
+// ValidateSeason returns an error if validation rules are not satisfied for a provided Season
 func ValidateSeason(s Season) error {
 	if err := v.Struct(s); err != nil {
 		return vPackageErrorToValidationError(err, s)

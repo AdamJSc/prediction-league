@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// RegisterCustomValidators provides a bootstrap for registering customer validation functions with the `v` package
 func RegisterCustomValidators() {
 	v.Set("notEmpty", func(args string, value, structure interface{}) error {
 		var empty interface{}

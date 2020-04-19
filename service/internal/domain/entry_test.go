@@ -46,9 +46,6 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		if !cmp.Equal(entry.PaymentRef, createdEntry.PaymentRef)().Success() {
 			expectedGot(t, entry.PaymentRef, createdEntry.PaymentRef)
 		}
-		if !cmp.DeepEqual(entry.TeamIDSequence, createdEntry.TeamIDSequence)().Success() {
-			expectedGot(t, entry.TeamIDSequence, createdEntry.TeamIDSequence)
-		}
 		if !cmp.Equal(entry.UpdatedAt, createdEntry.UpdatedAt)().Success() {
 			expectedGot(t, entry.UpdatedAt, createdEntry.UpdatedAt)
 		}
@@ -76,6 +73,9 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		}
 		if !cmp.Equal(expectedStatus, createdEntry.Status)().Success() {
 			expectedGot(t, expectedStatus, createdEntry.Status)
+		}
+		if !cmp.DeepEqual([]string{}, createdEntry.TeamIDSequence)().Success() {
+			expectedEmpty(t, "Entry.TeamIDSequence", createdEntry.TeamIDSequence)
 		}
 		if cmp.Equal(time.Time{}, createdEntry.CreatedAt)().Success() {
 			expectedNonEmpty(t, "Entry.CreatedAt")

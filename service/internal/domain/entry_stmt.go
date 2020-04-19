@@ -6,8 +6,10 @@ import (
 	"time"
 )
 
+// dbEntryFields defines the fields used regularly in Entry-related transactions
 var dbEntryFields = "lookup_ref, season_id, realm, entrant_name, entrant_nickname, entrant_email, team_id_sequence, status, payment_ref,"
 
+// dbInsertEntry insert an Entry to the database
 func dbInsertEntry(db coresql.Agent, e *Entry) error {
 	stmt := `INSERT INTO entry (id, ` + dbEntryFields + ` created_at)
 					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -41,6 +43,7 @@ func dbInsertEntry(db coresql.Agent, e *Entry) error {
 	return nil
 }
 
+// dbSelectEntries retrieves Entries from the database
 func dbSelectEntries(db coresql.Agent, criteria map[string]interface{}, matchAny bool) ([]Entry, error) {
 	whereStmt, params := dbWhereStmt(criteria, matchAny)
 

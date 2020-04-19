@@ -16,6 +16,7 @@ const (
 	EntryStatusComplete = "complete"
 )
 
+// Entry defines a user's entry into the prediction league
 type Entry struct {
 	ID              uuid.UUID           `db:"id" v:"func:notEmpty"`
 	LookupRef       string              `db:"lookup_ref" v:"func:notEmpty"`
@@ -31,40 +32,50 @@ type Entry struct {
 	UpdatedAt       sqltypes.NullTime   `db:"updated_at"`
 }
 
+// EntryAgentInjector defines the dependencies required by our EntryAgent
 type EntryAgentInjector interface {
 	MySQL() coresql.Agent
 }
 
+// EntryAgent defines the behaviours for handling Entries
 type EntryAgent struct{ EntryAgentInjector }
 
+// CreateEntry handles the creation of a new Entry in the database
 func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string) (Entry, error) {
 	if s == nil {
 		return Entry{}, InternalError{errors.New("invalid season")}
 	}
 
+	// check realm PIN is ok
 	if err := validateRealmPIN(ctx, realmPIN); err != nil {
 		return Entry{}, UnauthorizedError{errors.New("invalid PIN")}
 	}
 
+	// check season status is ok
 	if s.GetStatus(time.Now()) != SeasonStatusAcceptingEntries {
 		return Entry{}, ConflictError{errors.New("season is not currently accepting entries")}
 	}
 
+	// generate a new entry ID
 	uuid, err := uuid.NewV4()
 	if err != nil {
 		return Entry{}, InternalError{err}
 	}
 
+	// override these values
 	e.ID = uuid
 	e.SeasonID = s.ID
 	e.Realm = ctx.GetRealm()
 	e.Status = EntryStatusPending
+	e.TeamIDSequence = []string{}
 
+	// generate a unique lookup ref
 	e.LookupRef, err = generateUniqueLookupRef(a.MySQL())
 	if err != nil {
 		return Entry{}, domainErrorFromDBError(err)
 	}
 
+	// sanitise entry
 	if err := sanitiseEntry(&e); err != nil {
 		return Entry{}, vPackageErrorToValidationError(err, e)
 	}
@@ -90,9 +101,11 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string
 	}
 
 	if len(existingNicknameEntries) > 0 || len(existingEmailEntries) > 0 {
+		// entry isn't unique!
 		return Entry{}, ConflictError{errors.New("entry already exists")}
 	}
 
+	// write to database
 	if err := dbInsertEntry(a.MySQL(), &e); err != nil {
 		return Entry{}, domainErrorFromDBError(err)
 	}
@@ -100,6 +113,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string
 	return e, nil
 }
 
+// sanitiseEntry runs an Entry through the validation package and applies some tidy-up/formatting
 func sanitiseEntry(e *Entry) error {
 	if err := v.Struct(e); err != nil {
 		return vPackageErrorToValidationError(err, *e)
