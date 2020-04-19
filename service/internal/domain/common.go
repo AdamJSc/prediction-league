@@ -156,7 +156,7 @@ func generateRandomAlphaNumericString(length int) string {
 }
 
 func ContextFromRequest(r *http.Request) Context {
-	ctx := Context{context.Background()}
+	ctx := NewContext()
 
 	// get realm from host (strip port)
 	realm := strings.Trim(strings.Split(r.Host, ":")[0], " ")
@@ -207,6 +207,10 @@ func validateRealmPIN(ctx Context, pin string) error {
 
 type Context struct {
 	context.Context
+}
+
+func NewContext() Context {
+	return Context{Context: context.Background()}
 }
 
 func (c *Context) setString(key string, value string) {

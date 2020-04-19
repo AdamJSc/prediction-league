@@ -57,25 +57,25 @@ func TestMain(m *testing.M) {
 
 func truncate(t *testing.T) {
 	t.Helper()
-	truncator.MustTruncateTables(t, "season")
+	truncator.MustTruncateTables(t, "season", "entry")
 }
 
-func expectedGot(t *testing.T, expected interface{}, got interface{}) {
+func expectedGot(t *testing.T, expectedValue interface{}, gotValue interface{}) {
 	t.Helper()
-	t.Fatalf("expected %+v, got %+v", expected, got)
+	t.Fatalf("expected %+v, got %+v", expectedValue, gotValue)
 }
 
-func expectedTypeOfGot(t *testing.T, expected interface{}, got interface{}) {
+func expectedTypeOfGot(t *testing.T, expectedValue interface{}, gotValue interface{}) {
 	t.Helper()
-	t.Fatalf("expected %+v, got %+v", reflect.TypeOf(expected), reflect.TypeOf(got))
+	t.Fatalf("expected type %+v, got type %+v", reflect.TypeOf(expectedValue), reflect.TypeOf(gotValue))
 }
 
-func expectedEmpty(t *testing.T, expectedType string, got interface{}) {
+func expectedEmpty(t *testing.T, expectedType string, gotValue interface{}) {
 	t.Helper()
-	t.Fatalf("expected empty %s, got %+v", expectedType, got)
+	t.Fatalf("expected empty %s, got %+v", expectedType, gotValue)
 }
 
-func expectedNonEmpty(t *testing.T, expectedType string) {
+func expectedNonEmpty(t *testing.T, fieldName string) {
 	t.Helper()
-	t.Fatalf("expected non-empty %s, got an empty one", expectedType)
+	t.Fatalf("expected non-empty field %s, got an empty value", fieldName)
 }

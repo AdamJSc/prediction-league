@@ -28,7 +28,7 @@ type Entry struct {
 	PaymentRef      sqltypes.NullString `db:"payment_ref"`
 	TeamIDSequence  []string            `db:"team_id_sequence"`
 	CreatedAt       time.Time           `db:"created_at"`
-	UpdateAt        sqltypes.NullTime   `db:"updated_at"`
+	UpdatedAt        sqltypes.NullTime   `db:"updated_at"`
 }
 
 type EntryAgentInjector interface {

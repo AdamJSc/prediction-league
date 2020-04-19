@@ -69,7 +69,7 @@ func dbSelectEntries(db coresql.Agent, criteria map[string]interface{}, matchAny
 			&entry.Status,
 			&entry.PaymentRef,
 			&entry.CreatedAt,
-			&entry.UpdateAt,
+			&entry.UpdatedAt,
 		); err != nil {
 			return []Entry{}, err
 		}
