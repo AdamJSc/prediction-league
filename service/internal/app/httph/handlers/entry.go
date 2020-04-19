@@ -25,6 +25,12 @@ func (r createEntryRequest) ToEntryModel() domain.Entry {
 	}
 }
 
+type createEntryResponse struct {
+	EntrantName  string `json:"entrant_name"`
+	EntrantEmail string `json:"entrant_email"`
+	LookupURL    string `json:"lookup_url"`
+}
+
 func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	agent := domain.EntryAgent{EntryAgentInjector: c}
 
@@ -68,9 +74,15 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 			return
 		}
 
+		lookupURL := fmt.Sprintf("http://%s/%s", r.Host, entry.LookupRef)
+
 		rest.CreatedResponse(&rest.Data{
-			Type:    "entry",
-			Content: entry,
+			Type: "entrant",
+			Content: createEntryResponse{
+				EntrantName:  entry.EntrantName,
+				EntrantEmail: entry.EntrantEmail,
+				LookupURL:    lookupURL,
+			},
 		}, nil).WriteTo(w)
 	}
 }

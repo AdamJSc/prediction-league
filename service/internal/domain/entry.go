@@ -17,18 +17,18 @@ const (
 )
 
 type Entry struct {
-	ID              uuid.UUID           `json:"id" db:"id" v:"func:notEmpty"`
-	LookupRef       string              `json:"lookup_ref" db:"lookup_ref" v:"func:notEmpty"`
-	SeasonID        string              `json:"season_id" db:"season_id" v:"func:notEmpty"`
-	Realm           string              `json:"realm" db:"realm" v:"func:notEmpty"`
-	EntrantName     string              `json:"entrant_name" db:"entrant_name" v:"func:notEmpty"`
-	EntrantNickname string              `json:"entrant_nickname" db:"entrant_nickname" v:"func:notEmpty"`
-	EntrantEmail    string              `json:"entrant_email" db:"entrant_email" v:"func:email"`
-	Status          string              `json:"status" db:"status" v:"func:isEntryStatus"`
-	PaymentRef      sqltypes.NullString `json:"-" db:"payment_ref"`
-	TeamIDSequence  []string            `json:"team_id_sequence" db:"team_id_sequence"`
-	CreatedAt       time.Time           `json:"created_at" db:"created_at"`
-	UpdateAt        sqltypes.NullTime   `json:"updated_at" db:"updated_at"`
+	ID              uuid.UUID           `db:"id" v:"func:notEmpty"`
+	LookupRef       string              `db:"lookup_ref" v:"func:notEmpty"`
+	SeasonID        string              `db:"season_id" v:"func:notEmpty"`
+	Realm           string              `db:"realm" v:"func:notEmpty"`
+	EntrantName     string              `db:"entrant_name" v:"func:notEmpty"`
+	EntrantNickname string              `db:"entrant_nickname" v:"func:notEmpty"`
+	EntrantEmail    string              `db:"entrant_email" v:"func:email"`
+	Status          string              `db:"status" v:"func:isEntryStatus"`
+	PaymentRef      sqltypes.NullString `db:"payment_ref"`
+	TeamIDSequence  []string            `db:"team_id_sequence"`
+	CreatedAt       time.Time           `db:"created_at"`
+	UpdateAt        sqltypes.NullTime   `db:"updated_at"`
 }
 
 type EntryAgentInjector interface {
@@ -115,7 +115,7 @@ func sanitiseEntry(e *Entry) error {
 }
 
 func generateUniqueLookupRef(db coresql.Agent) (string, error) {
-	lookupRef := generateRandomAlphaNumericString(6)
+	lookupRef := generateRandomAlphaNumericString(4)
 
 	existingLookupRefEntries, err := dbSelectEntries(db, map[string]interface{}{
 		"lookup_ref": lookupRef,
