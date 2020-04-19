@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/LUSHDigital/core/rest"
 	"io/ioutil"
 	"net/http"
@@ -56,7 +57,13 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 			seasonID = ctx.GetRealmSeasonID()
 		}
 
-		if err := agent.CreateEntry(ctx, &entry, seasonID, input.PIN); err != nil {
+		season, err := domain.Seasons().GetByID(seasonID)
+		if err != nil {
+			rest.NotFoundError(fmt.Errorf("invalid season: %s", seasonID)).WriteTo(w)
+			return
+		}
+
+		if err := agent.CreateEntry(ctx, &entry, &season, input.PIN); err != nil {
 			responseFromError(err).WriteTo(w)
 			return
 		}

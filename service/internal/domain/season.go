@@ -11,6 +11,13 @@ import (
 	"time"
 )
 
+const (
+	seasonStatusForthcoming      = "forthcoming"
+	seasonStatusAcceptingEntries = "accepting_entries"
+	seasonStatusActive           = "active"
+	seasonStatusElapsed          = "elapsed"
+)
+
 type SeasonCollection map[string]Season
 
 func (c SeasonCollection) GetByID(seasonID string) (Season, error) {
@@ -60,6 +67,18 @@ type Season struct {
 	EndDate      time.Time         `json:"end_date" db:"end_date" v:"func:notempty"`
 	CreatedAt    time.Time         `json:"created_at" db:"created_at"`
 	UpdatedAt    sqltypes.NullTime `json:"updated_at" db:"updated_at"`
+}
+
+func (s Season) GetStatus(ts time.Time) string {
+	switch {
+	case ts.Before(s.EntriesFrom):
+		return seasonStatusForthcoming
+	case ts.Before(s.StartDate):
+		return seasonStatusAcceptingEntries
+	case ts.Before(s.EndDate):
+		return seasonStatusActive
+	}
+	return seasonStatusElapsed
 }
 
 // TODO - remove season agent

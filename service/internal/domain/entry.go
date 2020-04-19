@@ -2,7 +2,6 @@ package domain
 
 import (
 	"errors"
-	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
@@ -12,9 +11,9 @@ import (
 )
 
 const (
-	entryStatusPending = "pending"
-	entryStatusPaid    = "paid"
-	entryStatusReady   = "ready"
+	entryStatusPending  = "pending"
+	entryStatusPaid     = "paid"
+	entryStatusComplete = "complete"
 )
 
 type Entry struct {
@@ -37,8 +36,8 @@ type EntryAgentInjector interface {
 
 type EntryAgent struct{ EntryAgentInjector }
 
-func (a EntryAgent) CreateEntry(ctx Context, e *Entry, seasonID string, realmPIN string) error {
-	if e == nil {
+func (a EntryAgent) CreateEntry(ctx Context, e *Entry, s *Season, realmPIN string) error {
+	if e == nil || s == nil {
 		return errors.New("invalid entry")
 	}
 
@@ -49,9 +48,8 @@ func (a EntryAgent) CreateEntry(ctx Context, e *Entry, seasonID string, realmPIN
 		}
 	}
 
-	season, err := Seasons().GetByID(seasonID)
-	if err != nil {
-		return NotFoundError{fmt.Errorf("invalid season: %s", seasonID)}
+	if s.GetStatus(time.Now()) != seasonStatusAcceptingEntries {
+		return ConflictError{errors.New("season is not currently accepting entries")}
 	}
 
 	uuid, err := uuid.NewV4()
@@ -60,7 +58,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e *Entry, seasonID string, realmPIN
 	}
 
 	e.ID = uuid
-	e.SeasonID = season.ID
+	e.SeasonID = s.ID
 	e.Realm = ctx.GetRealm()
 	e.Status = entryStatusPending
 
