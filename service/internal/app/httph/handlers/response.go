@@ -6,6 +6,7 @@ import (
 	"prediction-league/service/internal/domain"
 )
 
+// responseFromError returns a rest package-level error from a domain-level error
 func responseFromError(err error) *rest.Response {
 	switch err.(type) {
 	case domain.NotFoundError:

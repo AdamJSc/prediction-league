@@ -20,12 +20,14 @@ var (
 	truncator sqltest.Truncator
 )
 
+// injector can be passed to Agents as our AgentInjectors for testing
 type injector struct {
 	db coresql.Agent
 }
 
 func (i injector) MySQL() coresql.Agent { return i.db }
 
+// TestMain provides a testing bootstrap
 func TestMain(m *testing.M) {
 	// setup env
 	env.LoadTest(m, "infra/test.env")
@@ -55,27 +57,32 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+// truncate clears our test tables of all previous data between tests
 func truncate(t *testing.T) {
 	t.Helper()
-	truncator.MustTruncateTables(t, "season")
+	truncator.MustTruncateTables(t, "entry")
 }
 
-func expectedGot(t *testing.T, expected interface{}, got interface{}) {
+// expectedGot is a test failure helper method for two concrete values
+func expectedGot(t *testing.T, expectedValue interface{}, gotValue interface{}) {
 	t.Helper()
-	t.Fatalf("expected %+v, got %+v", expected, got)
+	t.Fatalf("expected %+v, got %+v", expectedValue, gotValue)
 }
 
-func expectedTypeOfGot(t *testing.T, expected interface{}, got interface{}) {
+// expectedTypeOfGot is a test failure helper method for two value types
+func expectedTypeOfGot(t *testing.T, expectedValue interface{}, gotValue interface{}) {
 	t.Helper()
-	t.Fatalf("expected %+v, got %+v", reflect.TypeOf(expected), reflect.TypeOf(got))
+	t.Fatalf("expected type %+v, got type %+v", reflect.TypeOf(expectedValue), reflect.TypeOf(gotValue))
 }
 
-func expectedEmpty(t *testing.T, expectedType string, got interface{}) {
+// expectedEmpty is a test failure helper method for an expected empty value
+func expectedEmpty(t *testing.T, ref string, gotValue interface{}) {
 	t.Helper()
-	t.Fatalf("expected empty %s, got %+v", expectedType, got)
+	t.Fatalf("expected empty %s, got %+v", ref, gotValue)
 }
 
-func expectedNonEmpty(t *testing.T, expectedType string) {
+// expectedNonEmpty is a test failure helper method for an expected non-empty value
+func expectedNonEmpty(t *testing.T, ref string) {
 	t.Helper()
-	t.Fatalf("expected non-empty %s, got an empty one", expectedType)
+	t.Fatalf("expected non-empty %s, got an empty value", ref)
 }
