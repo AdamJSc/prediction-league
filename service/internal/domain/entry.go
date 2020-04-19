@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
@@ -36,26 +37,35 @@ type EntryAgentInjector interface {
 
 type EntryAgent struct{ EntryAgentInjector }
 
-func (a EntryAgent) CreateEntryForSeason(ctx Context, e Entry, s Season, realmPIN int) (Entry, error) {
+func (a EntryAgent) CreateEntry(ctx Context, e *Entry, seasonID string, realmPIN string) error {
+	if e == nil {
+		return errors.New("invalid entry")
+	}
+
 	if err := validateRealmPIN(ctx, realmPIN); err != nil {
-		return Entry{}, ValidationError{
+		return ValidationError{
 			Reasons: []string{"Invalid PIN"},
 			Fields:  []string{"pin"},
 		}
 	}
 
+	season, err := Seasons().GetByID(seasonID)
+	if err != nil {
+		return NotFoundError{fmt.Errorf("invalid season: %s", seasonID)}
+	}
+
 	uuid, err := uuid.NewV4()
 	if err != nil {
-		return Entry{}, err
+		return err
 	}
 
 	e.ID = uuid
-	e.SeasonID = s.ID
-	e.Realm = ctx.getRealm()
+	e.SeasonID = season.ID
+	e.Realm = ctx.GetRealm()
 	e.Status = entryStatusPending
 
-	if err := sanitiseEntry(&e); err != nil {
-		return Entry{}, err
+	if err := sanitiseEntry(e); err != nil {
+		return err
 	}
 
 	// check for existing nickname
@@ -65,7 +75,7 @@ func (a EntryAgent) CreateEntryForSeason(ctx Context, e Entry, s Season, realmPI
 		"entrant_nickname": e.EntrantNickname,
 	}, false)
 	if err != nil {
-		return Entry{}, err
+		return err
 	}
 
 	// check for existing email
@@ -75,17 +85,17 @@ func (a EntryAgent) CreateEntryForSeason(ctx Context, e Entry, s Season, realmPI
 		"entrant_email": e.EntrantEmail,
 	}, false)
 	if err != nil {
-		return Entry{}, err
+		return err
 	}
 
 	if len(existingNicknameEntries) > 0 || len(existingEmailEntries) > 0 {
-		return Entry{}, ConflictError{errors.New("entry already exists")}
+		return ConflictError{errors.New("entry already exists")}
 	}
 
-	if err := dbInsertEntry(a.MySQL(), &e); err != nil {
-		return Entry{}, err
+	if err := dbInsertEntry(a.MySQL(), e); err != nil {
+		return err
 	}
-	return e, nil
+	return nil
 }
 
 func sanitiseEntry(e *Entry) error {

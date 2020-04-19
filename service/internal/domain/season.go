@@ -13,6 +13,16 @@ import (
 
 type SeasonCollection map[string]Season
 
+func (c SeasonCollection) GetByID(seasonID string) (Season, error) {
+	for id, season := range c {
+		if id == seasonID {
+			return season, nil
+		}
+	}
+
+	return Season{}, errors.New("not found")
+}
+
 func (c SeasonCollection) GetByTimestamp(ts time.Time) (Season, error) {
 	for _, season := range c {
 		if season.EntriesFrom.Before(ts) && season.EndDate.After(ts) {

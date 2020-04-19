@@ -7,14 +7,13 @@ import (
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/domain"
-	"time"
 )
 
 type createEntryRequest struct {
 	EntrantName     string `json:"entrant_name"`
 	EntrantNickname string `json:"entrant_nickname"`
 	EntrantEmail    string `json:"entrant_email"`
-	PIN             int    `json:"pin"`
+	PIN             string `json:"pin"`
 }
 
 func (r createEntryRequest) ToEntryModel() domain.Entry {
@@ -45,25 +44,26 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 
 		entry := input.ToEntryModel()
 
-		// retrieve current season
-		season, err := domain.Seasons().GetByTimestamp(time.Now())
-		if err != nil {
-			responseFromError(domain.ValidationError{
-				Reasons: []string{"No current season"},
-				Fields:  []string{"season_id"},
-			}).WriteTo(w)
+		var seasonID string
+		if err := getRouteParam(r, "season_id", &seasonID); err != nil {
+			responseFromError(err).WriteTo(w)
 			return
 		}
 
-		createdEntry, err := agent.CreateEntryForSeason(domain.ContextFromRequest(r), entry, season, input.PIN)
-		if err != nil {
+		ctx := domain.ContextFromRequest(r)
+
+		if seasonID == "latest" {
+			seasonID = ctx.GetRealmSeasonID()
+		}
+
+		if err := agent.CreateEntry(ctx, &entry, seasonID, input.PIN); err != nil {
 			responseFromError(err).WriteTo(w)
 			return
 		}
 
 		rest.CreatedResponse(&rest.Data{
 			Type:    "entry",
-			Content: createdEntry,
+			Content: entry,
 		}, nil).WriteTo(w)
 	}
 }

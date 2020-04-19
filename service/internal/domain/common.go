@@ -10,13 +10,13 @@ import (
 	"net/http"
 	"os"
 	"reflect"
-	"strconv"
 	"strings"
 )
 
 const (
-	ctxKeyRealm    = "REALM"
-	ctxKeyRealmPIN = "REALM_PIN"
+	ctxKeyRealm         = "REALM"
+	ctxKeyRealmPIN      = "REALM_PIN"
+	ctxKeyRealmSeasonID = "REALM_SEASON_ID"
 
 	envKeyAdminBasicAuth = "ADMIN_BASIC_AUTH"
 )
@@ -146,13 +146,18 @@ func ContextFromRequest(r *http.Request) Context {
 
 	// get realm from host (strip port)
 	realm := strings.Trim(strings.Split(r.Host, ":")[0], " ")
-	ctx.setRealm(realm)
+	realmFormattedForEnvKey := strings.ToUpper(strings.Replace(realm, ".", "_", -1))
+	ctx.SetRealm(realm)
 
 	// get realm PIN from env
-	realmFormattedForEnvKey := strings.ToUpper(strings.Replace(realm, ".", "_", -1))
-	envKeyForRealmPIN := strings.ToUpper(fmt.Sprintf("%s_%s", ctxKeyRealmPIN, realmFormattedForEnvKey))
-	realmPIN, _ := strconv.Atoi(os.Getenv(envKeyForRealmPIN))
-	ctx.setRealmPIN(realmPIN)
+	envKeyForRealmPIN := strings.ToUpper(fmt.Sprintf("%s_%s", realmFormattedForEnvKey, ctxKeyRealmPIN))
+	realmPIN := os.Getenv(envKeyForRealmPIN)
+	ctx.SetRealmPIN(realmPIN)
+
+	// get realm Season ID from env
+	envKeyForRealmSeasonID := strings.ToUpper(fmt.Sprintf("%s_%s", realmFormattedForEnvKey, ctxKeyRealmSeasonID))
+	realmSeasonID := os.Getenv(envKeyForRealmSeasonID)
+	ctx.SetRealmSeasonID(realmSeasonID)
 
 	// set basic auth username/password requirements
 	var userPass []byte
@@ -177,9 +182,9 @@ func validateBasicAuth(ctx context.Context) error {
 	return nil
 }
 
-func validateRealmPIN(ctx Context, pin int) error {
-	realmPIN := ctx.getRealmPIN()
-	if realmPIN == 0 || realmPIN != pin {
+func validateRealmPIN(ctx Context, pin string) error {
+	realmPIN := ctx.GetRealmPIN()
+	if realmPIN == "" || realmPIN != pin {
 		return UnauthorizedError{errors.New("unauthorized")}
 	}
 
@@ -190,13 +195,13 @@ type Context struct {
 	context.Context
 }
 
-func (c *Context) setRealm(realm string) {
-	c.Context = context.WithValue(c.Context, ctxKeyRealm, realm)
+func (c *Context) setString(key string, value string) {
+	c.Context = context.WithValue(c.Context, key, value)
 }
 
-func (c *Context) getRealm() string {
+func (c *Context) getString(key string) string {
 	var value string
-	ctxValue := c.Context.Value(ctxKeyRealm)
+	ctxValue := c.Context.Value(key)
 
 	if ctxValue != nil {
 		value = ctxValue.(string)
@@ -205,17 +210,26 @@ func (c *Context) getRealm() string {
 	return value
 }
 
-func (c *Context) setRealmPIN(pin int) {
-	c.Context = context.WithValue(c.Context, ctxKeyRealmPIN, pin)
+func (c *Context) SetRealm(realm string) {
+	c.setString(ctxKeyRealm, realm)
 }
 
-func (c *Context) getRealmPIN() int {
-	var value int
-	ctxValue := c.Context.Value(ctxKeyRealmPIN)
+func (c *Context) GetRealm() string {
+	return c.getString(ctxKeyRealm)
+}
 
-	if ctxValue != nil {
-		value = ctxValue.(int)
-	}
+func (c *Context) SetRealmPIN(pin string) {
+	c.setString(ctxKeyRealmPIN, pin)
+}
 
-	return value
+func (c *Context) GetRealmPIN() string {
+	return c.getString(ctxKeyRealmPIN)
+}
+
+func (c *Context) SetRealmSeasonID(seasonID string) {
+	c.setString(ctxKeyRealmSeasonID, seasonID)
+}
+
+func (c *Context) GetRealmSeasonID() string {
+	return c.getString(ctxKeyRealmSeasonID)
 }
