@@ -69,18 +69,19 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 			return
 		}
 
-		if err := agent.CreateEntry(ctx, &entry, &season, input.PIN); err != nil {
+		createdEntry, err := agent.CreateEntry(ctx, entry, &season, input.PIN)
+		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return
 		}
 
-		lookupURL := fmt.Sprintf("http://%s/%s", r.Host, entry.LookupRef)
+		lookupURL := fmt.Sprintf("http://%s/%s", r.Host, createdEntry.LookupRef)
 
 		rest.CreatedResponse(&rest.Data{
 			Type: "entrant",
 			Content: createEntryResponse{
-				EntrantName:  entry.EntrantName,
-				EntrantEmail: entry.EntrantEmail,
+				EntrantName:  createdEntry.EntrantName,
+				EntrantEmail: createdEntry.EntrantEmail,
 				LookupURL:    lookupURL,
 			},
 		}, nil).WriteTo(w)

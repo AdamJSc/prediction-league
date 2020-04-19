@@ -28,7 +28,7 @@ type Entry struct {
 	PaymentRef      sqltypes.NullString `db:"payment_ref"`
 	TeamIDSequence  []string            `db:"team_id_sequence"`
 	CreatedAt       time.Time           `db:"created_at"`
-	UpdatedAt        sqltypes.NullTime   `db:"updated_at"`
+	UpdatedAt       sqltypes.NullTime   `db:"updated_at"`
 }
 
 type EntryAgentInjector interface {
@@ -37,25 +37,22 @@ type EntryAgentInjector interface {
 
 type EntryAgent struct{ EntryAgentInjector }
 
-func (a EntryAgent) CreateEntry(ctx Context, e *Entry, s *Season, realmPIN string) error {
-	if e == nil || s == nil {
-		return errors.New("invalid entry")
+func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string) (Entry, error) {
+	if s == nil {
+		return Entry{}, InternalError{errors.New("invalid season")}
 	}
 
 	if err := validateRealmPIN(ctx, realmPIN); err != nil {
-		return ValidationError{
-			Reasons: []string{"Invalid PIN"},
-			Fields:  []string{"pin"},
-		}
+		return Entry{}, UnauthorizedError{errors.New("invalid PIN")}
 	}
 
 	if s.GetStatus(time.Now()) != seasonStatusAcceptingEntries {
-		return ConflictError{errors.New("season is not currently accepting entries")}
+		return Entry{}, ConflictError{errors.New("season is not currently accepting entries")}
 	}
 
 	uuid, err := uuid.NewV4()
 	if err != nil {
-		return err
+		return Entry{}, InternalError{err}
 	}
 
 	e.ID = uuid
@@ -65,11 +62,11 @@ func (a EntryAgent) CreateEntry(ctx Context, e *Entry, s *Season, realmPIN strin
 
 	e.LookupRef, err = generateUniqueLookupRef(a.MySQL())
 	if err != nil {
-		return err
+		return Entry{}, domainErrorFromDBError(err)
 	}
 
-	if err := sanitiseEntry(e); err != nil {
-		return err
+	if err := sanitiseEntry(&e); err != nil {
+		return Entry{}, vPackageErrorToValidationError(err, e)
 	}
 
 	// check for existing nickname
@@ -79,7 +76,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e *Entry, s *Season, realmPIN strin
 		"entrant_nickname": e.EntrantNickname,
 	}, false)
 	if err != nil {
-		return err
+		return Entry{}, domainErrorFromDBError(err)
 	}
 
 	// check for existing email
@@ -89,17 +86,18 @@ func (a EntryAgent) CreateEntry(ctx Context, e *Entry, s *Season, realmPIN strin
 		"entrant_email": e.EntrantEmail,
 	}, false)
 	if err != nil {
-		return err
+		return Entry{}, domainErrorFromDBError(err)
 	}
 
 	if len(existingNicknameEntries) > 0 || len(existingEmailEntries) > 0 {
-		return ConflictError{errors.New("entry already exists")}
+		return Entry{}, ConflictError{errors.New("entry already exists")}
 	}
 
-	if err := dbInsertEntry(a.MySQL(), e); err != nil {
-		return err
+	if err := dbInsertEntry(a.MySQL(), &e); err != nil {
+		return Entry{}, domainErrorFromDBError(err)
 	}
-	return nil
+
+	return e, nil
 }
 
 func sanitiseEntry(e *Entry) error {
@@ -108,7 +106,7 @@ func sanitiseEntry(e *Entry) error {
 	}
 
 	e.EntrantName = strings.Trim(e.EntrantName, " ")
-	e.EntrantNickname = strings.Trim(e.EntrantNickname, " ")
+	e.EntrantNickname = strings.Replace(e.EntrantNickname, " ", "", -1)
 	e.EntrantEmail = strings.Trim(e.EntrantEmail, " ")
 
 	return nil
@@ -121,7 +119,7 @@ func generateUniqueLookupRef(db coresql.Agent) (string, error) {
 		"lookup_ref": lookupRef,
 	}, false)
 	if err != nil {
-		return "", err
+		return "", wrapDBError(err)
 	}
 
 	if len(existingLookupRefEntries) > 0 {
