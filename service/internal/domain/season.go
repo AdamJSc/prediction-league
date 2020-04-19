@@ -59,12 +59,12 @@ func Seasons() SeasonCollection {
 
 type Season struct {
 	// TODO - remove unneeded fields
-	ID           string            `json:"id" db:"id" v:"func:notempty"`
-	Name         string            `json:"name" db:"name" v:"func:notempty"`
-	EntriesFrom  time.Time         `json:"entries_from" db:"entries_from" v:"func:notempty"`
+	ID           string            `json:"id" db:"id" v:"func:notEmpty"`
+	Name         string            `json:"name" db:"name" v:"func:notEmpty"`
+	EntriesFrom  time.Time         `json:"entries_from" db:"entries_from" v:"func:notEmpty"`
 	EntriesUntil sqltypes.NullTime `json:"entries_until" db:"entries_until"`
-	StartDate    time.Time         `json:"start_date" db:"start_date" v:"func:notempty"`
-	EndDate      time.Time         `json:"end_date" db:"end_date" v:"func:notempty"`
+	StartDate    time.Time         `json:"start_date" db:"start_date" v:"func:notEmpty"`
+	EndDate      time.Time         `json:"end_date" db:"end_date" v:"func:notEmpty"`
 	CreatedAt    time.Time         `json:"created_at" db:"created_at"`
 	UpdatedAt    sqltypes.NullTime `json:"updated_at" db:"updated_at"`
 }
