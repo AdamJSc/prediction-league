@@ -80,7 +80,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string
 		return Entry{}, vPackageErrorToValidationError(err, e)
 	}
 
-	// check for existing nickname
+	// check for existing nickname so that we can return a nice error message if it already exists
 	existingNicknameEntries, err := dbSelectEntries(a.MySQL(), map[string]interface{}{
 		"season_id":        e.SeasonID,
 		"realm":            e.Realm,
@@ -90,7 +90,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string
 		return Entry{}, domainErrorFromDBError(err)
 	}
 
-	// check for existing email
+	// check for existing email so that we can return a nice error message if it already exists
 	existingEmailEntries, err := dbSelectEntries(a.MySQL(), map[string]interface{}{
 		"season_id":     e.SeasonID,
 		"realm":         e.Realm,
@@ -107,6 +107,30 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string
 
 	// write to database
 	if err := dbInsertEntry(a.MySQL(), &e); err != nil {
+		return Entry{}, domainErrorFromDBError(err)
+	}
+
+	return e, nil
+}
+
+// UpdateEntry handles the updating of an existing Entry in the database
+func (a EntryAgent) UpdateEntry(ctx Context, e Entry) (Entry, error) {
+	// ensure that Entry realm matches current realm
+	if ctx.GetRealm() != e.Realm {
+		return Entry{}, ConflictError{errors.New("invalid realm")}
+	}
+
+	// sanitise entry
+	if err := sanitiseEntry(&e); err != nil {
+		return Entry{}, vPackageErrorToValidationError(err, e)
+	}
+
+	// don't check if the email or nickname exists at this point, like we did for creating the Entry in the first place
+	// in real terms, the api shouldn't allow these fields to be exposed after initial creation
+	// there is a db constraint on these two fields anyway, so any values that have changed will be flagged when writing to the db
+
+	// write to database
+	if err := dbUpdateEntry(a.MySQL(), &e); err != nil {
 		return Entry{}, domainErrorFromDBError(err)
 	}
 
