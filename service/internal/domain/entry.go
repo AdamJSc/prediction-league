@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	EntryStatusPending  = "pending"
-	EntryStatusPaid     = "paid"
-	EntryStatusComplete = "complete"
+	EntryStatusPending = "pending"
+	EntryStatusPaid    = "paid"
+	EntryStatusReady   = "ready"
 )
 
 // Entry defines a user's entry into the prediction league
@@ -106,7 +106,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string
 	}
 
 	// write to database
-	if err := dbInsertEntry(a.MySQL(), &e); err != nil {
+	if err := DBInsertEntry(a.MySQL(), &e); err != nil {
 		return Entry{}, domainErrorFromDBError(err)
 	}
 
@@ -118,6 +118,11 @@ func (a EntryAgent) UpdateEntry(ctx Context, e Entry) (Entry, error) {
 	// ensure that Entry realm matches current realm
 	if ctx.GetRealm() != e.Realm {
 		return Entry{}, ConflictError{errors.New("invalid realm")}
+	}
+
+	// ensure the entry exists
+	if err := existsEntry(a.MySQL(), e.ID.String()); err != nil {
+		return Entry{}, err
 	}
 
 	// sanitise entry
@@ -150,6 +155,7 @@ func sanitiseEntry(e *Entry) error {
 	return nil
 }
 
+// generateUniqueLookupRef generates a string that does not already exist as a Lookup Ref
 func generateUniqueLookupRef(db coresql.Agent) (string, error) {
 	lookupRef := generateRandomAlphaNumericString(4)
 
@@ -165,4 +171,20 @@ func generateUniqueLookupRef(db coresql.Agent) (string, error) {
 	}
 
 	return lookupRef, nil
+}
+
+// existsEntry returns an error if the entry with the ID of entryID already exists
+func existsEntry(db coresql.Agent, entryID string) error {
+	existingIDEntries, err := dbSelectEntries(db, map[string]interface{}{
+		"id": entryID,
+	}, false)
+	if err != nil {
+		return domainErrorFromDBError(err)
+	}
+
+	if len(existingIDEntries) == 0 {
+		return NotFoundError{}
+	}
+
+	return nil
 }

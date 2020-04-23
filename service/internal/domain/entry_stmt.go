@@ -20,8 +20,8 @@ var dbEntryFields = []string{
 	"payment_ref",
 }
 
-// dbInsertEntry insert an Entry to the database
-func dbInsertEntry(db coresql.Agent, e *Entry) error {
+// DBInsertEntry insert an Entry to the database
+func DBInsertEntry(db coresql.Agent, e *Entry) error {
 	stmt := `INSERT INTO entry (id, ` + getDBFieldsStringFromFields(dbEntryFields) + `, created_at)
 					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
@@ -57,7 +57,7 @@ func dbInsertEntry(db coresql.Agent, e *Entry) error {
 // dbUpdateEntry update an existing Entry in the database
 func dbUpdateEntry(db coresql.Agent, e *Entry) error {
 	stmt := `UPDATE entry
-				SET ` + getDBFieldsWithEqualsPlaceholdersStringFromFields(dbEntryFields) + `, created_at = ?, updated_at = ?
+				SET ` + getDBFieldsWithEqualsPlaceholdersStringFromFields(dbEntryFields) + `, updated_at = ?
 				WHERE id = ?`
 
 	now := sqltypes.ToNullTime(time.Now().Truncate(time.Second))
@@ -78,7 +78,6 @@ func dbUpdateEntry(db coresql.Agent, e *Entry) error {
 		teamIDSequence,
 		e.Status,
 		e.PaymentRef,
-		e.CreatedAt,
 		now,
 		e.ID,
 	); err != nil {
@@ -94,7 +93,7 @@ func dbUpdateEntry(db coresql.Agent, e *Entry) error {
 func dbSelectEntries(db coresql.Agent, criteria map[string]interface{}, matchAny bool) ([]Entry, error) {
 	whereStmt, params := dbWhereStmt(criteria, matchAny)
 
-	stmt := `SELECT id, ` + getDBFieldsStringFromFields(dbEntryFields) + ` created_at, updated_at FROM entry ` + whereStmt
+	stmt := `SELECT id, ` + getDBFieldsStringFromFields(dbEntryFields) + `, created_at, updated_at FROM entry ` + whereStmt
 
 	rows, err := db.Query(stmt, params...)
 	if err != nil {
