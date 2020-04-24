@@ -46,6 +46,8 @@ type EntryAgent struct{ EntryAgentInjector }
 
 // CreateEntry handles the creation of a new Entry in the database
 func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string) (Entry, error) {
+	db := a.MySQL()
+
 	if s == nil {
 		return Entry{}, InternalError{errors.New("invalid season")}
 	}
@@ -76,7 +78,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string
 	e.TeamIDSequence = []string{}
 
 	// generate a unique lookup ref
-	e.LookupRef, err = generateUniqueLookupRef(a.MySQL())
+	e.LookupRef, err = generateUniqueLookupRef(db)
 	if err != nil {
 		return Entry{}, domainErrorFromDBError(err)
 	}
@@ -87,7 +89,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string
 	}
 
 	// check for existing nickname so that we can return a nice error message if it already exists
-	existingNicknameEntries, err := dbSelectEntries(a.MySQL(), map[string]interface{}{
+	existingNicknameEntries, err := dbSelectEntries(db, map[string]interface{}{
 		"season_id":        e.SeasonID,
 		"realm":            e.Realm,
 		"entrant_nickname": e.EntrantNickname,
@@ -103,7 +105,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string
 	}
 
 	// check for existing email so that we can return a nice error message if it already exists
-	existingEmailEntries, err := dbSelectEntries(a.MySQL(), map[string]interface{}{
+	existingEmailEntries, err := dbSelectEntries(db, map[string]interface{}{
 		"season_id":     e.SeasonID,
 		"realm":         e.Realm,
 		"entrant_email": e.EntrantEmail,
@@ -124,22 +126,27 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string
 	}
 
 	// write to database
-	if err := DBInsertEntry(a.MySQL(), &e); err != nil {
+	if err := DBInsertEntry(db, &e); err != nil {
 		return Entry{}, domainErrorFromDBError(err)
 	}
 
 	return e, nil
 }
 
+// TODO - create endpoint for updating payment ref only (check lookup ref in handler)
+// TODO - require entry to be approved (separate to status)
+
 // UpdateEntry handles the updating of an existing Entry in the database
 func (a EntryAgent) UpdateEntry(ctx Context, e Entry) (Entry, error) {
+	db := a.MySQL()
+
 	// ensure that Entry realm matches current realm
 	if ctx.GetRealm() != e.Realm {
 		return Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
 	// ensure the entry exists
-	if err := dbEntryExists(a.MySQL(), e.ID.String()); err != nil {
+	if err := dbEntryExists(db, e.ID.String()); err != nil {
 		return Entry{}, domainErrorFromDBError(err)
 	}
 
@@ -153,11 +160,51 @@ func (a EntryAgent) UpdateEntry(ctx Context, e Entry) (Entry, error) {
 	// there is a db constraint on these two fields anyway, so any values that have changed will be flagged when writing to the db
 
 	// write to database
-	if err := dbUpdateEntry(a.MySQL(), &e); err != nil {
+	if err := dbUpdateEntry(db, &e); err != nil {
 		return Entry{}, domainErrorFromDBError(err)
 	}
 
 	return e, nil
+}
+
+// UpdateEntryPaymentDetails provides a shortcut to updating the payment details for a provided entryID
+func (a EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMethod, paymentRef string) error {
+	db := a.MySQL()
+
+	// retrieve entry
+	entries, err := dbSelectEntries(db, map[string]interface{}{
+		"id": entryID,
+	}, false)
+	if err != nil {
+		return domainErrorFromDBError(err)
+	}
+
+	if len(entries) != 1 {
+		return InternalError{errors.New("entries count other than 1")}
+	}
+
+	entry := entries[0]
+
+	// ensure that Entry realm matches current realm
+	if ctx.GetRealm() != entry.Realm {
+		return ConflictError{errors.New("invalid realm")}
+	}
+
+	// check Entry status
+	if entry.Status != EntryStatusPending {
+		return ConflictError{errors.New("payment details can only be added if entry status is pending")}
+	}
+
+	entry.PaymentMethod = sqltypes.ToNullString(&paymentMethod)
+	entry.PaymentRef = sqltypes.ToNullString(&paymentRef)
+	entry.Status = EntryStatusPaid
+
+	// write to database
+	if err := dbUpdateEntry(db, &entry); err != nil {
+		return domainErrorFromDBError(err)
+	}
+
+	return nil
 }
 
 // sanitiseEntry runs an Entry through the validation package and applies some tidy-up/formatting
