@@ -133,7 +133,6 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season) (Entry, error) 
 	return e, nil
 }
 
-// TODO - create endpoint for updating payment ref only (check lookup ref in handler)
 // TODO - require entry to be approved (separate to status)
 
 // UpdateEntry handles the updating of an existing Entry in the database
