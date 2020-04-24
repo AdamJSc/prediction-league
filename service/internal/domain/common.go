@@ -19,6 +19,7 @@ const (
 	ctxKeyRealm         = "REALM"
 	ctxKeyRealmPIN      = "REALM_PIN"
 	ctxKeyRealmSeasonID = "REALM_SEASON_ID"
+	ctxKeyGuardValue    = "GUARD_VALUE"
 
 	envKeyAdminBasicAuth = "ADMIN_BASIC_AUTH"
 )
@@ -222,6 +223,18 @@ func (c *Context) GetRealmSeasonID() string {
 	return c.getString(ctxKeyRealmSeasonID)
 }
 
+// SetGuardValue sets an arbitrary guard value on the context that
+// can be used by an agent method to determine access to the request
+func (c *Context) SetGuardValue(guardValue string) {
+	c.setString(ctxKeyGuardValue, guardValue)
+}
+
+// GetGuardValue retrieves an arbitrary guard value on the context that
+// can be used by an agent method to determine access to the request
+func (c *Context) GetGuardValue() string {
+	return c.getString(ctxKeyGuardValue)
+}
+
 // NewContext returns a new Context
 func NewContext() Context {
 	return Context{Context: context.Background()}
@@ -266,4 +279,20 @@ func validateRealmPIN(ctx Context, pin string) error {
 	}
 
 	return nil
+}
+
+// getDBFieldsStringFromFields returns a statement-ready string of fields names
+func getDBFieldsStringFromFields(fields []string) string {
+	return strings.Join(fields, ", ")
+}
+
+// getDBFieldsWithEqualsPlaceholdersStringFromFields returns a statement-ready string of fields names with "equals value" placeholders
+func getDBFieldsWithEqualsPlaceholdersStringFromFields(fields []string) string {
+	var fieldsWithEqualsPlaceholders []string
+
+	for _, field := range fields {
+		fieldsWithEqualsPlaceholders = append(fieldsWithEqualsPlaceholders, fmt.Sprintf("%s = ?", field))
+	}
+
+	return strings.Join(fieldsWithEqualsPlaceholders, ", ")
 }
