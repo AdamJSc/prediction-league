@@ -2,6 +2,7 @@ package domain
 
 import (
 	"encoding/json"
+	"errors"
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"time"
@@ -130,5 +131,27 @@ func dbSelectEntries(db coresql.Agent, criteria map[string]interface{}, matchAny
 		entries = append(entries, entry)
 	}
 
+	if len(entries) == 0 {
+		return []Entry{}, dbMissingRecordError{errors.New("no entries found")}
+	}
+
 	return entries, nil
+}
+
+// dbEntryExists determines whether an Entry exists by way of an error
+func dbEntryExists(db coresql.Agent, id string) error {
+	stmt := `SELECT COUNT(*) FROM entry WHERE id = ?`
+
+	row := db.QueryRow(stmt, id)
+
+	var count int
+	if err := row.Scan(&count); err != nil {
+		return wrapDBError(err)
+	}
+
+	if count == 0 {
+		return dbMissingRecordError{errors.New("entry not found")}
+	}
+
+	return nil
 }

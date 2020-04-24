@@ -87,7 +87,13 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string
 		"entrant_nickname": e.EntrantNickname,
 	}, false)
 	if err != nil {
-		return Entry{}, domainErrorFromDBError(err)
+		switch err.(type) {
+		case dbMissingRecordError:
+			// this is fine
+			break
+		default:
+			return Entry{}, domainErrorFromDBError(err)
+		}
 	}
 
 	// check for existing email so that we can return a nice error message if it already exists
@@ -97,7 +103,13 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string
 		"entrant_email": e.EntrantEmail,
 	}, false)
 	if err != nil {
-		return Entry{}, domainErrorFromDBError(err)
+		switch err.(type) {
+		case dbMissingRecordError:
+			// this is fine
+			break
+		default:
+			return Entry{}, domainErrorFromDBError(err)
+		}
 	}
 
 	if len(existingNicknameEntries) > 0 || len(existingEmailEntries) > 0 {
@@ -121,8 +133,8 @@ func (a EntryAgent) UpdateEntry(ctx Context, e Entry) (Entry, error) {
 	}
 
 	// ensure the entry exists
-	if err := existsEntry(a.MySQL(), e.ID.String()); err != nil {
-		return Entry{}, err
+	if err := dbEntryExists(a.MySQL(), e.ID.String()); err != nil {
+		return Entry{}, domainErrorFromDBError(err)
 	}
 
 	// sanitise entry
@@ -159,32 +171,16 @@ func sanitiseEntry(e *Entry) error {
 func generateUniqueLookupRef(db coresql.Agent) (string, error) {
 	lookupRef := generateRandomAlphaNumericString(4)
 
-	existingLookupRefEntries, err := dbSelectEntries(db, map[string]interface{}{
+	_, err := dbSelectEntries(db, map[string]interface{}{
 		"lookup_ref": lookupRef,
 	}, false)
-	if err != nil {
-		return "", wrapDBError(err)
-	}
-
-	if len(existingLookupRefEntries) > 0 {
+	switch err.(type) {
+	case nil:
+		// the lookup ref already exists, so we need to generate a new one
 		return generateUniqueLookupRef(db)
+	case dbMissingRecordError:
+		// the lookup ref we have generated is unique, we can return it
+		return lookupRef, nil
 	}
-
-	return lookupRef, nil
-}
-
-// existsEntry returns an error if the entry with the ID of entryID already exists
-func existsEntry(db coresql.Agent, entryID string) error {
-	existingIDEntries, err := dbSelectEntries(db, map[string]interface{}{
-		"id": entryID,
-	}, false)
-	if err != nil {
-		return domainErrorFromDBError(err)
-	}
-
-	if len(existingIDEntries) == 0 {
-		return NotFoundError{}
-	}
-
-	return nil
+	return "", wrapDBError(err)
 }
