@@ -179,6 +179,14 @@ func (a EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMetho
 		}
 	}
 
+	// ensure that payment ref is not empty
+	if paymentRef == "" {
+		return Entry{}, ValidationError{
+			Reasons: []string{"Invalid payment ref"},
+			Fields:  []string{"payment_ref"},
+		}
+	}
+
 	// retrieve entry
 	entries, err := dbSelectEntries(db, map[string]interface{}{
 		"id": entryID,
