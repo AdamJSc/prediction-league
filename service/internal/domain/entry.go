@@ -214,7 +214,7 @@ func sanitiseEntry(e *Entry) error {
 	}
 
 	e.EntrantName = strings.Trim(e.EntrantName, " ")
-	e.EntrantNickname = strings.Replace(e.EntrantNickname, " ", "", -1)
+	e.EntrantNickname = strings.Trim(e.EntrantNickname, " ")
 	e.EntrantEmail = strings.Trim(e.EntrantEmail, " ")
 
 	return nil

@@ -43,6 +43,9 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		if !cmp.Equal(entry.EntrantName, createdEntry.EntrantName)().Success() {
 			expectedGot(t, entry.EntrantName, createdEntry.EntrantName)
 		}
+		if !cmp.Equal(entry.EntrantNickname, createdEntry.EntrantNickname)().Success() {
+			expectedGot(t, entry.EntrantName, createdEntry.EntrantName)
+		}
 		if !cmp.Equal(entry.EntrantEmail, createdEntry.EntrantEmail)().Success() {
 			expectedGot(t, entry.EntrantEmail, createdEntry.EntrantEmail)
 		}
@@ -56,7 +59,6 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		// check sanitised values
 		expectedSeasonID := season.ID
 		expectedRealm := ctx.GetRealm()
-		expectedNickname := "MrHarryR"
 		expectedStatus := domain.EntryStatusPending
 
 		if cmp.Equal("", createdEntry.ID)().Success() {
@@ -70,9 +72,6 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		}
 		if !cmp.Equal(expectedRealm, createdEntry.Realm)().Success() {
 			expectedGot(t, expectedRealm, createdEntry.Realm)
-		}
-		if !cmp.Equal(expectedNickname, createdEntry.EntrantNickname)().Success() {
-			expectedGot(t, expectedNickname, createdEntry.EntrantNickname)
 		}
 		if !cmp.Equal(expectedStatus, createdEntry.Status)().Success() {
 			expectedGot(t, expectedStatus, createdEntry.Status)
