@@ -28,8 +28,8 @@ type Entry struct {
 	EntrantName     string              `db:"entrant_name" v:"func:notEmpty"`
 	EntrantNickname string              `db:"entrant_nickname" v:"func:notEmpty"`
 	EntrantEmail    string              `db:"entrant_email" v:"func:email"`
-	Status          string              `db:"status" v:"func:isEntryStatus"`
-	PaymentMethod   sqltypes.NullString `db:"payment_method" v:"func:isEntryPaymentMethod"`
+	Status          string              `db:"status" v:"func:isValidEntryStatus"`
+	PaymentMethod   sqltypes.NullString `db:"payment_method" v:"func:isValidEntryPaymentMethod"`
 	PaymentRef      sqltypes.NullString `db:"payment_ref"`
 	TeamIDSequence  []string            `db:"team_id_sequence"`
 	CreatedAt       time.Time           `db:"created_at"`
@@ -171,6 +171,14 @@ func (a EntryAgent) UpdateEntry(ctx Context, e Entry) (Entry, error) {
 func (a EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMethod, paymentRef string) (Entry, error) {
 	db := a.MySQL()
 
+	// ensure that payment method is valid
+	if !isValidEntryPaymentMethod(paymentMethod) {
+		return Entry{}, ValidationError{
+			Reasons: []string{"Invalid payment method"},
+			Fields:  []string{"payment_method"},
+		}
+	}
+
 	// retrieve entry
 	entries, err := dbSelectEntries(db, map[string]interface{}{
 		"id": entryID,
@@ -244,4 +252,22 @@ func generateUniqueLookupRef(db coresql.Agent) (string, error) {
 		return lookupRef, nil
 	}
 	return "", wrapDBError(err)
+}
+
+func isValidEntryStatus(status string) bool {
+	switch status {
+	case EntryStatusPending, EntryStatusPaid, EntryStatusReady:
+		return true
+	}
+
+	return false
+}
+
+func isValidEntryPaymentMethod(paymentMethod string) bool {
+	switch paymentMethod {
+	case EntryPaymentMethodPayPal, EntryPaymentMethodOther:
+		return true
+	}
+
+	return false
 }

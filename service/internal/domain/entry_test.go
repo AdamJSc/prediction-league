@@ -422,6 +422,18 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 		}
 	})
 
+	t.Run("update invalid payment method for an existent entry must fail", func(t *testing.T) {
+		_, err := agent.UpdateEntryPaymentDetails(
+			ctx,
+			entry.ID.String(),
+			"not_a_valid_payment_method",
+			paymentRef,
+		)
+		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+	})
+
 	t.Run("update payment details for a non-existent entry must fail", func(t *testing.T) {
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,

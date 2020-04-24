@@ -31,19 +31,23 @@ func RegisterCustomValidators() {
 		return errors.New("must not be empty")
 	})
 
-	v.Set("isEntryStatus", func(args string, value, structure interface{}) error {
-		switch value {
-		case EntryStatusPending, EntryStatusPaid, EntryStatusReady:
+	v.Set("isValidEntryStatus", func(args string, value, structure interface{}) error {
+		valueAsString, ok := value.(string)
+		if !ok {
+			return errors.New("cannot convert to string")
+		}
+
+		if isValidEntryStatus(valueAsString) {
 			return nil
 		}
 
 		return errors.New("invalid entry status")
 	})
 
-	v.Set("isEntryPaymentMethod", func(args string, value, structure interface{}) error {
+	v.Set("isValidEntryPaymentMethod", func(args string, value, structure interface{}) error {
 		valueAsNullString, ok := value.(sqltypes.NullString)
 		if !ok {
-			return errors.New("couldn't convert to null string")
+			return errors.New("cannot convert to null string")
 		}
 
 		if valueAsNullString.String == "" {
@@ -51,8 +55,7 @@ func RegisterCustomValidators() {
 			return nil
 		}
 
-		switch valueAsNullString.String {
-		case EntryPaymentMethodPayPal, EntryPaymentMethodOther:
+		if isValidEntryPaymentMethod(valueAsNullString.String) {
 			return nil
 		}
 
