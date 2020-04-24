@@ -14,6 +14,9 @@ const (
 	EntryStatusPending = "pending"
 	EntryStatusPaid    = "paid"
 	EntryStatusReady   = "ready"
+
+	EntryPaymentMethodPayPal = "paypal"
+	EntryPaymentMethodOther  = "other"
 )
 
 // Entry defines a user's entry into the prediction league
@@ -26,6 +29,7 @@ type Entry struct {
 	EntrantNickname string              `db:"entrant_nickname" v:"func:notEmpty"`
 	EntrantEmail    string              `db:"entrant_email" v:"func:email"`
 	Status          string              `db:"status" v:"func:isEntryStatus"`
+	PaymentMethod   sqltypes.NullString `db:"payment_method" v:"func:isEntryPaymentMethod"`
 	PaymentRef      sqltypes.NullString `db:"payment_ref"`
 	TeamIDSequence  []string            `db:"team_id_sequence"`
 	CreatedAt       time.Time           `db:"created_at"`
@@ -67,6 +71,8 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string
 	e.SeasonID = s.ID
 	e.Realm = ctx.GetRealm()
 	e.Status = EntryStatusPending
+	e.PaymentMethod = sqltypes.NullString{}
+	e.PaymentRef = sqltypes.NullString{}
 	e.TeamIDSequence = []string{}
 
 	// generate a unique lookup ref

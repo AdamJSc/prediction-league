@@ -18,13 +18,14 @@ var dbEntryFields = []string{
 	"entrant_email",
 	"team_id_sequence",
 	"status",
+	"payment_method",
 	"payment_ref",
 }
 
 // DBInsertEntry insert an Entry to the database
 func DBInsertEntry(db coresql.Agent, e *Entry) error {
 	stmt := `INSERT INTO entry (id, ` + getDBFieldsStringFromFields(dbEntryFields) + `, created_at)
-					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now().Truncate(time.Second)
 
@@ -44,6 +45,7 @@ func DBInsertEntry(db coresql.Agent, e *Entry) error {
 		e.EntrantEmail,
 		teamIDSequence,
 		e.Status,
+		e.PaymentMethod,
 		e.PaymentRef,
 		now,
 	); err != nil {
@@ -78,6 +80,7 @@ func dbUpdateEntry(db coresql.Agent, e *Entry) error {
 		e.EntrantEmail,
 		teamIDSequence,
 		e.Status,
+		e.PaymentMethod,
 		e.PaymentRef,
 		now,
 		e.ID,
@@ -117,6 +120,7 @@ func dbSelectEntries(db coresql.Agent, criteria map[string]interface{}, matchAny
 			&entry.EntrantEmail,
 			&teamIDSequence,
 			&entry.Status,
+			&entry.PaymentMethod,
 			&entry.PaymentRef,
 			&entry.CreatedAt,
 			&entry.UpdatedAt,

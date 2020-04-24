@@ -167,19 +167,19 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	})
 
 	t.Run("create an entry with existing entrant data must fail", func(t *testing.T) {
-		// don't change nickname so this already exists
 		invalidEntry := entry
 		invalidEntry.EntrantName = "Not Harry Redknapp"
+		// nickname doesn't change so it already exists
 		invalidEntry.EntrantEmail = "not.harry.redknapp@football.net"
 		_, err := agent.CreateEntry(ctx, invalidEntry, &season, "5678")
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
 
-		// don't change email so this already exists
 		invalidEntry = entry
 		invalidEntry.EntrantName = "Not Harry Redknapp"
 		invalidEntry.EntrantNickname = "Not Harry R"
+		// email doesn't change so it already exists
 		_, err = agent.CreateEntry(ctx, invalidEntry, &season, "5678")
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
@@ -200,6 +200,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	entryPaymentMethod := "initial_payment_method"
 	entryPaymentRef := "initial_payment_ref"
 
 	entry := domain.Entry{
@@ -211,6 +212,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		EntrantNickname: "MrHarryR",
 		EntrantEmail:    "harry.redknapp@football.net",
 		Status:          domain.EntryStatusPending,
+		PaymentMethod:   sqltypes.ToNullString(&entryPaymentMethod),
 		PaymentRef:      sqltypes.ToNullString(&entryPaymentRef),
 		TeamIDSequence:  []string{"initial_team_id_1", "initial_team_id_2", "initial_team_id_3"},
 	}
@@ -340,6 +342,36 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		// invalid entrant email
 		invalidEntry = entry
 		invalidEntry.EntrantEmail = "not_a_valid_email@"
+		_, err = agent.UpdateEntry(ctx, invalidEntry)
+		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+	})
+
+	t.Run("update an existing entry with invalid fields must fail", func(t *testing.T) {
+		var invalidEntry domain.Entry
+		var err error
+
+		// invalid email
+		invalidEntry = entry
+		invalidEntry.EntrantEmail = "not_a_valid_email"
+		_, err = agent.UpdateEntry(ctx, invalidEntry)
+		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+
+		// invalid status
+		invalidEntry = entry
+		invalidEntry.Status = "not_a_valid_status"
+		_, err = agent.UpdateEntry(ctx, invalidEntry)
+		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+
+		// invalid payment method
+		invalidEntry = entry
+		invalidPaymentMethod := "not_a_valid_payment_method"
+		invalidEntry.PaymentMethod = sqltypes.ToNullString(&invalidPaymentMethod)
 		_, err = agent.UpdateEntry(ctx, invalidEntry)
 		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
 			expectedTypeOfGot(t, domain.ValidationError{}, err)

@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
 	"github.com/ladydascalie/v"
 	"reflect"
@@ -37,6 +38,25 @@ func RegisterCustomValidators() {
 		}
 
 		return errors.New("invalid entry status")
+	})
+
+	v.Set("isEntryPaymentMethod", func(args string, value, structure interface{}) error {
+		valueAsNullString, ok := value.(sqltypes.NullString)
+		if !ok {
+			return errors.New("couldn't convert to null string")
+		}
+
+		if valueAsNullString.String == "" {
+			// can be empty
+			return nil
+		}
+
+		switch valueAsNullString.String {
+		case EntryPaymentMethodPayPal, EntryPaymentMethodOther:
+			return nil
+		}
+
+		return errors.New("invalid entry payment method")
 	})
 
 	v.Set("email", func(args string, value, structure interface{}) error {
