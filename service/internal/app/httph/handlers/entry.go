@@ -66,6 +66,8 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 		}
 
 		ctx := domain.ContextFromRequest(r)
+		ctx.SetGuardValue(input.PIN)
+
 		if seasonID == "latest" {
 			// use the current realm's season ID instead
 			seasonID = ctx.GetRealmSeasonID()
@@ -79,7 +81,7 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 		}
 
 		// create entry
-		createdEntry, err := agent.CreateEntry(ctx, entry, &season, input.PIN)
+		createdEntry, err := agent.CreateEntry(ctx, entry, &season)
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return

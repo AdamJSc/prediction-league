@@ -45,7 +45,7 @@ type EntryAgentInjector interface {
 type EntryAgent struct{ EntryAgentInjector }
 
 // CreateEntry handles the creation of a new Entry in the database
-func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string) (Entry, error) {
+func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season) (Entry, error) {
 	db := a.MySQL()
 
 	if s == nil {
@@ -53,7 +53,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season, realmPIN string
 	}
 
 	// check realm PIN is ok
-	if err := validateRealmPIN(ctx, realmPIN); err != nil {
+	if err := validateRealmPIN(ctx, ctx.GetGuardValue()); err != nil {
 		return Entry{}, UnauthorizedError{errors.New("invalid PIN")}
 	}
 

@@ -18,6 +18,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	ctx := domain.NewContext()
 	ctx.SetRealm("TEST_REALM")
 	ctx.SetRealmPIN("5678")
+	ctx.SetGuardValue("5678")
 
 	season := domain.Season{
 		ID:          "199293_1",
@@ -33,7 +34,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 
 	t.Run("create a valid entry with a valid PIN must succeed", func(t *testing.T) {
 		// should succeed
-		createdEntry, err := agent.CreateEntry(ctx, entry, &season, "5678")
+		createdEntry, err := agent.CreateEntry(ctx, entry, &season)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -87,21 +88,23 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		}
 
 		// inserting same entry a second time should fail
-		_, err = agent.CreateEntry(ctx, entry, &season, "5678")
+		_, err = agent.CreateEntry(ctx, entry, &season)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
 	})
 
 	t.Run("create an entry with a nil season pointer must fail", func(t *testing.T) {
-		_, err := agent.CreateEntry(ctx, entry, nil, "5678")
+		_, err := agent.CreateEntry(ctx, entry, nil)
 		if !cmp.ErrorType(err, domain.InternalError{})().Success() {
 			expectedTypeOfGot(t, domain.InternalError{}, err)
 		}
 	})
 
 	t.Run("create an entry with an invalid PIN must fail", func(t *testing.T) {
-		_, err := agent.CreateEntry(ctx, entry, &season, "not_the_correct_realm_pin")
+		ctxWithInvalidGuardValue := ctx
+		ctxWithInvalidGuardValue.SetGuardValue("not_the_correct_realm_pin")
+		_, err := agent.CreateEntry(ctxWithInvalidGuardValue, entry, &season)
 		if !cmp.ErrorType(err, domain.UnauthorizedError{})().Success() {
 			expectedTypeOfGot(t, domain.UnauthorizedError{}, err)
 		}
@@ -114,7 +117,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		seasonNotAcceptingEntries.EntriesFrom = time.Now().Add(24 * time.Hour)
 		seasonNotAcceptingEntries.StartDate = time.Now().Add(48 * time.Hour)
 
-		_, err := agent.CreateEntry(ctx, entry, &seasonNotAcceptingEntries, "5678")
+		_, err := agent.CreateEntry(ctx, entry, &seasonNotAcceptingEntries)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
@@ -123,7 +126,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		seasonNotAcceptingEntries.EntriesFrom = time.Now().Add(-48 * time.Hour)
 		seasonNotAcceptingEntries.StartDate = time.Now().Add(-24 * time.Hour)
 
-		_, err = agent.CreateEntry(ctx, entry, &seasonNotAcceptingEntries, "5678")
+		_, err = agent.CreateEntry(ctx, entry, &seasonNotAcceptingEntries)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
@@ -136,7 +139,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		// missing entrant name
 		invalidEntry = entry
 		invalidEntry.EntrantName = ""
-		_, err = agent.CreateEntry(ctx, invalidEntry, &season, "5678")
+		_, err = agent.CreateEntry(ctx, invalidEntry, &season)
 		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
 			expectedTypeOfGot(t, domain.ValidationError{}, err)
 		}
@@ -144,7 +147,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		// missing entrant nickname
 		invalidEntry = entry
 		invalidEntry.EntrantNickname = ""
-		_, err = agent.CreateEntry(ctx, invalidEntry, &season, "5678")
+		_, err = agent.CreateEntry(ctx, invalidEntry, &season)
 		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
 			expectedTypeOfGot(t, domain.ValidationError{}, err)
 		}
@@ -152,7 +155,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		// missing entrant email
 		invalidEntry = entry
 		invalidEntry.EntrantEmail = ""
-		_, err = agent.CreateEntry(ctx, invalidEntry, &season, "5678")
+		_, err = agent.CreateEntry(ctx, invalidEntry, &season)
 		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
 			expectedTypeOfGot(t, domain.ValidationError{}, err)
 		}
@@ -160,7 +163,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		// invalid entrant email
 		invalidEntry = entry
 		invalidEntry.EntrantEmail = "not_a_valid_email@"
-		_, err = agent.CreateEntry(ctx, invalidEntry, &season, "5678")
+		_, err = agent.CreateEntry(ctx, invalidEntry, &season)
 		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
 			expectedTypeOfGot(t, domain.ValidationError{}, err)
 		}
@@ -171,7 +174,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		invalidEntry.EntrantName = "Not Harry Redknapp"
 		// nickname doesn't change so it already exists
 		invalidEntry.EntrantEmail = "not.harry.redknapp@football.net"
-		_, err := agent.CreateEntry(ctx, invalidEntry, &season, "5678")
+		_, err := agent.CreateEntry(ctx, invalidEntry, &season)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
@@ -180,7 +183,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		invalidEntry.EntrantName = "Not Harry Redknapp"
 		invalidEntry.EntrantNickname = "Not Harry R"
 		// email doesn't change so it already exists
-		_, err = agent.CreateEntry(ctx, invalidEntry, &season, "5678")
+		_, err = agent.CreateEntry(ctx, invalidEntry, &season)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
@@ -194,30 +197,18 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 
 	ctx := domain.NewContext()
 	ctx.SetRealm("TEST_REALM")
+	ctx.SetRealmPIN("5678")
+	ctx.SetGuardValue("5678")
 
-	entryUUID, err := uuid.NewV4()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	entryPaymentMethod := "initial_payment_method"
-	entryPaymentRef := "initial_payment_ref"
-
-	entry := domain.Entry{
-		ID:              entryUUID,
-		LookupRef:       "initial_lookup_ref",
-		SeasonID:        "12345",
-		Realm:           "TEST_REALM",
+	entry, err := agent.CreateEntry(ctx, domain.Entry{
 		EntrantName:     "Harry Redknapp",
 		EntrantNickname: "MrHarryR",
 		EntrantEmail:    "harry.redknapp@football.net",
-		Status:          domain.EntryStatusPending,
-		PaymentMethod:   sqltypes.ToNullString(&entryPaymentMethod),
-		PaymentRef:      sqltypes.ToNullString(&entryPaymentRef),
-		TeamIDSequence:  []string{"initial_team_id_1", "initial_team_id_2", "initial_team_id_3"},
-	}
-
-	err = domain.DBInsertEntry(db, &entry)
+	}, &domain.Season{
+		ID:          "12345",
+		EntriesFrom: time.Now().Add(-24 * time.Hour),
+		StartDate:   time.Now().Add(24 * time.Hour),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
