@@ -168,7 +168,7 @@ func (a EntryAgent) UpdateEntry(ctx Context, e Entry) (Entry, error) {
 }
 
 // UpdateEntryPaymentDetails provides a shortcut to updating the payment details for a provided entryID
-func (a EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMethod, paymentRef string) error {
+func (a EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMethod, paymentRef string) (Entry, error) {
 	db := a.MySQL()
 
 	// retrieve entry
@@ -176,23 +176,31 @@ func (a EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMetho
 		"id": entryID,
 	}, false)
 	if err != nil {
-		return domainErrorFromDBError(err)
+		return Entry{}, domainErrorFromDBError(err)
 	}
 
 	if len(entries) != 1 {
-		return InternalError{errors.New("entries count other than 1")}
+		return Entry{}, InternalError{errors.New("entries count other than 1")}
 	}
 
 	entry := entries[0]
 
 	// ensure that Entry realm matches current realm
 	if ctx.GetRealm() != entry.Realm {
-		return ConflictError{errors.New("invalid realm")}
+		return Entry{}, ConflictError{errors.New("invalid realm")}
+	}
+
+	// ensure that Guard value matches Entry LookupRef
+	if ctx.GetGuardValue() != entry.LookupRef {
+		return Entry{}, ValidationError{
+			Reasons: []string{"Invalid Lookup Ref"},
+			Fields:  []string{"lookup_ref"},
+		}
 	}
 
 	// check Entry status
 	if entry.Status != EntryStatusPending {
-		return ConflictError{errors.New("payment details can only be added if entry status is pending")}
+		return Entry{}, ConflictError{errors.New("payment details can only be added if entry status is pending")}
 	}
 
 	entry.PaymentMethod = sqltypes.ToNullString(&paymentMethod)
@@ -201,10 +209,10 @@ func (a EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMetho
 
 	// write to database
 	if err := dbUpdateEntry(db, &entry); err != nil {
-		return domainErrorFromDBError(err)
+		return Entry{}, domainErrorFromDBError(err)
 	}
 
-	return nil
+	return entry, nil
 }
 
 // sanitiseEntry runs an Entry through the validation package and applies some tidy-up/formatting

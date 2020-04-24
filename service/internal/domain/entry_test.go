@@ -32,7 +32,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		EntrantEmail:    "harry.redknapp@football.net",
 	}
 
-	t.Run("create a valid entry with a valid PIN must succeed", func(t *testing.T) {
+	t.Run("create a valid entry with a valid guard value must succeed", func(t *testing.T) {
 		// should succeed
 		createdEntry, err := agent.CreateEntry(ctx, entry, &season)
 		if err != nil {
@@ -100,7 +100,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		}
 	})
 
-	t.Run("create an entry with an invalid PIN must fail", func(t *testing.T) {
+	t.Run("create an entry with an invalid guard value must fail", func(t *testing.T) {
 		ctxWithInvalidGuardValue := ctx
 		ctxWithInvalidGuardValue.SetGuardValue("not_the_correct_realm_pin")
 		_, err := agent.CreateEntry(ctxWithInvalidGuardValue, entry, &season)
@@ -199,9 +199,10 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 	ctx.SetRealmPIN("5678")
 	ctx.SetGuardValue("5678")
 
+	// seed initial entry
 	entry, err := agent.CreateEntry(ctx, domain.Entry{
 		EntrantName:     "Harry Redknapp",
-		EntrantNickname: "MrHarryR",
+		EntrantNickname: "Mr Harry R",
 		EntrantEmail:    "harry.redknapp@football.net",
 	}, &domain.Season{
 		ID:          "12345",
@@ -222,7 +223,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 			SeasonID:        "67890",
 			Realm:           entry.Realm,
 			EntrantName:     "Jamie Redknapp",
-			EntrantNickname: "MrJamieR",
+			EntrantNickname: "Mr Jamie R",
 			EntrantEmail:    "jamie.redknapp@football.net",
 			Status:          domain.EntryStatusReady,
 			PaymentRef:      sqltypes.ToNullString(&changedEntryPaymentRef),
@@ -365,6 +366,130 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		_, err = agent.UpdateEntry(ctx, invalidEntry)
 		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
 			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+	})
+}
+
+func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
+	defer truncate(t)
+
+	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
+
+	ctxWithPIN := domain.NewContext()
+	ctxWithPIN.SetRealm("TEST_REALM")
+	ctxWithPIN.SetRealmPIN("5678")
+	ctxWithPIN.SetGuardValue("5678")
+
+	// seed initial entry
+	entry := domain.Entry{
+		EntrantName:     "Harry Redknapp",
+		EntrantNickname: "Mr Harry R",
+		EntrantEmail:    "harry.redknapp@football.net",
+	}
+	season := domain.Season{
+		ID:          "12345",
+		EntriesFrom: time.Now().Add(-24 * time.Hour),
+		StartDate:   time.Now().Add(24 * time.Hour),
+	}
+	entry, err := agent.CreateEntry(ctxWithPIN, entry, &season)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// override guard value so that context can be re-used for UpdateEntryPaymentDetails
+	ctx := ctxWithPIN
+	ctx.SetGuardValue(entry.LookupRef)
+
+	paymentRef := "ABCD1234"
+
+	t.Run("update payment details for an existent entry with valid credentials must succeed", func(t *testing.T) {
+		entryWithPaymentDetails, err := agent.UpdateEntryPaymentDetails(
+			ctx,
+			entry.ID.String(),
+			domain.EntryPaymentMethodPayPal,
+			paymentRef,
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !cmp.Equal(domain.EntryPaymentMethodPayPal, entryWithPaymentDetails.PaymentMethod.String)().Success() {
+			expectedGot(t, domain.EntryPaymentMethodPayPal, entryWithPaymentDetails.PaymentMethod.String)
+		}
+
+		if !cmp.Equal(paymentRef, entryWithPaymentDetails.PaymentRef.String)().Success() {
+			expectedGot(t, paymentRef, entryWithPaymentDetails.PaymentRef.String)
+		}
+	})
+
+	t.Run("update payment details for a non-existent entry must fail", func(t *testing.T) {
+		_, err := agent.UpdateEntryPaymentDetails(
+			ctx,
+			"not_an_existing_entry_id",
+			domain.EntryPaymentMethodPayPal,
+			paymentRef,
+		)
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		}
+	})
+
+	t.Run("update payment details for an existing entry with an invalid realm must fail", func(t *testing.T) {
+		ctxWithMismatchedtRealm := ctx
+		ctxWithMismatchedtRealm.SetRealm("DIFFERENT_REALM")
+		_, err := agent.UpdateEntryPaymentDetails(
+			ctxWithMismatchedtRealm,
+			entry.ID.String(),
+			domain.EntryPaymentMethodPayPal,
+			paymentRef,
+		)
+		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
+			expectedTypeOfGot(t, domain.ConflictError{}, err)
+		}
+	})
+
+	t.Run("update payment details for an existing entry with an invalid lookup ref must fail", func(t *testing.T) {
+		ctxWithMismatchedGuardValue := ctx
+		ctxWithMismatchedGuardValue.SetGuardValue("not_the_correct_entry_lookup_ref")
+		_, err := agent.UpdateEntryPaymentDetails(
+			ctxWithMismatchedGuardValue,
+			entry.ID.String(),
+			domain.EntryPaymentMethodPayPal,
+			paymentRef,
+		)
+		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+	})
+
+	t.Run("update payment details for an existing entry with an invalid status must fail", func(t *testing.T) {
+		// seed an additional entry
+		entryWithInvalidStatus := domain.Entry{
+			EntrantName:     "Jamie Redknapp",
+			EntrantNickname: "Mr Jamie R",
+			EntrantEmail:    "jamie.redknapp@football.net",
+		}
+		entryWithInvalidStatus, err := agent.CreateEntry(ctxWithPIN, entryWithInvalidStatus, &season)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// change its status so it can no longer accept payments and re-save
+		entryWithInvalidStatus.Status = domain.EntryStatusPaid
+		entryWithInvalidStatus, err = agent.UpdateEntry(ctxWithPIN, entryWithInvalidStatus)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// now running the operation we're testing should fail
+		_, err = agent.UpdateEntryPaymentDetails(
+			ctx,
+			entry.ID.String(),
+			domain.EntryPaymentMethodPayPal,
+			paymentRef,
+		)
+		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
+			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
 	})
 }
