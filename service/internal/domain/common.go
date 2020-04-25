@@ -38,9 +38,9 @@ type Config struct {
 	Realms         map[string]Realm
 }
 
-// MustLoadConfig instantiates a new default config
+// MustLoadConfigFromEnvPaths loads provided env paths and instantiates a new default config
 func MustLoadConfigFromEnvPaths(paths ...string) Config {
-	// attempt to load all supplied env paths
+	// attempt to load all provided env paths
 	for _, path := range paths {
 		env.Load(path)
 	}

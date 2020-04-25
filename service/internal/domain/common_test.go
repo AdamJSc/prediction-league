@@ -31,6 +31,8 @@ func (i injector) MySQL() coresql.Agent { return i.db }
 func TestMain(m *testing.M) {
 	// setup env
 	env.LoadTest(m, "infra/test.env")
+
+	// load config
 	config := struct {
 		MySQLURL      string `envconfig:"MYSQL_URL" required:"true"`
 		MigrationsURL string `envconfig:"MIGRATIONS_URL" required:"true"`
