@@ -110,16 +110,19 @@ func NewContext() Context {
 }
 
 // ContextFromRequest extracts data from a given request object and returns a domain object Context
-func ContextFromRequest(r *http.Request, config Config) Context {
+func ContextFromRequest(r *http.Request, config Config) (Context, error) {
 	ctx := NewContext()
 
 	// realm name is host (strip port)
 	realmName := strings.Trim(strings.Split(r.Host, ":")[0], " ")
 
 	// see if we can find this realm in our config
-	if realm, ok := config.Realms[realmName]; ok {
-		ctx.Realm = realm
+	realm, ok := config.Realms[realmName]
+	if !ok {
+		return Context{}, errors.New("realm not configured")
 	}
+
+	ctx.Realm = realm
 
 	// set basic auth username/password requirements
 	var userPass []byte
@@ -130,7 +133,7 @@ func ContextFromRequest(r *http.Request, config Config) Context {
 	}
 	ctx.Context = context.WithValue(ctx.Context, envKeyAdminBasicAuth, string(userPass))
 
-	return ctx
+	return ctx, nil
 }
 
 // validateRealmPIN checks that the supplied PIN matches the Realm PIN added to the Context

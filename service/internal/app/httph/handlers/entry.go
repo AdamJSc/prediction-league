@@ -62,12 +62,15 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 			return
 		}
 
-		ctx := domain.ContextFromRequest(r, c.Config())
-		ctx.SetGuardValue(input.PIN)
+		ctx, err := domain.ContextFromRequest(r, c.Config())
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
 
 		if seasonID == "latest" {
 			// use the current realm's season ID instead
-			seasonID = ctx.GetRealmSeasonID()
+			seasonID = ctx.Realm.SeasonID
 		}
 
 		// retrieve the season we need
@@ -76,6 +79,8 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 			rest.NotFoundError(fmt.Errorf("invalid season: %s", seasonID)).WriteTo(w)
 			return
 		}
+
+		ctx.Guard.SetAttempt(input.PIN)
 
 		// create entry
 		createdEntry, err := agent.CreateEntry(ctx, entry, &season)
@@ -102,7 +107,7 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 type updateEntryPaymentDetailsRequest struct {
 	PaymentMethod string `json:"payment_method"`
 	PaymentRef    string `json:"payment_ref"`
-	LookupRef     string `json:"lookup_ref"`
+	PassCode      string `json:"pass_code"`
 }
 
 func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
@@ -132,8 +137,13 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 			return
 		}
 
-		ctx := domain.ContextFromRequest(r, c.Config())
-		ctx.SetGuardValue(input.LookupRef)
+		ctx, err := domain.ContextFromRequest(r, c.Config())
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		ctx.Guard.SetAttempt(input.PassCode)
 
 		// update payment details for entry
 		if _, err := agent.UpdateEntryPaymentDetails(ctx, entryID, input.PaymentMethod, input.PaymentRef); err != nil {

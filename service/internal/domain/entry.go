@@ -53,7 +53,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season) (Entry, error) 
 	}
 
 	// check realm PIN is ok
-	if err := validateRealmPIN(ctx, ctx.GetGuardValue()); err != nil {
+	if !ctx.Guard.AttemptMatchesTarget(ctx.Realm.PIN) {
 		return Entry{}, UnauthorizedError{errors.New("invalid PIN")}
 	}
 
@@ -201,15 +201,15 @@ func (a EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMetho
 	entry := entries[0]
 
 	// ensure that Entry realm matches current realm
-	if ctx.GetRealm() != entry.Realm {
+	if ctx.Realm.Name != entry.Realm {
 		return Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
-	// ensure that Guard value matches Entry LookupRef
-	if ctx.GetGuardValue() != entry.LookupRef {
+	// ensure that Guard value matches Entry LookupRef (passcode)
+	if !ctx.Guard.AttemptMatchesTarget(entry.LookupRef) {
 		return Entry{}, ValidationError{
-			Reasons: []string{"Invalid Lookup Ref"},
-			Fields:  []string{"lookup_ref"},
+			Reasons: []string{"Invalid Pass Code"},
+			Fields:  []string{"pass_code"},
 		}
 	}
 
