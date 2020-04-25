@@ -62,7 +62,7 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 			return
 		}
 
-		ctx := domain.ContextFromRequest(r)
+		ctx := domain.ContextFromRequest(r, c.Config())
 		ctx.SetGuardValue(input.PIN)
 
 		if seasonID == "latest" {
@@ -132,7 +132,7 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 			return
 		}
 
-		ctx := domain.ContextFromRequest(r)
+		ctx := domain.ContextFromRequest(r, c.Config())
 		ctx.SetGuardValue(input.LookupRef)
 
 		// update payment details for entry

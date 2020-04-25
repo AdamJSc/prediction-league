@@ -34,6 +34,7 @@ func main() {
 
 	// setup server
 	httpAppContainer := httph.NewHTTPAppContainer(dependencies{
+		config: config,
 		mysql:  db,
 		router: mux.NewRouter(),
 	})
@@ -56,9 +57,11 @@ func main() {
 }
 
 type dependencies struct {
+	config domain.Config
 	mysql  coresql.Agent
 	router *mux.Router
 }
 
-func (d dependencies) MySQL() coresql.Agent { return d.mysql }
-func (d dependencies) Router() *mux.Router  { return d.router }
+func (d dependencies) Config() domain.Config { return d.config }
+func (d dependencies) MySQL() coresql.Agent  { return d.mysql }
+func (d dependencies) Router() *mux.Router   { return d.router }

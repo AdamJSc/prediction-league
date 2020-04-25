@@ -18,14 +18,15 @@ type Realm struct {
 	SeasonID string
 }
 
-func (r *Realm) formatName() {
-	formattedName := r.Name
+// formatRealmNameFromRaw converts a raw realm name (as the prefix to an env key) to a formatted realm name
+func formatRealmNameFromRaw(rawRealmName string) string {
+	formattedName := rawRealmName
 
 	formattedName = strings.Trim(formattedName, " ")
 	formattedName = strings.Replace(formattedName, "_", ".", -1)
 	formattedName = strings.ToLower(formattedName)
 
-	r.Name = formattedName
+	return formattedName
 }
 
 // Config represents a struct of required config options
@@ -63,23 +64,25 @@ func MustLoadConfigFromEnvPaths(paths ...string) Config {
 		key, val := split[0], split[1]
 
 		// parse required values from key and val and determine if they are realm-related
-		var realmNameRaw, realmPIN, realmSeasonID string
+		var rawRealmName, realmPIN, realmSeasonID string
 		switch {
 		case strings.HasSuffix(key, "_REALM_PIN"):
 			// represents a realm PIN
-			realmNameRaw = strings.Split(key, "_REALM_PIN")[0]
+			rawRealmName = strings.Split(key, "_REALM_PIN")[0]
 			realmPIN = val
 		case strings.HasSuffix(key, "_REALM_SEASON_ID"):
 			// represents a realm season ID
-			realmNameRaw = strings.Split(key, "_REALM_SEASON_ID")[0]
+			rawRealmName = strings.Split(key, "_REALM_SEASON_ID")[0]
 			realmSeasonID = val
 		}
 
 		// did our key represent a realm-related item of data?
-		if realmNameRaw != "" {
+		if rawRealmName != "" {
+			formattedRealmName := formatRealmNameFromRaw(rawRealmName)
+
 			// retrieve realm in case we've already added some values previously
-			realm := config.Realms[realmNameRaw]
-			realm.Name = realmNameRaw
+			realm := config.Realms[formattedRealmName]
+			realm.Name = formattedRealmName
 
 			switch {
 			case realmPIN != "":
@@ -91,8 +94,7 @@ func MustLoadConfigFromEnvPaths(paths ...string) Config {
 			}
 
 			// add the realm back to our config
-			realm.formatName()
-			config.Realms[realmNameRaw] = realm
+			config.Realms[formattedRealmName] = realm
 		}
 	}
 

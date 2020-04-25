@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"net/http"
-	"os"
 	"strings"
 )
 
@@ -44,6 +42,7 @@ func (g Guard) AttemptMatchesTarget(target string) bool {
 type Context struct {
 	context.Context
 	Guard Guard
+	Realm Realm
 }
 
 // setString sets a context value whose type is a string
@@ -111,23 +110,16 @@ func NewContext() Context {
 }
 
 // ContextFromRequest extracts data from a given request object and returns a domain object Context
-func ContextFromRequest(r *http.Request) Context {
+func ContextFromRequest(r *http.Request, config Config) Context {
 	ctx := NewContext()
 
-	// get realm from host (strip port)
-	realm := strings.Trim(strings.Split(r.Host, ":")[0], " ")
-	realmFormattedForEnvKey := strings.ToUpper(strings.Replace(realm, ".", "_", -1))
-	ctx.SetRealm(realm)
+	// realm name is host (strip port)
+	realmName := strings.Trim(strings.Split(r.Host, ":")[0], " ")
 
-	// get realm PIN from env
-	envKeyForRealmPIN := strings.ToUpper(fmt.Sprintf("%s_%s", realmFormattedForEnvKey, ctxKeyRealmPIN))
-	realmPIN := os.Getenv(envKeyForRealmPIN)
-	ctx.SetRealmPIN(realmPIN)
-
-	// get realm Season ID from env
-	envKeyForRealmSeasonID := strings.ToUpper(fmt.Sprintf("%s_%s", realmFormattedForEnvKey, ctxKeyRealmSeasonID))
-	realmSeasonID := os.Getenv(envKeyForRealmSeasonID)
-	ctx.SetRealmSeasonID(realmSeasonID)
+	// see if we can find this realm in our config
+	if realm, ok := config.Realms[realmName]; ok {
+		ctx.Realm = realm
+	}
 
 	// set basic auth username/password requirements
 	var userPass []byte
