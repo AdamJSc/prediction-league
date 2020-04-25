@@ -171,9 +171,31 @@ func generateRandomAlphaNumericString(length int) string {
 	return string(b)
 }
 
+// Guard represents an arbitrary guard that can be used by agent methods
+// to determine whether or not an operation should continue
+type Guard struct {
+	Attempt string
+}
+
+// SetAttempt sets the value that attempts to match the target
+// that will eventually be assessed by an agent method
+func (g Guard) SetAttempt(attempt string) {
+	g.Attempt = attempt
+}
+
+// AttemptMatchesTarget returns true if provided target matches
+// the attempt value already on the guard, otherwise false
+func (g Guard) AttemptMatchesTarget(target string) bool {
+	if g.Attempt == "" || target == "" {
+		return false
+	}
+	return g.Attempt == target
+}
+
 // Context wraps a standard context for the purpose of additional helper methods
 type Context struct {
 	context.Context
+	Guard Guard
 }
 
 // setString sets a context value whose type is a string
