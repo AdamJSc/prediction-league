@@ -2,10 +2,102 @@ package domain
 
 import (
 	"fmt"
+	"github.com/LUSHDigital/core-mage/env"
+	"github.com/kelseyhightower/envconfig"
+	"log"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
 )
+
+// Realm represents a realm in which the system has been configured to run
+type Realm struct {
+	Name     string
+	PIN      string
+	SeasonID string
+}
+
+func (r *Realm) formatName() {
+	formattedName := r.Name
+
+	formattedName = strings.Trim(formattedName, " ")
+	formattedName = strings.Replace(formattedName, "_", ".", -1)
+	formattedName = strings.ToLower(formattedName)
+
+	r.Name = formattedName
+}
+
+// Config represents a struct of required config options
+type Config struct {
+	ServicePort    string `envconfig:"SERVICE_PORT" required:"true"`
+	MySQLURL       string `envconfig:"MYSQL_URL" required:"true"`
+	MigrationsURL  string `envconfig:"MIGRATIONS_URL" required:"true"`
+	AdminBasicAuth string `envconfig:"ADMIN_BASIC_AUTH" required:"true"`
+	Realms         map[string]Realm
+}
+
+// MustLoadConfig instantiates a new default config
+func MustLoadConfigFromEnvPaths(paths ...string) Config {
+	// attempt to load all supplied env paths
+	for _, path := range paths {
+		env.Load(path)
+	}
+
+	// ensure that config parses correctly
+	var config Config
+	if err := envconfig.Process("", &config); err != nil {
+		log.Fatal(err)
+	}
+
+	config.Realms = make(map[string]Realm)
+
+	// next, let's populate all realms that are configured for the system
+	for _, keyvalstring := range os.Environ() {
+		if !strings.Contains(keyvalstring, "=") {
+			// something's wrong, just skip to the next one...
+			continue
+		}
+
+		split := strings.Split(keyvalstring, "=")
+		key, val := split[0], split[1]
+
+		// parse required values from key and val and determine if they are realm-related
+		var realmNameRaw, realmPIN, realmSeasonID string
+		switch {
+		case strings.HasSuffix(key, "_REALM_PIN"):
+			// represents a realm PIN
+			realmNameRaw = strings.Split(key, "_REALM_PIN")[0]
+			realmPIN = val
+		case strings.HasSuffix(key, "_REALM_SEASON_ID"):
+			// represents a realm season ID
+			realmNameRaw = strings.Split(key, "_REALM_SEASON_ID")[0]
+			realmSeasonID = val
+		}
+
+		// did our key represent a realm-related item of data?
+		if realmNameRaw != "" {
+			// retrieve realm in case we've already added some values previously
+			realm := config.Realms[realmNameRaw]
+			realm.Name = realmNameRaw
+
+			switch {
+			case realmPIN != "":
+				// we now have a PIN for this realm
+				realm.PIN = realmPIN
+			case realmSeasonID != "":
+				// we now have a season ID for this realm
+				realm.SeasonID = realmSeasonID
+			}
+
+			// add the realm back to our config
+			realm.formatName()
+			config.Realms[realmNameRaw] = realm
+		}
+	}
+
+	return config
+}
 
 // dbWhereStmt returns the WHERE clause portion of an SQL statement as a string, plus the parameters to
 // pass to the operation, from a given map of criteria to query on
