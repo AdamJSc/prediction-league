@@ -10,28 +10,6 @@ import (
 	"prediction-league/service/internal/domain"
 )
 
-type createEntryRequest struct {
-	EntrantName     string `json:"entrant_name"`
-	EntrantNickname string `json:"entrant_nickname"`
-	EntrantEmail    string `json:"entrant_email"`
-	PIN             string `json:"pin"`
-}
-
-func (r createEntryRequest) ToEntryModel() domain.Entry {
-	return domain.Entry{
-		EntrantName:     r.EntrantName,
-		EntrantNickname: r.EntrantNickname,
-		EntrantEmail:    r.EntrantEmail,
-	}
-}
-
-type createEntryResponse struct {
-	ID           string `json:"id"`
-	EntrantName  string `json:"entrant_name"`
-	EntrantEmail string `json:"entrant_email"`
-	LookupURL    string `json:"lookup_url"`
-}
-
 func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	agent := domain.EntryAgent{EntryAgentInjector: c}
 
@@ -98,16 +76,11 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 				ID:           createdEntry.ID.String(),
 				EntrantName:  createdEntry.EntrantName,
 				EntrantEmail: createdEntry.EntrantEmail,
+				LookupRef:    createdEntry.LookupRef,
 				LookupURL:    lookupURL,
 			},
 		}, nil).WriteTo(w)
 	}
-}
-
-type updateEntryPaymentDetailsRequest struct {
-	PaymentMethod string `json:"payment_method"`
-	PaymentRef    string `json:"payment_ref"`
-	PassCode      string `json:"pass_code"`
 }
 
 func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {

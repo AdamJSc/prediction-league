@@ -6,6 +6,14 @@ import (
 	"prediction-league/service/internal/domain"
 )
 
+type createEntryResponse struct {
+	ID           string `json:"id"`
+	EntrantName  string `json:"entrant_name"`
+	EntrantEmail string `json:"entrant_email"`
+	LookupRef    string `json:"lookup_ref"`
+	LookupURL    string `json:"lookup_url"`
+}
+
 // responseFromError returns a rest package-level error from a domain-level error
 func responseFromError(err error) *rest.Response {
 	switch err.(type) {
