@@ -141,8 +141,6 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season) (Entry, error) 
 	return e, nil
 }
 
-// TODO - require entry to be approved (separate to status)
-
 // UpdateEntry handles the updating of an existing Entry in the database
 func (a EntryAgent) UpdateEntry(ctx Context, e Entry) (Entry, error) {
 	db := a.MySQL()

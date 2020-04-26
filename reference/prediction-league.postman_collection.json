@@ -72,7 +72,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\"payment_method\":\"paypal\",\"payment_ref\":\"paypal_id_1234\",\"pass_code\":\"{{entry_short_code}}\"}"
+					"raw": "{\"payment_method\":\"paypal\",\"payment_ref\":\"paypal_id_1234\",\"short_code\":\"{{entry_short_code}}\"}"
 				},
 				"url": {
 					"raw": "{{base_url}}/api/entry/{{entry_id}}/payment",
@@ -84,6 +84,65 @@
 						"entry",
 						"{{entry_id}}",
 						"payment"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Approve Entry",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "024fd8e1-bf59-4fe5-9294-2955da05326f",
+						"exec": [
+							"pm.test(\"successful request\", function () {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{basic_auth_pass}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{basic_auth_user}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "",
+						"value": "",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{base_url}}/api/entry/{{entry_short_code}}/approve",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"entry",
+						"{{entry_short_code}}",
+						"approve"
 					]
 				}
 			},
