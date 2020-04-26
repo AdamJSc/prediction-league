@@ -32,6 +32,7 @@ type Entry struct {
 	PaymentMethod   sqltypes.NullString `db:"payment_method" v:"func:isValidEntryPaymentMethod"`
 	PaymentRef      sqltypes.NullString `db:"payment_ref"`
 	TeamIDSequence  []string            `db:"team_id_sequence"`
+	ApprovedAt      sqltypes.NullTime   `db:"approved_at"`
 	CreatedAt       time.Time           `db:"created_at"`
 	UpdatedAt       sqltypes.NullTime   `db:"updated_at"`
 }
@@ -76,6 +77,9 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season) (Entry, error) 
 	e.PaymentMethod = sqltypes.NullString{}
 	e.PaymentRef = sqltypes.NullString{}
 	e.TeamIDSequence = []string{}
+	e.ApprovedAt = sqltypes.NullTime{}
+	e.CreatedAt = time.Time{}
+	e.UpdatedAt = sqltypes.NullTime{}
 
 	// generate a unique lookup ref
 	e.ShortCode, err = generateUniqueShortCode(db)
@@ -126,7 +130,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season) (Entry, error) 
 	}
 
 	// write to database
-	if err := DBInsertEntry(db, &e); err != nil {
+	if err := dbInsertEntry(db, &e); err != nil {
 		return Entry{}, domainErrorFromDBError(err)
 	}
 
