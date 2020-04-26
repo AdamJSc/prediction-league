@@ -469,10 +469,10 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update payment details for an existing entry with an invalid realm must fail", func(t *testing.T) {
-		ctxWithMismatchedtRealm := ctx
-		ctxWithMismatchedtRealm.Realm.Name = "DIFFERENT_REALM"
+		ctxWithMismatchedRealm := ctx
+		ctxWithMismatchedRealm.Realm.Name = "DIFFERENT_REALM"
 		_, err := agent.UpdateEntryPaymentDetails(
-			ctxWithMismatchedtRealm,
+			ctxWithMismatchedRealm,
 			entry.ID.String(),
 			domain.EntryPaymentMethodPayPal,
 			paymentRef,
@@ -522,6 +522,132 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 			domain.EntryPaymentMethodPayPal,
 			paymentRef,
 		)
+		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
+			expectedTypeOfGot(t, domain.ConflictError{}, err)
+		}
+	})
+}
+
+func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
+	defer truncate(t)
+
+	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
+
+	ctxWithPIN := domain.NewContext()
+	ctxWithPIN.Realm.Name = "TEST_REALM"
+	ctxWithPIN.Realm.PIN = "5678"
+	ctxWithPIN.Guard.SetAttempt("5678")
+
+	// seed initial entries
+	season := domain.Season{
+		ID:          "12345",
+		EntriesFrom: time.Now().Add(-24 * time.Hour),
+		StartDate:   time.Now().Add(24 * time.Hour),
+	}
+
+	entry, err := agent.CreateEntry(ctxWithPIN, domain.Entry{
+		EntrantName:     "Harry Redknapp",
+		EntrantNickname: "Mr Harry R",
+		EntrantEmail:    "harry.redknapp@football.net",
+	}, &season)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	entryWithPaidStatus, err := agent.CreateEntry(ctxWithPIN, domain.Entry{
+		EntrantName:     "Jamie Redknapp",
+		EntrantNickname: "Mr Jamie R",
+		EntrantEmail:    "jamie.redknapp@football.net",
+	}, &season)
+	if err != nil {
+		t.Fatal(err)
+	}
+	entryWithPaidStatus.Status = domain.EntryStatusPaid
+	entryWithPaidStatus, err = agent.UpdateEntry(ctxWithPIN, entryWithPaidStatus)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	entryWithReadyStatus, err := agent.CreateEntry(ctxWithPIN, domain.Entry{
+		EntrantName:     "Frank Lampard",
+		EntrantNickname: "Mr Frank Lampard",
+		EntrantEmail:    "frank.lampard@football.net",
+	}, &season)
+	if err != nil {
+		t.Fatal(err)
+	}
+	entryWithReadyStatus.Status = domain.EntryStatusReady
+	entryWithReadyStatus, err = agent.UpdateEntry(ctxWithPIN, entryWithReadyStatus)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// set basic auth successful value to true so that it can be used by ApproveEntryByShortCode
+	ctx := ctxWithPIN
+	ctx.BasicAuthSuccessful = true
+
+	t.Run("approve existent entry short code with valid credentials must succeed", func(t *testing.T) {
+		// attempt to approve entry with paid status
+		approvedEntry, err := agent.ApproveEntryByShortCode(ctx, entryWithPaidStatus.ShortCode)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !approvedEntry.IsApproved() {
+			expectedGot(t, "approved entry true", "approved entry false")
+		}
+		if cmp.Equal(sqltypes.NullTime{}, approvedEntry.ApprovedAt)().Success() {
+			expectedNonEmpty(t, "Entry.ApprovedAt")
+		}
+
+		// attempt to approve entry with ready status
+		approvedEntry, err = agent.ApproveEntryByShortCode(ctx, entryWithReadyStatus.ShortCode)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !approvedEntry.IsApproved() {
+			expectedGot(t, "approved entry true", "approved entry false")
+		}
+		if cmp.Equal(sqltypes.NullTime{}, approvedEntry.ApprovedAt)().Success() {
+			expectedNonEmpty(t, "Entry.ApprovedAt")
+		}
+	})
+
+	t.Run("approve existent entry with invalid credentials must fail", func(t *testing.T) {
+		ctxWithInvalidCredentials := ctx
+		ctxWithInvalidCredentials.BasicAuthSuccessful = false
+		_, err := agent.ApproveEntryByShortCode(ctxWithInvalidCredentials, entry.ShortCode)
+		if !cmp.ErrorType(err, domain.UnauthorizedError{})().Success() {
+			expectedTypeOfGot(t, domain.UnauthorizedError{}, err)
+		}
+	})
+
+	t.Run("approve non-existent entry with valid credentials must fail", func(t *testing.T) {
+		_, err := agent.ApproveEntryByShortCode(ctx, "non_existent_short_code")
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		}
+	})
+
+	t.Run("approve existent entry with invalid realm must fail", func(t *testing.T) {
+		ctxWithInvalidRealm := ctx
+		ctxWithInvalidRealm.Realm.Name = "DIFFERENT_REALM"
+		_, err := agent.ApproveEntryByShortCode(ctxWithInvalidRealm, entry.ShortCode)
+		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
+			expectedTypeOfGot(t, domain.ConflictError{}, err)
+		}
+	})
+
+	t.Run("approve existent entry with pending status must fail", func(t *testing.T) {
+		// initial entry object should still have default "pending" status so just attempt to approve this
+		_, err := agent.ApproveEntryByShortCode(ctx, entry.ShortCode)
+		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
+			expectedTypeOfGot(t, domain.ConflictError{}, err)
+		}
+	})
+
+	t.Run("approve existent entry that has already been approved must fail", func(t *testing.T) {
+		// just try to approve the same entry again
+		_, err := agent.ApproveEntryByShortCode(ctx, entryWithPaidStatus.ShortCode)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}

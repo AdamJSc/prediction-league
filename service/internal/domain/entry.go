@@ -267,8 +267,16 @@ func (a EntryAgent) ApproveEntryByShortCode(ctx Context, shortCode string) (Entr
 	}
 
 	// check Entry status
-	if entry.Status != EntryStatusPending && entry.Status != EntryStatusReady {
+	switch entry.Status {
+	case EntryStatusPaid, EntryStatusReady:
+		// all good
+	default:
 		return Entry{}, ConflictError{errors.New("entry can only be approved if status is pending or ready")}
+	}
+
+	// check if Entry has already been approved
+	if entry.ApprovedAt.Valid {
+		return Entry{}, ConflictError{errors.New("entry has already been approved")}
 	}
 
 	entry.ApprovedAt = sqltypes.ToNullTime(time.Now().Truncate(time.Second))
