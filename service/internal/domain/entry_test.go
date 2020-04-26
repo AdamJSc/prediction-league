@@ -57,13 +57,13 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		}
 
 		// check raw values that shouldn't have changed
-		if !cmp.Equal(entry.EntrantName, createdEntry.EntrantName)().Success() {
+		if entry.EntrantName != createdEntry.EntrantName {
 			expectedGot(t, entry.EntrantName, createdEntry.EntrantName)
 		}
-		if !cmp.Equal(entry.EntrantNickname, createdEntry.EntrantNickname)().Success() {
+		if entry.EntrantNickname != createdEntry.EntrantNickname {
 			expectedGot(t, entry.EntrantName, createdEntry.EntrantName)
 		}
-		if !cmp.Equal(entry.EntrantEmail, createdEntry.EntrantEmail)().Success() {
+		if entry.EntrantEmail != createdEntry.EntrantEmail {
 			expectedGot(t, entry.EntrantEmail, createdEntry.EntrantEmail)
 		}
 
@@ -72,37 +72,37 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		expectedRealm := ctx.Realm.Name
 		expectedStatus := domain.EntryStatusPending
 
-		if cmp.Equal("", createdEntry.ID)().Success() {
+		if createdEntry.ID.String() == "" {
 			expectedNonEmpty(t, "Entry.ID")
 		}
-		if cmp.Equal("", createdEntry.ShortCode)().Success() {
+		if createdEntry.ShortCode == "" {
 			expectedNonEmpty(t, "Entry.ShortCode")
 		}
-		if !cmp.Equal(expectedSeasonID, createdEntry.SeasonID)().Success() {
+		if expectedSeasonID != createdEntry.SeasonID {
 			expectedGot(t, expectedSeasonID, createdEntry.SeasonID)
 		}
-		if !cmp.Equal(expectedRealm, createdEntry.RealmName)().Success() {
+		if expectedRealm != createdEntry.RealmName {
 			expectedGot(t, expectedRealm, createdEntry.RealmName)
 		}
-		if !cmp.Equal(expectedStatus, createdEntry.Status)().Success() {
+		if expectedStatus != createdEntry.Status {
 			expectedGot(t, expectedStatus, createdEntry.Status)
 		}
-		if !cmp.Equal(sqltypes.NullString{}, createdEntry.PaymentMethod)().Success() {
+		if createdEntry.PaymentMethod.Valid {
 			expectedEmpty(t, "Entry.PaymentMethod", createdEntry.PaymentMethod)
 		}
-		if !cmp.Equal(sqltypes.NullString{}, createdEntry.PaymentRef)().Success() {
+		if createdEntry.PaymentRef.Valid {
 			expectedEmpty(t, "Entry.PaymentRef", createdEntry.PaymentRef)
 		}
-		if !cmp.DeepEqual([]string{}, createdEntry.TeamIDSequence)().Success() {
+		if !reflect.DeepEqual([]string{}, createdEntry.TeamIDSequence) {
 			expectedEmpty(t, "Entry.TeamIDSequence", createdEntry.TeamIDSequence)
 		}
-		if !cmp.Equal(sqltypes.NullTime{}, createdEntry.ApprovedAt)().Success() {
+		if createdEntry.ApprovedAt.Valid {
 			expectedEmpty(t, "Entry.ApprovedAt", createdEntry.ApprovedAt)
 		}
-		if cmp.Equal(time.Time{}, createdEntry.CreatedAt)().Success() {
+		if createdEntry.CreatedAt.Equal(time.Time{}) {
 			expectedNonEmpty(t, "Entry.CreatedAt")
 		}
-		if !cmp.Equal(sqltypes.NullTime{}, createdEntry.UpdatedAt)().Success() {
+		if createdEntry.UpdatedAt.Valid {
 			expectedEmpty(t, "Entry.UpdatedAt", createdEntry.UpdatedAt)
 		}
 
@@ -258,42 +258,42 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		}
 
 		// check values that shouldn't have changed
-		if !cmp.Equal(entry.ID, updatedEntry.ID)().Success() {
+		if entry.ID != updatedEntry.ID {
 			expectedGot(t, entry.ID, updatedEntry.ID)
 		}
-		if !cmp.Equal(entry.RealmName, updatedEntry.RealmName)().Success() {
+		if entry.RealmName != updatedEntry.RealmName {
 			expectedGot(t, entry.RealmName, updatedEntry.RealmName)
 		}
-		if !cmp.Equal(entry.CreatedAt, updatedEntry.CreatedAt)().Success() {
+		if entry.CreatedAt != updatedEntry.CreatedAt {
 			expectedGot(t, entry.CreatedAt, updatedEntry.CreatedAt)
 		}
 
 		// check values that should have changed
-		if !cmp.Equal(changedEntry.ShortCode, updatedEntry.ShortCode)().Success() {
+		if changedEntry.ShortCode != updatedEntry.ShortCode {
 			expectedGot(t, changedEntry.ShortCode, updatedEntry.ShortCode)
 		}
-		if !cmp.Equal(changedEntry.SeasonID, updatedEntry.SeasonID)().Success() {
+		if changedEntry.SeasonID != updatedEntry.SeasonID {
 			expectedGot(t, changedEntry.SeasonID, updatedEntry.SeasonID)
 		}
-		if !cmp.Equal(changedEntry.EntrantName, updatedEntry.EntrantName)().Success() {
+		if changedEntry.EntrantName != updatedEntry.EntrantName {
 			expectedGot(t, changedEntry.EntrantName, updatedEntry.EntrantName)
 		}
-		if !cmp.Equal(changedEntry.EntrantNickname, updatedEntry.EntrantNickname)().Success() {
+		if changedEntry.EntrantNickname != updatedEntry.EntrantNickname {
 			expectedGot(t, changedEntry.EntrantNickname, updatedEntry.EntrantNickname)
 		}
-		if !cmp.Equal(changedEntry.EntrantEmail, updatedEntry.EntrantEmail)().Success() {
+		if changedEntry.EntrantEmail != updatedEntry.EntrantEmail {
 			expectedGot(t, changedEntry.EntrantEmail, updatedEntry.EntrantEmail)
 		}
-		if !cmp.Equal(changedEntry.Status, updatedEntry.Status)().Success() {
+		if changedEntry.Status != updatedEntry.Status {
 			expectedGot(t, changedEntry.Status, updatedEntry.Status)
 		}
-		if !cmp.Equal(changedEntry.PaymentRef, updatedEntry.PaymentRef)().Success() {
+		if changedEntry.PaymentRef != updatedEntry.PaymentRef {
 			expectedGot(t, changedEntry.PaymentRef, updatedEntry.PaymentRef)
 		}
 		if !reflect.DeepEqual(changedEntry.TeamIDSequence, updatedEntry.TeamIDSequence) {
 			expectedGot(t, changedEntry.PaymentRef, updatedEntry.PaymentRef)
 		}
-		if cmp.Equal(time.Time{}, updatedEntry.UpdatedAt)().Success() {
+		if !updatedEntry.UpdatedAt.Valid {
 			expectedNonEmpty(t, "Entry.UpdatedAt")
 		}
 	})
@@ -423,11 +423,11 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !cmp.Equal(domain.EntryPaymentMethodPayPal, entryWithPaymentDetails.PaymentMethod.String)().Success() {
+		if domain.EntryPaymentMethodPayPal != entryWithPaymentDetails.PaymentMethod.String {
 			expectedGot(t, domain.EntryPaymentMethodPayPal, entryWithPaymentDetails.PaymentMethod.String)
 		}
 
-		if !cmp.Equal(paymentRef, entryWithPaymentDetails.PaymentRef.String)().Success() {
+		if paymentRef != entryWithPaymentDetails.PaymentRef.String {
 			expectedGot(t, paymentRef, entryWithPaymentDetails.PaymentRef.String)
 		}
 	})
@@ -595,7 +595,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		if !approvedEntry.IsApproved() {
 			expectedGot(t, "approved entry true", "approved entry false")
 		}
-		if cmp.Equal(sqltypes.NullTime{}, approvedEntry.ApprovedAt)().Success() {
+		if !approvedEntry.ApprovedAt.Valid {
 			expectedNonEmpty(t, "Entry.ApprovedAt")
 		}
 
@@ -607,7 +607,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		if !approvedEntry.IsApproved() {
 			expectedGot(t, "approved entry true", "approved entry false")
 		}
-		if cmp.Equal(sqltypes.NullTime{}, approvedEntry.ApprovedAt)().Success() {
+		if !approvedEntry.ApprovedAt.Valid {
 			expectedNonEmpty(t, "Entry.ApprovedAt")
 		}
 	})
