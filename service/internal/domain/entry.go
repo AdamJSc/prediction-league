@@ -37,6 +37,10 @@ type Entry struct {
 	UpdatedAt       sqltypes.NullTime   `db:"updated_at"`
 }
 
+func (e *Entry) IsApproved() bool {
+	return e.ApprovedAt.Valid
+}
+
 // EntryAgentInjector defines the dependencies required by our EntryAgent
 type EntryAgentInjector interface {
 	MySQL() coresql.Agent
@@ -225,6 +229,49 @@ func (a EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMetho
 	entry.PaymentMethod = sqltypes.ToNullString(&paymentMethod)
 	entry.PaymentRef = sqltypes.ToNullString(&paymentRef)
 	entry.Status = EntryStatusPaid
+
+	// write to database
+	if err := dbUpdateEntry(db, &entry); err != nil {
+		return Entry{}, domainErrorFromDBError(err)
+	}
+
+	return entry, nil
+}
+
+// ApproveEntryByShortCode provides a shortcut to approving an entry by its short code
+func (a EntryAgent) ApproveEntryByShortCode(ctx Context, shortCode string) (Entry, error) {
+	db := a.MySQL()
+
+	// ensure basic auth has been provided and matches admin credentials
+	if !ctx.BasicAuthSuccessful {
+		return Entry{}, UnauthorizedError{}
+	}
+
+	// retrieve entry
+	entries, err := dbSelectEntries(db, map[string]interface{}{
+		"short_code": shortCode,
+	}, false)
+	if err != nil {
+		return Entry{}, domainErrorFromDBError(err)
+	}
+
+	if len(entries) != 1 {
+		return Entry{}, InternalError{errors.New("entries count other than 1")}
+	}
+
+	entry := entries[0]
+
+	// ensure that Entry realm matches current realm
+	if ctx.Realm.Name != entry.RealmName {
+		return Entry{}, ConflictError{errors.New("invalid realm")}
+	}
+
+	// check Entry status
+	if entry.Status != EntryStatusPending && entry.Status != EntryStatusReady {
+		return Entry{}, ConflictError{errors.New("entry can only be approved if status is pending or ready")}
+	}
+
+	entry.ApprovedAt = sqltypes.ToNullTime(time.Now().Truncate(time.Second))
 
 	// write to database
 	if err := dbUpdateEntry(db, &entry); err != nil {
