@@ -6,7 +6,7 @@ type createEntryRequest struct {
 	EntrantName     string `json:"entrant_name"`
 	EntrantNickname string `json:"entrant_nickname"`
 	EntrantEmail    string `json:"entrant_email"`
-	PIN             string `json:"pin"`
+	RealmPIN        string `json:"pin"`
 }
 
 func (r createEntryRequest) ToEntryModel() domain.Entry {
@@ -20,5 +20,5 @@ func (r createEntryRequest) ToEntryModel() domain.Entry {
 type updateEntryPaymentDetailsRequest struct {
 	PaymentMethod string `json:"payment_method"`
 	PaymentRef    string `json:"payment_ref"`
-	PassCode      string `json:"pass_code"`
+	ShortCode     string `json:"short_code"`
 }

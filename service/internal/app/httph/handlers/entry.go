@@ -58,7 +58,7 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 			return
 		}
 
-		ctx.Guard.SetAttempt(input.PIN)
+		ctx.Guard.SetAttempt(input.RealmPIN)
 
 		// create entry
 		createdEntry, err := agent.CreateEntry(ctx, entry, &season)
@@ -68,7 +68,7 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 		}
 
 		// generate a lookup URL for the created entry
-		lookupURL := fmt.Sprintf("http://%s/%s", r.Host, createdEntry.LookupRef)
+		lookupURL := fmt.Sprintf("http://%s/%s", r.Host, createdEntry.ShortCode)
 
 		rest.CreatedResponse(&rest.Data{
 			Type: "entry",
@@ -76,8 +76,8 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 				ID:           createdEntry.ID.String(),
 				EntrantName:  createdEntry.EntrantName,
 				EntrantEmail: createdEntry.EntrantEmail,
-				LookupRef:    createdEntry.LookupRef,
-				LookupURL:    lookupURL,
+				ShortCode:    createdEntry.ShortCode,
+				ShortURL:     lookupURL,
 			},
 		}, nil).WriteTo(w)
 	}
@@ -116,7 +116,7 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 			return
 		}
 
-		ctx.Guard.SetAttempt(input.PassCode)
+		ctx.Guard.SetAttempt(input.ShortCode)
 
 		// update payment details for entry
 		if _, err := agent.UpdateEntryPaymentDetails(ctx, entryID, input.PaymentMethod, input.PaymentRef); err != nil {

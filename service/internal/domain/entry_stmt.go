@@ -10,7 +10,7 @@ import (
 
 // dbEntryFields defines the fields used regularly in Entry-related transactions
 var dbEntryFields = []string{
-	"lookup_ref",
+	"short_code",
 	"season_id",
 	"realm_name",
 	"entrant_name",
@@ -37,7 +37,7 @@ func DBInsertEntry(db coresql.Agent, e *Entry) error {
 	if _, err := db.Query(
 		stmt,
 		e.ID,
-		e.LookupRef,
+		e.ShortCode,
 		e.SeasonID,
 		e.RealmName,
 		e.EntrantName,
@@ -72,7 +72,7 @@ func dbUpdateEntry(db coresql.Agent, e *Entry) error {
 
 	if _, err := db.Query(
 		stmt,
-		e.LookupRef,
+		e.ShortCode,
 		e.SeasonID,
 		e.RealmName,
 		e.EntrantName,
@@ -112,7 +112,7 @@ func dbSelectEntries(db coresql.Agent, criteria map[string]interface{}, matchAny
 
 		if err := rows.Scan(
 			&entry.ID,
-			&entry.LookupRef,
+			&entry.ShortCode,
 			&entry.SeasonID,
 			&entry.RealmName,
 			&entry.EntrantName,

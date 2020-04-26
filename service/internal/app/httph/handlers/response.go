@@ -10,8 +10,8 @@ type createEntryResponse struct {
 	ID           string `json:"id"`
 	EntrantName  string `json:"entrant_name"`
 	EntrantEmail string `json:"entrant_email"`
-	LookupRef    string `json:"lookup_ref"`
-	LookupURL    string `json:"lookup_url"`
+	ShortCode    string `json:"short_code"`
+	ShortURL     string `json:"short_url"`
 }
 
 // responseFromError returns a rest package-level error from a domain-level error

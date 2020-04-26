@@ -22,7 +22,7 @@ const (
 // Entry defines a user's entry into the prediction league
 type Entry struct {
 	ID              uuid.UUID           `db:"id" v:"func:notEmpty"`
-	LookupRef       string              `db:"lookup_ref" v:"func:notEmpty"`
+	ShortCode       string              `db:"short_code" v:"func:notEmpty"`
 	SeasonID        string              `db:"season_id" v:"func:notEmpty"`
 	RealmName       string              `db:"realm_name" v:"func:notEmpty"`
 	EntrantName     string              `db:"entrant_name" v:"func:notEmpty"`
@@ -78,7 +78,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season) (Entry, error) 
 	e.TeamIDSequence = []string{}
 
 	// generate a unique lookup ref
-	e.LookupRef, err = generateUniqueLookupRef(db)
+	e.ShortCode, err = generateUniqueShortCode(db)
 	if err != nil {
 		return Entry{}, domainErrorFromDBError(err)
 	}
@@ -205,11 +205,11 @@ func (a EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMetho
 		return Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
-	// ensure that Guard value matches Entry LookupRef (passcode)
-	if !ctx.Guard.AttemptMatchesTarget(entry.LookupRef) {
+	// ensure that Guard value matches Entry short code
+	if !ctx.Guard.AttemptMatchesTarget(entry.ShortCode) {
 		return Entry{}, ValidationError{
-			Reasons: []string{"Invalid Pass Code"},
-			Fields:  []string{"pass_code"},
+			Reasons: []string{"Invalid Short Code"},
+			Fields:  []string{"short_code"},
 		}
 	}
 
@@ -243,20 +243,20 @@ func sanitiseEntry(e *Entry) error {
 	return nil
 }
 
-// generateUniqueLookupRef generates a string that does not already exist as a Lookup Ref
-func generateUniqueLookupRef(db coresql.Agent) (string, error) {
-	lookupRef := generateRandomAlphaNumericString(4)
+// generateUniqueShortCode generates a string that does not already exist as a Lookup Ref
+func generateUniqueShortCode(db coresql.Agent) (string, error) {
+	shortCode := generateRandomAlphaNumericString(4)
 
 	_, err := dbSelectEntries(db, map[string]interface{}{
-		"lookup_ref": lookupRef,
+		"short_code": shortCode,
 	}, false)
 	switch err.(type) {
 	case nil:
 		// the lookup ref already exists, so we need to generate a new one
-		return generateUniqueLookupRef(db)
+		return generateUniqueShortCode(db)
 	case dbMissingRecordError:
 		// the lookup ref we have generated is unique, we can return it
-		return lookupRef, nil
+		return shortCode, nil
 	}
 	return "", wrapDBError(err)
 }

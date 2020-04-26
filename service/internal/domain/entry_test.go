@@ -64,8 +64,8 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		if cmp.Equal("", createdEntry.ID)().Success() {
 			expectedNonEmpty(t, "Entry.ID")
 		}
-		if cmp.Equal("", createdEntry.LookupRef)().Success() {
-			expectedNonEmpty(t, "Entry.LookupRef")
+		if cmp.Equal("", createdEntry.ShortCode)().Success() {
+			expectedNonEmpty(t, "Entry.ShortCode")
 		}
 		if !cmp.Equal(expectedSeasonID, createdEntry.SeasonID)().Success() {
 			expectedGot(t, expectedSeasonID, createdEntry.SeasonID)
@@ -219,7 +219,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 
 		changedEntry := domain.Entry{
 			ID:              entry.ID,
-			LookupRef:       "changed_entry_lookup_ref",
+			ShortCode:       "changed_entry_short_code",
 			SeasonID:        "67890",
 			RealmName:       entry.RealmName,
 			EntrantName:     "Jamie Redknapp",
@@ -249,8 +249,8 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		}
 
 		// check values that should have changed
-		if !cmp.Equal(changedEntry.LookupRef, updatedEntry.LookupRef)().Success() {
-			expectedGot(t, changedEntry.LookupRef, updatedEntry.LookupRef)
+		if !cmp.Equal(changedEntry.ShortCode, updatedEntry.ShortCode)().Success() {
+			expectedGot(t, changedEntry.ShortCode, updatedEntry.ShortCode)
 		}
 		if !cmp.Equal(changedEntry.SeasonID, updatedEntry.SeasonID)().Success() {
 			expectedGot(t, changedEntry.SeasonID, updatedEntry.SeasonID)
@@ -398,7 +398,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 
 	// override guard value so that context can be re-used for UpdateEntryPaymentDetails
 	ctx := ctxWithPIN
-	ctx.Guard.SetAttempt(entry.LookupRef)
+	ctx.Guard.SetAttempt(entry.ShortCode)
 
 	paymentRef := "ABCD1234"
 
@@ -474,7 +474,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 
 	t.Run("update payment details for an existing entry with an invalid lookup ref must fail", func(t *testing.T) {
 		ctxWithMismatchedGuardValue := ctx
-		ctxWithMismatchedGuardValue.Guard.SetAttempt("not_the_correct_entry_lookup_ref")
+		ctxWithMismatchedGuardValue.Guard.SetAttempt("not_the_correct_entry_short_code")
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctxWithMismatchedGuardValue,
 			entry.ID.String(),
