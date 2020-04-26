@@ -26,10 +26,27 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		StartDate:   time.Now().Add(24 * time.Hour),
 	}
 
+	paymentMethod := "entry_payment_method"
+	paymentRef := "entry_payment_ref"
+
 	entry := domain.Entry{
+		// these values should be populated
 		EntrantName:     "Harry Redknapp",
 		EntrantNickname: "Mr Harry R",
 		EntrantEmail:    "harry.redknapp@football.net",
+
+		// these values should be overridden
+		ID:             uuid.Must(uuid.NewV4()),
+		ShortCode:      "entry_short_code",
+		SeasonID:       "entry_season_id",
+		RealmName:      "entry_realm_name",
+		Status:         "entry_status",
+		PaymentMethod:  sqltypes.ToNullString(&paymentMethod),
+		PaymentRef:     sqltypes.ToNullString(&paymentRef),
+		TeamIDSequence: []string{"entry_team_id_1", "entry_team_id_2"},
+		ApprovedAt:     sqltypes.ToNullTime(time.Now()),
+		CreatedAt:      time.Time{},
+		UpdatedAt:      sqltypes.ToNullTime(time.Now()),
 	}
 
 	t.Run("create a valid entry with a valid guard value must succeed", func(t *testing.T) {
@@ -48,12 +65,6 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		}
 		if !cmp.Equal(entry.EntrantEmail, createdEntry.EntrantEmail)().Success() {
 			expectedGot(t, entry.EntrantEmail, createdEntry.EntrantEmail)
-		}
-		if !cmp.Equal(entry.PaymentRef, createdEntry.PaymentRef)().Success() {
-			expectedGot(t, entry.PaymentRef, createdEntry.PaymentRef)
-		}
-		if !cmp.Equal(entry.UpdatedAt, createdEntry.UpdatedAt)().Success() {
-			expectedGot(t, entry.UpdatedAt, createdEntry.UpdatedAt)
 		}
 
 		// check sanitised values
@@ -76,8 +87,17 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		if !cmp.Equal(expectedStatus, createdEntry.Status)().Success() {
 			expectedGot(t, expectedStatus, createdEntry.Status)
 		}
+		if !cmp.Equal(sqltypes.NullString{}, createdEntry.PaymentMethod)().Success() {
+			expectedEmpty(t, "Entry.PaymentMethod", createdEntry.PaymentMethod)
+		}
+		if !cmp.Equal(sqltypes.NullString{}, createdEntry.PaymentRef)().Success() {
+			expectedEmpty(t, "Entry.PaymentRef", createdEntry.PaymentRef)
+		}
 		if !cmp.DeepEqual([]string{}, createdEntry.TeamIDSequence)().Success() {
 			expectedEmpty(t, "Entry.TeamIDSequence", createdEntry.TeamIDSequence)
+		}
+		if !cmp.Equal(sqltypes.NullTime{}, createdEntry.ApprovedAt)().Success() {
+			expectedEmpty(t, "Entry.ApprovedAt", createdEntry.ApprovedAt)
 		}
 		if cmp.Equal(time.Time{}, createdEntry.CreatedAt)().Success() {
 			expectedNonEmpty(t, "Entry.CreatedAt")
@@ -279,24 +299,14 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 	})
 
 	t.Run("update an existent entry with a changed realm must fail", func(t *testing.T) {
-		entryID, err := uuid.NewV4()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		_, err = agent.UpdateEntry(ctx, domain.Entry{ID: entryID, RealmName: "NOT_THE_ORIGINAL_REALM"})
+		_, err = agent.UpdateEntry(ctx, domain.Entry{ID: entry.ID, RealmName: "NOT_THE_ORIGINAL_REALM"})
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
 	})
 
 	t.Run("update a non-existent entry must fail", func(t *testing.T) {
-		entryID, err := uuid.NewV4()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		_, err = agent.UpdateEntry(ctx, domain.Entry{ID: entryID, RealmName: "TEST_REALM"})
+		_, err = agent.UpdateEntry(ctx, domain.Entry{ID: uuid.Must(uuid.NewV4()), RealmName: entry.RealmName})
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
