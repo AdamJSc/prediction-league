@@ -16,9 +16,9 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
 
 	ctx := domain.NewContext()
-	ctx.SetRealm("TEST_REALM")
-	ctx.SetRealmPIN("5678")
-	ctx.SetGuardValue("5678")
+	ctx.Realm.Name = "TEST_REALM"
+	ctx.Realm.PIN = "5678"
+	ctx.Guard.SetAttempt("5678")
 
 	season := domain.Season{
 		ID:          "199293_1",
@@ -58,20 +58,20 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 
 		// check sanitised values
 		expectedSeasonID := season.ID
-		expectedRealm := ctx.GetRealm()
+		expectedRealm := ctx.Realm.Name
 		expectedStatus := domain.EntryStatusPending
 
 		if cmp.Equal("", createdEntry.ID)().Success() {
 			expectedNonEmpty(t, "Entry.ID")
 		}
-		if cmp.Equal("", createdEntry.LookupRef)().Success() {
-			expectedNonEmpty(t, "Entry.LookupRef")
+		if cmp.Equal("", createdEntry.ShortCode)().Success() {
+			expectedNonEmpty(t, "Entry.ShortCode")
 		}
 		if !cmp.Equal(expectedSeasonID, createdEntry.SeasonID)().Success() {
 			expectedGot(t, expectedSeasonID, createdEntry.SeasonID)
 		}
-		if !cmp.Equal(expectedRealm, createdEntry.Realm)().Success() {
-			expectedGot(t, expectedRealm, createdEntry.Realm)
+		if !cmp.Equal(expectedRealm, createdEntry.RealmName)().Success() {
+			expectedGot(t, expectedRealm, createdEntry.RealmName)
 		}
 		if !cmp.Equal(expectedStatus, createdEntry.Status)().Success() {
 			expectedGot(t, expectedStatus, createdEntry.Status)
@@ -102,7 +102,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 
 	t.Run("create an entry with an invalid guard value must fail", func(t *testing.T) {
 		ctxWithInvalidGuardValue := ctx
-		ctxWithInvalidGuardValue.SetGuardValue("not_the_correct_realm_pin")
+		ctxWithInvalidGuardValue.Guard.SetAttempt("not_the_correct_realm_pin")
 		_, err := agent.CreateEntry(ctxWithInvalidGuardValue, entry, &season)
 		if !cmp.ErrorType(err, domain.UnauthorizedError{})().Success() {
 			expectedTypeOfGot(t, domain.UnauthorizedError{}, err)
@@ -195,9 +195,9 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
 
 	ctx := domain.NewContext()
-	ctx.SetRealm("TEST_REALM")
-	ctx.SetRealmPIN("5678")
-	ctx.SetGuardValue("5678")
+	ctx.Realm.Name = "TEST_REALM"
+	ctx.Realm.PIN = "5678"
+	ctx.Guard.SetAttempt("5678")
 
 	// seed initial entry
 	entry, err := agent.CreateEntry(ctx, domain.Entry{
@@ -219,9 +219,9 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 
 		changedEntry := domain.Entry{
 			ID:              entry.ID,
-			LookupRef:       "changed_entry_lookup_ref",
+			ShortCode:       "changed_entry_short_code",
 			SeasonID:        "67890",
-			Realm:           entry.Realm,
+			RealmName:       entry.RealmName,
 			EntrantName:     "Jamie Redknapp",
 			EntrantNickname: "Mr Jamie R",
 			EntrantEmail:    "jamie.redknapp@football.net",
@@ -241,16 +241,16 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		if !cmp.Equal(entry.ID, updatedEntry.ID)().Success() {
 			expectedGot(t, entry.ID, updatedEntry.ID)
 		}
-		if !cmp.Equal(entry.Realm, updatedEntry.Realm)().Success() {
-			expectedGot(t, entry.Realm, updatedEntry.Realm)
+		if !cmp.Equal(entry.RealmName, updatedEntry.RealmName)().Success() {
+			expectedGot(t, entry.RealmName, updatedEntry.RealmName)
 		}
 		if !cmp.Equal(entry.CreatedAt, updatedEntry.CreatedAt)().Success() {
 			expectedGot(t, entry.CreatedAt, updatedEntry.CreatedAt)
 		}
 
 		// check values that should have changed
-		if !cmp.Equal(changedEntry.LookupRef, updatedEntry.LookupRef)().Success() {
-			expectedGot(t, changedEntry.LookupRef, updatedEntry.LookupRef)
+		if !cmp.Equal(changedEntry.ShortCode, updatedEntry.ShortCode)().Success() {
+			expectedGot(t, changedEntry.ShortCode, updatedEntry.ShortCode)
 		}
 		if !cmp.Equal(changedEntry.SeasonID, updatedEntry.SeasonID)().Success() {
 			expectedGot(t, changedEntry.SeasonID, updatedEntry.SeasonID)
@@ -284,7 +284,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_, err = agent.UpdateEntry(ctx, domain.Entry{ID: entryID, Realm: "NOT_THE_ORIGINAL_REALM"})
+		_, err = agent.UpdateEntry(ctx, domain.Entry{ID: entryID, RealmName: "NOT_THE_ORIGINAL_REALM"})
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
@@ -296,7 +296,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_, err = agent.UpdateEntry(ctx, domain.Entry{ID: entryID, Realm: "TEST_REALM"})
+		_, err = agent.UpdateEntry(ctx, domain.Entry{ID: entryID, RealmName: "TEST_REALM"})
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -376,9 +376,9 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
 
 	ctxWithPIN := domain.NewContext()
-	ctxWithPIN.SetRealm("TEST_REALM")
-	ctxWithPIN.SetRealmPIN("5678")
-	ctxWithPIN.SetGuardValue("5678")
+	ctxWithPIN.Realm.Name = "TEST_REALM"
+	ctxWithPIN.Realm.PIN = "5678"
+	ctxWithPIN.Guard.SetAttempt("5678")
 
 	// seed initial entry
 	entry := domain.Entry{
@@ -398,7 +398,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 
 	// override guard value so that context can be re-used for UpdateEntryPaymentDetails
 	ctx := ctxWithPIN
-	ctx.SetGuardValue(entry.LookupRef)
+	ctx.Guard.SetAttempt(entry.ShortCode)
 
 	paymentRef := "ABCD1234"
 
@@ -460,7 +460,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 
 	t.Run("update payment details for an existing entry with an invalid realm must fail", func(t *testing.T) {
 		ctxWithMismatchedtRealm := ctx
-		ctxWithMismatchedtRealm.SetRealm("DIFFERENT_REALM")
+		ctxWithMismatchedtRealm.Realm.Name = "DIFFERENT_REALM"
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctxWithMismatchedtRealm,
 			entry.ID.String(),
@@ -474,7 +474,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 
 	t.Run("update payment details for an existing entry with an invalid lookup ref must fail", func(t *testing.T) {
 		ctxWithMismatchedGuardValue := ctx
-		ctxWithMismatchedGuardValue.SetGuardValue("not_the_correct_entry_lookup_ref")
+		ctxWithMismatchedGuardValue.Guard.SetAttempt("not_the_correct_entry_short_code")
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctxWithMismatchedGuardValue,
 			entry.ID.String(),
