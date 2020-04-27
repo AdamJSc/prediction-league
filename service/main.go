@@ -35,10 +35,10 @@ func main() {
 
 	// setup server
 	httpAppContainer := httph.NewHTTPAppContainer(dependencies{
-		config: config,
-		mysql:  db,
-		router: mux.NewRouter(),
-		templates: domain.GetParsedHTMLTemplates(),
+		config:    config,
+		mysql:     db,
+		router:    mux.NewRouter(),
+		templates: domain.ParseTemplates(),
 	})
 	handlers.RegisterRoutes(httpAppContainer)
 

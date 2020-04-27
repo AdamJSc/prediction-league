@@ -163,13 +163,21 @@ func getDBFieldsWithEqualsPlaceholdersStringFromFields(fields []string) string {
 	return strings.Join(fieldsWithEqualsPlaceholders, ", ")
 }
 
-// GetParsedHTMLTemplates parses our HTML templates and returns them collectively for use
-func GetParsedHTMLTemplates() *views.Templates {
+// ParseTemplates parses our HTML templates and returns them collectively for use
+func ParseTemplates() *views.Templates {
 	// prepare the templates
 	tpl := template.New("prediction-league")
 
+	walkPathAndParseTemplates(tpl, "/service/views/html")
+
+	// return our wrapped template struct
+	return &views.Templates{Template: tpl}
+}
+
+// walkPathAndParseTemplates recursively parses templates within a given top-level directory
+func walkPathAndParseTemplates(tpl *template.Template, path string) {
 	// walk through our views folder and parse each item to pack the assets
-	err := pkger.Walk("/service/views/html", func(path string, info os.FileInfo, err error) error {
+	err := pkger.Walk(path, func(path string, info os.FileInfo, err error) error {
 		// we already have an error from a recursive call, so just return with that
 		if err != nil {
 			return err
@@ -198,9 +206,6 @@ func GetParsedHTMLTemplates() *views.Templates {
 	if err != nil {
 		log.Fatalln(err)
 	}
-
-	// return our wrapped template struct
-	return &views.Templates{Template: tpl}
 }
 
 // RegisterCustomValidators provides a bootstrap for registering customer validation functions with the `v` package
