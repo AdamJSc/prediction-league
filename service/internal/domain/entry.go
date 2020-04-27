@@ -68,13 +68,13 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season) (Entry, error) 
 	}
 
 	// generate a new entry ID
-	uuid, err := uuid.NewV4()
+	id, err := uuid.NewV4()
 	if err != nil {
 		return Entry{}, InternalError{err}
 	}
 
 	// override these values
-	e.ID = uuid
+	e.ID = id
 	e.SeasonID = s.ID
 	e.RealmName = ctx.Realm.Name
 	e.Status = EntryStatusPending
