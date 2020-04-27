@@ -1,12 +1,23 @@
 package domain
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"github.com/LUSHDigital/core-mage/env"
+	"github.com/LUSHDigital/core-sql/sqltypes"
+	"github.com/google/uuid"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/ladydascalie/v"
+	"github.com/markbates/pkger"
+	"html/template"
+	"io"
 	"log"
 	"math/rand"
 	"os"
+	"prediction-league/service/internal/views"
+	"reflect"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -150,4 +161,114 @@ func getDBFieldsWithEqualsPlaceholdersStringFromFields(fields []string) string {
 	}
 
 	return strings.Join(fieldsWithEqualsPlaceholders, ", ")
+}
+
+// GetParsedHTMLTemplates parses our HTML templates and returns them collectively for use
+func GetParsedHTMLTemplates() *views.Templates {
+	// prepare the templates
+	tpl := template.New("prediction-league")
+
+	// walk through our views folder and parse each item to pack the assets
+	err := pkger.Walk("/service/views/html", func(path string, info os.FileInfo, err error) error {
+		// we already have an error from a recursive call, so just return with that
+		if err != nil {
+			return err
+		}
+
+		// skip directories, we're only interested in files
+		if info.IsDir() {
+			return nil
+		}
+
+		// open the current file
+		file, err := pkger.Open(path)
+		if err != nil {
+			return err
+		}
+
+		// copy file contents as a byte stream and then parse as a template
+		var b bytes.Buffer
+		if _, err = io.Copy(&b, file); err != nil {
+			return err
+		}
+		tpl = template.Must(tpl.Parse(b.String()))
+
+		return nil
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// return our wrapped template struct
+	return &views.Templates{Template: tpl}
+}
+
+// RegisterCustomValidators provides a bootstrap for registering customer validation functions with the `v` package
+func RegisterCustomValidators() {
+	v.Set("notEmpty", func(args string, value, structure interface{}) error {
+		var empty interface{}
+
+		switch value.(type) {
+		case string:
+			empty = ""
+		case time.Time:
+			empty = time.Time{}
+		case uuid.UUID:
+			empty = uuid.UUID{}
+		}
+
+		if reflect.TypeOf(value) == reflect.TypeOf(empty) && !reflect.DeepEqual(value, empty) {
+			return nil
+		}
+
+		return errors.New("must not be empty")
+	})
+
+	v.Set("isValidEntryStatus", func(args string, value, structure interface{}) error {
+		valueAsString, ok := value.(string)
+		if !ok {
+			return errors.New("cannot convert to string")
+		}
+
+		if isValidEntryStatus(valueAsString) {
+			return nil
+		}
+
+		return errors.New("invalid entry status")
+	})
+
+	v.Set("isValidEntryPaymentMethod", func(args string, value, structure interface{}) error {
+		valueAsNullString, ok := value.(sqltypes.NullString)
+		if !ok {
+			return errors.New("cannot convert to null string")
+		}
+
+		if valueAsNullString.String == "" {
+			// can be empty
+			return nil
+		}
+
+		if isValidEntryPaymentMethod(valueAsNullString.String) {
+			return nil
+		}
+
+		return errors.New("invalid entry payment method")
+	})
+
+	v.Set("email", func(args string, value, structure interface{}) error {
+		if value.(string) == "" {
+			return errors.New("missing email")
+		}
+
+		var pattern, err = regexp.Compile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+		if err != nil {
+			return err
+		}
+
+		if !pattern.MatchString(value.(string)) {
+			return errors.New("invalid email")
+		}
+
+		return nil
+	})
 }

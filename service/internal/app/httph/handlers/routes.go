@@ -8,9 +8,7 @@ import (
 // RegisterRoutes attaches all routes to the router
 func RegisterRoutes(c *httph.HTTPAppContainer) {
 	// placeholder endpoint
-	c.Router().HandleFunc("/{anything}", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("hello world"))
-	}).Methods(http.MethodGet)
+	c.Router().HandleFunc("/{greeting}", frontendGreetingHandler(c)).Methods(http.MethodGet)
 
 	// api endpoints
 	api := c.Router().PathPrefix("/api").Subrouter()
