@@ -128,3 +128,31 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 		rest.OKResponse(nil, nil).WriteTo(w)
 	}
 }
+
+func approveEntryByShortCodeHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+	agent := domain.EntryAgent{EntryAgentInjector: c}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// parse entry short code from route
+		var entryShortCode string
+		if err := getRouteParam(r, "entry_short_code", &entryShortCode); err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		ctx, err := domain.ContextFromRequest(r, c.Config())
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		// approve entry
+		if _, err := agent.ApproveEntryByShortCode(ctx, entryShortCode); err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		// success!
+		rest.OKResponse(nil, nil).WriteTo(w)
+	}
+}

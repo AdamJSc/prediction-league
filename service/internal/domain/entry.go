@@ -32,8 +32,13 @@ type Entry struct {
 	PaymentMethod   sqltypes.NullString `db:"payment_method" v:"func:isValidEntryPaymentMethod"`
 	PaymentRef      sqltypes.NullString `db:"payment_ref"`
 	TeamIDSequence  []string            `db:"team_id_sequence"`
+	ApprovedAt      sqltypes.NullTime   `db:"approved_at"`
 	CreatedAt       time.Time           `db:"created_at"`
 	UpdatedAt       sqltypes.NullTime   `db:"updated_at"`
+}
+
+func (e *Entry) IsApproved() bool {
+	return e.ApprovedAt.Valid
 }
 
 // EntryAgentInjector defines the dependencies required by our EntryAgent
@@ -63,19 +68,22 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season) (Entry, error) 
 	}
 
 	// generate a new entry ID
-	uuid, err := uuid.NewV4()
+	id, err := uuid.NewV4()
 	if err != nil {
 		return Entry{}, InternalError{err}
 	}
 
 	// override these values
-	e.ID = uuid
+	e.ID = id
 	e.SeasonID = s.ID
 	e.RealmName = ctx.Realm.Name
 	e.Status = EntryStatusPending
 	e.PaymentMethod = sqltypes.NullString{}
 	e.PaymentRef = sqltypes.NullString{}
 	e.TeamIDSequence = []string{}
+	e.ApprovedAt = sqltypes.NullTime{}
+	e.CreatedAt = time.Time{}
+	e.UpdatedAt = sqltypes.NullTime{}
 
 	// generate a unique lookup ref
 	e.ShortCode, err = generateUniqueShortCode(db)
@@ -126,14 +134,12 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season) (Entry, error) 
 	}
 
 	// write to database
-	if err := DBInsertEntry(db, &e); err != nil {
+	if err := dbInsertEntry(db, &e); err != nil {
 		return Entry{}, domainErrorFromDBError(err)
 	}
 
 	return e, nil
 }
-
-// TODO - require entry to be approved (separate to status)
 
 // UpdateEntry handles the updating of an existing Entry in the database
 func (a EntryAgent) UpdateEntry(ctx Context, e Entry) (Entry, error) {
@@ -221,6 +227,57 @@ func (a EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMetho
 	entry.PaymentMethod = sqltypes.ToNullString(&paymentMethod)
 	entry.PaymentRef = sqltypes.ToNullString(&paymentRef)
 	entry.Status = EntryStatusPaid
+
+	// write to database
+	if err := dbUpdateEntry(db, &entry); err != nil {
+		return Entry{}, domainErrorFromDBError(err)
+	}
+
+	return entry, nil
+}
+
+// ApproveEntryByShortCode provides a shortcut to approving an entry by its short code
+func (a EntryAgent) ApproveEntryByShortCode(ctx Context, shortCode string) (Entry, error) {
+	db := a.MySQL()
+
+	// ensure basic auth has been provided and matches admin credentials
+	if !ctx.BasicAuthSuccessful {
+		return Entry{}, UnauthorizedError{}
+	}
+
+	// retrieve entry
+	entries, err := dbSelectEntries(db, map[string]interface{}{
+		"short_code": shortCode,
+	}, false)
+	if err != nil {
+		return Entry{}, domainErrorFromDBError(err)
+	}
+
+	if len(entries) != 1 {
+		return Entry{}, InternalError{errors.New("entries count other than 1")}
+	}
+
+	entry := entries[0]
+
+	// ensure that Entry realm matches current realm
+	if ctx.Realm.Name != entry.RealmName {
+		return Entry{}, ConflictError{errors.New("invalid realm")}
+	}
+
+	// check Entry status
+	switch entry.Status {
+	case EntryStatusPaid, EntryStatusReady:
+		// all good
+	default:
+		return Entry{}, ConflictError{errors.New("entry can only be approved if status is pending or ready")}
+	}
+
+	// check if Entry has already been approved
+	if entry.ApprovedAt.Valid {
+		return Entry{}, ConflictError{errors.New("entry has already been approved")}
+	}
+
+	entry.ApprovedAt = sqltypes.ToNullTime(time.Now().Truncate(time.Second))
 
 	// write to database
 	if err := dbUpdateEntry(db, &entry); err != nil {

@@ -26,10 +26,27 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		StartDate:   time.Now().Add(24 * time.Hour),
 	}
 
+	paymentMethod := "entry_payment_method"
+	paymentRef := "entry_payment_ref"
+
 	entry := domain.Entry{
+		// these values should be populated
 		EntrantName:     "Harry Redknapp",
 		EntrantNickname: "Mr Harry R",
 		EntrantEmail:    "harry.redknapp@football.net",
+
+		// these values should be overridden
+		ID:             uuid.Must(uuid.NewV4()),
+		ShortCode:      "entry_short_code",
+		SeasonID:       "entry_season_id",
+		RealmName:      "entry_realm_name",
+		Status:         "entry_status",
+		PaymentMethod:  sqltypes.ToNullString(&paymentMethod),
+		PaymentRef:     sqltypes.ToNullString(&paymentRef),
+		TeamIDSequence: []string{"entry_team_id_1", "entry_team_id_2"},
+		ApprovedAt:     sqltypes.ToNullTime(time.Now()),
+		CreatedAt:      time.Time{},
+		UpdatedAt:      sqltypes.ToNullTime(time.Now()),
 	}
 
 	t.Run("create a valid entry with a valid guard value must succeed", func(t *testing.T) {
@@ -40,20 +57,14 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		}
 
 		// check raw values that shouldn't have changed
-		if !cmp.Equal(entry.EntrantName, createdEntry.EntrantName)().Success() {
+		if entry.EntrantName != createdEntry.EntrantName {
 			expectedGot(t, entry.EntrantName, createdEntry.EntrantName)
 		}
-		if !cmp.Equal(entry.EntrantNickname, createdEntry.EntrantNickname)().Success() {
+		if entry.EntrantNickname != createdEntry.EntrantNickname {
 			expectedGot(t, entry.EntrantName, createdEntry.EntrantName)
 		}
-		if !cmp.Equal(entry.EntrantEmail, createdEntry.EntrantEmail)().Success() {
+		if entry.EntrantEmail != createdEntry.EntrantEmail {
 			expectedGot(t, entry.EntrantEmail, createdEntry.EntrantEmail)
-		}
-		if !cmp.Equal(entry.PaymentRef, createdEntry.PaymentRef)().Success() {
-			expectedGot(t, entry.PaymentRef, createdEntry.PaymentRef)
-		}
-		if !cmp.Equal(entry.UpdatedAt, createdEntry.UpdatedAt)().Success() {
-			expectedGot(t, entry.UpdatedAt, createdEntry.UpdatedAt)
 		}
 
 		// check sanitised values
@@ -61,28 +72,37 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		expectedRealm := ctx.Realm.Name
 		expectedStatus := domain.EntryStatusPending
 
-		if cmp.Equal("", createdEntry.ID)().Success() {
+		if createdEntry.ID.String() == "" {
 			expectedNonEmpty(t, "Entry.ID")
 		}
-		if cmp.Equal("", createdEntry.ShortCode)().Success() {
+		if createdEntry.ShortCode == "" {
 			expectedNonEmpty(t, "Entry.ShortCode")
 		}
-		if !cmp.Equal(expectedSeasonID, createdEntry.SeasonID)().Success() {
+		if expectedSeasonID != createdEntry.SeasonID {
 			expectedGot(t, expectedSeasonID, createdEntry.SeasonID)
 		}
-		if !cmp.Equal(expectedRealm, createdEntry.RealmName)().Success() {
+		if expectedRealm != createdEntry.RealmName {
 			expectedGot(t, expectedRealm, createdEntry.RealmName)
 		}
-		if !cmp.Equal(expectedStatus, createdEntry.Status)().Success() {
+		if expectedStatus != createdEntry.Status {
 			expectedGot(t, expectedStatus, createdEntry.Status)
 		}
-		if !cmp.DeepEqual([]string{}, createdEntry.TeamIDSequence)().Success() {
+		if createdEntry.PaymentMethod.Valid {
+			expectedEmpty(t, "Entry.PaymentMethod", createdEntry.PaymentMethod)
+		}
+		if createdEntry.PaymentRef.Valid {
+			expectedEmpty(t, "Entry.PaymentRef", createdEntry.PaymentRef)
+		}
+		if !reflect.DeepEqual([]string{}, createdEntry.TeamIDSequence) {
 			expectedEmpty(t, "Entry.TeamIDSequence", createdEntry.TeamIDSequence)
 		}
-		if cmp.Equal(time.Time{}, createdEntry.CreatedAt)().Success() {
+		if createdEntry.ApprovedAt.Valid {
+			expectedEmpty(t, "Entry.ApprovedAt", createdEntry.ApprovedAt)
+		}
+		if createdEntry.CreatedAt.Equal(time.Time{}) {
 			expectedNonEmpty(t, "Entry.CreatedAt")
 		}
-		if !cmp.Equal(sqltypes.NullTime{}, createdEntry.UpdatedAt)().Success() {
+		if createdEntry.UpdatedAt.Valid {
 			expectedEmpty(t, "Entry.UpdatedAt", createdEntry.UpdatedAt)
 		}
 
@@ -238,65 +258,55 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		}
 
 		// check values that shouldn't have changed
-		if !cmp.Equal(entry.ID, updatedEntry.ID)().Success() {
+		if entry.ID != updatedEntry.ID {
 			expectedGot(t, entry.ID, updatedEntry.ID)
 		}
-		if !cmp.Equal(entry.RealmName, updatedEntry.RealmName)().Success() {
+		if entry.RealmName != updatedEntry.RealmName {
 			expectedGot(t, entry.RealmName, updatedEntry.RealmName)
 		}
-		if !cmp.Equal(entry.CreatedAt, updatedEntry.CreatedAt)().Success() {
+		if entry.CreatedAt != updatedEntry.CreatedAt {
 			expectedGot(t, entry.CreatedAt, updatedEntry.CreatedAt)
 		}
 
 		// check values that should have changed
-		if !cmp.Equal(changedEntry.ShortCode, updatedEntry.ShortCode)().Success() {
+		if changedEntry.ShortCode != updatedEntry.ShortCode {
 			expectedGot(t, changedEntry.ShortCode, updatedEntry.ShortCode)
 		}
-		if !cmp.Equal(changedEntry.SeasonID, updatedEntry.SeasonID)().Success() {
+		if changedEntry.SeasonID != updatedEntry.SeasonID {
 			expectedGot(t, changedEntry.SeasonID, updatedEntry.SeasonID)
 		}
-		if !cmp.Equal(changedEntry.EntrantName, updatedEntry.EntrantName)().Success() {
+		if changedEntry.EntrantName != updatedEntry.EntrantName {
 			expectedGot(t, changedEntry.EntrantName, updatedEntry.EntrantName)
 		}
-		if !cmp.Equal(changedEntry.EntrantNickname, updatedEntry.EntrantNickname)().Success() {
+		if changedEntry.EntrantNickname != updatedEntry.EntrantNickname {
 			expectedGot(t, changedEntry.EntrantNickname, updatedEntry.EntrantNickname)
 		}
-		if !cmp.Equal(changedEntry.EntrantEmail, updatedEntry.EntrantEmail)().Success() {
+		if changedEntry.EntrantEmail != updatedEntry.EntrantEmail {
 			expectedGot(t, changedEntry.EntrantEmail, updatedEntry.EntrantEmail)
 		}
-		if !cmp.Equal(changedEntry.Status, updatedEntry.Status)().Success() {
+		if changedEntry.Status != updatedEntry.Status {
 			expectedGot(t, changedEntry.Status, updatedEntry.Status)
 		}
-		if !cmp.Equal(changedEntry.PaymentRef, updatedEntry.PaymentRef)().Success() {
+		if changedEntry.PaymentRef != updatedEntry.PaymentRef {
 			expectedGot(t, changedEntry.PaymentRef, updatedEntry.PaymentRef)
 		}
 		if !reflect.DeepEqual(changedEntry.TeamIDSequence, updatedEntry.TeamIDSequence) {
 			expectedGot(t, changedEntry.PaymentRef, updatedEntry.PaymentRef)
 		}
-		if cmp.Equal(time.Time{}, updatedEntry.UpdatedAt)().Success() {
+		if !updatedEntry.UpdatedAt.Valid {
 			expectedNonEmpty(t, "Entry.UpdatedAt")
 		}
 	})
 
 	t.Run("update an existent entry with a changed realm must fail", func(t *testing.T) {
-		entryID, err := uuid.NewV4()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		_, err = agent.UpdateEntry(ctx, domain.Entry{ID: entryID, RealmName: "NOT_THE_ORIGINAL_REALM"})
+		_, err = agent.UpdateEntry(ctx, domain.Entry{ID: entry.ID, RealmName: "NOT_THE_ORIGINAL_REALM"})
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
 	})
 
 	t.Run("update a non-existent entry must fail", func(t *testing.T) {
-		entryID, err := uuid.NewV4()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		_, err = agent.UpdateEntry(ctx, domain.Entry{ID: entryID, RealmName: "TEST_REALM"})
+		_, err = agent.UpdateEntry(ctx, domain.Entry{ID: uuid.Must(uuid.NewV4()), RealmName: entry.RealmName})
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -413,11 +423,11 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !cmp.Equal(domain.EntryPaymentMethodPayPal, entryWithPaymentDetails.PaymentMethod.String)().Success() {
+		if domain.EntryPaymentMethodPayPal != entryWithPaymentDetails.PaymentMethod.String {
 			expectedGot(t, domain.EntryPaymentMethodPayPal, entryWithPaymentDetails.PaymentMethod.String)
 		}
 
-		if !cmp.Equal(paymentRef, entryWithPaymentDetails.PaymentRef.String)().Success() {
+		if paymentRef != entryWithPaymentDetails.PaymentRef.String {
 			expectedGot(t, paymentRef, entryWithPaymentDetails.PaymentRef.String)
 		}
 	})
@@ -459,10 +469,10 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update payment details for an existing entry with an invalid realm must fail", func(t *testing.T) {
-		ctxWithMismatchedtRealm := ctx
-		ctxWithMismatchedtRealm.Realm.Name = "DIFFERENT_REALM"
+		ctxWithMismatchedRealm := ctx
+		ctxWithMismatchedRealm.Realm.Name = "DIFFERENT_REALM"
 		_, err := agent.UpdateEntryPaymentDetails(
-			ctxWithMismatchedtRealm,
+			ctxWithMismatchedRealm,
 			entry.ID.String(),
 			domain.EntryPaymentMethodPayPal,
 			paymentRef,
@@ -512,6 +522,132 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 			domain.EntryPaymentMethodPayPal,
 			paymentRef,
 		)
+		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
+			expectedTypeOfGot(t, domain.ConflictError{}, err)
+		}
+	})
+}
+
+func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
+	defer truncate(t)
+
+	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
+
+	ctxWithPIN := domain.NewContext()
+	ctxWithPIN.Realm.Name = "TEST_REALM"
+	ctxWithPIN.Realm.PIN = "5678"
+	ctxWithPIN.Guard.SetAttempt("5678")
+
+	// seed initial entries
+	season := domain.Season{
+		ID:          "12345",
+		EntriesFrom: time.Now().Add(-24 * time.Hour),
+		StartDate:   time.Now().Add(24 * time.Hour),
+	}
+
+	entry, err := agent.CreateEntry(ctxWithPIN, domain.Entry{
+		EntrantName:     "Harry Redknapp",
+		EntrantNickname: "Mr Harry R",
+		EntrantEmail:    "harry.redknapp@football.net",
+	}, &season)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	entryWithPaidStatus, err := agent.CreateEntry(ctxWithPIN, domain.Entry{
+		EntrantName:     "Jamie Redknapp",
+		EntrantNickname: "Mr Jamie R",
+		EntrantEmail:    "jamie.redknapp@football.net",
+	}, &season)
+	if err != nil {
+		t.Fatal(err)
+	}
+	entryWithPaidStatus.Status = domain.EntryStatusPaid
+	entryWithPaidStatus, err = agent.UpdateEntry(ctxWithPIN, entryWithPaidStatus)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	entryWithReadyStatus, err := agent.CreateEntry(ctxWithPIN, domain.Entry{
+		EntrantName:     "Frank Lampard",
+		EntrantNickname: "Mr Frank Lampard",
+		EntrantEmail:    "frank.lampard@football.net",
+	}, &season)
+	if err != nil {
+		t.Fatal(err)
+	}
+	entryWithReadyStatus.Status = domain.EntryStatusReady
+	entryWithReadyStatus, err = agent.UpdateEntry(ctxWithPIN, entryWithReadyStatus)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// set basic auth successful value to true so that it can be used by ApproveEntryByShortCode
+	ctx := ctxWithPIN
+	ctx.BasicAuthSuccessful = true
+
+	t.Run("approve existent entry short code with valid credentials must succeed", func(t *testing.T) {
+		// attempt to approve entry with paid status
+		approvedEntry, err := agent.ApproveEntryByShortCode(ctx, entryWithPaidStatus.ShortCode)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !approvedEntry.IsApproved() {
+			expectedGot(t, "approved entry true", "approved entry false")
+		}
+		if !approvedEntry.ApprovedAt.Valid {
+			expectedNonEmpty(t, "Entry.ApprovedAt")
+		}
+
+		// attempt to approve entry with ready status
+		approvedEntry, err = agent.ApproveEntryByShortCode(ctx, entryWithReadyStatus.ShortCode)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !approvedEntry.IsApproved() {
+			expectedGot(t, "approved entry true", "approved entry false")
+		}
+		if !approvedEntry.ApprovedAt.Valid {
+			expectedNonEmpty(t, "Entry.ApprovedAt")
+		}
+	})
+
+	t.Run("approve existent entry with invalid credentials must fail", func(t *testing.T) {
+		ctxWithInvalidCredentials := ctx
+		ctxWithInvalidCredentials.BasicAuthSuccessful = false
+		_, err := agent.ApproveEntryByShortCode(ctxWithInvalidCredentials, entry.ShortCode)
+		if !cmp.ErrorType(err, domain.UnauthorizedError{})().Success() {
+			expectedTypeOfGot(t, domain.UnauthorizedError{}, err)
+		}
+	})
+
+	t.Run("approve non-existent entry with valid credentials must fail", func(t *testing.T) {
+		_, err := agent.ApproveEntryByShortCode(ctx, "non_existent_short_code")
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		}
+	})
+
+	t.Run("approve existent entry with invalid realm must fail", func(t *testing.T) {
+		ctxWithInvalidRealm := ctx
+		ctxWithInvalidRealm.Realm.Name = "DIFFERENT_REALM"
+		_, err := agent.ApproveEntryByShortCode(ctxWithInvalidRealm, entry.ShortCode)
+		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
+			expectedTypeOfGot(t, domain.ConflictError{}, err)
+		}
+	})
+
+	t.Run("approve existent entry with pending status must fail", func(t *testing.T) {
+		// initial entry object should still have default "pending" status so just attempt to approve this
+		_, err := agent.ApproveEntryByShortCode(ctx, entry.ShortCode)
+		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
+			expectedTypeOfGot(t, domain.ConflictError{}, err)
+		}
+	})
+
+	t.Run("approve existent entry that has already been approved must fail", func(t *testing.T) {
+		// just try to approve the same entry again
+		_, err := agent.ApproveEntryByShortCode(ctx, entryWithPaidStatus.ShortCode)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
