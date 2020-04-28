@@ -7,6 +7,9 @@ app.run:
 app.stop:
 	docker-compose stop
 
+app.kill:
+	docker-compose down
+
 test.start:
 	docker-compose up -d db_test
 

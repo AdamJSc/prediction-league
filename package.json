@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "watch": "CHOKIDAR_USEPOLLING=true babel -w --verbose -o resources/dist/app.js resources/src/js/main.js"
+    "watch-babel": "CHOKIDAR_USEPOLLING=true babel -w --verbose resources/src/js/main.js -o resources/dist/app.js",
+    "watch-sass": "CHOKIDAR_USEPOLLING=true node-sass-chokidar --watch --no-source-map ./resources/src/scss/app.scss -o ./resources/dist",
+    "watch": "npm run watch-babel | npm run watch-sass"
   },
   "repository": {
     "type": "git",
@@ -21,6 +23,8 @@
   "devDependencies": {
     "@babel/cli": "^7.8.4",
     "@babel/core": "^7.9.0",
-    "@babel/preset-env": "^7.9.5"
+    "@babel/preset-env": "^7.9.5",
+    "node-sass": "^4.14.0",
+    "node-sass-chokidar": "^1.4.0"
   }
 }
