@@ -16,5 +16,10 @@
   "bugs": {
     "url": "https://github.com/AdamJSc/prediction-league/issues"
   },
-  "homepage": "https://github.com/AdamJSc/prediction-league#readme"
+  "homepage": "https://github.com/AdamJSc/prediction-league#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.8.4",
+    "@babel/core": "^7.9.0",
+    "@babel/preset-env": "^7.9.5"
+  }
 }
