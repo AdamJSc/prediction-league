@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "watch": "babel -w -o resources/dist/app.js resources/src/js/main.js"
+    "watch": "CHOKIDAR_USEPOLLING=true babel -w --verbose -o resources/dist/app.js resources/src/js/main.js"
   },
   "repository": {
     "type": "git",
