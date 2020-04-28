@@ -4,7 +4,8 @@
   "description": "## Requirements",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "babel -w -o resources/dist/app.js resources/src/js/main.js"
   },
   "repository": {
     "type": "git",

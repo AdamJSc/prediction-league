@@ -2,4 +2,5 @@
 docker/db/data/*
 !docker/db/data/.gitkeep
 node_modules/
+resources/dist/
 vendor/
