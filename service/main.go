@@ -14,6 +14,7 @@ import (
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/app/httph/handlers"
 	"prediction-league/service/internal/domain"
+	"prediction-league/service/internal/views"
 )
 
 func main() {
@@ -34,9 +35,10 @@ func main() {
 
 	// setup server
 	httpAppContainer := httph.NewHTTPAppContainer(dependencies{
-		config: config,
-		mysql:  db,
-		router: mux.NewRouter(),
+		config:    config,
+		mysql:     db,
+		router:    mux.NewRouter(),
+		templates: domain.ParseTemplates(),
 	})
 	handlers.RegisterRoutes(httpAppContainer)
 
@@ -57,11 +59,13 @@ func main() {
 }
 
 type dependencies struct {
-	config domain.Config
-	mysql  coresql.Agent
-	router *mux.Router
+	config    domain.Config
+	mysql     coresql.Agent
+	router    *mux.Router
+	templates *views.Templates
 }
 
-func (d dependencies) Config() domain.Config { return d.config }
-func (d dependencies) MySQL() coresql.Agent  { return d.mysql }
-func (d dependencies) Router() *mux.Router   { return d.router }
+func (d dependencies) Config() domain.Config      { return d.config }
+func (d dependencies) MySQL() coresql.Agent       { return d.mysql }
+func (d dependencies) Router() *mux.Router        { return d.router }
+func (d dependencies) Template() *views.Templates { return d.templates }

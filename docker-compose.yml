@@ -14,12 +14,21 @@ services:
       MYSQL_USER: pl_user
       MYSQL_PASSWORD: pl_pwd
 
+  assets:
+    image: node:13.10
+    container_name: prediction-league-assets
+    volumes:
+      - ${PWD}:/app
+    working_dir: /app
+    command: bash -c "npm install && npm run watch"
+
   app:
     image: golang:1.14
     container_name: prediction-league-app
     env_file: ${PWD}/infra/app.docker.env
     depends_on:
       - db
+      - assets
     volumes:
       - ${PWD}:/go/src/app
     working_dir: /go/src/app

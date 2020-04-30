@@ -9,37 +9,76 @@
 
 ## Getting Started
 
-To start up app dependencies:
+### Local Environment
+
+This project can be run either fully-Dockerised (runs exclusively within containers) or
+partly-Dockerised (dependencies and build tools are in containers, but the service runs
+using Golang on the host).
+
+At the very least, this project runs a MySQL container for a persistent data store, as well as an
+"assets" (Node) container to take care of all front-end builds. The builds comprise Sass for CSS and
+Babel via Webpack for JavaScript (including Vue).
+
+The idea was originally to use a single process (Webpack) to generate both JavaScript and CSS, but
+I couldn't get the Sass build process to produce anything other than standard JS output(?), which
+generally isn't valid CSS.
+
+I then reverted to running separate Sass and Babel CLIs via npm commands which worked fine until I
+added Vue, then suddenly Babel decided it was going to go maverick and not properly transpile a
+"require" function or something.
+
+Hence why I had to revert again and we now have a weird Sass CLI/Webpack mashup combo.
+
+Because it sometimes does what it's supposed to.
+
+I prefer Backend...
+
+Anyway, both build processes will watch for changes to CSS/JS/Vue files - however, changing Go files or
+HTML files/templates will require the service itself to be restarted each time.
+
+### Run App
+
+#### Fully-Dockerised
+
+```bash
+make app.run
+```
+
+#### Partly-Dockerised
 
 ```bash
 make app.start
+go run service/main.go
 ```
 
-Then run the app:
-
-* via Docker: `make app.run`
-* or using native Golang: `go run service/main.go`
-
-To stop the app and dependencies:
+#### Stop local environment
 
 ```bash
 make app.stop
 ```
 
-## Testing
+#### Destroy local environment
 
-To start up test dependencies:
+```bash
+make app.kill
+```
+
+### Run Testsuite
+
+#### Fully-Dockerised
+
+```bash
+make test.run
+```
+
+#### Partly-Dockerised
 
 ```bash
 make test.start
+go test -v ./...
 ```
 
-Then run the testsuite:
-
-* via Docker: `make test.run`
-* or using native Golang: `go test -v ./...`
-
-To stop the dependencies:
+#### Stop local test environment
 
 ```bash
 make test.stop
