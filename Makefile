@@ -7,6 +7,9 @@ app.run:
 app.stop:
 	docker-compose stop
 
+app.restart:
+	docker-compose stop app && docker-compose up -d app
+
 app.kill:
 	docker-compose down
 

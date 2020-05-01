@@ -57,6 +57,12 @@ go run service/main.go
 make app.stop
 ```
 
+#### Restart app container in local environment
+
+```bash
+make app.restart
+```
+
 #### Destroy local environment
 
 ```bash
