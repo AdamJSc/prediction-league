@@ -1,7 +1,10 @@
-app.start:
-	docker-compose up -d db assets
-
 app.run:
+	docker-compose up -d db \
+	&& npm install \
+	&& npm run watch \
+	| go run service/main.go
+
+app.up:
 	docker-compose up -d app && docker-compose logs -f
 
 app.stop:
@@ -13,10 +16,10 @@ app.restart:
 app.kill:
 	docker-compose down
 
-test.start:
-	docker-compose up -d db_test
-
 test.run:
+	docker-compose up -d db_test && go test -v ./...
+
+test.up:
 	docker-compose up app_test
 
 test.stop:
