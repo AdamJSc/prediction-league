@@ -19,5 +19,5 @@ func RegisterRoutes(c *httph.HTTPAppContainer) {
 	c.Router().PathPrefix("/assets").Handler(http.StripPrefix("/assets", http.FileServer(assets)))
 
 	// frontend endpoints
-	c.Router().HandleFunc("/{greeting}", frontendGreetingHandler(c)).Methods(http.MethodGet)
+	c.Router().HandleFunc("/", frontendIndexHandler(c)).Methods(http.MethodGet)
 }
