@@ -1,7 +1,16 @@
+@import url('https://fonts.googleapis.com/css?family=Cabin|Fredoka+One&display=swap');
 @import 'variables';
 
+html {
+  font-size: $base-font-size;
+}
+
 body {
-  background: $background;
-  color: $color;
-  font-family: $font;
+  background: $primary-dark;
+  color: $primary-light;
+  font-family: $base-font-family;
+}
+
+h1, h2, h3, h4 {
+  font-family: $heading-font-family;
 }
