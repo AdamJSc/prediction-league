@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/LUSHDigital/core-mage/env"
 	"github.com/LUSHDigital/core-sql/sqltypes"
-	"github.com/google/uuid"
+	"github.com/LUSHDigital/uuid"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/ladydascalie/v"
 	"github.com/markbates/pkger"
