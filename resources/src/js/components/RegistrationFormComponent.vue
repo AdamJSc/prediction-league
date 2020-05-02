@@ -1,6 +1,6 @@
 <template>
     <div class="form-container">
-        <form class="form-register">
+        <form class="form-primary">
             <div class="form-label-group">
                 <input type="text" id="inputName" name="name" class="form-control" placeholder="Name" required autofocus>
                 <label for="inputName">Name</label>

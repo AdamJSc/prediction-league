@@ -1,0 +1,32 @@
+.btn-primary {
+  color: $primary-light;
+  background-color: $secondary-dark;
+  border-color: $secondary-dark;
+
+  &:focus, &:hover, &:active {
+    background-color: $secondary-dark-tint-dark;
+    border-color: $secondary-dark-tint-dark;
+  }
+
+  &:focus {
+    box-shadow: 0 0 0 0.2rem $secondary-dark-tint-dark-alpha;
+  }
+
+  &:not(:disabled) {
+    &:not(.disabled) {
+      &:active, &.active {
+        color: $primary-light;
+        background-color: $secondary-dark-tint-dark;
+        border-color: $secondary-dark-tint-dark;
+      }
+    }
+  }
+}
+
+.form-control:focus {
+  color: $primary-dark-tint-light;
+  background-color: $primary-light;
+  border-color: $primary-dark-tint-light;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem $secondary-dark-tint-dark-alpha;
+}
