@@ -10,7 +10,6 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"log"
 	"os"
-	"prediction-league/service/internal/domain"
 	"reflect"
 	"testing"
 )
@@ -50,8 +49,6 @@ func TestMain(m *testing.M) {
 		driver,
 	)
 	coresql.MustMigrateUp(mig)
-
-	domain.RegisterCustomValidators()
 
 	truncator = sqltest.NewTruncator("cockroach", db)
 

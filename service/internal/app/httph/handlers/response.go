@@ -4,6 +4,7 @@ import (
 	"github.com/LUSHDigital/core/rest"
 	"net/http"
 	"prediction-league/service/internal/domain"
+	"strings"
 )
 
 type createEntryResponse struct {
@@ -22,7 +23,16 @@ func responseFromError(err error) *rest.Response {
 	case domain.UnauthorizedError:
 		return rest.UnauthorizedError()
 	case domain.ConflictError:
-		return rest.ConflictError(err)
+		if cErr, ok := err.(domain.ConflictError); ok {
+			return &rest.Response{
+				Code:    http.StatusConflict,
+				Message: "conflict error",
+				Data: &rest.Data{
+					Type:    "error",
+					Content: strings.Title(cErr.Error()),
+				},
+			}
+		}
 	case domain.ValidationError:
 		if vErr, ok := err.(domain.ValidationError); ok {
 			return &rest.Response{

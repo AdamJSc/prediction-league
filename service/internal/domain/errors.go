@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
-	"reflect"
 	"strings"
 )
 
@@ -28,58 +27,15 @@ type ConflictError struct{ error }
 // ValidationError translates to a 422 Unprocessable Entity response status code
 type ValidationError struct {
 	Reasons []string `json:"reasons"`
-	Fields  []string `json:"fields"`
 }
 
 func (e ValidationError) Error() string {
 	reasons := strings.Join(e.Reasons, " | ")
-	fields := strings.Join(e.Fields, " | ")
-	return fmt.Sprintf("reasons: %s, with fields: %v", strings.ToLower(reasons), strings.ToLower(fields))
+	return fmt.Sprintf("reasons: %s", strings.ToLower(reasons))
 }
 
 // InternalError translates to a 500 Internal Server Error response status code
 type InternalError struct{ error }
-
-// vPackageErrorToValidationError extracts field names and messages from an error returned by the `v` validation package
-// and transforms them into a ValidationError
-func vPackageErrorToValidationError(err error, structure interface{}) ValidationError {
-	var reasons, fields []string
-
-	for _, validationPart := range strings.Split(err.Error(), "[validation]") {
-		// reason is the full validation text
-		reason := strings.Trim(validationPart, " ")
-		if reason == "" {
-			continue
-		}
-
-		reasons = append(reasons, reason)
-
-		// structFieldName is the first part of the validation text, up to the colon delimiter
-		structFieldName := strings.Trim(strings.Split(reason, ":")[0], " ")
-		if structFieldName == "" {
-			continue
-		}
-
-		// fallback to the original struct field name
-		field := structFieldName
-		if structField, ok := reflect.TypeOf(structure).FieldByName(structFieldName); ok {
-			// try to get a db annotation for the struct field
-			if tag := structField.Tag.Get("db"); tag != "" {
-				field = tag
-			}
-			// try to get a json annotation
-			if tag := structField.Tag.Get("json"); tag != "" {
-				field = tag
-			}
-		}
-		fields = append(fields, field)
-	}
-
-	return ValidationError{
-		Reasons: reasons,
-		Fields:  fields,
-	}
-}
 
 // dbMissingRecordError represents an error from an SQL agent that pertains to a missing record
 type dbMissingRecordError struct {

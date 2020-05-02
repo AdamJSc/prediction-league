@@ -31,8 +31,6 @@ func main() {
 	)
 	coresql.MustMigrateUp(mig)
 
-	domain.RegisterCustomValidators()
-
 	// setup server
 	httpAppContainer := httph.NewHTTPAppContainer(dependencies{
 		config:    config,

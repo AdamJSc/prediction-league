@@ -2,10 +2,11 @@ package domain
 
 import (
 	"errors"
+	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
-	"github.com/ladydascalie/v"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -93,7 +94,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season) (Entry, error) 
 
 	// sanitise entry
 	if err := sanitiseEntry(&e); err != nil {
-		return Entry{}, vPackageErrorToValidationError(err, e)
+		return Entry{}, err
 	}
 
 	// check for existing nickname so that we can return a nice error message if it already exists
@@ -157,7 +158,7 @@ func (a EntryAgent) UpdateEntry(ctx Context, e Entry) (Entry, error) {
 
 	// sanitise entry
 	if err := sanitiseEntry(&e); err != nil {
-		return Entry{}, vPackageErrorToValidationError(err, e)
+		return Entry{}, err
 	}
 
 	// don't check if the email or nickname exists at this point, like we did for creating the Entry in the first place
@@ -180,7 +181,6 @@ func (a EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMetho
 	if !isValidEntryPaymentMethod(paymentMethod) {
 		return Entry{}, ValidationError{
 			Reasons: []string{"Invalid payment method"},
-			Fields:  []string{"payment_method"},
 		}
 	}
 
@@ -188,7 +188,6 @@ func (a EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMetho
 	if paymentRef == "" {
 		return Entry{}, ValidationError{
 			Reasons: []string{"Invalid payment ref"},
-			Fields:  []string{"payment_ref"},
 		}
 	}
 
@@ -215,7 +214,6 @@ func (a EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMetho
 	if !ctx.Guard.AttemptMatchesTarget(entry.ShortCode) {
 		return Entry{}, ValidationError{
 			Reasons: []string{"Invalid Short Code"},
-			Fields:  []string{"short_code"},
 		}
 	}
 
@@ -287,15 +285,49 @@ func (a EntryAgent) ApproveEntryByShortCode(ctx Context, shortCode string) (Entr
 	return entry, nil
 }
 
-// sanitiseEntry runs an Entry through the validation package and applies some tidy-up/formatting
+// sanitiseEntry sanitises and validates an Entry
 func sanitiseEntry(e *Entry) error {
-	if err := v.Struct(e); err != nil {
-		return vPackageErrorToValidationError(err, *e)
-	}
-
+	// sanitise
+	e.ShortCode = strings.Trim(e.ShortCode, " ")
+	e.SeasonID = strings.Trim(e.SeasonID, " ")
+	e.RealmName = strings.Trim(e.RealmName, " ")
 	e.EntrantName = strings.Trim(e.EntrantName, " ")
 	e.EntrantNickname = strings.Trim(e.EntrantNickname, " ")
 	e.EntrantEmail = strings.Trim(e.EntrantEmail, " ")
+	e.Status = strings.Trim(e.Status, " ")
+	e.PaymentMethod.String = strings.Trim(e.PaymentMethod.String, " ")
+	e.PaymentRef.String = strings.Trim(e.PaymentRef.String, " ")
+
+	var validationMsgs []string
+
+	// validate
+	for k, v := range map[string]string{
+		"ID":         e.ID.String(),
+		"Short Code": e.ShortCode,
+		"Season ID":  e.SeasonID,
+		"Realm Name": e.RealmName,
+		"Name":       e.EntrantName,
+		"Nickname":   e.EntrantNickname,
+	} {
+		if v == "" {
+			validationMsgs = append(validationMsgs, fmt.Sprintf("%s must not be empty", k))
+		}
+	}
+	if !isValidEmail(e.EntrantEmail) {
+		validationMsgs = append(validationMsgs, "Email must be a valid email address")
+	}
+	if !isValidEntryStatus(e.Status) {
+		validationMsgs = append(validationMsgs, fmt.Sprintf("%s is not a valid status", e.Status))
+	}
+	if e.PaymentMethod.Valid && !isValidEntryPaymentMethod(e.PaymentMethod.String) {
+		validationMsgs = append(validationMsgs, fmt.Sprintf("%s is not a valid payment method", e.PaymentMethod.String))
+	}
+
+	if len(validationMsgs) > 0 {
+		return ValidationError{
+			Reasons: validationMsgs,
+		}
+	}
 
 	return nil
 }
@@ -316,6 +348,19 @@ func generateUniqueShortCode(db coresql.Agent) (string, error) {
 		return shortCode, nil
 	}
 	return "", wrapDBError(err)
+}
+
+func isValidEmail(email string) bool {
+	var pattern, err = regexp.Compile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+	if err != nil {
+		return false
+	}
+
+	if !pattern.MatchString(email) {
+		return false
+	}
+
+	return true
 }
 
 func isValidEntryStatus(status string) bool {

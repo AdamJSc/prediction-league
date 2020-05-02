@@ -66,10 +66,10 @@
                         console.log(response)
                         switch (response.status) {
                             case 401:
-                                vm.errorMessages.push("please provide the correct entry PIN!")
+                                vm.errorMessages.push("Please provide the correct entry PIN!")
                                 break
                             case 409:
-                                vm.errorMessages.push(response.data.message.split('resource conflict: ')[1])
+                                vm.errorMessages.push(response.data.data.error)
                                 break
                             case 422:
                                 vm.errorMessages = response.data.data.error.reasons
