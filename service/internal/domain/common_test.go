@@ -10,8 +10,10 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"log"
 	"os"
+	"prediction-league/service/internal/domain"
 	"reflect"
 	"testing"
+	"time"
 )
 
 var (
@@ -49,6 +51,13 @@ func TestMain(m *testing.M) {
 		driver,
 	)
 	coresql.MustMigrateUp(mig)
+
+	// load UK location
+	var err error
+	domain.UKLocation, err = time.LoadLocation("Europe/London")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	truncator = sqltest.NewTruncator("cockroach", db)
 

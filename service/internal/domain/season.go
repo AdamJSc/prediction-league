@@ -3,7 +3,6 @@ package domain
 import (
 	"errors"
 	"fmt"
-	"log"
 	"time"
 )
 
@@ -30,18 +29,13 @@ func (c SeasonCollection) GetByID(seasonID string) (Season, error) {
 
 // Seasons returns a pre-determined data structure of all Seasons that can be referenced within the system
 func Seasons() SeasonCollection {
-	ukLoc, err := time.LoadLocation("Europe/London")
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	return map[string]Season{
 		"201920_1": {
 			ID:          "201920_1",
 			Name:        "Premier League 2019/20",
-			EntriesFrom: time.Date(2019, 7, 1, 0, 0, 0, 0, ukLoc),
-			StartDate:   time.Date(2019, 8, 9, 19, 0, 0, 0, ukLoc),
-			EndDate:     time.Date(2020, 5, 17, 23, 59, 59, 0, ukLoc),
+			EntriesFrom: time.Date(2019, 7, 1, 0, 0, 0, 0, UKLocation),
+			StartDate:   time.Date(2019, 8, 9, 19, 0, 0, 0, UKLocation),
+			EndDate:     time.Date(2020, 5, 17, 23, 59, 59, 0, UKLocation),
 		},
 	}
 }

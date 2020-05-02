@@ -16,6 +16,8 @@ import (
 	"time"
 )
 
+var UKLocation *time.Location
+
 // Realm represents a realm in which the system has been configured to run
 type Realm struct {
 	Name     string

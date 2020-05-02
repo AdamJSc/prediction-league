@@ -10,11 +10,13 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/gorilla/mux"
+	"log"
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/app/httph/handlers"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/views"
+	"time"
 )
 
 func main() {
@@ -30,6 +32,13 @@ func main() {
 		driver,
 	)
 	coresql.MustMigrateUp(mig)
+
+	// load UK location
+	var err error
+	domain.UKLocation, err = time.LoadLocation("Europe/London")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// setup server
 	httpAppContainer := httph.NewHTTPAppContainer(dependencies{
