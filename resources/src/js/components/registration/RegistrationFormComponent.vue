@@ -74,7 +74,7 @@
                         // TODO - handle success
                         let shortCode = response.data.data.entry.short_code
                         vm.$el.querySelector('#registration-form').reset()
-                        vm.$emit('workflow-step-change', 'registration-payment')
+                        vm.$emit('workflow-step-change', 'registrationPayment')
                     })
                     .catch(function (error) {
                         let response = error.response

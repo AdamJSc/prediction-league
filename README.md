@@ -14,7 +14,7 @@ Or...
 (Performance stability)
 
 * Golang 1.14
-* npm 13.10
+* npm 13.10 (or nvm)
 * Docker Compose
 * Make
 
@@ -63,6 +63,8 @@ make app.up
 Requires more dependencies but results in generally quieter fans...
 
 ```bash
+nvm install 13.10
+nvm use 13.10
 make app.run
 ```
 
