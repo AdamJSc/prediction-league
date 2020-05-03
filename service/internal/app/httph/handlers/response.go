@@ -8,11 +8,9 @@ import (
 )
 
 type createEntryResponse struct {
-	ID           string `json:"id"`
-	EntrantName  string `json:"entrant_name"`
-	EntrantEmail string `json:"entrant_email"`
-	ShortCode    string `json:"short_code"`
-	ShortURL     string `json:"short_url"`
+	ID        string `json:"id"`
+	Nickname  string `json:"nickname"`
+	ShortCode string `json:"short_code"`
 }
 
 // responseFromError returns a rest package-level error from a domain-level error

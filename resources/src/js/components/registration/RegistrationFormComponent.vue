@@ -68,7 +68,8 @@
                     .then(function (response) {
                         vm.$emit('refresh-entry-data', {
                             entryID: response.data.data.entry.id,
-                            entryShortCode: response.data.data.entry.short_code
+                            entryShortCode: response.data.data.entry.short_code,
+                            entryNickname: response.data.data.entry.nickname,
                         })
                         vm.$el.querySelector('#registration-form').reset()
                         vm.$emit('workflow-step-change', 'registrationPayment')

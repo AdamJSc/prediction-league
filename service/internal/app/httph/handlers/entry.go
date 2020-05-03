@@ -67,17 +67,12 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 			return
 		}
 
-		// generate a lookup URL for the created entry
-		lookupURL := fmt.Sprintf("http://%s/%s", r.Host, createdEntry.ShortCode)
-
 		rest.CreatedResponse(&rest.Data{
 			Type: "entry",
 			Content: createEntryResponse{
-				ID:           createdEntry.ID.String(),
-				EntrantName:  createdEntry.EntrantName,
-				EntrantEmail: createdEntry.EntrantEmail,
-				ShortCode:    createdEntry.ShortCode,
-				ShortURL:     lookupURL,
+				ID:        createdEntry.ID.String(),
+				Nickname:  createdEntry.EntrantNickname,
+				ShortCode: createdEntry.ShortCode,
 			},
 		}, nil).WriteTo(w)
 	}

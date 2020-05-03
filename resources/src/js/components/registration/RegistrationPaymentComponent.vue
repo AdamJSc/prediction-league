@@ -52,7 +52,7 @@
                 e.preventDefault()
                 const vm = this
                 vm.resetErrorMessages()
-                let url = '/api/entry/' + vm.entryData.entryID + '/payment'
+                let url = `/api/entry/${vm.entryData.entryID}/payment`
                 axios.request({
                     method: 'patch',
                     url: url,
@@ -60,7 +60,7 @@
                 })
                     .then(function (response) {
                         // redirect to team selection
-                        window.location = location.origin + "/" + vm.entryData.entryShortCode + "/teams"
+                        window.location = `${location.origin}/${encodeURI(vm.entryData.entryNickname)}/${vm.entryData.entryShortCode}/teams`
                     })
                     .catch(function (error) {
                         let response = error.response

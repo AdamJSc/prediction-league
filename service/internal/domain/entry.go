@@ -287,6 +287,13 @@ func (a EntryAgent) ApproveEntryByShortCode(ctx Context, shortCode string) (Entr
 
 // sanitiseEntry sanitises and validates an Entry
 func sanitiseEntry(e *Entry) error {
+	// only permit alphanumeric characters withing entrant nickname
+	regexNickname, err := regexp.Compile("([A-Z]|[a-z]|[0-9])")
+	if err != nil {
+		return err
+	}
+	regexNicknameFindResult := strings.Join(regexNickname.FindAllString(e.EntrantNickname, -1), "")
+
 	// sanitise
 	e.ShortCode = strings.Trim(e.ShortCode, " ")
 	e.SeasonID = strings.Trim(e.SeasonID, " ")
@@ -312,6 +319,15 @@ func sanitiseEntry(e *Entry) error {
 		if v == "" {
 			validationMsgs = append(validationMsgs, fmt.Sprintf("%s must not be empty", k))
 		}
+	}
+	if len(regexNicknameFindResult) != len(e.EntrantNickname) {
+		//log.Fatal(len(regexNicknameFindResult), len(e.EntrantNickname))
+		//log.Fatal(e.EntrantNickname, regexNicknameFindResult, len(regexNicknameFindResult), len(e.EntrantNickname))
+		// regex must have filtered out some invalid characters...
+		validationMsgs = append(validationMsgs, "Nickname must only contain alphanumeric characters (A-Z, a-z, 0-9)")
+	}
+	if len(e.EntrantNickname) > 12 {
+		validationMsgs = append(validationMsgs, "Nickname must be 12 characters or fewer")
 	}
 	if !isValidEmail(e.EntrantEmail) {
 		validationMsgs = append(validationMsgs, "Email must be a valid email address")
