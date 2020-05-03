@@ -5,7 +5,7 @@
         </div>
         <div class="row">
             <div class="col-md-8 offset-md-2">
-
+                Your short code is {{shortCode}}
             </div>
         </div>
     </div>
@@ -15,8 +15,8 @@
     export default {
         name: 'PaymentStep',
         props: {
-            display: {
-                type: Boolean
+            shortCode: {
+                type: String
             }
         }
     }

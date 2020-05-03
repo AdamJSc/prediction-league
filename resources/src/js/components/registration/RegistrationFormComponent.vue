@@ -46,11 +46,6 @@
 
     export default {
         name: 'RegistrationForm',
-        props: {
-            display: {
-                type: Boolean
-            }
-        },
         data: function() {
             return {
                 errorMessages: [],
@@ -71,10 +66,9 @@
                     data: this.formData
                 })
                     .then(function (response) {
-                        // TODO - handle success
-                        let shortCode = response.data.data.entry.short_code
                         vm.$el.querySelector('#registration-form').reset()
                         vm.$emit('workflow-step-change', 'registrationPayment')
+                        vm.$emit('refresh-short-code', response.data.data.entry.short_code)
                     })
                     .catch(function (error) {
                         let response = error.response

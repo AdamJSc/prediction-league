@@ -3,10 +3,10 @@
         <div class="carousel slide">
             <div class="carousel-inner">
                 <div class="carousel-item active">
-                    <registration-form v-show="showRegistrationForm" v-on:workflow-step-change="onWorkflowStepChange"></registration-form>
+                    <registration-form v-show="showRegistrationForm" v-on="onListeners"></registration-form>
                 </div>
                 <div class="carousel-item">
-                    <registration-payment v-show="showRegistrationPayment"></registration-payment>
+                    <registration-payment v-show="showRegistrationPayment" v-bind:short-code="shortCode"></registration-payment>
                 </div>
             </div>
         </div>
@@ -22,7 +22,8 @@
                 showRegistrationSteps: {
                     registrationForm: true,
                     registrationPayment: false
-                }
+                },
+                shortCode: ""
             }
         },
         mounted: function() {
@@ -30,6 +31,24 @@
             this.carousel.carousel({interval: false})
         },
         computed: {
+            onListeners: function() {
+                let vm = this
+                return Object.assign({},
+                    this.$listeners,
+                    {
+                        "workflow-step-change": function(newWorkflowStep) {
+                            vm.showAllRegistrationSteps()
+                            vm.carousel.on('slid.bs.carousel', function () {
+                                vm.showOnlyRegistrationStep(newWorkflowStep)
+                            })
+                            vm.carousel.carousel('next')
+                        },
+                        "refresh-short-code": function(newShortCode) {
+                            vm.shortCode = newShortCode
+                        }
+                    }
+                )
+            },
             showRegistrationForm: function() {
                 return this.showRegistrationSteps.registrationForm
             },
@@ -38,14 +57,6 @@
             }
         },
         methods: {
-            onWorkflowStepChange: function(newWorkflowStep) {
-                let vm = this
-                vm.showAllRegistrationSteps()
-                vm.carousel.on('slid.bs.carousel', function () {
-                    vm.showOnlyRegistrationStep(newWorkflowStep)
-                })
-                vm.carousel.carousel('next')
-            },
             showAllRegistrationSteps: function() {
                 let keys = Object.keys(this.showRegistrationSteps)
                 for (let i = 0; i < keys.length; i++) {
