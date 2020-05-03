@@ -16,7 +16,23 @@ import (
 	"time"
 )
 
-var UKLocation *time.Location
+var Locations = make(map[string]*time.Location)
+
+func MustInflateLocations() {
+	locNames := []string{
+		"Europe/London",
+		"UTC",
+	}
+
+	for _, locName := range locNames {
+		loc, err := time.LoadLocation(locName)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		Locations[locName] = loc
+	}
+}
 
 // Realm represents a realm in which the system has been configured to run
 type Realm struct {

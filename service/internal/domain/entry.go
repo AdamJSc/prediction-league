@@ -142,6 +142,26 @@ func (a EntryAgent) CreateEntry(ctx Context, e Entry, s *Season) (Entry, error) 
 	return e, nil
 }
 
+// RetrieveEntryByID handles the retrieval of an existing Entry in the database by its ID
+func (a EntryAgent) RetrieveEntryByID(ctx Context, id string) (Entry, error) {
+	db := a.MySQL()
+
+	entries, err := dbSelectEntries(db, map[string]interface{}{
+		"id": id,
+	}, false)
+	if err != nil {
+		return Entry{}, domainErrorFromDBError(err)
+	}
+	e := entries[0]
+
+	// ensure that Entry realm matches current realm
+	if ctx.Realm.Name != e.RealmName {
+		return Entry{}, ConflictError{errors.New("invalid realm")}
+	}
+
+	return e, nil
+}
+
 // UpdateEntry handles the updating of an existing Entry in the database
 func (a EntryAgent) UpdateEntry(ctx Context, e Entry) (Entry, error) {
 	db := a.MySQL()

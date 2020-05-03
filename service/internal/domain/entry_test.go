@@ -226,6 +226,100 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	})
 }
 
+func TestEntryAgent_RetrieveEntry(t *testing.T) {
+	defer truncate(t)
+
+	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
+
+	ctx := domain.NewContext()
+	ctx.Realm.Name = "TEST_REALM"
+	ctx.Realm.PIN = "5678"
+	ctx.Guard.SetAttempt("5678")
+
+	// seed initial entry
+	entry, err := agent.CreateEntry(ctx, domain.Entry{
+		EntrantName:     "Harry Redknapp",
+		EntrantNickname: "MrHarryR",
+		EntrantEmail:    "harry.redknapp@football.net",
+	}, &domain.Season{
+		ID:          "12345",
+		EntriesFrom: time.Now().Add(-24 * time.Hour),
+		StartDate:   time.Now().Add(24 * time.Hour),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("retrieve an existent entry with valid credentials must succeed", func(t *testing.T) {
+		// should succeed
+		retrievedEntry, err := agent.RetrieveEntryByID(ctx, entry.ID.String())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// check values
+		if entry.ID != retrievedEntry.ID {
+			expectedGot(t, entry.ID, retrievedEntry.ID)
+		}
+		if entry.ShortCode != retrievedEntry.ShortCode {
+			expectedGot(t, entry.ShortCode, retrievedEntry.ShortCode)
+		}
+		if entry.SeasonID != retrievedEntry.SeasonID {
+			expectedGot(t, entry.SeasonID, retrievedEntry.SeasonID)
+		}
+		if entry.RealmName != retrievedEntry.RealmName {
+			expectedGot(t, entry.RealmName, retrievedEntry.RealmName)
+		}
+		if entry.EntrantName != retrievedEntry.EntrantName {
+			expectedGot(t, entry.EntrantName, retrievedEntry.EntrantName)
+		}
+		if entry.EntrantNickname != retrievedEntry.EntrantNickname {
+			expectedGot(t, entry.EntrantNickname, retrievedEntry.EntrantNickname)
+		}
+		if entry.EntrantEmail != retrievedEntry.EntrantEmail {
+			expectedGot(t, entry.EntrantEmail, retrievedEntry.EntrantEmail)
+		}
+		if entry.Status != retrievedEntry.Status {
+			expectedGot(t, entry.Status, retrievedEntry.Status)
+		}
+		if entry.PaymentMethod != retrievedEntry.PaymentMethod {
+			expectedGot(t, entry.PaymentMethod, retrievedEntry.PaymentMethod)
+		}
+		if entry.PaymentRef != retrievedEntry.PaymentRef {
+			expectedGot(t, entry.PaymentRef, retrievedEntry.PaymentRef)
+		}
+		if !reflect.DeepEqual(entry.TeamIDSequence, retrievedEntry.TeamIDSequence) {
+			expectedGot(t, entry.PaymentRef, retrievedEntry.PaymentRef)
+		}
+		if entry.ApprovedAt.Time.In(domain.Locations["UTC"]) != retrievedEntry.ApprovedAt.Time.In(domain.Locations["UTC"]) {
+			expectedGot(t, entry.ApprovedAt, retrievedEntry.ApprovedAt)
+		}
+		if entry.CreatedAt.In(domain.Locations["UTC"]) != retrievedEntry.CreatedAt.In(domain.Locations["UTC"]) {
+			expectedGot(t, entry.CreatedAt, retrievedEntry.CreatedAt)
+		}
+		if entry.UpdatedAt.Time.In(domain.Locations["UTC"]) != retrievedEntry.UpdatedAt.Time.In(domain.Locations["UTC"]) {
+			expectedGot(t, entry.UpdatedAt, retrievedEntry.UpdatedAt)
+		}
+	})
+
+	t.Run("retrieve a non-existent entry must fail", func(t *testing.T) {
+		_, err = agent.RetrieveEntryByID(ctx, "not_a_valid_id")
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		}
+	})
+
+	t.Run("retrieve an entry with a mismatched realm must fail", func(t *testing.T) {
+		ctxWithInvalidRealm := ctx
+		ctxWithInvalidRealm.Realm.Name = "DIFFERENT_REALM"
+
+		_, err = agent.RetrieveEntryByID(ctxWithInvalidRealm, entry.ID.String())
+		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
+			expectedTypeOfGot(t, domain.ConflictError{}, err)
+		}
+	})
+}
+
 func TestEntryAgent_UpdateEntry(t *testing.T) {
 	defer truncate(t)
 
@@ -281,7 +375,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		if entry.RealmName != updatedEntry.RealmName {
 			expectedGot(t, entry.RealmName, updatedEntry.RealmName)
 		}
-		if entry.CreatedAt != updatedEntry.CreatedAt {
+		if entry.CreatedAt.In(domain.Locations["UTC"]) != updatedEntry.CreatedAt.In(domain.Locations["UTC"]) {
 			expectedGot(t, entry.CreatedAt, updatedEntry.CreatedAt)
 		}
 
