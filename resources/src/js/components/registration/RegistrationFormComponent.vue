@@ -34,7 +34,7 @@
                         <label for="inputPIN">PIN</label>
                     </div>
 
-                    <button class="btn btn-lg btn-primary btn-block" type="submit" v-on:click="submitRegistration">Enter</button>
+                    <button class="btn btn-lg btn-primary btn-block" v-on:click="submitRegistration">Enter</button>
                 </form>
             </div>
         </div>
@@ -66,9 +66,12 @@
                     data: this.formData
                 })
                     .then(function (response) {
+                        vm.$emit('refresh-entry-data', {
+                            entryID: response.data.data.entry.id,
+                            entryShortCode: response.data.data.entry.short_code
+                        })
                         vm.$el.querySelector('#registration-form').reset()
                         vm.$emit('workflow-step-change', 'registrationPayment')
-                        vm.$emit('refresh-short-code', response.data.data.entry.short_code)
                     })
                     .catch(function (error) {
                         let response = error.response
@@ -83,7 +86,7 @@
                                 vm.errorMessages = response.data.data.error.reasons
                                 break
                             default:
-                                vm.errorMessages.push("something went wrong :(")
+                                vm.errorMessages.push("Something went wrong :(")
                                 break
                         }
                     })

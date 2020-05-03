@@ -116,7 +116,7 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 			return
 		}
 
-		ctx.Guard.SetAttempt(input.ShortCode)
+		ctx.Guard.SetAttempt(input.EntryID)
 
 		// update payment details for entry
 		if _, err := agent.UpdateEntryPaymentDetails(ctx, entryID, input.PaymentMethod, input.PaymentRef); err != nil {

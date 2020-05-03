@@ -6,7 +6,7 @@
                     <registration-form v-show="showRegistrationForm" v-on="onListeners"></registration-form>
                 </div>
                 <div class="carousel-item">
-                    <registration-payment v-show="showRegistrationPayment" v-bind:short-code="shortCode"></registration-payment>
+                    <registration-payment v-show="showRegistrationPayment" v-bind:entry-data="entryData"></registration-payment>
                 </div>
             </div>
         </div>
@@ -23,7 +23,7 @@
                     registrationForm: true,
                     registrationPayment: false
                 },
-                shortCode: ""
+                entryData: {entryID: "", entryShortCode: ""}
             }
         },
         mounted: function() {
@@ -43,8 +43,8 @@
                             })
                             vm.carousel.carousel('next')
                         },
-                        "refresh-short-code": function(newShortCode) {
-                            vm.shortCode = newShortCode
+                        "refresh-entry-data": function(newEntryData) {
+                            vm.entryData = newEntryData
                         }
                     }
                 )

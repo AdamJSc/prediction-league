@@ -408,7 +408,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 
 	// override guard value so that context can be re-used for UpdateEntryPaymentDetails
 	ctx := ctxWithPIN
-	ctx.Guard.SetAttempt(entry.ShortCode)
+	ctx.Guard.SetAttempt(entry.ID.String())
 
 	paymentRef := "ABCD1234"
 

@@ -210,10 +210,10 @@ func (a EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMetho
 		return Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
-	// ensure that Guard value matches Entry short code
-	if !ctx.Guard.AttemptMatchesTarget(entry.ShortCode) {
+	// ensure that Guard value matches Entry ID
+	if !ctx.Guard.AttemptMatchesTarget(entry.ID.String()) {
 		return Entry{}, ValidationError{
-			Reasons: []string{"Invalid Short Code"},
+			Reasons: []string{"Invalid Entry ID"},
 		}
 	}
 
