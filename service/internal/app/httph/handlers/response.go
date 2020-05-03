@@ -4,14 +4,13 @@ import (
 	"github.com/LUSHDigital/core/rest"
 	"net/http"
 	"prediction-league/service/internal/domain"
+	"strings"
 )
 
 type createEntryResponse struct {
-	ID           string `json:"id"`
-	EntrantName  string `json:"entrant_name"`
-	EntrantEmail string `json:"entrant_email"`
-	ShortCode    string `json:"short_code"`
-	ShortURL     string `json:"short_url"`
+	ID        string `json:"id"`
+	Nickname  string `json:"nickname"`
+	ShortCode string `json:"short_code"`
 }
 
 // responseFromError returns a rest package-level error from a domain-level error
@@ -22,7 +21,16 @@ func responseFromError(err error) *rest.Response {
 	case domain.UnauthorizedError:
 		return rest.UnauthorizedError()
 	case domain.ConflictError:
-		return rest.ConflictError(err)
+		if cErr, ok := err.(domain.ConflictError); ok {
+			return &rest.Response{
+				Code:    http.StatusConflict,
+				Message: "conflict error",
+				Data: &rest.Data{
+					Type:    "error",
+					Content: strings.Title(cErr.Error()),
+				},
+			}
+		}
 	case domain.ValidationError:
 		if vErr, ok := err.(domain.ValidationError); ok {
 			return &rest.Response{

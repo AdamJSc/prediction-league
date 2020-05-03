@@ -32,7 +32,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	entry := domain.Entry{
 		// these values should be populated
 		EntrantName:     "Harry Redknapp",
-		EntrantNickname: "Mr Harry R",
+		EntrantNickname: "MrHarryR",
 		EntrantEmail:    "harry.redknapp@football.net",
 
 		// these values should be overridden
@@ -188,6 +188,23 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		}
 	})
 
+	t.Run("create an entry with invalid nickname must fail", func(t *testing.T) {
+		invalidEntry := entry
+		invalidEntry.EntrantEmail = "harry.redknapp.alternative.email@football.net"
+
+		invalidEntry.EntrantNickname = "!@£$" // contains non-alphanumeric characters
+		_, err := agent.CreateEntry(ctx, invalidEntry, &season)
+		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+
+		invalidEntry.EntrantNickname = "1234567890123456789" // longer than 12 characters
+		_, err = agent.CreateEntry(ctx, invalidEntry, &season)
+		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+	})
+
 	t.Run("create an entry with existing entrant data must fail", func(t *testing.T) {
 		invalidEntry := entry
 		invalidEntry.EntrantName = "Not Harry Redknapp"
@@ -200,7 +217,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 
 		invalidEntry = entry
 		invalidEntry.EntrantName = "Not Harry Redknapp"
-		invalidEntry.EntrantNickname = "Not Harry R"
+		invalidEntry.EntrantNickname = "NotHarryR"
 		// email doesn't change so it already exists
 		_, err = agent.CreateEntry(ctx, invalidEntry, &season)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
@@ -222,7 +239,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 	// seed initial entry
 	entry, err := agent.CreateEntry(ctx, domain.Entry{
 		EntrantName:     "Harry Redknapp",
-		EntrantNickname: "Mr Harry R",
+		EntrantNickname: "MrHarryR",
 		EntrantEmail:    "harry.redknapp@football.net",
 	}, &domain.Season{
 		ID:          "12345",
@@ -243,7 +260,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 			SeasonID:        "67890",
 			RealmName:       entry.RealmName,
 			EntrantName:     "Jamie Redknapp",
-			EntrantNickname: "Mr Jamie R",
+			EntrantNickname: "MrJamieR",
 			EntrantEmail:    "jamie.redknapp@football.net",
 			Status:          domain.EntryStatusReady,
 			PaymentRef:      sqltypes.ToNullString(&changedEntryPaymentRef),
@@ -353,6 +370,22 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		var invalidEntry domain.Entry
 		var err error
 
+		// invalid nickname (non-alphanumeric characters)
+		invalidEntry = entry
+		invalidEntry.EntrantNickname = "!@£$%"
+		_, err = agent.UpdateEntry(ctx, invalidEntry)
+		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+
+		// invalid nickname (more than 12 characters)
+		invalidEntry = entry
+		invalidEntry.EntrantNickname = "1234567890123456789"
+		_, err = agent.UpdateEntry(ctx, invalidEntry)
+		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+
 		// invalid email
 		invalidEntry = entry
 		invalidEntry.EntrantEmail = "not_a_valid_email"
@@ -393,7 +426,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	// seed initial entry
 	entry := domain.Entry{
 		EntrantName:     "Harry Redknapp",
-		EntrantNickname: "Mr Harry R",
+		EntrantNickname: "MrHarryR",
 		EntrantEmail:    "harry.redknapp@football.net",
 	}
 	season := domain.Season{
@@ -408,7 +441,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 
 	// override guard value so that context can be re-used for UpdateEntryPaymentDetails
 	ctx := ctxWithPIN
-	ctx.Guard.SetAttempt(entry.ShortCode)
+	ctx.Guard.SetAttempt(entry.ID.String())
 
 	paymentRef := "ABCD1234"
 
@@ -500,7 +533,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 		// seed an additional entry
 		entryWithInvalidStatus := domain.Entry{
 			EntrantName:     "Jamie Redknapp",
-			EntrantNickname: "Mr Jamie R",
+			EntrantNickname: "MrJamieR",
 			EntrantEmail:    "jamie.redknapp@football.net",
 		}
 		entryWithInvalidStatus, err := agent.CreateEntry(ctxWithPIN, entryWithInvalidStatus, &season)
@@ -547,7 +580,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 
 	entry, err := agent.CreateEntry(ctxWithPIN, domain.Entry{
 		EntrantName:     "Harry Redknapp",
-		EntrantNickname: "Mr Harry R",
+		EntrantNickname: "MrHarryR",
 		EntrantEmail:    "harry.redknapp@football.net",
 	}, &season)
 	if err != nil {
@@ -556,7 +589,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 
 	entryWithPaidStatus, err := agent.CreateEntry(ctxWithPIN, domain.Entry{
 		EntrantName:     "Jamie Redknapp",
-		EntrantNickname: "Mr Jamie R",
+		EntrantNickname: "MrJamieR",
 		EntrantEmail:    "jamie.redknapp@football.net",
 	}, &season)
 	if err != nil {
@@ -570,7 +603,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 
 	entryWithReadyStatus, err := agent.CreateEntry(ctxWithPIN, domain.Entry{
 		EntrantName:     "Frank Lampard",
-		EntrantNickname: "Mr Frank Lampard",
+		EntrantNickname: "FrankieLamps",
 		EntrantEmail:    "frank.lampard@football.net",
 	}, &season)
 	if err != nil {

@@ -67,17 +67,12 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 			return
 		}
 
-		// generate a lookup URL for the created entry
-		lookupURL := fmt.Sprintf("http://%s/%s", r.Host, createdEntry.ShortCode)
-
 		rest.CreatedResponse(&rest.Data{
 			Type: "entry",
 			Content: createEntryResponse{
-				ID:           createdEntry.ID.String(),
-				EntrantName:  createdEntry.EntrantName,
-				EntrantEmail: createdEntry.EntrantEmail,
-				ShortCode:    createdEntry.ShortCode,
-				ShortURL:     lookupURL,
+				ID:        createdEntry.ID.String(),
+				Nickname:  createdEntry.EntrantNickname,
+				ShortCode: createdEntry.ShortCode,
 			},
 		}, nil).WriteTo(w)
 	}
@@ -116,7 +111,7 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 			return
 		}
 
-		ctx.Guard.SetAttempt(input.ShortCode)
+		ctx.Guard.SetAttempt(input.EntryID)
 
 		// update payment details for entry
 		if _, err := agent.UpdateEntryPaymentDetails(ctx, entryID, input.PaymentMethod, input.PaymentRef); err != nil {

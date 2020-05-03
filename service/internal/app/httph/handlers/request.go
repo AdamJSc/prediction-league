@@ -20,5 +20,5 @@ func (r createEntryRequest) ToEntryModel() domain.Entry {
 type updateEntryPaymentDetailsRequest struct {
 	PaymentMethod string `json:"payment_method"`
 	PaymentRef    string `json:"payment_ref"`
-	ShortCode     string `json:"short_code"`
+	EntryID     string `json:"entry_id"`
 }

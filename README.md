@@ -2,10 +2,21 @@
 
 ## Requirements
 
-* Docker
+Either...
+
+(CPU-intensive)
+
 * Docker Compose
 * Make
-* (optional) Golang 1.14
+
+Or...
+
+(Performance stability)
+
+* Golang 1.14
+* npm 13.10 (or nvm)
+* Docker Compose
+* Make
 
 ## Getting Started
 
@@ -40,21 +51,33 @@ HTML files/templates will require the service itself to be restarted each time.
 
 #### Fully-Dockerised
 
+Look out for CPU with this option. Where the asset builds are watching for changes across a network, it
+can get quite resource-hungry...
+
 ```bash
-make app.run
+make app.up
 ```
 
 #### Partly-Dockerised
 
+Requires more dependencies but results in generally quieter fans...
+
 ```bash
-make app.start
-go run service/main.go
+nvm install 13.10
+nvm use 13.10
+make app.run
 ```
 
 #### Stop local environment
 
 ```bash
 make app.stop
+```
+
+#### Restart app container in local environment
+
+```bash
+make app.restart
 ```
 
 #### Destroy local environment

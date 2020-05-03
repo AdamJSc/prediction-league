@@ -13,6 +13,7 @@ import (
 	"prediction-league/service/internal/domain"
 	"reflect"
 	"testing"
+	"time"
 )
 
 var (
@@ -51,7 +52,12 @@ func TestMain(m *testing.M) {
 	)
 	coresql.MustMigrateUp(mig)
 
-	domain.RegisterCustomValidators()
+	// load UK location
+	var err error
+	domain.UKLocation, err = time.LoadLocation("Europe/London")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	truncator = sqltest.NewTruncator("cockroach", db)
 
