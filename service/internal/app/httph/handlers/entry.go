@@ -40,11 +40,12 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 			return
 		}
 
-		ctx, err := domain.ContextFromRequest(r, c.Config())
+		ctx, cancel, err := domain.ContextFromRequest(r, c.Config())
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return
 		}
+		defer cancel()
 
 		if seasonID == "latest" {
 			// use the current realm's season ID instead
@@ -105,11 +106,12 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 			return
 		}
 
-		ctx, err := domain.ContextFromRequest(r, c.Config())
+		ctx, cancel, err := domain.ContextFromRequest(r, c.Config())
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return
 		}
+		defer cancel()
 
 		ctx.Guard.SetAttempt(input.EntryID)
 
@@ -135,11 +137,12 @@ func approveEntryByShortCodeHandler(c *httph.HTTPAppContainer) func(w http.Respo
 			return
 		}
 
-		ctx, err := domain.ContextFromRequest(r, c.Config())
+		ctx, cancel, err := domain.ContextFromRequest(r, c.Config())
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return
 		}
+		defer cancel()
 
 		// approve entry
 		if _, err := agent.ApproveEntryByShortCode(ctx, entryShortCode); err != nil {

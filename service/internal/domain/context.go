@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // Guard represents an arbitrary guard that can be used by agent methods
@@ -43,8 +44,12 @@ func NewContext() Context {
 }
 
 // ContextFromRequest extracts data from a given request object and returns a domain object Context
-func ContextFromRequest(r *http.Request, config Config) (Context, error) {
-	ctx := NewContext()
+func ContextFromRequest(r *http.Request, config Config) (Context, context.CancelFunc, error) {
+	domainCtx := NewContext()
+
+	// set timeout limit
+	ctxWithTimeout, cancel := context.WithTimeout(domainCtx.Context, 10*time.Second)
+	domainCtx.Context = ctxWithTimeout
 
 	// realm name is host (strip port)
 	realmName := strings.Trim(strings.Split(r.Host, ":")[0], " ")
@@ -52,10 +57,10 @@ func ContextFromRequest(r *http.Request, config Config) (Context, error) {
 	// see if we can find this realm in our config
 	realm, ok := config.Realms[realmName]
 	if !ok {
-		return Context{}, errors.New("realm not configured")
+		return Context{}, nil, errors.New("realm not configured")
 	}
 
-	ctx.Realm = realm
+	domainCtx.Realm = realm
 
 	// see if request contains any basic auth credentials
 	var userPass []byte
@@ -65,9 +70,9 @@ func ContextFromRequest(r *http.Request, config Config) (Context, error) {
 		userPass, _ = base64.StdEncoding.DecodeString(split[1])
 		// if username and password supplied, check if it matches the expected from env/config
 		if string(userPass) == config.AdminBasicAuth {
-			ctx.BasicAuthSuccessful = true
+			domainCtx.BasicAuthSuccessful = true
 		}
 	}
 
-	return ctx, nil
+	return domainCtx, cancel, nil
 }
