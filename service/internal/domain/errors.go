@@ -1,10 +1,8 @@
 package domain
 
 import (
-	"database/sql"
-	"errors"
 	"fmt"
-	"github.com/go-sql-driver/mysql"
+	"prediction-league/service/internal/repositories"
 	"strings"
 )
 
@@ -37,40 +35,12 @@ func (e ValidationError) Error() string {
 // InternalError translates to a 500 Internal Server Error response status code
 type InternalError struct{ error }
 
-// dbMissingRecordError represents an error from an SQL agent that pertains to a missing record
-type dbMissingRecordError struct {
-	error
-}
-
-// dbDuplicateRecordError represents an error from an SQL agent that pertains to a unique constraint violation
-type dbDuplicateRecordError struct {
-	error
-}
-
-// wrapDBError wraps an error from an SQL agent according to its nature as per the representations above
-func wrapDBError(err error) error {
-	if e, ok := err.(*mysql.MySQLError); ok {
-		switch e.Number {
-		case 1060:
-		case 1061:
-		case 1062:
-			return dbDuplicateRecordError{err}
-		}
-	}
-
-	if errors.Is(err, sql.ErrNoRows) {
-		return dbMissingRecordError{err}
-	}
-
-	return err
-}
-
 // domainErrorFromDBError returns the appropriate domain-level error from a database-specific error
 func domainErrorFromDBError(err error) error {
 	switch err.(type) {
-	case dbDuplicateRecordError:
+	case repositories.DuplicateDBRecordError:
 		return ConflictError{err}
-	case dbMissingRecordError:
+	case repositories.MissingDBRecordError:
 		return NotFoundError{err}
 	}
 
