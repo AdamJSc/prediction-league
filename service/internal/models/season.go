@@ -38,8 +38,8 @@ func (s Season) GetStatus(ts time.Time) string {
 type SeasonCollection map[string]Season
 
 // GetByID retrieves a matching Season from the collection by its ID
-func (c SeasonCollection) GetByID(seasonID string) (Season, error) {
-	for id, season := range c {
+func (s SeasonCollection) GetByID(seasonID string) (Season, error) {
+	for id, season := range s {
 		if id == seasonID {
 			return season, nil
 		}

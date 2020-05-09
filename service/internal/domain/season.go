@@ -19,32 +19,11 @@ func Seasons() models.SeasonCollection {
 	}
 }
 
-// ValidateSeason returns an error if validation rules are not satisfied for a provided Season
+// ValidateSeason returns an error if validation rules are not satisfied for the provided Season
 func ValidateSeason(s models.Season) error {
-	if err := sanitiseSeason(&s); err != nil {
-		return err
-	}
-
-	if !s.EntriesFrom.Before(s.StartDate) {
-		return ValidationError{
-			Reasons: []string{"EntriesFrom date cannot occur before Start date"},
-		}
-	}
-
-	if !s.StartDate.Before(s.EndDate) {
-		return ValidationError{
-			Reasons: []string{"End date cannot occur before Start date"},
-		}
-	}
-
-	return nil
-}
-
-// sanitiseSeason sanitises and validates a Season
-func sanitiseSeason(s *models.Season) error {
 	var validationMsgs []string
 
-	// validate
+	// validate strings
 	for k, v := range map[string]string{
 		"ID":   s.ID,
 		"Name": s.Name,
@@ -54,6 +33,7 @@ func sanitiseSeason(s *models.Season) error {
 		}
 	}
 
+	// validate timestamps
 	emptyTime := time.Time{}.Format(time.RFC3339Nano)
 	if s.StartDate.Format(time.RFC3339Nano) == emptyTime {
 		validationMsgs = append(validationMsgs, "Start Date must not be empty")
@@ -68,6 +48,18 @@ func sanitiseSeason(s *models.Season) error {
 	if len(validationMsgs) > 0 {
 		return ValidationError{
 			Reasons: validationMsgs,
+		}
+	}
+
+	if !s.EntriesFrom.Before(s.StartDate) {
+		return ValidationError{
+			Reasons: []string{"EntriesFrom date cannot occur before Start date"},
+		}
+	}
+
+	if !s.StartDate.Before(s.EndDate) {
+		return ValidationError{
+			Reasons: []string{"End date cannot occur before Start date"},
 		}
 	}
 
