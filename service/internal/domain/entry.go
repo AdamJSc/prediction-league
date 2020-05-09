@@ -23,7 +23,7 @@ type EntryAgentInjector interface {
 type EntryAgent struct{ EntryAgentInjector }
 
 // CreateEntry handles the creation of a new Entry in the database
-func (a EntryAgent) CreateEntry(ctx Context, e models.Entry, s *Season) (models.Entry, error) {
+func (a EntryAgent) CreateEntry(ctx Context, e models.Entry, s *models.Season) (models.Entry, error) {
 	db := a.MySQL()
 
 	if s == nil {
@@ -36,7 +36,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e models.Entry, s *Season) (models.
 	}
 
 	// check season status is ok
-	if s.GetStatus(time.Now()) != SeasonStatusAcceptingEntries {
+	if s.GetStatus(time.Now()) != models.SeasonStatusAcceptingEntries {
 		return models.Entry{}, ConflictError{errors.New("season is not currently accepting entries")}
 	}
 

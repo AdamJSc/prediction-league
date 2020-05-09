@@ -21,7 +21,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	ctx.Realm.PIN = "5678"
 	ctx.Guard.SetAttempt("5678")
 
-	season := domain.Season{
+	season := models.Season{
 		ID:          "199293_1",
 		EntriesFrom: time.Now().Add(-24 * time.Hour),
 		StartDate:   time.Now().Add(24 * time.Hour),
@@ -242,7 +242,7 @@ func TestEntryAgent_RetrieveEntry(t *testing.T) {
 		EntrantName:     "Harry Redknapp",
 		EntrantNickname: "MrHarryR",
 		EntrantEmail:    "harry.redknapp@football.net",
-	}, &domain.Season{
+	}, &models.Season{
 		ID:          "12345",
 		EntriesFrom: time.Now().Add(-24 * time.Hour),
 		StartDate:   time.Now().Add(24 * time.Hour),
@@ -336,7 +336,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		EntrantName:     "Harry Redknapp",
 		EntrantNickname: "MrHarryR",
 		EntrantEmail:    "harry.redknapp@football.net",
-	}, &domain.Season{
+	}, &models.Season{
 		ID:          "12345",
 		EntriesFrom: time.Now().Add(-24 * time.Hour),
 		StartDate:   time.Now().Add(24 * time.Hour),
@@ -524,7 +524,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 		EntrantNickname: "MrHarryR",
 		EntrantEmail:    "harry.redknapp@football.net",
 	}
-	season := domain.Season{
+	season := models.Season{
 		ID:          "12345",
 		EntriesFrom: time.Now().Add(-24 * time.Hour),
 		StartDate:   time.Now().Add(24 * time.Hour),
@@ -667,7 +667,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 	ctxWithPIN.Guard.SetAttempt("5678")
 
 	// seed initial entries
-	season := domain.Season{
+	season := models.Season{
 		ID:          "12345",
 		EntriesFrom: time.Now().Add(-24 * time.Hour),
 		StartDate:   time.Now().Add(24 * time.Hour),

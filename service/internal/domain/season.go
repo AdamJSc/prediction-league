@@ -1,35 +1,14 @@
 package domain
 
 import (
-	"errors"
 	"fmt"
+	"prediction-league/service/internal/models"
 	"time"
 )
 
-const (
-	SeasonStatusForthcoming      = "forthcoming"
-	SeasonStatusAcceptingEntries = "accepting_entries"
-	SeasonStatusActive           = "active"
-	SeasonStatusElapsed          = "elapsed"
-)
-
-// SeasonCollection is map of Seasons
-type SeasonCollection map[string]Season
-
-// GetByID retrieves a matching Season from the collection by its ID
-func (c SeasonCollection) GetByID(seasonID string) (Season, error) {
-	for id, season := range c {
-		if id == seasonID {
-			return season, nil
-		}
-	}
-
-	return Season{}, errors.New("not found")
-}
-
 // Seasons returns a pre-determined data structure of all Seasons that can be referenced within the system
-func Seasons() SeasonCollection {
-	return map[string]Season{
+func Seasons() models.SeasonCollection {
+	return map[string]models.Season{
 		"201920_1": {
 			ID:          "201920_1",
 			Name:        "Premier League 2019/20",
@@ -40,30 +19,8 @@ func Seasons() SeasonCollection {
 	}
 }
 
-// Season defines the structure of a Season against which Entries are played
-type Season struct {
-	ID          string
-	Name        string
-	EntriesFrom time.Time
-	StartDate   time.Time
-	EndDate     time.Time
-}
-
-// GetStatus determines a Season's status based on a supplied timestamp/object
-func (s Season) GetStatus(ts time.Time) string {
-	switch {
-	case ts.Before(s.EntriesFrom):
-		return SeasonStatusForthcoming
-	case ts.Before(s.StartDate):
-		return SeasonStatusAcceptingEntries
-	case ts.Before(s.EndDate):
-		return SeasonStatusActive
-	}
-	return SeasonStatusElapsed
-}
-
 // ValidateSeason returns an error if validation rules are not satisfied for a provided Season
-func ValidateSeason(s Season) error {
+func ValidateSeason(s models.Season) error {
 	if err := sanitiseSeason(&s); err != nil {
 		return err
 	}
@@ -84,7 +41,7 @@ func ValidateSeason(s Season) error {
 }
 
 // sanitiseSeason sanitises and validates a Season
-func sanitiseSeason(s *Season) error {
+func sanitiseSeason(s *models.Season) error {
 	var validationMsgs []string
 
 	// validate
