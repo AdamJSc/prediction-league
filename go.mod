@@ -14,6 +14,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/ladydascalie/v v1.0.0
 	github.com/markbates/pkger v0.15.1
+	github.com/pkg/errors v0.8.1
 	golang.org/x/net v0.0.0-20190930134127-c5a3c61f89f3
 	gotest.tools v2.2.0+incompatible
 )

@@ -14,6 +14,7 @@ import (
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/app/httph/handlers"
 	"prediction-league/service/internal/domain"
+	"prediction-league/service/internal/scheduler"
 	"prediction-league/service/internal/seeder"
 	"prediction-league/service/internal/views"
 )
@@ -49,6 +50,10 @@ func main() {
 		Handler: httpAppContainer.Router(),
 	})
 
+	jobScheduler := scheduler.Cron{
+		Jobs: scheduler.Jobs,
+	}
+
 	// run service
 	svc := &core.Service{
 		Name: "prediction-league",
@@ -57,6 +62,7 @@ func main() {
 	svc.MustRun(
 		context.Background(),
 		httpServer,
+		jobScheduler,
 	)
 }
 
