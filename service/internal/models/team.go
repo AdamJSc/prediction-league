@@ -1,11 +1,24 @@
 package models
 
-import "errors"
+import (
+	"errors"
+	"strconv"
+)
+
+// FootballDataOrgTeamIdentifier defines a team identifier for use with the
+type FootballDataOrgTeamIdentifier struct {
+	ClientResourceIdentifier
+	TeamID int
+}
+
+func (f FootballDataOrgTeamIdentifier) Value() string {
+	return strconv.Itoa(f.TeamID)
+}
 
 // Team defines the structure of a Team that belongs to a Season
 type Team struct {
 	ID        string
-	ClientID  int
+	ClientID  FootballDataOrgTeamIdentifier
 	Name      string
 	ShortName string
 	CrestURL  string
