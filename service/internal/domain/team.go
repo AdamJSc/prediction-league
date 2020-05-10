@@ -85,6 +85,13 @@ func Teams() models.TeamCollection {
 			ShortName: "Man Utd",
 			CrestURL:  "https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg",
 		},
+		"NCFC": {
+			ID: "NCFC",
+			ClientID: 68,
+			Name: "Norwich City",
+			ShortName: "Norwich",
+			CrestURL: "https://upload.wikimedia.org/wikipedia/en/8/8c/Norwich_City.svg",
+		},
 		"NUFC": {
 			ID:        "NUFC",
 			ClientID:  67,
@@ -106,12 +113,26 @@ func Teams() models.TeamCollection {
 			ShortName: "Saints",
 			CrestURL:  "https://upload.wikimedia.org/wikipedia/en/c/c9/FC_Southampton.svg",
 		},
+		"THFC": {
+			ID: "THFC",
+			ClientID: 73,
+			Name: "Tottenham Hotspur",
+			ShortName: "Spurs",
+			CrestURL: "https://upload.wikimedia.org/wikipedia/en/b/b4/Tottenham_Hotspur.svg",
+		},
 		"WFC": {
 			ID:        "WFC",
 			ClientID:  346,
 			Name:      "Watford",
 			ShortName: "Watford",
 			CrestURL:  "https://upload.wikimedia.org/wikipedia/en/e/e2/Watford.svg",
+		},
+		"WWFC": {
+			ID: "WWFC",
+			ClientID: 76,
+			Name: "Wolverhampton Wanderers",
+			ShortName: "Wolves",
+			CrestURL: "https://upload.wikimedia.org/wikipedia/en/f/fc/Wolverhampton_Wanderers.svg",
 		},
 		"WHUFC": {
 			ID:        "WHUFC",

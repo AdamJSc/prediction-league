@@ -59,7 +59,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e models.Entry, s *models.Season) (
 	e.UpdatedAt = sqltypes.NullTime{}
 
 	// generate a unique lookup ref
-	e.ShortCode, err = generateUniqueShortCode(ctx, db)
+	e.ShortCode, err = GenerateUniqueShortCode(ctx, db)
 	if err != nil {
 		return models.Entry{}, domainErrorFromDBError(err)
 	}
@@ -340,8 +340,8 @@ func sanitiseEntry(e *models.Entry) error {
 	return nil
 }
 
-// generateUniqueShortCode generates a string that does not already exist as a Lookup Ref
-func generateUniqueShortCode(ctx context.Context, db coresql.Agent) (string, error) {
+// GenerateUniqueShortCode generates a string that does not already exist as a Lookup Ref
+func GenerateUniqueShortCode(ctx context.Context, db coresql.Agent) (string, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(db)
 
 	shortCode := generateRandomAlphaNumericString(4)
@@ -352,7 +352,7 @@ func generateUniqueShortCode(ctx context.Context, db coresql.Agent) (string, err
 	switch err.(type) {
 	case nil:
 		// the lookup ref already exists, so we need to generate a new one
-		return generateUniqueShortCode(ctx, db)
+		return GenerateUniqueShortCode(ctx, db)
 	case repositories.MissingDBRecordError:
 		// the lookup ref we have generated is unique, we can return it
 		return shortCode, nil

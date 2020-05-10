@@ -14,6 +14,7 @@ import (
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/app/httph/handlers"
 	"prediction-league/service/internal/domain"
+	"prediction-league/service/internal/seeder"
 	"prediction-league/service/internal/views"
 )
 
@@ -30,6 +31,7 @@ func main() {
 		driver,
 	)
 	coresql.MustMigrateUp(mig)
+	seeder.MustSeed(db)
 
 	domain.MustInflateLocations()
 
