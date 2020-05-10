@@ -11,6 +11,7 @@ func Seasons() models.SeasonCollection {
 	return map[string]models.Season{
 		"201920_1": {
 			ID:          "201920_1",
+			ClientID:    models.FootballDataOrgSeasonIdentifier{SeasonID: "PL"},
 			Name:        "Premier League 2019/20",
 			EntriesFrom: time.Date(2019, 7, 1, 0, 0, 0, 0, Locations["Europe/London"]),
 			StartDate:   time.Date(2019, 8, 9, 19, 0, 0, 0, Locations["Europe/London"]),
@@ -25,8 +26,9 @@ func ValidateSeason(s models.Season) error {
 
 	// validate strings
 	for k, v := range map[string]string{
-		"ID":   s.ID,
-		"Name": s.Name,
+		"ID":       s.ID,
+		"ClientID": s.ClientID.Value(),
+		"Name":     s.Name,
 	} {
 		if v == "" {
 			validationMsgs = append(validationMsgs, fmt.Sprintf("%s must not be empty", k))

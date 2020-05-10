@@ -8,13 +8,6 @@ import (
 	"time"
 )
 
-// Job defines the interface that a job must have
-type Job interface {
-	Name() string
-	IntervalInSeconds() int
-	Run(ctx context.Context) (string, error)
-}
-
 // Cron determines our sequence of jobs to execute
 type Cron struct {
 	Jobs []Job
@@ -24,12 +17,6 @@ func (c Cron) Halt(_ context.Context) error {
 	log.Println("halting cron...")
 
 	return nil
-}
-
-// TODO - rewrite scheduler that checks for runAfter time
-type scheduledJob struct {
-	job      Job
-	runAfter time.Time
 }
 
 // Run continuously executes our sequence of Jobs

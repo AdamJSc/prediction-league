@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-// FootballDataOrgTeamIdentifier defines a team identifier for use with the
+// FootballDataOrgTeamIdentifier defines a team identifier for use with the football-data.org API
 type FootballDataOrgTeamIdentifier struct {
 	ClientResourceIdentifier
 	TeamID int
