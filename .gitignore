@@ -1,4 +1,5 @@
 .idea/
+.env
 docker/db/data/*
 !docker/db/data/.gitkeep
 node_modules/

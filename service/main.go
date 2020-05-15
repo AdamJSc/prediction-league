@@ -21,7 +21,7 @@ import (
 
 func main() {
 	// setup env and config
-	config := domain.MustLoadConfigFromEnvPaths("infra/app.env")
+	config := domain.MustLoadConfigFromEnvPaths(".env", "infra/app.env")
 
 	// setup db connection
 	db := coresql.MustOpen("mysql", config.MySQLURL)

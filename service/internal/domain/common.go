@@ -53,11 +53,12 @@ func formatRealmNameFromRaw(rawRealmName string) string {
 
 // Config represents a struct of required config options
 type Config struct {
-	ServicePort    string `envconfig:"SERVICE_PORT" required:"true"`
-	MySQLURL       string `envconfig:"MYSQL_URL" required:"true"`
-	MigrationsURL  string `envconfig:"MIGRATIONS_URL" required:"true"`
-	AdminBasicAuth string `envconfig:"ADMIN_BASIC_AUTH" required:"true"`
-	Realms         map[string]Realm
+	ServicePort          string `envconfig:"SERVICE_PORT" required:"true"`
+	MySQLURL             string `envconfig:"MYSQL_URL" required:"true"`
+	MigrationsURL        string `envconfig:"MIGRATIONS_URL" required:"true"`
+	AdminBasicAuth       string `envconfig:"ADMIN_BASIC_AUTH" required:"true"`
+	FootballDataAPIToken string `envconfig:"FOOTBALLDATA_API_TOKEN" required:"true"`
+	Realms               map[string]Realm
 }
 
 // MustLoadConfigFromEnvPaths loads provided env paths and instantiates a new default config
