@@ -2,23 +2,12 @@ package models
 
 import (
 	"errors"
-	"strconv"
 )
-
-// FootballDataOrgTeamIdentifier defines a team identifier for use with the football-data.org API
-type FootballDataOrgTeamIdentifier struct {
-	ClientResourceIdentifier
-	TeamID int
-}
-
-func (f FootballDataOrgTeamIdentifier) Value() string {
-	return strconv.Itoa(f.TeamID)
-}
 
 // Team defines the structure of a Team that belongs to a Season
 type Team struct {
 	ID        string
-	ClientID  FootballDataOrgTeamIdentifier
+	ClientID  ResourceIdentifier
 	Name      string
 	ShortName string
 	CrestURL  string
@@ -31,6 +20,17 @@ type TeamCollection map[string]Team
 func (t TeamCollection) GetByID(teamID string) (Team, error) {
 	for id, team := range t {
 		if id == teamID {
+			return team, nil
+		}
+	}
+
+	return Team{}, errors.New("not found")
+}
+
+// GetByResourceID retrieves a matching Team from the collection by its ID
+func (t TeamCollection) GetByResourceID(clientResourceID ResourceIdentifier) (Team, error) {
+	for _, team := range t {
+		if team.ClientID.Value() == clientResourceID.Value() {
 			return team, nil
 		}
 	}

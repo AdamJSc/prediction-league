@@ -12,20 +12,10 @@ const (
 	SeasonStatusElapsed          = "elapsed"
 )
 
-// FootballDataOrgSeasonIdentifier defines a season identifier for use with the football-data.org API
-type FootballDataOrgSeasonIdentifier struct {
-	ClientResourceIdentifier
-	SeasonID string
-}
-
-func (f FootballDataOrgSeasonIdentifier) Value() string {
-	return f.SeasonID
-}
-
 // Season defines the structure of a Season against which Entries are played
 type Season struct {
 	ID          string
-	ClientID    FootballDataOrgSeasonIdentifier
+	ClientID    ResourceIdentifier
 	Name        string
 	EntriesFrom time.Time
 	StartDate   time.Time

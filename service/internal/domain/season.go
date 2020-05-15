@@ -2,6 +2,7 @@ package domain
 
 import (
 	"fmt"
+	footballdata "prediction-league/service/internal/clients/football-data-org"
 	"prediction-league/service/internal/models"
 	"time"
 )
@@ -11,7 +12,7 @@ func Seasons() models.SeasonCollection {
 	return map[string]models.Season{
 		"201920_1": {
 			ID:          "201920_1",
-			ClientID:    models.FootballDataOrgSeasonIdentifier{SeasonID: "PL"},
+			ClientID:    footballdata.SeasonIdentifier{SeasonID: "PL"},
 			Name:        "Premier League 2019/20",
 			EntriesFrom: time.Date(2019, 7, 1, 0, 0, 0, 0, Locations["Europe/London"]),
 			StartDate:   time.Date(2019, 8, 9, 19, 0, 0, 0, Locations["Europe/London"]),
