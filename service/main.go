@@ -51,7 +51,7 @@ func main() {
 	})
 
 	jobScheduler := scheduler.Cron{
-		Jobs: scheduler.GenerateCronJobs(config),
+		Jobs: scheduler.MustGenerateCronJobs(config),
 	}
 
 	// run service
