@@ -16,14 +16,18 @@ type Ranking struct {
 // RankingCollection defines our collection of Rankings
 type RankingCollection []Ranking
 
-// MarshalJSON using custom structure
-func (r *RankingCollection) MarshalJSON() ([]byte, error) {
+func (r *RankingCollection) GetIDs() []string {
 	var ids []string
 	for _, ranking := range *r {
 		ids = append(ids, ranking.ID)
 	}
 
-	return []byte(fmt.Sprintf(`["%s"]`, strings.Join(ids, `","`))), nil
+	return ids
+}
+
+// MarshalJSON using custom structure
+func (r *RankingCollection) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`["%s"]`, strings.Join(r.GetIDs(), `","`))), nil
 }
 
 // UnmarshalJSON to accommodate custom marshaling

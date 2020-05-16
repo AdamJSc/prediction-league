@@ -7,6 +7,7 @@ import (
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
+	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/repositories"
 	"regexp"
@@ -183,9 +184,68 @@ func (a EntryAgent) UpdateEntry(ctx Context, e models.Entry) (models.Entry, erro
 
 // AddEntrySelectionToEntry adds the provided EntrySelection to the provided Entry
 func (a EntryAgent) AddEntrySelectionToEntry(ctx Context, entrySelection models.EntrySelection, entry models.Entry) (models.Entry, error) {
+	entryRepo := repositories.NewEntryDatabaseRepository(a.MySQL())
 	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(a.MySQL())
 
-	// TODO - validate that entry selection comprises teams required by entry's season ID
+	// ensure that Entry realm matches current realm
+	if ctx.Realm.Name != entry.RealmName {
+		return models.Entry{}, ConflictError{errors.New("invalid realm")}
+	}
+
+	// ensure the entry exists
+	if err := entryRepo.ExistsByID(ctx, entry.ID.String()); err != nil {
+		return models.Entry{}, domainErrorFromDBError(err)
+	}
+
+	season, err := datastore.Seasons.GetByID(entry.SeasonID)
+	if err != nil {
+		return models.Entry{}, NotFoundError{err}
+	}
+
+	var invalidTeamIDs, missingTeamIDs, duplicateTeamIDs []string
+	var teamIDCount = make(map[string]int)
+
+	for _, teamID := range season.TeamIDs {
+		teamIDCount[teamID] = 0
+	}
+
+	for _, selectionID := range entrySelection.Rankings.GetIDs() {
+		if _, ok := teamIDCount[selectionID]; ok {
+			teamIDCount[selectionID]++
+			continue
+		}
+		invalidTeamIDs = append(invalidTeamIDs, selectionID)
+	}
+
+	for teamID, count := range teamIDCount {
+		switch {
+		case count == 0:
+			missingTeamIDs = append(missingTeamIDs, teamID)
+		case count > 1:
+			duplicateTeamIDs = append(duplicateTeamIDs, teamID)
+		}
+	}
+
+	var validationMsgs []string
+	if len(invalidTeamIDs) > 0 {
+		for _, teamID := range invalidTeamIDs {
+			validationMsgs = append(validationMsgs, fmt.Sprintf("Invalid Team ID: %s", teamID))
+		}
+	}
+	if len(missingTeamIDs) > 0 {
+		for _, teamID := range missingTeamIDs {
+			validationMsgs = append(validationMsgs, fmt.Sprintf("Missing Team ID: %s", teamID))
+		}
+	}
+	if len(duplicateTeamIDs) > 0 {
+		for _, teamID := range duplicateTeamIDs {
+			validationMsgs = append(validationMsgs, fmt.Sprintf("Duplicate Team ID: %s", teamID))
+		}
+	}
+
+	if len(validationMsgs) > 0 {
+		return models.Entry{}, ValidationError{Reasons: validationMsgs}
+	}
 
 	entrySelection.EntryID = entry.ID
 

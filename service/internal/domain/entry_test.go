@@ -1,12 +1,15 @@
 package domain_test
 
 import (
+	"fmt"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
 	gocmp "github.com/google/go-cmp/cmp"
 	"gotest.tools/assert/cmp"
+	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/models"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -229,6 +232,174 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	})
 }
 
+func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
+	defer truncate(t)
+
+	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
+
+	ctx := domain.NewContext()
+	ctx.Realm.Name = "TEST_REALM"
+	ctx.Realm.PIN = "5678"
+	ctx.Guard.SetAttempt("5678")
+
+	// get first season
+	key := reflect.ValueOf(datastore.Seasons).MapKeys()[0].String()
+	season := datastore.Seasons[key]
+
+	// seed initial entry
+	entry, err := agent.CreateEntry(ctx, models.Entry{
+		EntrantName:     "Harry Redknapp",
+		EntrantNickname: "MrHarryR",
+		EntrantEmail:    "harry.redknapp@football.net",
+	}, &models.Season{
+		ID:          season.ID,
+		EntriesFrom: time.Now().Add(-24 * time.Hour),
+		StartDate:   time.Now().Add(24 * time.Hour),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("add an entry selection to an existing entry with valid guard value must succeed", func(t *testing.T) {
+		teamIDs := models.NewRankingCollection(season.TeamIDs)
+
+		// reverse order of team IDs to ensure this is still an acceptable set of rankings when adding an entry selection
+		var rankings models.RankingCollection
+		for i := len(teamIDs) - 1; i >= 0; i-- {
+			rankings = append(rankings, teamIDs[i])
+		}
+
+		entrySelection := models.EntrySelection{Rankings: rankings}
+
+		entryWithSelection, err := agent.AddEntrySelectionToEntry(ctx, entrySelection, entry)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(entryWithSelection.EntrySelections) != 1 {
+			expectedGot(t, 1, len(entryWithSelection.EntrySelections))
+		}
+
+		if !gocmp.Equal(entryWithSelection.EntrySelections[0].Rankings, rankings) {
+			t.Fatal(gocmp.Diff(rankings, entryWithSelection.EntrySelections[0].Rankings))
+		}
+	})
+
+	t.Run("add an entry selection to an existing entry with invalid realm name must fail", func(t *testing.T) {
+		ctxWithInvalidRealmValue := ctx
+		ctxWithInvalidRealmValue.Realm.Name = "NOT_TEST_REALM"
+
+		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollection(season.TeamIDs)}
+
+		_, err := agent.AddEntrySelectionToEntry(ctxWithInvalidRealmValue, entrySelection, entry)
+		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
+			expectedTypeOfGot(t, domain.ConflictError{}, err)
+		}
+	})
+
+	t.Run("add an entry selection to a non-existing entry must fail", func(t *testing.T) {
+		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollection(season.TeamIDs)}
+
+		nonExistentEntryID, err := uuid.NewV4()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		nonExistentEntry := entry
+		nonExistentEntry.ID = nonExistentEntryID
+
+		_, err = agent.AddEntrySelectionToEntry(ctx, entrySelection, nonExistentEntry)
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		}
+	})
+
+	t.Run("add an entry selection to an entry with an invalid season must fail", func(t *testing.T) {
+		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollection(season.TeamIDs)}
+
+		entryWithInvalidSeason := entry
+		entryWithInvalidSeason.SeasonID = "not_a_valid_season"
+
+		_, err = agent.AddEntrySelectionToEntry(ctx, entrySelection, entryWithInvalidSeason)
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		}
+	})
+
+	t.Run("add an entry selection with rankings that include an invalid team ID must fail", func(t *testing.T) {
+		rankings := models.NewRankingCollection(season.TeamIDs)
+		rankings = append(rankings, models.Ranking{ID: "not_a_valid_team_id"})
+		expectedMessage := "Invalid Team ID: not_a_valid_team_id"
+
+		entrySelection := models.EntrySelection{Rankings: rankings}
+
+		_, err = agent.AddEntrySelectionToEntry(ctx, entrySelection, entry)
+
+		verr, ok := err.(domain.ValidationError)
+		if !ok {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+			return
+		}
+		if len(verr.Reasons) != 1 || verr.Reasons[0] != expectedMessage {
+			expectedGot(t, domain.ValidationError{Reasons: []string{expectedMessage}}, verr)
+		}
+	})
+
+	t.Run("add an entry selection with rankings that include a missing team ID must fail", func(t *testing.T) {
+		rankings := models.NewRankingCollection(season.TeamIDs)
+		if len(rankings) < 1 {
+			t.Fatalf("expected rankings length of at least 1, got %d", len(rankings))
+		}
+
+		uIdx := len(rankings) - 1
+		missingID := rankings[uIdx].ID
+		expectedMessage := fmt.Sprintf("Missing Team ID: %s", missingID)
+
+		// trim final ranking
+		rankings = rankings[:uIdx]
+
+		entrySelection := models.EntrySelection{Rankings: rankings}
+
+		_, err = agent.AddEntrySelectionToEntry(ctx, entrySelection, entry)
+
+		verr, ok := err.(domain.ValidationError)
+		if !ok {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+			return
+		}
+		if len(verr.Reasons) != 1 || verr.Reasons[0] != expectedMessage {
+			expectedGot(t, domain.ValidationError{Reasons: []string{expectedMessage}}, verr)
+		}
+	})
+
+	t.Run("add an entry selection with rankings that include a duplicate team ID must fail", func(t *testing.T) {
+		rankings := models.NewRankingCollection(season.TeamIDs)
+		if len(rankings) < 2 {
+			t.Fatalf("expected rankings length of at least 2, got %d", len(rankings))
+		}
+
+		uIdx := len(rankings) - 1
+		duplicateID := rankings[uIdx].ID
+		expectedMessage := fmt.Sprintf("Duplicate Team ID: %s", duplicateID)
+
+		// append duplicate ID to rankings
+		rankings = append(rankings, models.Ranking{ID: duplicateID})
+
+		entrySelection := models.EntrySelection{Rankings: rankings}
+
+		_, err = agent.AddEntrySelectionToEntry(ctx, entrySelection, entry)
+
+		verr, ok := err.(domain.ValidationError)
+		if !ok {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+			return
+		}
+		if len(verr.Reasons) != 1 || verr.Reasons[0] != expectedMessage {
+			expectedGot(t, domain.ValidationError{Reasons: []string{expectedMessage}}, verr)
+		}
+	})
+}
+
 func TestEntryAgent_RetrieveEntry(t *testing.T) {
 	defer truncate(t)
 
@@ -239,13 +410,17 @@ func TestEntryAgent_RetrieveEntry(t *testing.T) {
 	ctx.Realm.PIN = "5678"
 	ctx.Guard.SetAttempt("5678")
 
+	// get first season
+	key := reflect.ValueOf(datastore.Seasons).MapKeys()[0].String()
+	season := datastore.Seasons[key]
+
 	// seed initial entry
 	entry, err := agent.CreateEntry(ctx, models.Entry{
 		EntrantName:     "Harry Redknapp",
 		EntrantNickname: "MrHarryR",
 		EntrantEmail:    "harry.redknapp@football.net",
 	}, &models.Season{
-		ID:          "12345",
+		ID:          season.ID,
 		EntriesFrom: time.Now().Add(-24 * time.Hour),
 		StartDate:   time.Now().Add(24 * time.Hour),
 	})
@@ -257,12 +432,12 @@ func TestEntryAgent_RetrieveEntry(t *testing.T) {
 		{
 			ID:       uuid.Must(uuid.NewV4()),
 			EntryID:  entry.ID,
-			Rankings: models.NewRankingCollection([]string{"hello", "world"}),
+			Rankings: models.NewRankingCollection(season.TeamIDs),
 		},
 		{
 			ID:       uuid.Must(uuid.NewV4()),
 			EntryID:  entry.ID,
-			Rankings: models.NewRankingCollection([]string{"bonjour", "monde"}),
+			Rankings: models.NewRankingCollection(season.TeamIDs),
 		},
 	}
 	for _, sel := range entrySelections {

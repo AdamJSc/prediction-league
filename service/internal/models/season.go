@@ -1,7 +1,7 @@
 package models
 
 import (
-	"errors"
+	"fmt"
 	"time"
 )
 
@@ -20,6 +20,7 @@ type Season struct {
 	EntriesFrom time.Time
 	StartDate   time.Time
 	EndDate     time.Time
+	TeamIDs     []string
 }
 
 // GetStatus determines a Season's status based on a supplied timestamp/object
@@ -46,5 +47,5 @@ func (s SeasonCollection) GetByID(seasonID string) (Season, error) {
 		}
 	}
 
-	return Season{}, errors.New("not found")
+	return Season{}, fmt.Errorf("season id %s: not found", seasonID)
 }

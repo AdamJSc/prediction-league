@@ -2,6 +2,7 @@ package domain
 
 import (
 	"fmt"
+	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/models"
 	"time"
 )
@@ -31,6 +32,18 @@ func ValidateSeason(s models.Season) error {
 	}
 	if s.EntriesFrom.Format(time.RFC3339Nano) == emptyTime {
 		validationMsgs = append(validationMsgs, "Entries From Date must not be empty")
+	}
+
+	// validate teams
+	var teams = make(map[string]struct{})
+	for _, id := range s.TeamIDs {
+		if _, err := datastore.Teams.GetByID(id); err != nil {
+			validationMsgs = append(validationMsgs, fmt.Sprintf("Invalid Team ID '%s'", id))
+		}
+		if _, ok := teams[id]; ok {
+			validationMsgs = append(validationMsgs, fmt.Sprintf("Team ID '%s' exists multiple times", id))
+		}
+		teams[id] = struct{}{}
 	}
 
 	if len(validationMsgs) > 0 {
