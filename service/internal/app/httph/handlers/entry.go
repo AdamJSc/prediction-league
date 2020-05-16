@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"prediction-league/service/internal/app/httph"
+	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
 )
 
@@ -53,7 +54,7 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 		}
 
 		// retrieve the season we need
-		season, err := domain.Seasons().GetByID(seasonID)
+		season, err := datastore.Seasons.GetByID(seasonID)
 		if err != nil {
 			rest.NotFoundError(fmt.Errorf("invalid season: %s", seasonID)).WriteTo(w)
 			return

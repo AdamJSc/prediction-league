@@ -36,3 +36,11 @@ type Entry struct {
 func (e *Entry) IsApproved() bool {
 	return e.ApprovedAt.Valid
 }
+
+// EntrySelection provides a data type for the team selection that is associated with an Entry
+type EntrySelection struct {
+	ID        uuid.UUID
+	EntryID   uuid.UUID
+	Selection []Ranking
+	CreatedAt time.Time
+}

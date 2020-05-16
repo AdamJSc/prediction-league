@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/models"
 	"strings"
 )
@@ -56,7 +57,11 @@ func (c Client) RetrieveLatestStandingsBySeason(ctx context.Context, s models.Se
 		RoundNumber: standingsResponse.Season.CurrentMatchday,
 	}
 	for _, tableElem := range standingsResponse.Standings[0].Table {
-		standings.Rankings = append(standings.Rankings, tableElem.toRankingWithMeta())
+		ranking, err := tableElem.toRankingWithMeta()
+		if err != nil {
+			return models.Standings{}, err
+		}
+		standings.Rankings = append(standings.Rankings, ranking)
 	}
 
 	return standings, nil
@@ -116,15 +121,20 @@ type tableElem struct {
 }
 
 // toRankingWithMeta transforms a tableElem object to a more abstracted RankingWithMeta object
-func (t tableElem) toRankingWithMeta() models.RankingWithMeta {
+func (t tableElem) toRankingWithMeta() (models.RankingWithMeta, error) {
 	r := models.NewRankingWithMeta()
 
-	r.ID = TeamIdentifier{TeamID: t.Team.ID}
+	team, err := datastore.Teams.GetByResourceID(models.TeamIdentifier{TeamID: t.Team.ID})
+	if err != nil {
+		return models.RankingWithMeta{}, err
+	}
+
+	r.ID = team.ID
 	r.Position = t.Position
 	r.MetaData[MetaKeyPoints] = t.Points
 	r.MetaData[MetaKeyGoalsFor] = t.GoalsFor
 	r.MetaData[MetaKeyGoalsAgainst] = t.GoalsAgainst
 	r.MetaData[MetaKeyGoalDifference] = t.GoalDifference
 
-	return r
+	return r, nil
 }

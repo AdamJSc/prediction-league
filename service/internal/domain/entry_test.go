@@ -292,13 +292,13 @@ func TestEntryAgent_RetrieveEntry(t *testing.T) {
 		if !reflect.DeepEqual(entry.TeamIDSequence, retrievedEntry.TeamIDSequence) {
 			expectedGot(t, entry.PaymentRef, retrievedEntry.PaymentRef)
 		}
-		if entry.ApprovedAt.Time.In(domain.Locations["UTC"]) != retrievedEntry.ApprovedAt.Time.In(domain.Locations["UTC"]) {
+		if entry.ApprovedAt.Time.In(utc) != retrievedEntry.ApprovedAt.Time.In(utc) {
 			expectedGot(t, entry.ApprovedAt, retrievedEntry.ApprovedAt)
 		}
-		if entry.CreatedAt.In(domain.Locations["UTC"]) != retrievedEntry.CreatedAt.In(domain.Locations["UTC"]) {
+		if entry.CreatedAt.In(utc) != retrievedEntry.CreatedAt.In(utc) {
 			expectedGot(t, entry.CreatedAt, retrievedEntry.CreatedAt)
 		}
-		if entry.UpdatedAt.Time.In(domain.Locations["UTC"]) != retrievedEntry.UpdatedAt.Time.In(domain.Locations["UTC"]) {
+		if entry.UpdatedAt.Time.In(utc) != retrievedEntry.UpdatedAt.Time.In(utc) {
 			expectedGot(t, entry.UpdatedAt, retrievedEntry.UpdatedAt)
 		}
 	})
@@ -376,7 +376,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		if entry.RealmName != updatedEntry.RealmName {
 			expectedGot(t, entry.RealmName, updatedEntry.RealmName)
 		}
-		if entry.CreatedAt.In(domain.Locations["UTC"]) != updatedEntry.CreatedAt.In(domain.Locations["UTC"]) {
+		if entry.CreatedAt.In(utc) != updatedEntry.CreatedAt.In(utc) {
 			expectedGot(t, entry.CreatedAt, updatedEntry.CreatedAt)
 		}
 

@@ -2,6 +2,7 @@ package domain_test
 
 import (
 	"fmt"
+	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/models"
 	"testing"
@@ -10,7 +11,7 @@ import (
 
 func TestSeason_CheckValidation(t *testing.T) {
 	t.Run("validate seasons", func(t *testing.T) {
-		for id, season := range domain.Seasons() {
+		for id, season := range datastore.Seasons {
 			if id != season.ID {
 				t.Fatal(fmt.Errorf("mismatched season id: %s != %s", id, season.ID))
 			}

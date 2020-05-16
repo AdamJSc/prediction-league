@@ -1,12 +1,17 @@
 package models
 
-import "github.com/LUSHDigital/uuid"
+import (
+	"github.com/LUSHDigital/uuid"
+)
 
-// Ranking define our base ranking structure
+// Ranking defines our base ranking structure
 type Ranking struct {
-	ID       ResourceIdentifier
+	ID       string
 	Position int
 }
+
+// RankingCollection defines our collection of Rankings
+type RankingCollection []Ranking
 
 // RankingWithMeta composes a Ranking with additional meta data
 type RankingWithMeta struct {
@@ -39,13 +44,6 @@ func (s Standings) Len() int      { return len(s.Rankings) }
 func (s Standings) Swap(i, j int) { s.Rankings[i], s.Rankings[j] = s.Rankings[j], s.Rankings[i] }
 func (s Standings) Less(i, j int) bool {
 	return s.Rankings[i].Position < s.Rankings[j].Position
-}
-
-// EntrySelection provides a data type for the team selection that is associated with an Entry
-type EntrySelection struct {
-	ID        uuid.UUID
-	EntryID   uuid.UUID
-	Selection []Ranking
 }
 
 // ScoredEntrySelection provides a data type for an EntrySelection that has been

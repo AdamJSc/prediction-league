@@ -10,14 +10,16 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"log"
 	"os"
-	"prediction-league/service/internal/domain"
+	"prediction-league/service/internal/datastore"
 	"reflect"
 	"testing"
+	"time"
 )
 
 var (
 	db        *coresql.DB
 	truncator sqltest.Truncator
+	utc       *time.Location
 )
 
 // injector can be passed to Agents as our AgentInjectors for testing
@@ -41,6 +43,12 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
+	var err error
+	utc, err = time.LoadLocation("UTC")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// setup db connection
 	db = coresql.MustOpen("mysql", config.MySQLURL)
 	driver, _ := mysql.WithInstance(db.DB, &mysql.Config{})
@@ -51,7 +59,7 @@ func TestMain(m *testing.M) {
 	)
 	coresql.MustMigrateUp(mig)
 
-	domain.MustInflateLocations()
+	datastore.MustInflate()
 
 	truncator = sqltest.NewTruncator("cockroach", db)
 

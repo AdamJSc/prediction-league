@@ -7,6 +7,7 @@ import (
 	"log"
 	"prediction-league/service/internal/clients"
 	footballdata "prediction-league/service/internal/clients/football-data-org"
+	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/models"
 	"sort"
@@ -44,10 +45,9 @@ func (r RetrieveLatestStandings) Run(ctx context.Context) (string, error) {
 	sort.Sort(standings)
 
 	// ensure that all team IDs are valid
-	teams := domain.Teams()
 	for _, ranking := range standings.Rankings {
-		if _, err := teams.GetByResourceID(ranking.ID); err != nil {
-			return "", errors.Wrap(err, fmt.Sprintf("team id '%s':", ranking.ID.Value()))
+		if _, err := datastore.Teams.GetByID(ranking.ID); err != nil {
+			return "", errors.Wrap(err, fmt.Sprintf("team id '%s':", ranking.ID))
 		}
 	}
 
@@ -57,13 +57,11 @@ func (r RetrieveLatestStandings) Run(ctx context.Context) (string, error) {
 
 	// TODO - generate new Standings score per team for each entry based on standings
 
-	return fmt.Sprint("%+v", standings), nil
+	return fmt.Sprintf("%+v", standings), nil
 }
 
 // MustGenerateCronJobs generates the cron jobs to be used by the scheduler
 func MustGenerateCronJobs(config domain.Config) []Job {
-	seasons := domain.Seasons()
-
 	// get the current season ID for all realms
 	var seasonIDs = make(map[string]struct{})
 	for _, realm := range config.Realms {
@@ -73,13 +71,13 @@ func MustGenerateCronJobs(config domain.Config) []Job {
 	// add a job for each unique season ID that retrieves the latest standings
 	var jobs []Job
 	for id := range seasonIDs {
-		season, err := seasons.GetByID(id)
+		season, err := datastore.Seasons.GetByID(id)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		jobs = append(jobs, RetrieveLatestStandings{
-			Season:   season,
+			Season: season,
 			Client: footballdata.NewClient(config.FootballDataAPIToken),
 		})
 	}

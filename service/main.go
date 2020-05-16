@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/app/httph/handlers"
+	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/scheduler"
 	"prediction-league/service/internal/seeder"
@@ -34,7 +35,7 @@ func main() {
 	coresql.MustMigrateUp(mig)
 	seeder.MustSeed(db)
 
-	domain.MustInflateLocations()
+	datastore.MustInflate()
 
 	// setup server
 	httpAppContainer := httph.NewHTTPAppContainer(dependencies{

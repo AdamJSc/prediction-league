@@ -2,24 +2,9 @@ package domain
 
 import (
 	"fmt"
-	footballdata "prediction-league/service/internal/clients/football-data-org"
 	"prediction-league/service/internal/models"
 	"time"
 )
-
-// Seasons returns a pre-determined data structure of all Seasons that can be referenced within the system
-func Seasons() models.SeasonCollection {
-	return map[string]models.Season{
-		"201920_1": {
-			ID:          "201920_1",
-			ClientID:    footballdata.SeasonIdentifier{SeasonID: "PL"},
-			Name:        "Premier League 2019/20",
-			EntriesFrom: time.Date(2019, 7, 1, 0, 0, 0, 0, Locations["Europe/London"]),
-			StartDate:   time.Date(2019, 8, 9, 19, 0, 0, 0, Locations["Europe/London"]),
-			EndDate:     time.Date(2020, 5, 17, 23, 59, 59, 0, Locations["Europe/London"]),
-		},
-	}
-}
 
 // ValidateSeason returns an error if validation rules are not satisfied for the provided Season
 func ValidateSeason(s models.Season) error {
