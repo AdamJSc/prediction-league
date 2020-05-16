@@ -9,6 +9,7 @@ require (
 	github.com/LUSHDigital/uuid v0.2.0
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/golang-migrate/migrate/v4 v4.2.5
+	github.com/google/go-cmp v0.3.0
 	github.com/gorilla/mux v1.7.4
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/markbates/pkger v0.15.1

@@ -53,7 +53,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e models.Entry, s *models.Season) (
 	e.Status = models.EntryStatusPending
 	e.PaymentMethod = sqltypes.NullString{}
 	e.PaymentRef = sqltypes.NullString{}
-	e.TeamIDSequence = []string{}
+	e.EntrySelections = []models.EntrySelection{}
 	e.ApprovedAt = sqltypes.NullTime{}
 	e.CreatedAt = time.Time{}
 	e.UpdatedAt = sqltypes.NullTime{}
@@ -108,7 +108,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e models.Entry, s *models.Season) (
 		return models.Entry{}, ConflictError{errors.New("entry already exists")}
 	}
 
-	// write to database
+	// write entry to database
 	if err := entryRepo.Insert(ctx, &e); err != nil {
 		return models.Entry{}, domainErrorFromDBError(err)
 	}
@@ -119,6 +119,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e models.Entry, s *models.Season) (
 // RetrieveEntryByID handles the retrieval of an existing Entry in the database by its ID
 func (a EntryAgent) RetrieveEntryByID(ctx Context, id string) (models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(a.MySQL())
+	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(a.MySQL())
 
 	entries, err := entryRepo.Select(ctx, map[string]interface{}{
 		"id": id,
@@ -131,6 +132,19 @@ func (a EntryAgent) RetrieveEntryByID(ctx Context, id string) (models.Entry, err
 	// ensure that Entry realm matches current realm
 	if ctx.Realm.Name != e.RealmName {
 		return models.Entry{}, ConflictError{errors.New("invalid realm")}
+	}
+
+	// retrieve and inflate all entry selections
+	e.EntrySelections, err = entrySelectionRepo.Select(ctx, map[string]interface{}{
+		"entry_id": e.ID,
+	}, false)
+	if err != nil {
+		switch err.(type) {
+		case NotFoundError:
+			// all good
+		default:
+			return models.Entry{}, domainErrorFromDBError(err)
+		}
 	}
 
 	return e, nil
@@ -165,6 +179,23 @@ func (a EntryAgent) UpdateEntry(ctx Context, e models.Entry) (models.Entry, erro
 	}
 
 	return e, nil
+}
+
+// AddEntrySelectionToEntry adds the provided EntrySelection to the provided Entry
+func (a EntryAgent) AddEntrySelectionToEntry(ctx Context, entrySelection models.EntrySelection, entry models.Entry) (models.Entry, error) {
+	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(a.MySQL())
+
+	// TODO - validate that entry selection comprises teams required by entry's season ID
+
+	entrySelection.EntryID = entry.ID
+
+	if err := entrySelectionRepo.Insert(ctx, &entrySelection); err != nil {
+		return models.Entry{}, domainErrorFromDBError(err)
+	}
+
+	entry.EntrySelections = append(entry.EntrySelections, entrySelection)
+
+	return entry, nil
 }
 
 // UpdateEntryPaymentDetails provides a shortcut to updating the payment details for a provided entryID

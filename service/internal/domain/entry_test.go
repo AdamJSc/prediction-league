@@ -3,10 +3,10 @@ package domain_test
 import (
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
+	gocmp "github.com/google/go-cmp/cmp"
 	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/models"
-	"reflect"
 	"testing"
 	"time"
 )
@@ -37,17 +37,19 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		EntrantEmail:    "harry.redknapp@football.net",
 
 		// these values should be overridden
-		ID:             uuid.Must(uuid.NewV4()),
-		ShortCode:      "entry_short_code",
-		SeasonID:       "entry_season_id",
-		RealmName:      "entry_realm_name",
-		Status:         "entry_status",
-		PaymentMethod:  sqltypes.ToNullString(&paymentMethod),
-		PaymentRef:     sqltypes.ToNullString(&paymentRef),
-		TeamIDSequence: []string{"entry_team_id_1", "entry_team_id_2"},
-		ApprovedAt:     sqltypes.ToNullTime(time.Now()),
-		CreatedAt:      time.Time{},
-		UpdatedAt:      sqltypes.ToNullTime(time.Now()),
+		ID:            uuid.Must(uuid.NewV4()),
+		ShortCode:     "entry_short_code",
+		SeasonID:      "entry_season_id",
+		RealmName:     "entry_realm_name",
+		Status:        "entry_status",
+		PaymentMethod: sqltypes.ToNullString(&paymentMethod),
+		PaymentRef:    sqltypes.ToNullString(&paymentRef),
+		EntrySelections: []models.EntrySelection{
+			models.NewEntrySelection([]string{"entry_team_id_1", "entry_team_id_2"}),
+		},
+		ApprovedAt: sqltypes.ToNullTime(time.Now()),
+		CreatedAt:  time.Time{},
+		UpdatedAt:  sqltypes.ToNullTime(time.Now()),
 	}
 
 	t.Run("create a valid entry with a valid guard value must succeed", func(t *testing.T) {
@@ -94,8 +96,8 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		if createdEntry.PaymentRef.Valid {
 			expectedEmpty(t, "Entry.PaymentRef", createdEntry.PaymentRef)
 		}
-		if !reflect.DeepEqual([]string{}, createdEntry.TeamIDSequence) {
-			expectedEmpty(t, "Entry.TeamIDSequence", createdEntry.TeamIDSequence)
+		if len(createdEntry.EntrySelections) != 0 {
+			expectedEmpty(t, "Entry.EntrySelections", createdEntry.EntrySelections)
 		}
 		if createdEntry.ApprovedAt.Valid {
 			expectedEmpty(t, "Entry.ApprovedAt", createdEntry.ApprovedAt)
@@ -251,6 +253,25 @@ func TestEntryAgent_RetrieveEntry(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	entrySelections := []models.EntrySelection{
+		{
+			ID:       uuid.Must(uuid.NewV4()),
+			EntryID:  entry.ID,
+			Rankings: models.NewRankingCollection([]string{"hello", "world"}),
+		},
+		{
+			ID:       uuid.Must(uuid.NewV4()),
+			EntryID:  entry.ID,
+			Rankings: models.NewRankingCollection([]string{"bonjour", "monde"}),
+		},
+	}
+	for _, sel := range entrySelections {
+		entry, err = agent.AddEntrySelectionToEntry(ctx, sel, entry)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
 	t.Run("retrieve an existent entry with valid credentials must succeed", func(t *testing.T) {
 		// should succeed
 		retrievedEntry, err := agent.RetrieveEntryByID(ctx, entry.ID.String())
@@ -289,8 +310,8 @@ func TestEntryAgent_RetrieveEntry(t *testing.T) {
 		if entry.PaymentRef != retrievedEntry.PaymentRef {
 			expectedGot(t, entry.PaymentRef, retrievedEntry.PaymentRef)
 		}
-		if !reflect.DeepEqual(entry.TeamIDSequence, retrievedEntry.TeamIDSequence) {
-			expectedGot(t, entry.PaymentRef, retrievedEntry.PaymentRef)
+		if len(entry.EntrySelections) != len(retrievedEntry.EntrySelections) {
+			t.Fatal(gocmp.Diff(entry.EntrySelections, retrievedEntry.EntrySelections))
 		}
 		if entry.ApprovedAt.Time.In(utc) != retrievedEntry.ApprovedAt.Time.In(utc) {
 			expectedGot(t, entry.ApprovedAt, retrievedEntry.ApprovedAt)
@@ -359,7 +380,6 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 			EntrantEmail:    "jamie.redknapp@football.net",
 			Status:          models.EntryStatusReady,
 			PaymentRef:      sqltypes.ToNullString(&changedEntryPaymentRef),
-			TeamIDSequence:  []string{"changed_team_id_1", "changed_team_id_2", "changed_team_id_3"},
 			CreatedAt:       entry.CreatedAt,
 		}
 
@@ -400,9 +420,6 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 			expectedGot(t, changedEntry.Status, updatedEntry.Status)
 		}
 		if changedEntry.PaymentRef != updatedEntry.PaymentRef {
-			expectedGot(t, changedEntry.PaymentRef, updatedEntry.PaymentRef)
-		}
-		if !reflect.DeepEqual(changedEntry.TeamIDSequence, updatedEntry.TeamIDSequence) {
 			expectedGot(t, changedEntry.PaymentRef, updatedEntry.PaymentRef)
 		}
 		if !updatedEntry.UpdatedAt.Valid {

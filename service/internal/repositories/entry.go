@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"encoding/json"
 	"errors"
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
@@ -18,7 +17,6 @@ var entryDBFields = []string{
 	"entrant_name",
 	"entrant_nickname",
 	"entrant_email",
-	"team_id_sequence",
 	"status",
 	"payment_method",
 	"payment_ref",
@@ -27,30 +25,25 @@ var entryDBFields = []string{
 
 // EntryRepository defines the interface for transacting with our Entry data source
 type EntryRepository interface {
-	Insert(entry *models.Entry) error
-	Update(entry *models.Entry) error
-	Select(criteria map[string]interface{}, matchAny bool) ([]models.Entry, error)
-	ExistsByID(id string) error
+	Insert(ctx context.Context, entry *models.Entry) error
+	Update(ctx context.Context, entry *models.Entry) error
+	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]models.Entry, error)
+	ExistsByID(ctx context.Context, id string) error
 }
 
 // EntryDatabaseRepository defines our DB-backed Entry data store
 type EntryDatabaseRepository struct {
-	db coresql.Agent
+	agent coresql.Agent
 }
 
 // Insert inserts a new Entry into the database
 func (e EntryDatabaseRepository) Insert(ctx context.Context, entry *models.Entry) error {
 	stmt := `INSERT INTO entry (id, ` + getDBFieldsStringFromFields(entryDBFields) + `, created_at)
-					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now().Truncate(time.Second)
 
-	teamIDSequence, err := json.Marshal(entry.TeamIDSequence)
-	if err != nil {
-		return wrapDBError(err)
-	}
-
-	if _, err := e.db.QueryContext(
+	if _, err := e.agent.QueryContext(
 		ctx,
 		stmt,
 		entry.ID,
@@ -60,7 +53,6 @@ func (e EntryDatabaseRepository) Insert(ctx context.Context, entry *models.Entry
 		entry.EntrantName,
 		entry.EntrantNickname,
 		entry.EntrantEmail,
-		teamIDSequence,
 		entry.Status,
 		entry.PaymentMethod,
 		entry.PaymentRef,
@@ -75,7 +67,7 @@ func (e EntryDatabaseRepository) Insert(ctx context.Context, entry *models.Entry
 	return nil
 }
 
-// Updates an existing Entry in the database
+// Update updates an existing Entry in the database
 func (e EntryDatabaseRepository) Update(ctx context.Context, entry *models.Entry) error {
 	stmt := `UPDATE entry
 				SET ` + getDBFieldsWithEqualsPlaceholdersStringFromFields(entryDBFields) + `, updated_at = ?
@@ -83,12 +75,7 @@ func (e EntryDatabaseRepository) Update(ctx context.Context, entry *models.Entry
 
 	now := sqltypes.ToNullTime(time.Now().Truncate(time.Second))
 
-	teamIDSequence, err := json.Marshal(entry.TeamIDSequence)
-	if err != nil {
-		return wrapDBError(err)
-	}
-
-	if _, err := e.db.QueryContext(
+	if _, err := e.agent.QueryContext(
 		ctx,
 		stmt,
 		entry.ShortCode,
@@ -97,7 +84,6 @@ func (e EntryDatabaseRepository) Update(ctx context.Context, entry *models.Entry
 		entry.EntrantName,
 		entry.EntrantNickname,
 		entry.EntrantEmail,
-		teamIDSequence,
 		entry.Status,
 		entry.PaymentMethod,
 		entry.PaymentRef,
@@ -119,7 +105,7 @@ func (e EntryDatabaseRepository) Select(ctx context.Context, criteria map[string
 
 	stmt := `SELECT id, ` + getDBFieldsStringFromFields(entryDBFields) + `, created_at, updated_at FROM entry ` + whereStmt
 
-	rows, err := e.db.QueryContext(ctx, stmt, params...)
+	rows, err := e.agent.QueryContext(ctx, stmt, params...)
 	if err != nil {
 		return []models.Entry{}, wrapDBError(err)
 	}
@@ -127,8 +113,6 @@ func (e EntryDatabaseRepository) Select(ctx context.Context, criteria map[string
 	var entries []models.Entry
 	for rows.Next() {
 		entry := models.Entry{}
-
-		var teamIDSequence []byte
 
 		if err := rows.Scan(
 			&entry.ID,
@@ -138,7 +122,6 @@ func (e EntryDatabaseRepository) Select(ctx context.Context, criteria map[string
 			&entry.EntrantName,
 			&entry.EntrantNickname,
 			&entry.EntrantEmail,
-			&teamIDSequence,
 			&entry.Status,
 			&entry.PaymentMethod,
 			&entry.PaymentRef,
@@ -146,10 +129,6 @@ func (e EntryDatabaseRepository) Select(ctx context.Context, criteria map[string
 			&entry.CreatedAt,
 			&entry.UpdatedAt,
 		); err != nil {
-			return []models.Entry{}, wrapDBError(err)
-		}
-
-		if err := json.Unmarshal(teamIDSequence, &entry.TeamIDSequence); err != nil {
 			return []models.Entry{}, wrapDBError(err)
 		}
 
@@ -167,7 +146,7 @@ func (e EntryDatabaseRepository) Select(ctx context.Context, criteria map[string
 func (e EntryDatabaseRepository) ExistsByID(ctx context.Context, id string) error {
 	stmt := `SELECT COUNT(*) FROM entry WHERE id = ?`
 
-	row := e.db.QueryRowContext(ctx, stmt, id)
+	row := e.agent.QueryRowContext(ctx, stmt, id)
 
 	var count int
 	if err := row.Scan(&count); err != nil {
@@ -183,5 +162,5 @@ func (e EntryDatabaseRepository) ExistsByID(ctx context.Context, id string) erro
 
 // NewEntryDatabaseRepository instantiates a new EntryDatabaseRepository with the provided DB agent
 func NewEntryDatabaseRepository(db coresql.Agent) EntryDatabaseRepository {
-	return EntryDatabaseRepository{db: db}
+	return EntryDatabaseRepository{agent: db}
 }

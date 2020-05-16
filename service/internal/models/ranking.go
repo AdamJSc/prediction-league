@@ -1,7 +1,10 @@
 package models
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/LUSHDigital/uuid"
+	"strings"
 )
 
 // Ranking defines our base ranking structure
@@ -12,6 +15,44 @@ type Ranking struct {
 
 // RankingCollection defines our collection of Rankings
 type RankingCollection []Ranking
+
+// MarshalJSON using custom structure
+func (r *RankingCollection) MarshalJSON() ([]byte, error) {
+	var ids []string
+	for _, ranking := range *r {
+		ids = append(ids, ranking.ID)
+	}
+
+	return []byte(fmt.Sprintf(`["%s"]`, strings.Join(ids, `","`))), nil
+}
+
+// UnmarshalJSON to accommodate custom marshaling
+func (r *RankingCollection) UnmarshalJSON(d []byte) error {
+	var ids []string
+	if err := json.Unmarshal(d, &ids); err != nil {
+		return err
+	}
+
+	*r = NewRankingCollection(ids)
+
+	return nil
+}
+
+// NewRankingCollection creates a new RankingCollection from a set of IDs
+func NewRankingCollection(ids []string) RankingCollection {
+	var (
+		collection RankingCollection
+		count      int
+	)
+	for _, id := range ids {
+		count++
+		collection = append(collection, Ranking{
+			ID:       id,
+			Position: count,
+		})
+	}
+	return collection
+}
 
 // RankingWithMeta composes a Ranking with additional meta data
 type RankingWithMeta struct {

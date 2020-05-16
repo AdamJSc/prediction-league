@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"fmt"
 	"github.com/LUSHDigital/core-mage/env"
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltest"
@@ -61,8 +62,6 @@ func TestMain(m *testing.M) {
 
 	datastore.MustInflate()
 
-	truncator = sqltest.NewTruncator("cockroach", db)
-
 	// run test
 	os.Exit(m.Run())
 }
@@ -70,7 +69,11 @@ func TestMain(m *testing.M) {
 // truncate clears our test tables of all previous data between tests
 func truncate(t *testing.T) {
 	t.Helper()
-	truncator.MustTruncateTables(t, "entry")
+	for _, tableName := range []string{"entry_selection", "entry"} {
+		if _, err := db.Exec(fmt.Sprintf("DELETE FROM %s", tableName)); err != nil {
+			t.Fatal(err)
+		}
+	}
 }
 
 // expectedGot is a test failure helper method for two concrete values
