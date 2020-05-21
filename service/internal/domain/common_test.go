@@ -69,7 +69,7 @@ func TestMain(m *testing.M) {
 // truncate clears our test tables of all previous data between tests
 func truncate(t *testing.T) {
 	t.Helper()
-	for _, tableName := range []string{"entry_selection", "entry"} {
+	for _, tableName := range []string{"entry_selection", "standings", "entry"} {
 		if _, err := db.Exec(fmt.Sprintf("DELETE FROM %s", tableName)); err != nil {
 			t.Fatal(err)
 		}

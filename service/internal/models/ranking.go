@@ -16,6 +16,7 @@ type Ranking struct {
 // RankingCollection defines our collection of Rankings
 type RankingCollection []Ranking
 
+// GetIDs retrieves just the IDs of all Rankings in the RankingCollection
 func (r *RankingCollection) GetIDs() []string {
 	var ids []string
 	for _, ranking := range *r {
@@ -75,20 +76,6 @@ func NewRankingWithMeta() RankingWithMeta {
 type RankingWithScore struct {
 	Ranking
 	Score int
-}
-
-// Standings provides a data type for league standings that have been retrieved from an external data source
-type Standings struct {
-	SeasonID    string
-	RoundNumber int
-	Rankings    []RankingWithMeta
-}
-
-// These methods make the Standings struct sortable
-func (s Standings) Len() int      { return len(s.Rankings) }
-func (s Standings) Swap(i, j int) { s.Rankings[i], s.Rankings[j] = s.Rankings[j], s.Rankings[i] }
-func (s Standings) Less(i, j int) bool {
-	return s.Rankings[i].Position < s.Rankings[j].Position
 }
 
 // ScoredEntrySelection provides a data type for an EntrySelection that has been

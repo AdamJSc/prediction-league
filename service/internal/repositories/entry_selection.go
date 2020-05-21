@@ -17,7 +17,7 @@ var entrySelectionDBFields = []string{
 
 // EntrySelectionRepository defines the interface for transacting with our Entry EntrySelections data source
 type EntrySelectionRepository interface {
-	Insert(ctx context.Context, entry *models.EntrySelection) error
+	Insert(ctx context.Context, entrySelection *models.EntrySelection) error
 	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]models.EntrySelection, error)
 }
 
@@ -88,7 +88,7 @@ func (e EntrySelectionDatabaseRepository) Select(ctx context.Context, criteria m
 	}
 
 	if len(entrySelections) == 0 {
-		return []models.EntrySelection{}, MissingDBRecordError{errors.New("no entries found")}
+		return []models.EntrySelection{}, MissingDBRecordError{errors.New("no entry selections found")}
 	}
 
 	return entrySelections, nil
