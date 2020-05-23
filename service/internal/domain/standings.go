@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+// TODO - write Standings tests
+
 // StandingsAgentInjector defines the dependencies required by our StandingsAgent
 type StandingsAgentInjector interface {
 	MySQL() coresql.Agent
@@ -48,6 +50,21 @@ func (s StandingsAgent) RetrieveStandingsByID(ctx Context, id string) (models.St
 
 	retrievedStandings, err := standingsRepo.Select(ctx, map[string]interface{}{
 		"id": id,
+	}, false)
+	if err != nil {
+		return models.Standings{}, domainErrorFromDBError(err)
+	}
+
+	return retrievedStandings[0], nil
+}
+
+// RetrieveStandingsBySeasonAndRoundNumber handles the retrieval of an existing Standings in the database by its Season ID and Round Number
+func (s StandingsAgent) RetrieveStandingsBySeasonAndRoundNumber(ctx Context, seasonID string, roundNumber int) (models.Standings, error) {
+	standingsRepo := repositories.NewStandingsDatabaseRepository(s.MySQL())
+
+	retrievedStandings, err := standingsRepo.Select(ctx, map[string]interface{}{
+		"season_id":    seasonID,
+		"round_number": roundNumber,
 	}, false)
 	if err != nil {
 		return models.Standings{}, domainErrorFromDBError(err)

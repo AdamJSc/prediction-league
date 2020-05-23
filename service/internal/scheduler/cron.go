@@ -25,10 +25,12 @@ func (c Cron) Run(ctx context.Context) error {
 
 	var runJob = func(ctx context.Context, j Job, ch chan Job) {
 		result, err := j.Run(ctx)
-		if err != nil {
+		switch {
+		case err != nil:
 			log.Println(errors.Wrap(err, fmt.Sprintf("** ERROR **: [%s]:", j.Name())))
+		default:
+			log.Printf("[%s]: %s", j.Name(), result)
 		}
-		log.Printf("[%s]: %s", j.Name(), result)
 
 		time.Sleep(time.Duration(j.IntervalInSeconds()) * time.Second)
 		ch <- j

@@ -37,7 +37,7 @@ func (s StandingsDatabaseRepository) Insert(ctx context.Context, standings *mode
 
 	now := time.Now().Truncate(time.Second)
 
-	rankings, err := json.Marshal(&standings)
+	rankings, err := json.Marshal(&standings.Rankings)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (s StandingsDatabaseRepository) Update(ctx context.Context, standings *mode
 
 	now := sqltypes.ToNullTime(time.Now().Truncate(time.Second))
 
-	rankings, err := json.Marshal(&standings)
+	rankings, err := json.Marshal(&standings.Rankings)
 	if err != nil {
 		return err
 	}
@@ -114,6 +114,10 @@ func (s StandingsDatabaseRepository) Select(ctx context.Context, criteria map[st
 			&standings.CreatedAt,
 			&standings.UpdatedAt,
 		); err != nil {
+			return []models.Standings{}, wrapDBError(err)
+		}
+
+		if err := json.Unmarshal(rankings, &standings.Rankings); err != nil {
 			return []models.Standings{}, wrapDBError(err)
 		}
 

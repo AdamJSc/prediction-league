@@ -52,7 +52,7 @@ func main() {
 	})
 
 	jobScheduler := scheduler.Cron{
-		Jobs: scheduler.MustGenerateCronJobs(config),
+		Jobs: scheduler.MustGenerateCronJobs(config, httpAppContainer),
 	}
 
 	// run service

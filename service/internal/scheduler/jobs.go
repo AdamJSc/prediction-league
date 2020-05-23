@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"log"
+	"prediction-league/service/internal/app"
+	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/clients"
 	footballdata "prediction-league/service/internal/clients/football-data-org"
 	"prediction-league/service/internal/datastore"
@@ -22,6 +24,7 @@ type Job interface {
 
 // RetrieveLatestStandings represents our job that retrieves the latest league standings for a given season
 type RetrieveLatestStandings struct {
+	app.MySQLInjector
 	Season models.Season
 	Client clients.FootballDataSource
 }
@@ -51,17 +54,59 @@ func (r RetrieveLatestStandings) Run(ctx context.Context) (string, error) {
 		}
 	}
 
-	// TODO - store Standings
+	// store standings
 
-	// TODO - retrieve all Entries for r.Season
+	domainCtx := domain.Context{Context: ctx}
 
+	standingsAgent := domain.StandingsAgent{
+		StandingsAgentInjector: r,
+	}
+
+	if err := saveStandings(domainCtx, &standings, standingsAgent, r.Season.ID); err != nil {
+		return "", err
+	}
+
+	// TODO - retrieve latest EntrySelection for all Entries for r.Season
 	// TODO - generate new Standings score per team for each entry based on standings
 
-	return fmt.Sprintf("%+v", standings), nil
+	return "done!", nil
+}
+
+// saveStandings upserts the provided Standings depending on whether or not it already exists
+func saveStandings(domainCtx domain.Context, s *models.Standings, agent domain.StandingsAgent, seasonID string) error {
+	existingStandings, err := agent.RetrieveStandingsBySeasonAndRoundNumber(domainCtx, seasonID, s.RoundNumber)
+	if err != nil {
+		switch err.(type) {
+		case domain.NotFoundError:
+			// we have scraped a new standings round!
+			// let's save it...
+			createdStandings, err := agent.CreateStandings(domainCtx, *s)
+			if err != nil {
+				return err
+			}
+
+			*s = createdStandings
+			return nil
+		default:
+			// something went wrong with retrieving our existing standings...
+			return err
+		}
+	}
+
+	// we have scraped an existing standings round!
+	// let's update it...
+	existingStandings.Rankings = s.Rankings
+	updatedStandings, err := agent.UpdateStandings(domainCtx, existingStandings)
+	if err != nil {
+		return err
+	}
+
+	*s = updatedStandings
+	return nil
 }
 
 // MustGenerateCronJobs generates the cron jobs to be used by the scheduler
-func MustGenerateCronJobs(config domain.Config) []Job {
+func MustGenerateCronJobs(config domain.Config, container *httph.HTTPAppContainer) []Job {
 	// get the current season ID for all realms
 	var seasonIDs = make(map[string]struct{})
 	for _, realm := range config.Realms {
@@ -77,8 +122,9 @@ func MustGenerateCronJobs(config domain.Config) []Job {
 		}
 
 		jobs = append(jobs, RetrieveLatestStandings{
-			Season: season,
-			Client: footballdata.NewClient(config.FootballDataAPIToken),
+			MySQLInjector: container,
+			Season:        season,
+			Client:        footballdata.NewClient(config.FootballDataAPIToken),
 		})
 	}
 
