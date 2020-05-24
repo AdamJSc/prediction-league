@@ -263,7 +263,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 	}
 
 	t.Run("add an entry selection to an existing entry with valid guard value must succeed", func(t *testing.T) {
-		teamIDs := models.NewRankingCollection(season.TeamIDs)
+		teamIDs := models.NewRankingCollectionFromIDs(season.TeamIDs)
 
 		// reverse order of team IDs to ensure this is still an acceptable set of rankings when adding an entry selection
 		var rankings models.RankingCollection
@@ -291,7 +291,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 		ctxWithInvalidRealmValue := ctx
 		ctxWithInvalidRealmValue.Realm.Name = "NOT_TEST_REALM"
 
-		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollection(season.TeamIDs)}
+		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollectionFromIDs(season.TeamIDs)}
 
 		_, err := agent.AddEntrySelectionToEntry(ctxWithInvalidRealmValue, entrySelection, entry)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
@@ -300,7 +300,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 	})
 
 	t.Run("add an entry selection to a non-existing entry must fail", func(t *testing.T) {
-		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollection(season.TeamIDs)}
+		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollectionFromIDs(season.TeamIDs)}
 
 		nonExistentEntryID, err := uuid.NewV4()
 		if err != nil {
@@ -317,7 +317,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 	})
 
 	t.Run("add an entry selection to an entry with an invalid season must fail", func(t *testing.T) {
-		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollection(season.TeamIDs)}
+		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollectionFromIDs(season.TeamIDs)}
 
 		entryWithInvalidSeason := entry
 		entryWithInvalidSeason.SeasonID = "not_a_valid_season"
@@ -329,7 +329,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 	})
 
 	t.Run("add an entry selection with rankings that include an invalid team ID must fail", func(t *testing.T) {
-		rankings := models.NewRankingCollection(season.TeamIDs)
+		rankings := models.NewRankingCollectionFromIDs(season.TeamIDs)
 		rankings = append(rankings, models.Ranking{ID: "not_a_valid_team_id"})
 		expectedMessage := "Invalid Team ID: not_a_valid_team_id"
 
@@ -348,7 +348,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 	})
 
 	t.Run("add an entry selection with rankings that include a missing team ID must fail", func(t *testing.T) {
-		rankings := models.NewRankingCollection(season.TeamIDs)
+		rankings := models.NewRankingCollectionFromIDs(season.TeamIDs)
 		if len(rankings) < 1 {
 			t.Fatalf("expected rankings length of at least 1, got %d", len(rankings))
 		}
@@ -375,7 +375,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 	})
 
 	t.Run("add an entry selection with rankings that include a duplicate team ID must fail", func(t *testing.T) {
-		rankings := models.NewRankingCollection(season.TeamIDs)
+		rankings := models.NewRankingCollectionFromIDs(season.TeamIDs)
 		if len(rankings) < 2 {
 			t.Fatalf("expected rankings length of at least 2, got %d", len(rankings))
 		}
@@ -434,12 +434,12 @@ func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
 		{
 			ID:       uuid.Must(uuid.NewV4()),
 			EntryID:  entry.ID,
-			Rankings: models.NewRankingCollection(season.TeamIDs),
+			Rankings: models.NewRankingCollectionFromIDs(season.TeamIDs),
 		},
 		{
 			ID:       uuid.Must(uuid.NewV4()),
 			EntryID:  entry.ID,
-			Rankings: models.NewRankingCollection(season.TeamIDs),
+			Rankings: models.NewRankingCollectionFromIDs(season.TeamIDs),
 		},
 	}
 	for _, sel := range entrySelections {

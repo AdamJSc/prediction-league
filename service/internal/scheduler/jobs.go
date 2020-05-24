@@ -88,7 +88,18 @@ func (r RetrieveLatestStandings) Run(ctx context.Context) (string, error) {
 		currentEntrySelections = append(currentEntrySelections, es)
 	}
 
-	// TODO - calculate score for each EntrySelection based on Standings
+	standingsRankingCollection := models.NewRankingCollectionFromRankingWithMetas(standings.Rankings)
+	for _, es := range currentEntrySelections {
+		rws, err := domain.CalculateRankingsScores(es.Rankings, standingsRankingCollection)
+		if err != nil {
+			return "", err
+		}
+
+		log.Println(rws)
+
+		// TODO - retrieve rws if already exists
+		// TODO - save rws
+	}
 
 	return "done!", nil
 }

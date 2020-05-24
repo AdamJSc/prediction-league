@@ -48,6 +48,6 @@ type EntrySelection struct {
 // NewEntrySelection returns a new EntrySelection from the provided set of IDs
 func NewEntrySelection(ids []string) EntrySelection {
 	return EntrySelection{
-		Rankings: NewRankingCollection(ids),
+		Rankings: NewRankingCollectionFromIDs(ids),
 	}
 }

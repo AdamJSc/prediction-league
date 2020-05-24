@@ -38,25 +38,9 @@ func (r *RankingCollection) UnmarshalJSON(d []byte) error {
 		return err
 	}
 
-	*r = NewRankingCollection(ids)
+	*r = NewRankingCollectionFromIDs(ids)
 
 	return nil
-}
-
-// NewRankingCollection creates a new RankingCollection from a set of IDs
-func NewRankingCollection(ids []string) RankingCollection {
-	var (
-		collection RankingCollection
-		count      int
-	)
-	for _, id := range ids {
-		count++
-		collection = append(collection, Ranking{
-			ID:       id,
-			Position: count,
-		})
-	}
-	return collection
 }
 
 // RankingWithMeta composes a Ranking with additional meta data
@@ -78,9 +62,41 @@ type RankingWithScore struct {
 	Score int
 }
 
+// RankingWithScoreCollection defines our collection of RankingWithScores
+type RankingWithScoreCollection []RankingWithScore
+
 // ScoredEntrySelection provides a data type for an EntrySelection that has been
 type ScoredEntrySelection struct {
 	EntrySelectionID uuid.UUID
 	RoundNumber      int
 	Rankings         []RankingWithScore
+}
+
+// NewRankingCollectionFromIDs creates a new RankingCollection from a set of IDs
+func NewRankingCollectionFromIDs(ids []string) RankingCollection {
+	var (
+		collection RankingCollection
+		count      int
+	)
+	for _, id := range ids {
+		count++
+		collection = append(collection, Ranking{
+			ID:       id,
+			Position: count,
+		})
+	}
+	return collection
+}
+
+// NewRankingCollectionFromRankingWithMetas creates a new RankingCollection from the provide RankingWithMetas
+func NewRankingCollectionFromRankingWithMetas(rwms []RankingWithMeta) RankingCollection {
+	var collection RankingCollection
+
+	for _, rwm := range rwms {
+		collection = append(collection, Ranking{
+			ID:       rwm.ID,
+			Position: rwm.Position,
+		})
+	}
+	return collection
 }
