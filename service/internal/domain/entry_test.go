@@ -9,7 +9,9 @@ import (
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/models"
+	"prediction-league/service/internal/repositories"
 	"reflect"
+	"sort"
 	"testing"
 	"time"
 )
@@ -400,7 +402,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 	})
 }
 
-func TestEntryAgent_RetrieveEntry(t *testing.T) {
+func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
 	defer truncate(t)
 
 	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
@@ -513,6 +515,91 @@ func TestEntryAgent_RetrieveEntry(t *testing.T) {
 		_, err = agent.RetrieveEntryByID(ctxWithInvalidRealm, entry.ID.String())
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
+		}
+	})
+}
+
+func TestEntryAgent_RetrieveEntriesBySeasonID(t *testing.T) {
+	defer truncate(t)
+
+	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
+
+	ctx := domain.NewContext()
+	ctx.Realm.Name = "TEST_REALM"
+	ctx.Realm.PIN = "5678"
+	ctx.Guard.SetAttempt("5678")
+
+	// get first season
+	key := reflect.ValueOf(datastore.Seasons).MapKeys()[0].String()
+	season := datastore.Seasons[key]
+
+	// seed initial entries
+	var entries = []models.Entry{
+		{
+			EntrantName:     "Harry Redknapp",
+			EntrantNickname: "MrHarryR",
+			EntrantEmail:    "harry.redknapp@football.net",
+			SeasonID:        season.ID,
+		},
+		{
+			EntrantName:     "Jamie Redknapp",
+			EntrantNickname: "MrJamieR",
+			EntrantEmail:    "jamie.redknapp@football.net",
+			SeasonID:        "nnnnnn",
+		},
+		{
+			EntrantName:     "Frank Lampard Redknapp",
+			EntrantNickname: "FrankieLamps",
+			EntrantEmail:    "frank.lampard@football.net",
+			SeasonID:        season.ID,
+		},
+	}
+
+	var err error
+	repo := repositories.NewEntryDatabaseRepository(db)
+	for idx := range entries {
+		entry := &entries[idx]
+		entry.ID, err = uuid.NewV4()
+		if err != nil {
+			t.Fatal(err)
+		}
+		entry.ShortCode, err = domain.GenerateUniqueShortCode(ctx, db)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := repo.Insert(ctx, entry); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	t.Run("retrieve existing entries with valid credentials must succeed", func(t *testing.T) {
+		// should succeed
+		retrievedEntries, err := agent.RetrieveEntriesBySeasonID(ctx, season.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		sort.Slice(retrievedEntries, func(i, j int) bool {
+			return retrievedEntries[i].EntrantNickname > retrievedEntries[j].EntrantNickname
+		})
+
+		if len(retrievedEntries) != 2 {
+			t.Fatalf("expected length of 2, got %d", len(retrievedEntries))
+		}
+
+		if retrievedEntries[0].EntrantNickname != "MrHarryR" {
+			expectedGot(t, "MrHarryR", retrievedEntries[0].EntrantNickname)
+		}
+
+		if retrievedEntries[1].EntrantNickname != "FrankieLamps" {
+			expectedGot(t, "FrankieLamps", retrievedEntries[1].EntrantNickname)
+		}
+	})
+
+	t.Run("retrieve non-existent entries must fail", func(t *testing.T) {
+		_, err = agent.RetrieveEntriesBySeasonID(ctx, "not_a_valid_season_id")
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
 	})
 }

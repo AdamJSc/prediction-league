@@ -140,6 +140,7 @@ func (e EntryAgent) RetrieveEntryByID(ctx Context, id string) (models.Entry, err
 		"entry_id": entry.ID,
 	}, false)
 	if err != nil {
+		err = domainErrorFromDBError(err)
 		switch err.(type) {
 		case NotFoundError:
 			// all good
@@ -149,6 +150,39 @@ func (e EntryAgent) RetrieveEntryByID(ctx Context, id string) (models.Entry, err
 	}
 
 	return entry, nil
+}
+
+// RetrieveEntriesBySeasonID handles the retrieval of existing Entries in the database by their Season ID
+func (e EntryAgent) RetrieveEntriesBySeasonID(ctx Context, seasonID string) ([]models.Entry, error) {
+	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
+	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
+
+	entries, err := entryRepo.Select(ctx, map[string]interface{}{
+		"season_id": seasonID,
+	}, false)
+	if err != nil {
+		return []models.Entry{}, domainErrorFromDBError(err)
+	}
+
+	for idx := range entries {
+		entry := &entries[idx]
+
+		// retrieve and inflate all entry selections
+		entry.EntrySelections, err = entrySelectionRepo.Select(ctx, map[string]interface{}{
+			"entry_id": entry.ID,
+		}, false)
+		if err != nil {
+			err = domainErrorFromDBError(err)
+			switch err.(type) {
+			case NotFoundError:
+				// all good
+			default:
+				return []models.Entry{}, domainErrorFromDBError(err)
+			}
+		}
+	}
+
+	return entries, nil
 }
 
 // UpdateEntry handles the updating of an existing Entry in the database
