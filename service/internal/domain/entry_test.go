@@ -579,7 +579,7 @@ func TestEntryAgent_RetrieveEntriesBySeasonID(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		sort.Slice(retrievedEntries, func(i, j int) bool {
+		sort.SliceStable(retrievedEntries, func(i, j int) bool {
 			return retrievedEntries[i].EntrantNickname > retrievedEntries[j].EntrantNickname
 		})
 

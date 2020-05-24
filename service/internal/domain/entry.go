@@ -11,6 +11,7 @@ import (
 	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/repositories"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
@@ -483,6 +484,25 @@ func GenerateUniqueShortCode(ctx context.Context, db coresql.Agent) (string, err
 		return shortCode, nil
 	}
 	return "", err
+}
+
+// GetEntrySelectionValidAtTimestamp returns the latest EntrySelection that existed at the point of the provided timestamp
+func GetEntrySelectionValidAtTimestamp(entrySelections []models.EntrySelection, ts time.Time) (models.EntrySelection, error) {
+	desc := entrySelections
+	sort.SliceStable(desc, func(i, j int) bool {
+		// sort descending
+		return desc[j].CreatedAt.Before(desc[i].CreatedAt)
+	})
+
+	for _, es := range desc {
+		// let's iterate until we get to the first element
+		// that was created prior to ts
+		if es.CreatedAt.Before(ts) {
+			return es, nil
+		}
+	}
+
+	return models.EntrySelection{}, errors.New("not found")
 }
 
 func isValidEmail(email string) bool {

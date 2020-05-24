@@ -55,19 +55,40 @@ func (r RetrieveLatestStandings) Run(ctx context.Context) (string, error) {
 	}
 
 	// store standings
-
 	domainCtx := domain.Context{Context: ctx}
-
 	standingsAgent := domain.StandingsAgent{
 		StandingsAgentInjector: r,
 	}
-
 	if err := saveStandings(domainCtx, &standings, standingsAgent, r.Season.ID); err != nil {
 		return "", err
 	}
 
-	// TODO - retrieve latest EntrySelection for all Entries for r.Season
-	// TODO - generate new Standings score per team for each entry based on standings
+	// retrieve all entries for current season
+	entriesAgent := domain.EntryAgent{
+		EntryAgentInjector: r,
+	}
+	seasonEntries, err := entriesAgent.RetrieveEntriesBySeasonID(domainCtx, r.Season.ID)
+	if err != nil {
+		return "", err
+	}
+
+	// get the valid entry selections for the current standings
+	standingsTs := standings.CreatedAt
+	if standings.UpdatedAt.Valid {
+		standingsTs = standings.UpdatedAt.Time
+	}
+
+	var currentEntrySelections []models.EntrySelection
+	for _, entry := range seasonEntries {
+		es, err := domain.GetEntrySelectionValidAtTimestamp(entry.EntrySelections, standingsTs)
+		if err != nil {
+			return "", errors.Wrapf(err, "entry selection for entrant nickname: %s", entry.EntrantNickname)
+		}
+
+		currentEntrySelections = append(currentEntrySelections, es)
+	}
+
+	// TODO - calculate score for each EntrySelection based on Standings
 
 	return "done!", nil
 }
