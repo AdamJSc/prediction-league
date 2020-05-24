@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-// TODO - write Standings tests
-
 // StandingsAgentInjector defines the dependencies required by our StandingsAgent
 type StandingsAgentInjector interface {
 	MySQL() coresql.Agent
