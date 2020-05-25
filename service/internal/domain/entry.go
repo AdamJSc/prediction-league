@@ -154,7 +154,7 @@ func (e EntryAgent) RetrieveEntryByID(ctx Context, id string) (models.Entry, err
 }
 
 // RetrieveEntriesBySeasonID handles the retrieval of existing Entries in the database by their Season ID
-func (e EntryAgent) RetrieveEntriesBySeasonID(ctx Context, seasonID string) ([]models.Entry, error) {
+func (e EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID string) ([]models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
 

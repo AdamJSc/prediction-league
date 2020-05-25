@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
@@ -18,7 +19,7 @@ type StandingsAgentInjector interface {
 type StandingsAgent struct{ StandingsAgentInjector }
 
 // CreateStandings handles the creation of a new Standings in the database
-func (s StandingsAgent) CreateStandings(ctx Context, standings models.Standings) (models.Standings, error) {
+func (s StandingsAgent) CreateStandings(ctx context.Context, standings models.Standings) (models.Standings, error) {
 	db := s.MySQL()
 
 	// generate a new entry ID
@@ -43,7 +44,7 @@ func (s StandingsAgent) CreateStandings(ctx Context, standings models.Standings)
 }
 
 // RetrieveStandingsByID handles the retrieval of an existing Standings in the database by its ID
-func (s StandingsAgent) RetrieveStandingsByID(ctx Context, id string) (models.Standings, error) {
+func (s StandingsAgent) RetrieveStandingsByID(ctx context.Context, id string) (models.Standings, error) {
 	standingsRepo := repositories.NewStandingsDatabaseRepository(s.MySQL())
 
 	retrievedStandings, err := standingsRepo.Select(ctx, map[string]interface{}{
@@ -57,7 +58,7 @@ func (s StandingsAgent) RetrieveStandingsByID(ctx Context, id string) (models.St
 }
 
 // RetrieveStandingsBySeasonAndRoundNumber handles the retrieval of an existing Standings in the database by its Season ID and Round Number
-func (s StandingsAgent) RetrieveStandingsBySeasonAndRoundNumber(ctx Context, seasonID string, roundNumber int) (models.Standings, error) {
+func (s StandingsAgent) RetrieveStandingsBySeasonAndRoundNumber(ctx context.Context, seasonID string, roundNumber int) (models.Standings, error) {
 	standingsRepo := repositories.NewStandingsDatabaseRepository(s.MySQL())
 
 	retrievedStandings, err := standingsRepo.Select(ctx, map[string]interface{}{
@@ -72,7 +73,7 @@ func (s StandingsAgent) RetrieveStandingsBySeasonAndRoundNumber(ctx Context, sea
 }
 
 // UpdateStandings handles the updating of an existing Standings in the database
-func (s StandingsAgent) UpdateStandings(ctx Context, standings models.Standings) (models.Standings, error) {
+func (s StandingsAgent) UpdateStandings(ctx context.Context, standings models.Standings) (models.Standings, error) {
 	standingsRepo := repositories.NewStandingsDatabaseRepository(s.MySQL())
 
 	// ensure the entry exists

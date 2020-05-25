@@ -1,14 +1,11 @@
 package domain_test
 
 import (
-	"context"
 	"github.com/LUSHDigital/uuid"
 	gocmp "github.com/google/go-cmp/cmp"
 	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
-	"prediction-league/service/internal/repositories"
 	"reflect"
 	"testing"
 	"time"
@@ -21,11 +18,12 @@ func TestStandingsAgent_CreateStandings(t *testing.T) {
 		StandingsAgentInjector: injector{db: db},
 	}
 
-	ctx := domain.Context{Context: context.Background()}
-
-	standings := generateStandings(t)
+	standings := generateTestStandings(t)
 
 	t.Run("create valid standings must succeed", func(t *testing.T) {
+		ctx, cancel := testContext(t)
+		defer cancel()
+
 		createdStandings, err := agent.CreateStandings(ctx, standings)
 		if err != nil {
 			t.Fatal(err)
@@ -57,18 +55,16 @@ func TestStandingsAgent_CreateStandings(t *testing.T) {
 func TestStandingsAgent_UpdateStandings(t *testing.T) {
 	defer truncate(t)
 
+	standings := insertStandings(t, generateTestStandings(t))
+
 	agent := domain.StandingsAgent{
 		StandingsAgentInjector: injector{db: db},
 	}
 
-	ctx := domain.Context{Context: context.Background()}
-
-	standings := generateStandings(t)
-	if err := repositories.NewStandingsDatabaseRepository(db).Insert(ctx.Context, &standings); err != nil {
-		t.Fatal(err)
-	}
-
 	t.Run("update valid standings must succeed", func(t *testing.T) {
+		ctx, cancel := testContext(t)
+		defer cancel()
+
 		changedStandings := standings
 		changedStandings.RoundNumber = 2
 		changedStandings.Rankings[0].Ranking.ID = "bonjour"
@@ -100,6 +96,9 @@ func TestStandingsAgent_UpdateStandings(t *testing.T) {
 	})
 
 	t.Run("update non-existent standings must fail", func(t *testing.T) {
+		ctx, cancel := testContext(t)
+		defer cancel()
+
 		changedStandings := standings
 
 		id, err := uuid.NewV4()
@@ -119,18 +118,16 @@ func TestStandingsAgent_UpdateStandings(t *testing.T) {
 func TestStandingsAgent_RetrieveStandingsByID(t *testing.T) {
 	defer truncate(t)
 
+	standings := insertStandings(t, generateTestStandings(t))
+
 	agent := domain.StandingsAgent{
 		StandingsAgentInjector: injector{db: db},
 	}
 
-	ctx := domain.Context{Context: context.Background()}
-
-	standings := generateStandings(t)
-	if err := repositories.NewStandingsDatabaseRepository(db).Insert(ctx.Context, &standings); err != nil {
-		t.Fatal(err)
-	}
-
 	t.Run("retrieve existent standings must succeed", func(t *testing.T) {
+		ctx, cancel := testContext(t)
+		defer cancel()
+
 		retrievedStandings, err := agent.RetrieveStandingsByID(ctx, standings.ID.String())
 		if err != nil {
 			t.Fatal(err)
@@ -157,6 +154,9 @@ func TestStandingsAgent_RetrieveStandingsByID(t *testing.T) {
 	})
 
 	t.Run("retrieve non-existent standings must fail", func(t *testing.T) {
+		ctx, cancel := testContext(t)
+		defer cancel()
+
 		nonExistentID, err := uuid.NewV4()
 		if err != nil {
 			t.Fatal(err)
@@ -172,35 +172,28 @@ func TestStandingsAgent_RetrieveStandingsByID(t *testing.T) {
 func TestStandingsAgent_RetrieveStandingsBySeasonAndRoundNumber(t *testing.T) {
 	defer truncate(t)
 
+	// season ID won't match our method parameters, so this won't be returned
+	standings1 := generateTestStandings(t)
+	standings1.SeasonID = "nnnnnn"
+	standings1 = insertStandings(t, standings1)
+
+	// this will be returned by our agent method
+	standings2 := generateTestStandings(t)
+	standings2 = insertStandings(t, standings2)
+
+	// round number won't match our method parameters, so this won't be returned
+	standings3 := generateTestStandings(t)
+	standings3.RoundNumber = 2
+	standings3 = insertStandings(t, standings3)
+
 	agent := domain.StandingsAgent{
 		StandingsAgentInjector: injector{db: db},
 	}
 
-	ctx := domain.Context{Context: context.Background()}
-
-	standingsRepo := repositories.NewStandingsDatabaseRepository(db)
-
-	// season ID won't match our method parameters, so this won't be returned
-	standings1 := generateStandings(t)
-	standings1.SeasonID = "nnnnnn"
-	if err := standingsRepo.Insert(ctx.Context, &standings1); err != nil {
-		t.Fatal(err)
-	}
-
-	// this will be returned by our agent method
-	standings2 := generateStandings(t)
-	if err := standingsRepo.Insert(ctx.Context, &standings2); err != nil {
-		t.Fatal(err)
-	}
-
-	// round number won't match our method parameters, so this won't be returned
-	standings3 := generateStandings(t)
-	standings3.RoundNumber = 2
-	if err := standingsRepo.Insert(ctx.Context, &standings3); err != nil {
-		t.Fatal(err)
-	}
-
 	t.Run("retrieve existent standings must succeed", func(t *testing.T) {
+		ctx, cancel := testContext(t)
+		defer cancel()
+
 		seasonID := reflect.ValueOf(datastore.Seasons).MapKeys()[0].String()
 
 		retrievedStandings, err := agent.RetrieveStandingsBySeasonAndRoundNumber(ctx, seasonID, 1)
@@ -227,28 +220,4 @@ func TestStandingsAgent_RetrieveStandingsBySeasonAndRoundNumber(t *testing.T) {
 			expectedGot(t, standings2.UpdatedAt.Time, retrievedStandings.UpdatedAt.Time)
 		}
 	})
-}
-
-func generateStandings(t *testing.T) models.Standings {
-	// get first season
-	key := reflect.ValueOf(datastore.Seasons).MapKeys()[0].String()
-	season := datastore.Seasons[key]
-
-	id, err := uuid.NewV4()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var rankings = []models.RankingWithMeta{{
-		Ranking: models.Ranking{ID: "hello"},
-	}, {
-		Ranking: models.Ranking{ID: "world"},
-	}}
-
-	return models.Standings{
-		ID:          id,
-		SeasonID:    season.ID,
-		RoundNumber: 1,
-		Rankings:    rankings,
-	}
 }
