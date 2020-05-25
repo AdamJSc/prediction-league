@@ -72,12 +72,12 @@ func (r RetrieveLatestStandings) Run(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	// get the valid entry selections for the current standings
 	standingsTs := standings.CreatedAt
 	if standings.UpdatedAt.Valid {
 		standingsTs = standings.UpdatedAt.Time
 	}
 
+	// get the current entry selection for each of the entries we've just retrieved
 	var currentEntrySelections []models.EntrySelection
 	for _, entry := range seasonEntries {
 		es, err := domain.GetEntrySelectionValidAtTimestamp(entry.EntrySelections, standingsTs)
@@ -88,6 +88,7 @@ func (r RetrieveLatestStandings) Run(ctx context.Context) (string, error) {
 		currentEntrySelections = append(currentEntrySelections, es)
 	}
 
+	// calculate ranking scores for each entry selection based on the retrieved standings
 	standingsRankingCollection := models.NewRankingCollectionFromRankingWithMetas(standings.Rankings)
 	for _, es := range currentEntrySelections {
 		rws, err := domain.CalculateRankingsScores(es.Rankings, standingsRankingCollection)

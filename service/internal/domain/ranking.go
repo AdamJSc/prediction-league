@@ -12,7 +12,7 @@ func CalculateRankingsScores(baseRC models.RankingCollection, comparisonRC model
 		rws.Position = r.Position
 
 		var score int
-		// TODO - calculate score
+		// TODO - calculate score based on comparisonRC
 
 		rws.Score = score
 		collection = append(collection, rws)

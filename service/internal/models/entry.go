@@ -51,3 +51,13 @@ func NewEntrySelection(ids []string) EntrySelection {
 		Rankings: NewRankingCollectionFromIDs(ids),
 	}
 }
+
+// EntrySelectionStandingsScore provides a data type for an EntrySelection that has been scored against a Standings
+type EntrySelectionStandingsScore struct {
+	EntrySelectionID uuid.UUID          `db:"entry_selection_id"`
+	StandingsID      uuid.UUID          `db:"standings_id"`
+	Rankings         []RankingWithScore `db:"rankings"`
+	Score            int                `db:"score"`
+	CreatedAt        time.Time          `db:"created_at"`
+	UpdatedAt        sqltypes.NullTime  `db:"updated_at"`
+}

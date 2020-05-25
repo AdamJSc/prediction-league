@@ -3,7 +3,6 @@ package models
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/LUSHDigital/uuid"
 	"strings"
 )
 
@@ -64,13 +63,6 @@ type RankingWithScore struct {
 
 // RankingWithScoreCollection defines our collection of RankingWithScores
 type RankingWithScoreCollection []RankingWithScore
-
-// ScoredEntrySelection provides a data type for an EntrySelection that has been
-type ScoredEntrySelection struct {
-	EntrySelectionID uuid.UUID
-	RoundNumber      int
-	Rankings         []RankingWithScore
-}
 
 // NewRankingCollectionFromIDs creates a new RankingCollection from a set of IDs
 func NewRankingCollectionFromIDs(ids []string) RankingCollection {
