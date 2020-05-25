@@ -49,6 +49,12 @@ func TestStandingsAgent_CreateStandings(t *testing.T) {
 		if createdStandings.UpdatedAt.Valid {
 			expectedEmpty(t, "UpdatedAt", createdStandings.UpdatedAt)
 		}
+
+		// inserting same standings a second time should fail
+		_, err = agent.CreateStandings(ctx, standings)
+		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
+			expectedTypeOfGot(t, domain.ConflictError{}, err)
+		}
 	})
 }
 

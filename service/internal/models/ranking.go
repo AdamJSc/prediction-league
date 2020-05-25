@@ -92,3 +92,21 @@ func NewRankingCollectionFromRankingWithMetas(rwms []RankingWithMeta) RankingCol
 	}
 	return collection
 }
+
+// NewRankingWithScoreCollectionFromIDs creates a new RankingWithScoreCollection from a set of IDs
+func NewRankingWithScoreCollectionFromIDs(ids []string) RankingWithScoreCollection {
+	var (
+		collection RankingWithScoreCollection
+		count      int
+	)
+	for _, id := range ids {
+		count++
+
+		var rws RankingWithScore
+		rws.ID = id
+		rws.Position = count
+
+		collection = append(collection, rws)
+	}
+	return collection
+}

@@ -11,9 +11,10 @@ import (
 
 func TestRankingCollection(t *testing.T) {
 	var ids = []string{"Pitman", "Wilson", "Hayter", "Pugh", "King"}
-	var rankings = models.NewRankingCollectionFromIDs(ids)
 
-	t.Run("creating a new ranking collection from ids only must successfully populate the expected positions", func(t *testing.T) {
+	t.Run("creating a new ranking collection from ids must successfully populate the expected positions", func(t *testing.T) {
+		var rankings = models.NewRankingCollectionFromIDs(ids)
+
 		for idx, ranking := range rankings {
 			if ranking.ID != ids[idx] {
 				expectedGot(t, ids[idx], ranking.ID)
@@ -35,15 +36,15 @@ func TestRankingCollection(t *testing.T) {
 
 		expected := models.RankingCollection{
 			{
-				ID: "id_1",
+				ID:       "id_1",
 				Position: 1,
 			},
 			{
-				ID: "id_2",
+				ID:       "id_2",
 				Position: 3,
 			},
 			{
-				ID: "id_3",
+				ID:       "id_3",
 				Position: 2,
 			},
 		}
@@ -55,7 +56,25 @@ func TestRankingCollection(t *testing.T) {
 		}
 	})
 
-	t.Run("marshaling a ranking collection should retain the ids only", func(t *testing.T) {
+	t.Run("creating a new ranking with score collection from ids must successfully populate the expected positions", func(t *testing.T) {
+		var rankings = models.NewRankingWithScoreCollectionFromIDs(ids)
+
+		for idx, ranking := range rankings {
+			if ranking.ID != ids[idx] {
+				expectedGot(t, ids[idx], ranking.ID)
+			}
+			if ranking.Position != idx+1 {
+				expectedGot(t, idx+1, ranking.Position)
+			}
+			if ranking.Score != 0 {
+				expectedGot(t, 0, ranking.Score)
+			}
+		}
+	})
+
+	t.Run("marshaling and unmarshaling a ranking collection should retain the ids only", func(t *testing.T) {
+		var rankings = models.NewRankingCollectionFromIDs(ids)
+
 		var joined = fmt.Sprintf(`["%s"]`, strings.Join(ids, `","`))
 
 		marshaled, err := json.Marshal(&rankings)

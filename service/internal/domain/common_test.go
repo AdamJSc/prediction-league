@@ -141,6 +141,7 @@ func testDomainContext(t *testing.T) (domain.Context, context.CancelFunc) {
 	return domainCtx, cancel
 }
 
+// generateTestStandings generates a new Standings entity for use within the testsuite
 func generateTestStandings(t *testing.T) models.Standings {
 	t.Helper()
 
@@ -167,6 +168,7 @@ func generateTestStandings(t *testing.T) models.Standings {
 	}
 }
 
+// insertStandings inserts a generated Standings entity into the DB for use within the testsuite
 func insertStandings(t *testing.T, standings models.Standings) models.Standings {
 	t.Helper()
 
@@ -180,6 +182,7 @@ func insertStandings(t *testing.T, standings models.Standings) models.Standings 
 	return standings
 }
 
+// generateTestEntry generates a new Entry entity for use within the testsuite
 func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail string) models.Entry {
 	t.Helper()
 
@@ -214,6 +217,7 @@ func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail 
 	}
 }
 
+// insertEntry insert a generated Entry entity into the DB for use within the testsuite
 func insertEntry(t *testing.T, entry models.Entry) models.Entry {
 	t.Helper()
 
@@ -227,6 +231,7 @@ func insertEntry(t *testing.T, entry models.Entry) models.Entry {
 	return entry
 }
 
+// generateTestEntrySelection generates a new EntrySelection entity for use within the testsuite
 func generateTestEntrySelection(t *testing.T, entryID uuid.UUID) models.EntrySelection {
 	id, err := uuid.NewV4()
 	if err != nil {
@@ -240,6 +245,7 @@ func generateTestEntrySelection(t *testing.T, entryID uuid.UUID) models.EntrySel
 	}
 }
 
+// insertEntrySelection inserts a generated EntrySelection entity into the DB for use within the testsuite
 func insertEntrySelection(t *testing.T, entrySelection models.EntrySelection) models.EntrySelection {
 	t.Helper()
 
@@ -251,4 +257,28 @@ func insertEntrySelection(t *testing.T, entrySelection models.EntrySelection) mo
 	}
 
 	return entrySelection
+}
+
+// generateTestScoredEntrySelection generates a new ScoredEntrySelection entity for use within the testsuite
+func generateTestScoredEntrySelection(t *testing.T, entrySelectionID, standingsID uuid.UUID) models.ScoredEntrySelection {
+	return models.ScoredEntrySelection{
+		EntrySelectionID: entrySelectionID,
+		StandingsID:      standingsID,
+		Rankings:         models.NewRankingWithScoreCollectionFromIDs(testSeason.TeamIDs),
+		Score:            123,
+	}
+}
+
+// insertScoredEntrySelection inserts a generated ScoredEntrySelection entity into the DB for use within the testsuite
+func insertScoredEntrySelection(t *testing.T, scoredEntrySelection models.ScoredEntrySelection) models.ScoredEntrySelection {
+	t.Helper()
+
+	ctx, cancel := testContext(t)
+	defer cancel()
+
+	if err := repositories.NewScoredEntrySelectionDatabaseRepository(db).Insert(ctx, &scoredEntrySelection); err != nil {
+		t.Fatal(err)
+	}
+
+	return scoredEntrySelection
 }
