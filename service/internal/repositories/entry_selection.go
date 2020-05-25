@@ -19,6 +19,7 @@ var entrySelectionDBFields = []string{
 type EntrySelectionRepository interface {
 	Insert(ctx context.Context, entrySelection *models.EntrySelection) error
 	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]models.EntrySelection, error)
+	ExistsByID(ctx context.Context, id string) error
 }
 
 // EntrySelectionDatabaseRepository defines our DB-backed EntrySelections data store
@@ -92,6 +93,24 @@ func (e EntrySelectionDatabaseRepository) Select(ctx context.Context, criteria m
 	}
 
 	return entrySelections, nil
+}
+
+// ExistsByID determines whether an EntrySelection with the provided ID exists in the database
+func (e EntrySelectionDatabaseRepository) ExistsByID(ctx context.Context, id string) error {
+	stmt := `SELECT COUNT(*) FROM entry_selection WHERE id = ?`
+
+	row := e.agent.QueryRowContext(ctx, stmt, id)
+
+	var count int
+	if err := row.Scan(&count); err != nil {
+		return wrapDBError(err)
+	}
+
+	if count == 0 {
+		return MissingDBRecordError{errors.New("entry selection not found")}
+	}
+
+	return nil
 }
 
 // NewEntrySelectionDatabaseRepository instantiates a new EntrySelectionDatabaseRepository with the provided DB agent

@@ -61,7 +61,7 @@ func (s ScoredEntrySelectionDatabaseRepository) Insert(ctx context.Context, scor
 // Update updates an existing ScoredEntrySelection in the database
 func (s ScoredEntrySelectionDatabaseRepository) Update(ctx context.Context, scoredEntrySelection *models.ScoredEntrySelection) error {
 	stmt := `UPDATE scored_entry_selection
-				SET ` + getDBFieldsWithEqualsPlaceholdersStringFromFields(entryDBFields) + `, updated_at = ?
+				SET ` + getDBFieldsWithEqualsPlaceholdersStringFromFields(scoredEntrySelectionDBFields) + `, updated_at = ?
 				WHERE entry_selection_id = ? AND standings_id = ?`
 
 	now := sqltypes.ToNullTime(time.Now().Truncate(time.Second))
@@ -76,7 +76,6 @@ func (s ScoredEntrySelectionDatabaseRepository) Update(ctx context.Context, scor
 		stmt,
 		rawRankings,
 		scoredEntrySelection.Score,
-		scoredEntrySelection.CreatedAt,
 		now,
 		scoredEntrySelection.EntrySelectionID,
 		scoredEntrySelection.StandingsID,
@@ -93,7 +92,8 @@ func (s ScoredEntrySelectionDatabaseRepository) Update(ctx context.Context, scor
 func (s ScoredEntrySelectionDatabaseRepository) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]models.ScoredEntrySelection, error) {
 	whereStmt, params := dbWhereStmt(criteria, matchAny)
 
-	stmt := `SELECT entry_selection_id, standings_id, ` + getDBFieldsStringFromFields(entryDBFields) + `, created_at, updated_at FROM entry ` + whereStmt
+	stmt := `SELECT entry_selection_id, standings_id, ` + getDBFieldsStringFromFields(scoredEntrySelectionDBFields) + `, created_at, updated_at
+				FROM scored_entry_selection ` + whereStmt
 
 	rows, err := s.agent.QueryContext(ctx, stmt, params...)
 	if err != nil {
@@ -117,6 +117,10 @@ func (s ScoredEntrySelectionDatabaseRepository) Select(ctx context.Context, crit
 			return []models.ScoredEntrySelection{}, wrapDBError(err)
 		}
 
+		if err := json.Unmarshal(rawRankings, &scoredEntrySelection.Rankings); err != nil {
+			return []models.ScoredEntrySelection{}, err
+		}
+
 		scoredEntrySelections = append(scoredEntrySelections, scoredEntrySelection)
 	}
 
@@ -129,7 +133,7 @@ func (s ScoredEntrySelectionDatabaseRepository) Select(ctx context.Context, crit
 
 // Exists determines whether a ScoredEntrySelection with the provided ID exists in the database
 func (s ScoredEntrySelectionDatabaseRepository) Exists(ctx context.Context, entrySelectionID, standingsID string) error {
-	stmt := `SELECT COUNT(*) FROM entry WHERE entry_selection_id = ? AND standings_id = ?`
+	stmt := `SELECT COUNT(*) FROM scored_entry_selection WHERE entry_selection_id = ? AND standings_id = ?`
 
 	row := s.agent.QueryRowContext(ctx, stmt, entrySelectionID, standingsID)
 
