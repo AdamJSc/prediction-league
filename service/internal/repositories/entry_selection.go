@@ -9,19 +9,19 @@ import (
 	"time"
 )
 
-// entrySelectionDBFields defines the fields used regularly in Entry EntrySelections-related transactions
+// entrySelectionDBFields defines the fields used regularly in EntrySelections-related transactions
 var entrySelectionDBFields = []string{
 	"entry_id",
 	"rankings",
 }
 
-// EntrySelectionRepository defines the interface for transacting with our Entry EntrySelections data source
+// EntrySelectionRepository defines the interface for transacting with our EntrySelections data source
 type EntrySelectionRepository interface {
 	Insert(ctx context.Context, entrySelection *models.EntrySelection) error
 	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]models.EntrySelection, error)
 }
 
-// EntrySelectionDatabaseRepository defines our DB-backed Entry EntrySelections data store
+// EntrySelectionDatabaseRepository defines our DB-backed EntrySelections data store
 type EntrySelectionDatabaseRepository struct {
 	agent coresql.Agent
 }
@@ -54,7 +54,7 @@ func (e EntrySelectionDatabaseRepository) Insert(ctx context.Context, entrySelec
 	return nil
 }
 
-// Select retrieves Entry Selections from our database based on the provided criteria
+// Select retrieves EntrySelections from our database based on the provided criteria
 func (e EntrySelectionDatabaseRepository) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]models.EntrySelection, error) {
 	whereStmt, params := dbWhereStmt(criteria, matchAny)
 
