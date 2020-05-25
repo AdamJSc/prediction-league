@@ -52,8 +52,8 @@ func NewEntrySelection(ids []string) EntrySelection {
 	}
 }
 
-// EntrySelectionStandingsScore provides a data type for an EntrySelection that has been scored against a Standings
-type EntrySelectionStandingsScore struct {
+// ScoredEntrySelection provides a data type for an EntrySelection that has been scored against a Standings
+type ScoredEntrySelection struct {
 	EntrySelectionID uuid.UUID          `db:"entry_selection_id"`
 	StandingsID      uuid.UUID          `db:"standings_id"`
 	Rankings         []RankingWithScore `db:"rankings"`
