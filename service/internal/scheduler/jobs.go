@@ -55,11 +55,10 @@ func (r RetrieveLatestStandings) Run(ctx context.Context) (string, error) {
 	}
 
 	// store standings
-	domainCtx := domain.Context{Context: ctx}
 	standingsAgent := domain.StandingsAgent{
 		StandingsAgentInjector: r,
 	}
-	if err := saveStandings(domainCtx, &standings, standingsAgent, r.Season.ID); err != nil {
+	if err := saveStandings(ctx, &standings, standingsAgent, r.Season.ID); err != nil {
 		return "", err
 	}
 
@@ -67,7 +66,7 @@ func (r RetrieveLatestStandings) Run(ctx context.Context) (string, error) {
 	entriesAgent := domain.EntryAgent{
 		EntryAgentInjector: r,
 	}
-	seasonEntries, err := entriesAgent.RetrieveEntriesBySeasonID(domainCtx, r.Season.ID)
+	seasonEntries, err := entriesAgent.RetrieveEntriesBySeasonID(ctx, r.Season.ID)
 	if err != nil {
 		return "", err
 	}
@@ -88,6 +87,10 @@ func (r RetrieveLatestStandings) Run(ctx context.Context) (string, error) {
 		currentEntrySelections = append(currentEntrySelections, es)
 	}
 
+	scoredEntrySelectionAgent := domain.ScoredEntrySelectionAgent{
+		ScoredEntrySelectionAgentInjector: r,
+	}
+
 	// calculate ranking scores for each entry selection based on the retrieved standings
 	standingsRankingCollection := models.NewRankingCollectionFromRankingWithMetas(standings.Rankings)
 	for _, es := range currentEntrySelections {
@@ -96,24 +99,33 @@ func (r RetrieveLatestStandings) Run(ctx context.Context) (string, error) {
 			return "", err
 		}
 
-		log.Println(rws)
+		ses := models.ScoredEntrySelection{
+			EntrySelectionID: es.ID,
+			StandingsID:      standings.ID,
+			Rankings:         rws,
+			Score:            rws.GetTotal(),
+		}
 
-		// TODO - retrieve rws if already exists
-		// TODO - save rws
+		// store scored entry selection
+		if err := saveScoredEntrySelection(ctx, &ses, scoredEntrySelectionAgent); err != nil {
+			return "", err
+		}
+
+		// TODO - check for elapsed standings round and send notifications to all entries if elapsed
 	}
 
 	return "done!", nil
 }
 
 // saveStandings upserts the provided Standings depending on whether or not it already exists
-func saveStandings(domainCtx domain.Context, s *models.Standings, agent domain.StandingsAgent, seasonID string) error {
-	existingStandings, err := agent.RetrieveStandingsBySeasonAndRoundNumber(domainCtx, seasonID, s.RoundNumber)
+func saveStandings(ctx context.Context, s *models.Standings, agent domain.StandingsAgent, seasonID string) error {
+	existingStandings, err := agent.RetrieveStandingsBySeasonAndRoundNumber(ctx, seasonID, s.RoundNumber)
 	if err != nil {
 		switch err.(type) {
 		case domain.NotFoundError:
 			// we have scraped a new standings round!
-			// let's save it...
-			createdStandings, err := agent.CreateStandings(domainCtx, *s)
+			// let's create it...
+			createdStandings, err := agent.CreateStandings(ctx, *s)
 			if err != nil {
 				return err
 			}
@@ -129,12 +141,46 @@ func saveStandings(domainCtx domain.Context, s *models.Standings, agent domain.S
 	// we have scraped an existing standings round!
 	// let's update it...
 	existingStandings.Rankings = s.Rankings
-	updatedStandings, err := agent.UpdateStandings(domainCtx, existingStandings)
+	updatedStandings, err := agent.UpdateStandings(ctx, existingStandings)
 	if err != nil {
 		return err
 	}
 
 	*s = updatedStandings
+	return nil
+}
+
+// saveScoredEntrySelection upserts the provided ScoredEntrySelection depending on whether or not it already exists
+func saveScoredEntrySelection(ctx context.Context, ses *models.ScoredEntrySelection, agent domain.ScoredEntrySelectionAgent) error {
+	existingScoredEntrySelection, err := agent.RetrieveScoredEntrySelectionByIDs(ctx, ses.EntrySelectionID.String(), ses.StandingsID.String())
+	if err != nil {
+		switch err.(type) {
+		case domain.NotFoundError:
+			// we have a new scored entry selection!
+			// let's create it...
+			createdScoredEntrySelection, err := agent.CreateScoredEntrySelection(ctx, *ses)
+			if err != nil {
+				return err
+			}
+
+			*ses = createdScoredEntrySelection
+			return nil
+		default:
+			// something went wrong with retrieving our existing ScoredEntrySelection...
+			return err
+		}
+	}
+
+	// we have an existing scored entry selection!
+	// let's update it...
+	existingScoredEntrySelection.Rankings = ses.Rankings
+	existingScoredEntrySelection.Score = ses.Score
+	updatedScoredEntrySelection, err := agent.UpdateScoredEntrySelection(ctx, existingScoredEntrySelection)
+	if err != nil {
+		return err
+	}
+
+	*ses = updatedScoredEntrySelection
 	return nil
 }
 
