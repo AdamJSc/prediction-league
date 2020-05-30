@@ -25,6 +25,17 @@ func (r *RankingCollection) GetIDs() []string {
 	return ids
 }
 
+// GetByID retrieves the Ranking from RankingCollection whose ID matches the provided ID
+func (r *RankingCollection) GetByID(id string) (*Ranking, error) {
+	for _, ranking := range *r {
+		if ranking.ID == id {
+			return &ranking, nil
+		}
+	}
+
+	return nil, fmt.Errorf("not found ranking with id: %s", id)
+}
+
 // MarshalJSON using custom structure
 func (r *RankingCollection) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf(`["%s"]`, strings.Join(r.GetIDs(), `","`))), nil
