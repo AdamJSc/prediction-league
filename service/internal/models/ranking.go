@@ -75,6 +75,17 @@ type RankingWithScore struct {
 // RankingWithScoreCollection defines our collection of RankingWithScores
 type RankingWithScoreCollection []RankingWithScore
 
+// GetTotal returns the total score of all RankingWithScore elements
+func (r RankingWithScoreCollection) GetTotal() int {
+	var total int
+
+	for _, rws := range r {
+		total = total + rws.Score
+	}
+
+	return total
+}
+
 // NewRankingCollectionFromIDs creates a new RankingCollection from a set of IDs
 func NewRankingCollectionFromIDs(ids []string) RankingCollection {
 	var (

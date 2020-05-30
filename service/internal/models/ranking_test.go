@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/go-cmp/cmp"
+	"math/rand"
+	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/models"
 	"strings"
 	"testing"
+	"time"
 )
 
 var rankingIDs = []string{"Pitman", "Wilson", "Hayter", "Pugh", "King"}
@@ -149,6 +152,25 @@ func TestNewRankingWithScoreCollectionFromIDs(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("ranking with score collection must provide the expected total score", func(t *testing.T) {
+		rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+		var expectedTotal int
+		for idx := range rankings {
+			r := &rankings[idx]
+
+			score := rnd.Intn(500)
+			expectedTotal = expectedTotal + score
+
+			r.Score = score
+		}
+
+		actualTotal := rankings.GetTotal()
+		if actualTotal != expectedTotal {
+			expectedGot(t, expectedTotal, actualTotal)
+		}
+	})
 }
 
 func TestRankingCollection_JSON(t *testing.T) {
@@ -165,6 +187,74 @@ func TestRankingCollection_JSON(t *testing.T) {
 			if ranking.Position != idx+1 {
 				expectedGot(t, idx+1, ranking.Position)
 			}
+		}
+	})
+}
+
+func TestCalculateRankingScores(t *testing.T) {
+	basePlanets := []string{"Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"}
+	baseRC := models.NewRankingCollectionFromIDs(basePlanets)
+
+	t.Run("calculate ranking scores of equivalent collections must produce the expected score", func(t *testing.T) {
+		comparisonPlanets := []string{
+			"Neptune", // should score 7
+			"Uranus",  // should score 5
+			"Saturn",  // should score 3
+			"Venus",   // should score 2
+			"Jupiter", // should score 0
+			"Mars",    // should score 2
+			"Mercury", // should score 6
+			"Earth",   // should score 5
+		}
+		comparisonRC := models.NewRankingCollectionFromIDs(comparisonPlanets)
+
+		rws, err := domain.CalculateRankingsScores(baseRC, comparisonRC)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// 7 + 5 + 3 + 2 + 0 + 2 + 6 + 5
+		expectedScore := 30
+		actualScore := rws.GetTotal()
+
+		if expectedScore != actualScore {
+			expectedGot(t, expectedScore, actualScore)
+		}
+	})
+
+	t.Run("calculate ranking scores of non-equivalent collections must fail", func(t *testing.T) {
+		// mismatched length
+		comparisonPlanets := append(basePlanets, "extra element")
+		comparisonRCMismatchedLength := models.NewRankingCollectionFromIDs(comparisonPlanets)
+
+		expectedErr := fmt.Errorf("mismatched baseIDs length: base %d, comparison %d", len(basePlanets), len(comparisonPlanets))
+		_, err := domain.CalculateRankingsScores(baseRC, comparisonRCMismatchedLength)
+		if expectedErr.Error() != err.Error() {
+			expectedGot(t, expectedErr.Error(), err.Error())
+		}
+
+		// comparison collection has an id that base collection does not
+		discrepantID := "Not A Planet"
+		comparisonPlanets = basePlanets[:len(basePlanets)-1]        // minus last base element
+		comparisonPlanets = append(comparisonPlanets, discrepantID) // add discrepant id to comparison
+		comparisonRCWithDiscrepantID := models.NewRankingCollectionFromIDs(comparisonPlanets)
+
+		expectedErr = fmt.Errorf("base collection does not have id: '%s'", discrepantID)
+		_, err = domain.CalculateRankingsScores(baseRC, comparisonRCWithDiscrepantID)
+		if expectedErr.Error() != err.Error() {
+			expectedGot(t, expectedErr.Error(), err.Error())
+		}
+
+		// comparison collection has a duplicate id that base collection does not
+		duplicateID := basePlanets[0]
+		comparisonPlanets = basePlanets
+		comparisonPlanets[len(comparisonPlanets)-1] = duplicateID // replace last slice element with duplicate id
+		comparisonRCWithDuplicateID := models.NewRankingCollectionFromIDs(comparisonPlanets)
+
+		expectedErr = fmt.Errorf("mismatched counts: id '%s' base collection count = 1, collection count = 2", duplicateID)
+		_, err = domain.CalculateRankingsScores(baseRC, comparisonRCWithDuplicateID)
+		if expectedErr.Error() != err.Error() {
+			expectedGot(t, expectedErr.Error(), err.Error())
 		}
 	})
 }
