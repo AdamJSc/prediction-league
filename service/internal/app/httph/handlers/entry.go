@@ -50,7 +50,7 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 
 		if seasonID == "latest" {
 			// use the current realm's season ID instead
-			seasonID = ctx.Realm.SeasonID
+			seasonID = domain.RealmFromContext(ctx).SeasonID
 		}
 
 		// retrieve the season we need
@@ -60,7 +60,8 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 			return
 		}
 
-		ctx.Guard.SetAttempt(input.RealmPIN)
+		guard := domain.GuardFromContext(ctx)
+		guard.SetAttempt(input.RealmPIN)
 
 		// create entry
 		createdEntry, err := agent.CreateEntry(ctx, entry, &season)
@@ -114,7 +115,8 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 		}
 		defer cancel()
 
-		ctx.Guard.SetAttempt(input.EntryID)
+		guard := domain.GuardFromContext(ctx)
+		guard.SetAttempt(input.EntryID)
 
 		// update payment details for entry
 		if _, err := agent.UpdateEntryPaymentDetails(ctx, entryID, input.PaymentMethod, input.PaymentRef); err != nil {

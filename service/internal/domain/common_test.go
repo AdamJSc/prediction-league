@@ -120,25 +120,20 @@ func expectedNonEmpty(t *testing.T, ref string) {
 	t.Fatalf("expected non-empty %s, got an empty value", ref)
 }
 
-// testContext returns a new context with default timeout and cancel function for testing purposes
+// testContext returns a new domain context with default timeout and cancel function for testing purposes
 func testContext(t *testing.T) (context.Context, context.CancelFunc) {
 	t.Helper()
 
-	return context.WithTimeout(context.Background(), 5*time.Second)
-}
+	ctx, cancel := domain.NewContext()
 
-// testDomainContext returns a new domain context with default timeout and cancel function for testing purposes
-func testDomainContext(t *testing.T) (domain.Context, context.CancelFunc) {
-	t.Helper()
+	realm := domain.RealmFromContext(ctx)
+	realm.Name = testRealmName
+	realm.PIN = testRealmPIN
 
-	ctx, cancel := testContext(t)
+	guard := domain.GuardFromContext(ctx)
+	guard.SetAttempt(testRealmPIN)
 
-	var domainCtx = domain.Context{Context: ctx}
-	domainCtx.Realm.Name = testRealmName
-	domainCtx.Realm.PIN = testRealmPIN
-	domainCtx.Guard.SetAttempt(testRealmPIN)
-
-	return domainCtx, cancel
+	return ctx, cancel
 }
 
 // generateTestStandings generates a new Standings entity for use within the testsuite

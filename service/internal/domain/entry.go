@@ -25,7 +25,7 @@ type EntryAgentInjector interface {
 type EntryAgent struct{ EntryAgentInjector }
 
 // CreateEntry handles the creation of a new Entry in the database
-func (e EntryAgent) CreateEntry(ctx Context, entry models.Entry, s *models.Season) (models.Entry, error) {
+func (e EntryAgent) CreateEntry(ctx context.Context, entry models.Entry, s *models.Season) (models.Entry, error) {
 	db := e.MySQL()
 
 	if s == nil {
@@ -33,7 +33,8 @@ func (e EntryAgent) CreateEntry(ctx Context, entry models.Entry, s *models.Seaso
 	}
 
 	// check realm PIN is ok
-	if !ctx.Guard.AttemptMatchesTarget(ctx.Realm.PIN) {
+	ctxRealm := RealmFromContext(ctx)
+	if !GuardFromContext(ctx).AttemptMatches(ctxRealm.PIN) {
 		return models.Entry{}, UnauthorizedError{errors.New("invalid PIN")}
 	}
 
@@ -51,7 +52,7 @@ func (e EntryAgent) CreateEntry(ctx Context, entry models.Entry, s *models.Seaso
 	// override these values
 	entry.ID = id
 	entry.SeasonID = s.ID
-	entry.RealmName = ctx.Realm.Name
+	entry.RealmName = ctxRealm.Name
 	entry.Status = models.EntryStatusPending
 	entry.PaymentMethod = sqltypes.NullString{}
 	entry.PaymentRef = sqltypes.NullString{}
@@ -119,7 +120,7 @@ func (e EntryAgent) CreateEntry(ctx Context, entry models.Entry, s *models.Seaso
 }
 
 // RetrieveEntryByID handles the retrieval of an existing Entry in the database by its ID
-func (e EntryAgent) RetrieveEntryByID(ctx Context, id string) (models.Entry, error) {
+func (e EntryAgent) RetrieveEntryByID(ctx context.Context, id string) (models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
 
@@ -132,7 +133,7 @@ func (e EntryAgent) RetrieveEntryByID(ctx Context, id string) (models.Entry, err
 	entry := entries[0]
 
 	// ensure that Entry realm matches current realm
-	if ctx.Realm.Name != entry.RealmName {
+	if RealmFromContext(ctx).Name != entry.RealmName {
 		return models.Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
@@ -187,11 +188,11 @@ func (e EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID stri
 }
 
 // UpdateEntry handles the updating of an existing Entry in the database
-func (e EntryAgent) UpdateEntry(ctx Context, entry models.Entry) (models.Entry, error) {
+func (e EntryAgent) UpdateEntry(ctx context.Context, entry models.Entry) (models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 
 	// ensure that Entry realm matches current realm
-	if ctx.Realm.Name != entry.RealmName {
+	if RealmFromContext(ctx).Name != entry.RealmName {
 		return models.Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
@@ -218,12 +219,12 @@ func (e EntryAgent) UpdateEntry(ctx Context, entry models.Entry) (models.Entry, 
 }
 
 // AddEntrySelectionToEntry adds the provided EntrySelection to the provided Entry
-func (e EntryAgent) AddEntrySelectionToEntry(ctx Context, entrySelection models.EntrySelection, entry models.Entry) (models.Entry, error) {
+func (e EntryAgent) AddEntrySelectionToEntry(ctx context.Context, entrySelection models.EntrySelection, entry models.Entry) (models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
 
 	// ensure that Entry realm matches current realm
-	if ctx.Realm.Name != entry.RealmName {
+	if RealmFromContext(ctx).Name != entry.RealmName {
 		return models.Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
@@ -294,7 +295,7 @@ func (e EntryAgent) AddEntrySelectionToEntry(ctx Context, entrySelection models.
 }
 
 // UpdateEntryPaymentDetails provides a shortcut to updating the payment details for a provided entryID
-func (e EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMethod, paymentRef string) (models.Entry, error) {
+func (e EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, paymentMethod, paymentRef string) (models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 
 	// ensure that payment method is valid
@@ -326,12 +327,12 @@ func (e EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMetho
 	entry := entries[0]
 
 	// ensure that Entry realm matches current realm
-	if ctx.Realm.Name != entry.RealmName {
+	if RealmFromContext(ctx).Name != entry.RealmName {
 		return models.Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
 	// ensure that Guard value matches Entry ID
-	if !ctx.Guard.AttemptMatchesTarget(entry.ID.String()) {
+	if !GuardFromContext(ctx).AttemptMatches(entry.ID.String()) {
 		return models.Entry{}, ValidationError{
 			Reasons: []string{"Invalid Entry ID"},
 		}
@@ -355,11 +356,11 @@ func (e EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMetho
 }
 
 // ApproveEntryByShortCode provides a shortcut to approving an entry by its short code
-func (e EntryAgent) ApproveEntryByShortCode(ctx Context, shortCode string) (models.Entry, error) {
+func (e EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode string) (models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 
 	// ensure basic auth has been provided and matches admin credentials
-	if !ctx.BasicAuthSuccessful {
+	if !IsBasicAuthSuccessful(ctx) {
 		return models.Entry{}, UnauthorizedError{}
 	}
 
@@ -378,7 +379,7 @@ func (e EntryAgent) ApproveEntryByShortCode(ctx Context, shortCode string) (mode
 	entry := entries[0]
 
 	// ensure that Entry realm matches current realm
-	if ctx.Realm.Name != entry.RealmName {
+	if RealmFromContext(ctx).Name != entry.RealmName {
 		return models.Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
