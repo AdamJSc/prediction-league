@@ -13,13 +13,16 @@ import (
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/app/httph/handlers"
+	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
+	"prediction-league/service/internal/scheduler"
+	"prediction-league/service/internal/seeder"
 	"prediction-league/service/internal/views"
 )
 
 func main() {
 	// setup env and config
-	config := domain.MustLoadConfigFromEnvPaths("infra/app.env")
+	config := domain.MustLoadConfigFromEnvPaths(".env", "infra/app.env")
 
 	// setup db connection
 	db := coresql.MustOpen("mysql", config.MySQLURL)
@@ -30,8 +33,9 @@ func main() {
 		driver,
 	)
 	coresql.MustMigrateUp(mig)
+	seeder.MustSeed(db)
 
-	domain.MustInflateLocations()
+	datastore.MustInflate()
 
 	// setup server
 	httpAppContainer := httph.NewHTTPAppContainer(dependencies{
@@ -47,6 +51,10 @@ func main() {
 		Handler: httpAppContainer.Router(),
 	})
 
+	jobScheduler := scheduler.Cron{
+		Jobs: scheduler.MustGenerateCronJobs(config, httpAppContainer),
+	}
+
 	// run service
 	svc := &core.Service{
 		Name: "prediction-league",
@@ -55,6 +63,7 @@ func main() {
 	svc.MustRun(
 		context.Background(),
 		httpServer,
+		jobScheduler,
 	)
 }
 

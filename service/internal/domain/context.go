@@ -39,17 +39,14 @@ type Context struct {
 }
 
 // NewContext returns a new Context
-func NewContext() Context {
-	return Context{Context: context.Background()}
+func NewContext() (Context, context.CancelFunc) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	return Context{Context: ctx}, cancel
 }
 
 // ContextFromRequest extracts data from a given request object and returns a domain object Context
 func ContextFromRequest(r *http.Request, config Config) (Context, context.CancelFunc, error) {
-	domainCtx := NewContext()
-
-	// set timeout limit
-	ctxWithTimeout, cancel := context.WithTimeout(domainCtx.Context, 10*time.Second)
-	domainCtx.Context = ctxWithTimeout
+	domainCtx, cancel := NewContext()
 
 	// realm name is host (strip port)
 	realmName := strings.Trim(strings.Split(r.Host, ":")[0], " ")

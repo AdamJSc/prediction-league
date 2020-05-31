@@ -15,24 +15,6 @@ import (
 	"time"
 )
 
-var Locations = make(map[string]*time.Location)
-
-func MustInflateLocations() {
-	locNames := []string{
-		"Europe/London",
-		"UTC",
-	}
-
-	for _, locName := range locNames {
-		loc, err := time.LoadLocation(locName)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		Locations[locName] = loc
-	}
-}
-
 // Realm represents a realm in which the system has been configured to run
 type Realm struct {
 	Name     string
@@ -53,11 +35,12 @@ func formatRealmNameFromRaw(rawRealmName string) string {
 
 // Config represents a struct of required config options
 type Config struct {
-	ServicePort    string `envconfig:"SERVICE_PORT" required:"true"`
-	MySQLURL       string `envconfig:"MYSQL_URL" required:"true"`
-	MigrationsURL  string `envconfig:"MIGRATIONS_URL" required:"true"`
-	AdminBasicAuth string `envconfig:"ADMIN_BASIC_AUTH" required:"true"`
-	Realms         map[string]Realm
+	ServicePort          string `envconfig:"SERVICE_PORT" required:"true"`
+	MySQLURL             string `envconfig:"MYSQL_URL" required:"true"`
+	MigrationsURL        string `envconfig:"MIGRATIONS_URL" required:"true"`
+	AdminBasicAuth       string `envconfig:"ADMIN_BASIC_AUTH" required:"true"`
+	FootballDataAPIToken string `envconfig:"FOOTBALLDATA_API_TOKEN" required:"true"`
+	Realms               map[string]Realm
 }
 
 // MustLoadConfigFromEnvPaths loads provided env paths and instantiates a new default config

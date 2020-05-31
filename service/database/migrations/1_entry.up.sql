@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS `entry` (
     `status` VARCHAR(255) NOT NULL,
     `payment_method` VARCHAR(255) NULL,
     `payment_ref` VARCHAR(255) NULL,
-    `team_id_sequence` JSON NULL,
     `approved_at` DATETIME NULL,
     `created_at` DATETIME NOT NULL,
     `updated_at` DATETIME NULL,

@@ -114,7 +114,7 @@ make test.stop
 #### Season
 
 A Season represents a real-world tournament (such as "Premier League 1992/93"). The Seasons data used in the program
-is defined in code as a single data structure (see `domain.Seasons()`).
+is defined in code as a single data structure (see `datastore.Seasons`).
 
 This is therefore deliberately controlled by the project maintainer as a one-off action approximately once a year,
 immediately prior to accepting entries into a game.
@@ -186,7 +186,7 @@ can be authorised.
 
 ### To add a new Season...
 
-Include a new `Season` struct in the map returned by `domain.Seasons()`.
+Include a new `Season` struct in the map provided by `datastore.Seasons`.
 
 This struct must adhere to the validation rules found within `domain.ValidateSeason()`.
 

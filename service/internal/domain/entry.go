@@ -7,9 +7,11 @@ import (
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
+	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/repositories"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
@@ -23,8 +25,8 @@ type EntryAgentInjector interface {
 type EntryAgent struct{ EntryAgentInjector }
 
 // CreateEntry handles the creation of a new Entry in the database
-func (a EntryAgent) CreateEntry(ctx Context, e models.Entry, s *Season) (models.Entry, error) {
-	db := a.MySQL()
+func (e EntryAgent) CreateEntry(ctx Context, entry models.Entry, s *models.Season) (models.Entry, error) {
+	db := e.MySQL()
 
 	if s == nil {
 		return models.Entry{}, InternalError{errors.New("invalid season")}
@@ -36,7 +38,7 @@ func (a EntryAgent) CreateEntry(ctx Context, e models.Entry, s *Season) (models.
 	}
 
 	// check season status is ok
-	if s.GetStatus(time.Now()) != SeasonStatusAcceptingEntries {
+	if s.GetStatus(time.Now()) != models.SeasonStatusAcceptingEntries {
 		return models.Entry{}, ConflictError{errors.New("season is not currently accepting entries")}
 	}
 
@@ -47,25 +49,25 @@ func (a EntryAgent) CreateEntry(ctx Context, e models.Entry, s *Season) (models.
 	}
 
 	// override these values
-	e.ID = id
-	e.SeasonID = s.ID
-	e.RealmName = ctx.Realm.Name
-	e.Status = models.EntryStatusPending
-	e.PaymentMethod = sqltypes.NullString{}
-	e.PaymentRef = sqltypes.NullString{}
-	e.TeamIDSequence = []string{}
-	e.ApprovedAt = sqltypes.NullTime{}
-	e.CreatedAt = time.Time{}
-	e.UpdatedAt = sqltypes.NullTime{}
+	entry.ID = id
+	entry.SeasonID = s.ID
+	entry.RealmName = ctx.Realm.Name
+	entry.Status = models.EntryStatusPending
+	entry.PaymentMethod = sqltypes.NullString{}
+	entry.PaymentRef = sqltypes.NullString{}
+	entry.EntrySelections = []models.EntrySelection{}
+	entry.ApprovedAt = sqltypes.NullTime{}
+	entry.CreatedAt = time.Time{}
+	entry.UpdatedAt = sqltypes.NullTime{}
 
 	// generate a unique lookup ref
-	e.ShortCode, err = generateUniqueShortCode(ctx, db)
+	entry.ShortCode, err = GenerateUniqueShortCode(ctx, db)
 	if err != nil {
 		return models.Entry{}, domainErrorFromDBError(err)
 	}
 
 	// sanitise entry
-	if err := sanitiseEntry(&e); err != nil {
+	if err := sanitiseEntry(&entry); err != nil {
 		return models.Entry{}, err
 	}
 
@@ -73,9 +75,9 @@ func (a EntryAgent) CreateEntry(ctx Context, e models.Entry, s *Season) (models.
 
 	// check for existing nickname so that we can return a nice error message if it already exists
 	existingNicknameEntries, err := entryRepo.Select(ctx, map[string]interface{}{
-		"season_id":        e.SeasonID,
-		"realm_name":       e.RealmName,
-		"entrant_nickname": e.EntrantNickname,
+		"season_id":        entry.SeasonID,
+		"realm_name":       entry.RealmName,
+		"entrant_nickname": entry.EntrantNickname,
 	}, false)
 	if err != nil {
 		switch err.(type) {
@@ -89,9 +91,9 @@ func (a EntryAgent) CreateEntry(ctx Context, e models.Entry, s *Season) (models.
 
 	// check for existing email so that we can return a nice error message if it already exists
 	existingEmailEntries, err := entryRepo.Select(ctx, map[string]interface{}{
-		"season_id":     e.SeasonID,
-		"realm_name":    e.RealmName,
-		"entrant_email": e.EntrantEmail,
+		"season_id":     entry.SeasonID,
+		"realm_name":    entry.RealmName,
+		"entrant_email": entry.EntrantEmail,
 	}, false)
 	if err != nil {
 		switch err.(type) {
@@ -108,17 +110,18 @@ func (a EntryAgent) CreateEntry(ctx Context, e models.Entry, s *Season) (models.
 		return models.Entry{}, ConflictError{errors.New("entry already exists")}
 	}
 
-	// write to database
-	if err := entryRepo.Insert(ctx, &e); err != nil {
+	// write entry to database
+	if err := entryRepo.Insert(ctx, &entry); err != nil {
 		return models.Entry{}, domainErrorFromDBError(err)
 	}
 
-	return e, nil
+	return entry, nil
 }
 
 // RetrieveEntryByID handles the retrieval of an existing Entry in the database by its ID
-func (a EntryAgent) RetrieveEntryByID(ctx Context, id string) (models.Entry, error) {
-	entryRepo := repositories.NewEntryDatabaseRepository(a.MySQL())
+func (e EntryAgent) RetrieveEntryByID(ctx Context, id string) (models.Entry, error) {
+	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
+	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
 
 	entries, err := entryRepo.Select(ctx, map[string]interface{}{
 		"id": id,
@@ -126,32 +129,79 @@ func (a EntryAgent) RetrieveEntryByID(ctx Context, id string) (models.Entry, err
 	if err != nil {
 		return models.Entry{}, domainErrorFromDBError(err)
 	}
-	e := entries[0]
+	entry := entries[0]
 
 	// ensure that Entry realm matches current realm
-	if ctx.Realm.Name != e.RealmName {
+	if ctx.Realm.Name != entry.RealmName {
 		return models.Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
-	return e, nil
+	// retrieve and inflate all entry selections
+	entry.EntrySelections, err = entrySelectionRepo.Select(ctx, map[string]interface{}{
+		"entry_id": entry.ID,
+	}, false)
+	if err != nil {
+		err = domainErrorFromDBError(err)
+		switch err.(type) {
+		case NotFoundError:
+			// all good
+		default:
+			return models.Entry{}, domainErrorFromDBError(err)
+		}
+	}
+
+	return entry, nil
+}
+
+// RetrieveEntriesBySeasonID handles the retrieval of existing Entries in the database by their Season ID
+func (e EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID string) ([]models.Entry, error) {
+	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
+	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
+
+	entries, err := entryRepo.Select(ctx, map[string]interface{}{
+		"season_id": seasonID,
+	}, false)
+	if err != nil {
+		return []models.Entry{}, domainErrorFromDBError(err)
+	}
+
+	for idx := range entries {
+		entry := &entries[idx]
+
+		// retrieve and inflate all entry selections
+		entry.EntrySelections, err = entrySelectionRepo.Select(ctx, map[string]interface{}{
+			"entry_id": entry.ID,
+		}, false)
+		if err != nil {
+			err = domainErrorFromDBError(err)
+			switch err.(type) {
+			case NotFoundError:
+				// all good
+			default:
+				return []models.Entry{}, domainErrorFromDBError(err)
+			}
+		}
+	}
+
+	return entries, nil
 }
 
 // UpdateEntry handles the updating of an existing Entry in the database
-func (a EntryAgent) UpdateEntry(ctx Context, e models.Entry) (models.Entry, error) {
-	entryRepo := repositories.NewEntryDatabaseRepository(a.MySQL())
+func (e EntryAgent) UpdateEntry(ctx Context, entry models.Entry) (models.Entry, error) {
+	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 
 	// ensure that Entry realm matches current realm
-	if ctx.Realm.Name != e.RealmName {
+	if ctx.Realm.Name != entry.RealmName {
 		return models.Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
 	// ensure the entry exists
-	if err := entryRepo.ExistsByID(ctx, e.ID.String()); err != nil {
+	if err := entryRepo.ExistsByID(ctx, entry.ID.String()); err != nil {
 		return models.Entry{}, domainErrorFromDBError(err)
 	}
 
 	// sanitise entry
-	if err := sanitiseEntry(&e); err != nil {
+	if err := sanitiseEntry(&entry); err != nil {
 		return models.Entry{}, err
 	}
 
@@ -160,16 +210,92 @@ func (a EntryAgent) UpdateEntry(ctx Context, e models.Entry) (models.Entry, erro
 	// there is a db constraint on these two fields anyway, so any values that have changed will be flagged when writing to the db
 
 	// write to database
-	if err := entryRepo.Update(ctx, &e); err != nil {
+	if err := entryRepo.Update(ctx, &entry); err != nil {
 		return models.Entry{}, domainErrorFromDBError(err)
 	}
 
-	return e, nil
+	return entry, nil
+}
+
+// AddEntrySelectionToEntry adds the provided EntrySelection to the provided Entry
+func (e EntryAgent) AddEntrySelectionToEntry(ctx Context, entrySelection models.EntrySelection, entry models.Entry) (models.Entry, error) {
+	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
+	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
+
+	// ensure that Entry realm matches current realm
+	if ctx.Realm.Name != entry.RealmName {
+		return models.Entry{}, ConflictError{errors.New("invalid realm")}
+	}
+
+	// ensure the entry exists
+	if err := entryRepo.ExistsByID(ctx, entry.ID.String()); err != nil {
+		return models.Entry{}, domainErrorFromDBError(err)
+	}
+
+	season, err := datastore.Seasons.GetByID(entry.SeasonID)
+	if err != nil {
+		return models.Entry{}, NotFoundError{err}
+	}
+
+	var invalidTeamIDs, missingTeamIDs, duplicateTeamIDs []string
+	var teamIDCount = make(map[string]int)
+
+	for _, teamID := range season.TeamIDs {
+		teamIDCount[teamID] = 0
+	}
+
+	for _, selectionID := range entrySelection.Rankings.GetIDs() {
+		if _, ok := teamIDCount[selectionID]; ok {
+			teamIDCount[selectionID]++
+			continue
+		}
+		invalidTeamIDs = append(invalidTeamIDs, selectionID)
+	}
+
+	for teamID, count := range teamIDCount {
+		switch {
+		case count == 0:
+			missingTeamIDs = append(missingTeamIDs, teamID)
+		case count > 1:
+			duplicateTeamIDs = append(duplicateTeamIDs, teamID)
+		}
+	}
+
+	var validationMsgs []string
+	if len(invalidTeamIDs) > 0 {
+		for _, teamID := range invalidTeamIDs {
+			validationMsgs = append(validationMsgs, fmt.Sprintf("Invalid Team ID: %s", teamID))
+		}
+	}
+	if len(missingTeamIDs) > 0 {
+		for _, teamID := range missingTeamIDs {
+			validationMsgs = append(validationMsgs, fmt.Sprintf("Missing Team ID: %s", teamID))
+		}
+	}
+	if len(duplicateTeamIDs) > 0 {
+		for _, teamID := range duplicateTeamIDs {
+			validationMsgs = append(validationMsgs, fmt.Sprintf("Duplicate Team ID: %s", teamID))
+		}
+	}
+
+	if len(validationMsgs) > 0 {
+		return models.Entry{}, ValidationError{Reasons: validationMsgs}
+	}
+
+	entrySelection.EntryID = entry.ID
+
+	if err := entrySelectionRepo.Insert(ctx, &entrySelection); err != nil {
+		return models.Entry{}, domainErrorFromDBError(err)
+	}
+
+	entry.EntrySelections = append(entry.EntrySelections, entrySelection)
+
+	return entry, nil
 }
 
 // UpdateEntryPaymentDetails provides a shortcut to updating the payment details for a provided entryID
-func (a EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMethod, paymentRef string) (models.Entry, error) {
-	entryRepo := repositories.NewEntryDatabaseRepository(a.MySQL())
+func (e EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMethod, paymentRef string) (models.Entry, error) {
+	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 
 	// ensure that payment method is valid
 	if !isValidEntryPaymentMethod(paymentMethod) {
@@ -229,8 +355,8 @@ func (a EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMetho
 }
 
 // ApproveEntryByShortCode provides a shortcut to approving an entry by its short code
-func (a EntryAgent) ApproveEntryByShortCode(ctx Context, shortCode string) (models.Entry, error) {
-	entryRepo := repositories.NewEntryDatabaseRepository(a.MySQL())
+func (e EntryAgent) ApproveEntryByShortCode(ctx Context, shortCode string) (models.Entry, error) {
+	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 
 	// ensure basic auth has been provided and matches admin credentials
 	if !ctx.BasicAuthSuccessful {
@@ -280,55 +406,55 @@ func (a EntryAgent) ApproveEntryByShortCode(ctx Context, shortCode string) (mode
 }
 
 // sanitiseEntry sanitises and validates an Entry
-func sanitiseEntry(e *models.Entry) error {
+func sanitiseEntry(entry *models.Entry) error {
 	// only permit alphanumeric characters withing entrant nickname
 	regexNickname, err := regexp.Compile("([A-Z]|[a-z]|[0-9])")
 	if err != nil {
 		return err
 	}
-	regexNicknameFindResult := strings.Join(regexNickname.FindAllString(e.EntrantNickname, -1), "")
+	regexNicknameFindResult := strings.Join(regexNickname.FindAllString(entry.EntrantNickname, -1), "")
 
 	// sanitise
-	e.ShortCode = strings.Trim(e.ShortCode, " ")
-	e.SeasonID = strings.Trim(e.SeasonID, " ")
-	e.RealmName = strings.Trim(e.RealmName, " ")
-	e.EntrantName = strings.Trim(e.EntrantName, " ")
-	e.EntrantNickname = strings.Trim(e.EntrantNickname, " ")
-	e.EntrantEmail = strings.Trim(e.EntrantEmail, " ")
-	e.Status = strings.Trim(e.Status, " ")
-	e.PaymentMethod.String = strings.Trim(e.PaymentMethod.String, " ")
-	e.PaymentRef.String = strings.Trim(e.PaymentRef.String, " ")
+	entry.ShortCode = strings.Trim(entry.ShortCode, " ")
+	entry.SeasonID = strings.Trim(entry.SeasonID, " ")
+	entry.RealmName = strings.Trim(entry.RealmName, " ")
+	entry.EntrantName = strings.Trim(entry.EntrantName, " ")
+	entry.EntrantNickname = strings.Trim(entry.EntrantNickname, " ")
+	entry.EntrantEmail = strings.Trim(entry.EntrantEmail, " ")
+	entry.Status = strings.Trim(entry.Status, " ")
+	entry.PaymentMethod.String = strings.Trim(entry.PaymentMethod.String, " ")
+	entry.PaymentRef.String = strings.Trim(entry.PaymentRef.String, " ")
 
 	var validationMsgs []string
 
 	// validate
 	for k, v := range map[string]string{
-		"ID":         e.ID.String(),
-		"Short Code": e.ShortCode,
-		"Season ID":  e.SeasonID,
-		"Realm Name": e.RealmName,
-		"Name":       e.EntrantName,
-		"Nickname":   e.EntrantNickname,
+		"ID":         entry.ID.String(),
+		"Short Code": entry.ShortCode,
+		"Season ID":  entry.SeasonID,
+		"Realm Name": entry.RealmName,
+		"Name":       entry.EntrantName,
+		"Nickname":   entry.EntrantNickname,
 	} {
 		if v == "" {
 			validationMsgs = append(validationMsgs, fmt.Sprintf("%s must not be empty", k))
 		}
 	}
-	if len(regexNicknameFindResult) != len(e.EntrantNickname) {
+	if len(regexNicknameFindResult) != len(entry.EntrantNickname) {
 		// regex must have filtered out some invalid characters...
 		validationMsgs = append(validationMsgs, "Nickname must only contain alphanumeric characters (A-Z, a-z, 0-9)")
 	}
-	if len(e.EntrantNickname) > 12 {
+	if len(entry.EntrantNickname) > 12 {
 		validationMsgs = append(validationMsgs, "Nickname must be 12 characters or fewer")
 	}
-	if !isValidEmail(e.EntrantEmail) {
+	if !isValidEmail(entry.EntrantEmail) {
 		validationMsgs = append(validationMsgs, "Email must be a valid email address")
 	}
-	if !isValidEntryStatus(e.Status) {
-		validationMsgs = append(validationMsgs, fmt.Sprintf("%s is not a valid status", e.Status))
+	if !isValidEntryStatus(entry.Status) {
+		validationMsgs = append(validationMsgs, fmt.Sprintf("%s is not a valid status", entry.Status))
 	}
-	if e.PaymentMethod.Valid && !isValidEntryPaymentMethod(e.PaymentMethod.String) {
-		validationMsgs = append(validationMsgs, fmt.Sprintf("%s is not a valid payment method", e.PaymentMethod.String))
+	if entry.PaymentMethod.Valid && !isValidEntryPaymentMethod(entry.PaymentMethod.String) {
+		validationMsgs = append(validationMsgs, fmt.Sprintf("%s is not a valid payment method", entry.PaymentMethod.String))
 	}
 
 	if len(validationMsgs) > 0 {
@@ -340,8 +466,8 @@ func sanitiseEntry(e *models.Entry) error {
 	return nil
 }
 
-// generateUniqueShortCode generates a string that does not already exist as a Lookup Ref
-func generateUniqueShortCode(ctx context.Context, db coresql.Agent) (string, error) {
+// GenerateUniqueShortCode generates a string that does not already exist as a Lookup Ref
+func GenerateUniqueShortCode(ctx context.Context, db coresql.Agent) (string, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(db)
 
 	shortCode := generateRandomAlphaNumericString(4)
@@ -352,12 +478,31 @@ func generateUniqueShortCode(ctx context.Context, db coresql.Agent) (string, err
 	switch err.(type) {
 	case nil:
 		// the lookup ref already exists, so we need to generate a new one
-		return generateUniqueShortCode(ctx, db)
+		return GenerateUniqueShortCode(ctx, db)
 	case repositories.MissingDBRecordError:
 		// the lookup ref we have generated is unique, we can return it
 		return shortCode, nil
 	}
 	return "", err
+}
+
+// GetEntrySelectionValidAtTimestamp returns the latest EntrySelection that existed at the point of the provided timestamp
+func GetEntrySelectionValidAtTimestamp(entrySelections []models.EntrySelection, ts time.Time) (models.EntrySelection, error) {
+	desc := entrySelections
+	sort.SliceStable(desc, func(i, j int) bool {
+		// sort descending
+		return desc[j].CreatedAt.Before(desc[i].CreatedAt)
+	})
+
+	for _, es := range desc {
+		// let's iterate until we get to the first element
+		// that was created prior to ts
+		if es.CreatedAt.Before(ts) {
+			return es, nil
+		}
+	}
+
+	return models.EntrySelection{}, errors.New("not found")
 }
 
 func isValidEmail(email string) bool {
