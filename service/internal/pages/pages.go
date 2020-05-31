@@ -9,23 +9,8 @@ type MenuLink struct {
 
 type Menu []MenuLink
 
-func (m *Menu) SetActiveLink(key string) {
-	menu := *m
-	for idx := range menu {
-		if menu[idx].Key == key {
-			menu[idx].IsActive = true
-			return
-		}
-	}
-}
-
-type Main struct {
-	Title string
-	Menu  *Menu
-}
-
-func InflateWithMenu(p Main) Main {
-	p.Menu = &Menu{
+func (m *Menu) Inflate() *Menu {
+	*m = Menu{
 		{
 			Label: "Home",
 			Key:   "home",
@@ -53,5 +38,32 @@ func InflateWithMenu(p Main) Main {
 		},
 	}
 
-	return p
+	return m
+}
+
+func (m *Menu) SetActiveLink(key string) {
+	menu := *m
+	for idx := range menu {
+		link := &menu[idx]
+		if link.Key == key {
+			link.IsActive = true
+			return
+		}
+	}
+}
+
+type Base struct {
+	Title string
+	Menu  *Menu
+}
+
+func NewBase(title string, activeLink string) Base {
+	var b = Base{
+		Title: title,
+		Menu: &Menu{},
+	}
+
+	b.Menu.Inflate().SetActiveLink(activeLink)
+
+	return b
 }
