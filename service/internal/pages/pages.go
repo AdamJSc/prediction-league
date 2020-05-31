@@ -4,6 +4,7 @@ type MenuLink struct {
 	Label    string
 	Key      string
 	Href     string
+	ID       string
 	IsActive bool
 }
 
@@ -34,7 +35,7 @@ func (m *Menu) Inflate() *Menu {
 		{
 			Label: "Login",
 			Key:   "login",
-			Href:  "/login",
+			ID:    "login-link",
 		},
 	}
 
@@ -60,7 +61,7 @@ type Base struct {
 func NewBase(title string, activeLink string) Base {
 	var b = Base{
 		Title: title,
-		Menu: &Menu{},
+		Menu:  &Menu{},
 	}
 
 	b.Menu.Inflate().SetActiveLink(activeLink)
