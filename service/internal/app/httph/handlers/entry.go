@@ -41,7 +41,7 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 			return
 		}
 
-		ctx, cancel, err := domain.ContextFromRequest(r, c.Config())
+		ctx, cancel, err := domain.ContextFromRequest(r, c.Config(), c.DebugTimestamp())
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return
@@ -108,7 +108,7 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 			return
 		}
 
-		ctx, cancel, err := domain.ContextFromRequest(r, c.Config())
+		ctx, cancel, err := domain.ContextFromRequest(r, c.Config(), c.DebugTimestamp())
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return
@@ -140,7 +140,7 @@ func approveEntryByShortCodeHandler(c *httph.HTTPAppContainer) func(w http.Respo
 			return
 		}
 
-		ctx, cancel, err := domain.ContextFromRequest(r, c.Config())
+		ctx, cancel, err := domain.ContextFromRequest(r, c.Config(), c.DebugTimestamp())
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return

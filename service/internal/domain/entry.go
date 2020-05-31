@@ -39,7 +39,7 @@ func (e EntryAgent) CreateEntry(ctx context.Context, entry models.Entry, s *mode
 	}
 
 	// check season status is ok
-	if s.GetStatus(time.Now()) != models.SeasonStatusAcceptingEntries {
+	if s.GetStatus(*TimestampFromContext(ctx)) != models.SeasonStatusAcceptingEntries {
 		return models.Entry{}, ConflictError{errors.New("season is not currently accepting entries")}
 	}
 
@@ -396,7 +396,7 @@ func (e EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode strin
 		return models.Entry{}, ConflictError{errors.New("entry has already been approved")}
 	}
 
-	entry.ApprovedAt = sqltypes.ToNullTime(time.Now().Truncate(time.Second))
+	entry.ApprovedAt = sqltypes.ToNullTime(TimestampFromContext(ctx).Truncate(time.Second))
 
 	// write to database
 	if err := entryRepo.Update(ctx, &entry); err != nil {

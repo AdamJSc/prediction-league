@@ -9,10 +9,13 @@ import (
 	"time"
 )
 
+type ContextKey string
+
 const (
-	contextKeyGuard            = "GUARD"
-	contextKeyRealm            = "REALM"
-	contextKeyBasicAuthSuccess = "BASIC_AUTH_SUCCESS"
+	contextKeyTimestamp        ContextKey = "TIMESTAMP"
+	contextKeyGuard            ContextKey = "GUARD"
+	contextKeyRealm            ContextKey = "REALM"
+	contextKeyBasicAuthSuccess ContextKey = "BASIC_AUTH_SUCCESS"
 )
 
 // Guard represents an arbitrary guard that can be used by agent methods
@@ -40,17 +43,20 @@ func (g *Guard) AttemptMatches(target string) bool {
 func NewContext() (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
-	var basicAuth bool
-
 	ctx = context.WithValue(ctx, contextKeyGuard, &Guard{})
 	ctx = context.WithValue(ctx, contextKeyRealm, &Realm{})
+
+	var basicAuth bool
 	ctx = context.WithValue(ctx, contextKeyBasicAuthSuccess, &basicAuth)
+
+	var time = time.Now()
+	ctx = context.WithValue(ctx, contextKeyTimestamp, &time)
 
 	return ctx, cancel
 }
 
 // ContextFromRequest extracts data from a given request object and returns an inflated context
-func ContextFromRequest(r *http.Request, config Config) (context.Context, context.CancelFunc, error) {
+func ContextFromRequest(r *http.Request, config Config, debug *time.Time) (context.Context, context.CancelFunc, error) {
 	ctx, cancel := NewContext()
 
 	// realm name is host (strip port)
@@ -77,9 +83,28 @@ func ContextFromRequest(r *http.Request, config Config) (context.Context, contex
 		}
 	}
 
+	if debug != nil {
+		setTimestampOnContext(&ctx, debug)
+	}
+
 	return ctx, cancel, nil
 }
 
+// TimestampFromContext retrieves a timestamp override if set on the provided context
+func TimestampFromContext(ctx context.Context) *time.Time {
+	var ts = time.Now()
+
+	val := ctx.Value(contextKeyTimestamp)
+
+	switch val.(type) {
+	case *time.Time:
+		return val.(*time.Time)
+	}
+
+	return &ts
+}
+
+// GuardFromContext retrieves the Guard from the provided context
 func GuardFromContext(ctx context.Context) *Guard {
 	var g = &Guard{}
 
@@ -94,6 +119,7 @@ func GuardFromContext(ctx context.Context) *Guard {
 	return g
 }
 
+// RealmFromContext retrieves the Realm from the provided context
 func RealmFromContext(ctx context.Context) *Realm {
 	var r = &Realm{}
 
@@ -108,6 +134,7 @@ func RealmFromContext(ctx context.Context) *Realm {
 	return r
 }
 
+// SetBasicAuthSuccessfulOnContext sets a successful Basic Auth attempt on the provided context
 func SetBasicAuthSuccessfulOnContext(ctx context.Context) {
 	val := ctx.Value(contextKeyBasicAuthSuccess)
 
@@ -117,6 +144,7 @@ func SetBasicAuthSuccessfulOnContext(ctx context.Context) {
 	}
 }
 
+// IsBasicAuthSuccessful determines whether a successful Basic Auth attempt exists on the provided context
 func IsBasicAuthSuccessful(ctx context.Context) bool {
 	val := ctx.Value(contextKeyBasicAuthSuccess)
 
@@ -126,4 +154,9 @@ func IsBasicAuthSuccessful(ctx context.Context) bool {
 	default:
 		return false
 	}
+}
+
+// setTimestampOnContext sets the provided timestamp on the provided context
+func setTimestampOnContext(ctx *context.Context, ts *time.Time) {
+	*(ctx) = context.WithValue(*ctx, contextKeyTimestamp, ts)
 }

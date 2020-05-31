@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"github.com/LUSHDigital/core"
 	coresql "github.com/LUSHDigital/core-sql"
@@ -10,6 +11,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/gorilla/mux"
+	"log"
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/app/httph/handlers"
@@ -18,6 +20,7 @@ import (
 	"prediction-league/service/internal/scheduler"
 	"prediction-league/service/internal/seeder"
 	"prediction-league/service/internal/views"
+	"time"
 )
 
 func main() {
@@ -37,12 +40,17 @@ func main() {
 
 	datastore.MustInflate()
 
+	// permit flag that provides a debug mode by overriding timestamp for time-sensitive operations
+	ts := flag.String("ts", "", "override timestamp used by time-sensitive operations, in the format yyyymmddhhmmss")
+	flag.Parse()
+
 	// setup server
 	httpAppContainer := httph.NewHTTPAppContainer(dependencies{
-		config:    config,
-		mysql:     db,
-		router:    mux.NewRouter(),
-		templates: domain.ParseTemplates(),
+		config:         config,
+		mysql:          db,
+		router:         mux.NewRouter(),
+		templates:      domain.ParseTemplates(),
+		debugTimestamp: parseDebugTimestamp(*ts),
 	})
 	handlers.RegisterRoutes(httpAppContainer)
 
@@ -68,13 +76,36 @@ func main() {
 }
 
 type dependencies struct {
-	config    domain.Config
-	mysql     coresql.Agent
-	router    *mux.Router
-	templates *views.Templates
+	config         domain.Config
+	mysql          coresql.Agent
+	router         *mux.Router
+	templates      *views.Templates
+	debugTimestamp *time.Time
 }
 
 func (d dependencies) Config() domain.Config      { return d.config }
 func (d dependencies) MySQL() coresql.Agent       { return d.mysql }
 func (d dependencies) Router() *mux.Router        { return d.router }
 func (d dependencies) Template() *views.Templates { return d.templates }
+func (d dependencies) DebugTimestamp() *time.Time { return d.debugTimestamp }
+
+func parseDebugTimestamp(timeString string) *time.Time {
+	if timeString == "" {
+		return nil
+	}
+
+	var (
+		ts  time.Time
+		err error
+	)
+
+	ts, err = time.Parse("20060102150405", timeString)
+	if err != nil {
+		ts, err = time.Parse("20060102", timeString)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return &ts
+}
