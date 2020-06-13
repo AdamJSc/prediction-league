@@ -18,22 +18,22 @@ func TestTimeFrame_Valid(t *testing.T) {
 		}
 	})
 
-	t.Run("timeframe with only a from timestamp must be valid", func(t *testing.T) {
+	t.Run("timeframe with only a from timestamp must not be valid", func(t *testing.T) {
 		var tf = models.TimeFrame{
 			From: now,
 		}
 
-		if !tf.Valid() {
+		if tf.Valid() {
 			t.Fatalf("expected timeframe %+v to be valid, but it was not valid", tf)
 		}
 	})
 
-	t.Run("timeframe with only an until timestamp must be valid", func(t *testing.T) {
+	t.Run("timeframe with only an until timestamp must not be valid", func(t *testing.T) {
 		var tf = models.TimeFrame{
 			Until: now,
 		}
 
-		if !tf.Valid() {
+		if tf.Valid() {
 			t.Fatalf("expected timeframe %+v to be valid, but it was not valid", tf)
 		}
 	})

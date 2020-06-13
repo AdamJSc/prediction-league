@@ -13,8 +13,8 @@ type TimeFrame struct {
 // Valid determines whether the associated TimeFrame is chronologically sound
 func (t TimeFrame) Valid() bool {
 	switch {
-	case t.From.Equal(emptyTime) && t.Until.Equal(emptyTime):
-		// must have at least a From or an Until
+	case t.From.Equal(emptyTime) || t.Until.Equal(emptyTime):
+		// must have both From and Until
 		return false
 	case !t.From.Equal(emptyTime) && !t.Until.Equal(emptyTime):
 		if !t.Until.After(t.From) {
