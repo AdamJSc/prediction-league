@@ -24,3 +24,14 @@ type updateEntryPaymentDetailsRequest struct {
 	PaymentRef    string `json:"payment_ref"`
 	EntryID     string `json:"entry_id"`
 }
+
+type createEntrySelectionRequest struct {
+	EntryShortCode string `json:"entry_short_code"`
+	RankingIDs []string `json:"ranking_ids"`
+}
+
+func (r createEntrySelectionRequest) ToEntrySelectionModel() models.EntrySelection {
+	return models.EntrySelection {
+		Rankings: models.NewRankingCollectionFromIDs(r.RankingIDs),
+	}
+}

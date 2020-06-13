@@ -233,53 +233,56 @@ func (e EntryAgent) AddEntrySelectionToEntry(ctx context.Context, entrySelection
 		return models.Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
-	// ensure the entry exists
+	// ensure the Entry exists
 	if err := entryRepo.ExistsByID(ctx, entry.ID.String()); err != nil {
 		return models.Entry{}, domainErrorFromDBError(err)
 	}
 
+	// retrieve the Entry's Season
 	season, err := datastore.Seasons.GetByID(entry.SeasonID)
 	if err != nil {
 		return models.Entry{}, NotFoundError{err}
 	}
 
-	var invalidTeamIDs, missingTeamIDs, duplicateTeamIDs []string
+	var invalidRankingIDs, missingRankingIDs, duplicateRankingIDs []string
 	var teamIDCount = make(map[string]int)
 
 	for _, teamID := range season.TeamIDs {
 		teamIDCount[teamID] = 0
 	}
 
+	// make sure we have no invalid IDs
 	for _, selectionID := range entrySelection.Rankings.GetIDs() {
 		if _, ok := teamIDCount[selectionID]; ok {
 			teamIDCount[selectionID]++
 			continue
 		}
-		invalidTeamIDs = append(invalidTeamIDs, selectionID)
+		invalidRankingIDs = append(invalidRankingIDs, selectionID)
 	}
 
+	// make sure we have no missing or duplicate IDs
 	for teamID, count := range teamIDCount {
 		switch {
 		case count == 0:
-			missingTeamIDs = append(missingTeamIDs, teamID)
+			missingRankingIDs = append(missingRankingIDs, teamID)
 		case count > 1:
-			duplicateTeamIDs = append(duplicateTeamIDs, teamID)
+			duplicateRankingIDs = append(duplicateRankingIDs, teamID)
 		}
 	}
 
 	var validationMsgs []string
-	if len(invalidTeamIDs) > 0 {
-		for _, teamID := range invalidTeamIDs {
+	if len(invalidRankingIDs) > 0 {
+		for _, teamID := range invalidRankingIDs {
 			validationMsgs = append(validationMsgs, fmt.Sprintf("Invalid Team ID: %s", teamID))
 		}
 	}
-	if len(missingTeamIDs) > 0 {
-		for _, teamID := range missingTeamIDs {
+	if len(missingRankingIDs) > 0 {
+		for _, teamID := range missingRankingIDs {
 			validationMsgs = append(validationMsgs, fmt.Sprintf("Missing Team ID: %s", teamID))
 		}
 	}
-	if len(duplicateTeamIDs) > 0 {
-		for _, teamID := range duplicateTeamIDs {
+	if len(duplicateRankingIDs) > 0 {
+		for _, teamID := range duplicateRankingIDs {
 			validationMsgs = append(validationMsgs, fmt.Sprintf("Duplicate Team ID: %s", teamID))
 		}
 	}
@@ -288,6 +291,13 @@ func (e EntryAgent) AddEntrySelectionToEntry(ctx context.Context, entrySelection
 		return models.Entry{}, ValidationError{Reasons: validationMsgs}
 	}
 
+	// generate a new entry ID
+	id, err := uuid.NewV4()
+	if err != nil {
+		return models.Entry{}, InternalError{err}
+	}
+
+	entrySelection.ID = id
 	entrySelection.EntryID = entry.ID
 
 	if err := entrySelectionRepo.Insert(ctx, &entrySelection); err != nil {

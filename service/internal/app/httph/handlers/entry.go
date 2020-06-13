@@ -129,6 +129,63 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 	}
 }
 
+func createEntrySelection(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+	agent := domain.EntryAgent{EntryAgentInjector: c}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		var input createEntrySelectionRequest
+
+		// read request body
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			rest.InternalError(err).WriteTo(w)
+			return
+		}
+		defer closeBody(r)
+
+		// parse request body
+		if err := json.Unmarshal(body, &input); err != nil {
+			responseFromError(domain.BadRequestError{Err: err}).WriteTo(w)
+			return
+		}
+
+		// parse entry ID from route
+		var entryID string
+		if err := getRouteParam(r, "entry_id", &entryID); err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		// get context from request
+		ctx, cancel, err := domain.ContextFromRequest(r, c.Config(), c.DebugTimestamp())
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+		defer cancel()
+
+		// get entry
+		entry, err := agent.RetrieveEntryByID(ctx, entryID)
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		entrySelection := input.ToEntrySelectionModel()
+
+		domain.GuardFromContext(ctx).SetAttempt(input.EntryShortCode)
+
+		// create entry selection for for entry
+		if _, err := agent.AddEntrySelectionToEntry(ctx, entrySelection, entry); err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		// success!
+		rest.OKResponse(nil, nil).WriteTo(w)
+	}
+}
+
 func approveEntryByShortCodeHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	agent := domain.EntryAgent{EntryAgentInjector: c}
 
