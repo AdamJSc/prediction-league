@@ -18,13 +18,17 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 
 	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
 
+	now := time.Now()
+
 	season := models.Season{
 		ID: "199293_1",
 		EntriesAccepted: models.TimeFrame{
-			From: time.Now().Add(-24 * time.Hour),
+			From:  now.Add(-12 * time.Hour),
+			Until: now.Add(12 * time.Hour),
 		},
 		Active: models.TimeFrame{
-			From: time.Now().Add(24 * time.Hour),
+			From:  now.Add(12 * time.Hour),
+			Until: now.Add(24 * time.Hour),
 		},
 	}
 

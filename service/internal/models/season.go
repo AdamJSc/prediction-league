@@ -6,10 +6,9 @@ import (
 )
 
 const (
-	SeasonStatusForthcoming      = "forthcoming"
-	SeasonStatusAcceptingEntries = "accepting_entries"
-	SeasonStatusActive           = "active"
-	SeasonStatusElapsed          = "elapsed"
+	SeasonStatusPending = "pending"
+	SeasonStatusActive  = "active"
+	SeasonStatusElapsed = "elapsed"
 )
 
 // Season defines the structure of a Season against which Entries are played
@@ -23,17 +22,47 @@ type Season struct {
 	TeamIDs            []string
 }
 
-// GetStatus determines a Season's status based on a supplied timestamp/object
-func (s Season) GetStatus(ts time.Time) string {
+// GetState determines a Season's state based on a supplied timestamp
+func (s Season) GetState(ts time.Time) SeasonState {
+	var state SeasonState
+
+	// determine season's current status
+	state.Status = SeasonStatusPending
 	switch {
-	case ts.Before(s.EntriesAccepted.From):
-		return SeasonStatusForthcoming
-	case ts.Before(s.Active.From):
-		return SeasonStatusAcceptingEntries
-	case ts.Before(s.Active.Until):
-		return SeasonStatusActive
+	case s.Active.HasBegunBy(ts) && !s.Active.HasElapsedBy(ts):
+		state.Status = SeasonStatusActive
+	case s.Active.HasElapsedBy(ts):
+		state.Status = SeasonStatusElapsed
 	}
-	return SeasonStatusElapsed
+
+	// is season currently accepting entries?
+	if s.EntriesAccepted.HasBegunBy(ts) && !s.EntriesAccepted.HasElapsedBy(ts) {
+		state.IsAcceptingEntries = true
+	}
+
+	// is season currently accepting selections?
+	for _, tf := range s.SelectionsAccepted {
+		if tf.HasBegunBy(ts) && !tf.HasElapsedBy(ts) {
+			state.IsAcceptingSelections = true
+			break
+		}
+
+		// if we aren't currently accepting selections, does this tf represent the next time that we are?
+		if state.SelectionsNextAccepted == nil && !tf.HasBegunBy(ts) {
+			nextTf := tf
+			state.SelectionsNextAccepted = &nextTf
+		}
+	}
+
+	return state
+}
+
+// SeasonState defines the state of a Season
+type SeasonState struct {
+	Status                 string
+	IsAcceptingEntries     bool
+	IsAcceptingSelections  bool
+	SelectionsNextAccepted *TimeFrame
 }
 
 // SeasonCollection is map of Seasons
