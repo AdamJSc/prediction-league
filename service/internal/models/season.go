@@ -14,18 +14,18 @@ const (
 
 // Season defines the structure of a Season against which Entries are played
 type Season struct {
-	ID          string
-	ClientID    ResourceIdentifier
-	Name        string
-	Active      TimeFrame
-	EntriesFrom time.Time
-	TeamIDs     []string
+	ID              string
+	ClientID        ResourceIdentifier
+	Name            string
+	Active          TimeFrame
+	EntriesAccepted TimeFrame
+	TeamIDs         []string
 }
 
 // GetStatus determines a Season's status based on a supplied timestamp/object
 func (s Season) GetStatus(ts time.Time) string {
 	switch {
-	case ts.Before(s.EntriesFrom):
+	case ts.Before(s.EntriesAccepted.From):
 		return SeasonStatusForthcoming
 	case ts.Before(s.Active.From):
 		return SeasonStatusAcceptingEntries

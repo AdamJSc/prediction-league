@@ -19,9 +19,11 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
 
 	season := models.Season{
-		ID:          "199293_1",
-		EntriesFrom: time.Now().Add(-24 * time.Hour),
-		Active:   models.TimeFrame{
+		ID: "199293_1",
+		EntriesAccepted: models.TimeFrame{
+			From: time.Now().Add(-24 * time.Hour),
+		},
+		Active: models.TimeFrame{
 			From: time.Now().Add(24 * time.Hour),
 		},
 	}
@@ -145,7 +147,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		seasonNotAcceptingEntries := season
 
 		// entry window doesn't begin until tomorrow
-		seasonNotAcceptingEntries.EntriesFrom = time.Now().Add(24 * time.Hour)
+		seasonNotAcceptingEntries.EntriesAccepted.From = time.Now().Add(24 * time.Hour)
 		seasonNotAcceptingEntries.Active.From = time.Now().Add(48 * time.Hour)
 
 		_, err := agent.CreateEntry(ctx, entry, &seasonNotAcceptingEntries)
@@ -154,7 +156,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		}
 
 		// entry window has already elapsed
-		seasonNotAcceptingEntries.EntriesFrom = time.Now().Add(-48 * time.Hour)
+		seasonNotAcceptingEntries.EntriesAccepted.From = time.Now().Add(-48 * time.Hour)
 		seasonNotAcceptingEntries.Active.From = time.Now().Add(-24 * time.Hour)
 
 		_, err = agent.CreateEntry(ctx, entry, &seasonNotAcceptingEntries)

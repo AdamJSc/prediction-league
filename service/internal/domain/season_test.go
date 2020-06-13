@@ -28,14 +28,16 @@ func TestSeason_GetStatus(t *testing.T) {
 	day := 24 * time.Hour
 
 	season := models.Season{
-		EntriesFrom: now.Add(-7 * day), // 7 days ago
+		EntriesAccepted: models.TimeFrame{
+			From: now.Add(-7 * day), // 7 days ago
+		},
 		Active: models.TimeFrame{
 			From:  now.Add(-5 * day), // 5 days ago
 			Until: now.Add(-3 * day), // 3 days ago
 		},
 	}
 
-	t.Run("on a date prior to entriesfrom, season status must be forthcoming", func(t *testing.T) {
+	t.Run("on a date prior to entries accepted from, season status must be forthcoming", func(t *testing.T) {
 		ts := now.Add(-8 * day) // 8 days ago
 		status := season.GetStatus(ts)
 		if status != models.SeasonStatusForthcoming {
@@ -43,7 +45,7 @@ func TestSeason_GetStatus(t *testing.T) {
 		}
 	})
 
-	t.Run("on a date between entriesfrom and startdate, season status must be accepting entries", func(t *testing.T) {
+	t.Run("on a date between entries accepted from and active from date, season status must be accepting entries", func(t *testing.T) {
 		ts := now.Add(-6 * day) // 6 days ago
 		status := season.GetStatus(ts)
 		if status != models.SeasonStatusAcceptingEntries {
@@ -51,7 +53,7 @@ func TestSeason_GetStatus(t *testing.T) {
 		}
 	})
 
-	t.Run("on a date between startdate and enddate, season status must be active", func(t *testing.T) {
+	t.Run("on a date between active from date and active until date, season status must be active", func(t *testing.T) {
 		ts := now.Add(-4 * day) // 4 days ago
 		status := season.GetStatus(ts)
 		if status != models.SeasonStatusActive {
@@ -59,7 +61,7 @@ func TestSeason_GetStatus(t *testing.T) {
 		}
 	})
 
-	t.Run("on a date after enddate, season status must be elapsed", func(t *testing.T) {
+	t.Run("on a date after active until date, season status must be elapsed", func(t *testing.T) {
 		ts := now.Add(-2 * day) // 2 days ago
 		status := season.GetStatus(ts)
 		if status != models.SeasonStatusElapsed {

@@ -30,7 +30,7 @@ func ValidateSeason(s models.Season) error {
 	if s.Active.Until.Equal(emptyTime) {
 		validationMsgs = append(validationMsgs, "Active Until Date must not be empty")
 	}
-	if s.EntriesFrom.Equal(emptyTime) {
+	if s.EntriesAccepted.From.Equal(emptyTime) {
 		validationMsgs = append(validationMsgs, "Entries From Date must not be empty")
 	}
 
@@ -52,15 +52,15 @@ func ValidateSeason(s models.Season) error {
 		}
 	}
 
-	if !s.EntriesFrom.Before(s.Active.From) {
+	if !s.EntriesAccepted.From.Before(s.Active.From) {
 		return ValidationError{
-			Reasons: []string{"EntriesFrom date cannot occur before Start date"},
+			Reasons: []string{"Entries Accepted From date cannot occur before Active From date"},
 		}
 	}
 
 	if !s.Active.From.Before(s.Active.Until) {
 		return ValidationError{
-			Reasons: []string{"End date cannot occur before Start date"},
+			Reasons: []string{"Active Until date cannot occur before Active From date"},
 		}
 	}
 

@@ -164,10 +164,13 @@ func MustInflate() {
 	// we can't do this directly when defining the struct because we need to load the location at runtime
 	Seasons = models.SeasonCollection{
 		"201920_1": {
-			ID:          "201920_1",
-			ClientID:    models.SeasonIdentifier{SeasonID: "PL"},
-			Name:        "Premier League 2019/20",
-			EntriesFrom: time.Date(2019, 7, 1, 0, 0, 0, 0, loc),
+			ID:       "201920_1",
+			ClientID: models.SeasonIdentifier{SeasonID: "PL"},
+			Name:     "Premier League 2019/20",
+			EntriesAccepted: models.TimeFrame{
+				From:  time.Date(2019, 7, 1, 0, 0, 0, 0, loc),
+				Until: time.Date(2019, 8, 9, 19, 0, 0, 0, loc),
+			},
 			Active: models.TimeFrame{
 				From:  time.Date(2019, 8, 9, 19, 0, 0, 0, loc),
 				Until: time.Date(2020, 5, 17, 23, 59, 59, 0, loc),
