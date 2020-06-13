@@ -136,6 +136,17 @@ func testContext(t *testing.T) (context.Context, context.CancelFunc) {
 	return ctx, cancel
 }
 
+// testContextWithGuardAttempt provides a wrapper for setting a guard attempt value on a new testContext
+func testContextWithGuardAttempt(t *testing.T, attempt string) (context.Context, context.CancelFunc) {
+	t.Helper()
+
+	ctx, cancel := testContext(t)
+
+	domain.GuardFromContext(ctx).SetAttempt(attempt)
+
+	return ctx, cancel
+}
+
 // generateTestStandings generates a new Standings entity for use within the testsuite
 func generateTestStandings(t *testing.T) models.Standings {
 	t.Helper()

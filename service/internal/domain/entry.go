@@ -223,6 +223,11 @@ func (e EntryAgent) AddEntrySelectionToEntry(ctx context.Context, entrySelection
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
 
+	// check short code is ok
+	if !GuardFromContext(ctx).AttemptMatches(entry.ShortCode) {
+		return models.Entry{}, UnauthorizedError{errors.New("invalid short code")}
+	}
+
 	// ensure that Entry realm matches current realm
 	if RealmFromContext(ctx).Name != entry.RealmName {
 		return models.Entry{}, ConflictError{errors.New("invalid realm")}

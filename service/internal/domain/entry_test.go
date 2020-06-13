@@ -258,7 +258,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
 
 	t.Run("add an entry selection to an existing entry with valid guard value must succeed", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
 		defer cancel()
 
 		teamIDs := models.NewRankingCollectionFromIDs(testSeason.TeamIDs)
@@ -285,8 +285,20 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 		}
 	})
 
+	t.Run("add an entry selection to an existing entry with invalid guard attempt must fail", func(t *testing.T) {
+		ctx, cancel := testContextWithGuardAttempt(t, "not_the_same_as_entry.ShortCode")
+		defer cancel()
+
+		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
+
+		_, err := agent.AddEntrySelectionToEntry(ctx, entrySelection, entry)
+		if !cmp.ErrorType(err, domain.UnauthorizedError{})().Success() {
+			expectedTypeOfGot(t, domain.UnauthorizedError{}, err)
+		}
+	})
+
 	t.Run("add an entry selection to an existing entry with invalid realm name must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
 		defer cancel()
 
 		domain.RealmFromContext(ctx).Name = "NOT_TEST_REALM"
@@ -300,7 +312,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 	})
 
 	t.Run("add an entry selection to a non-existing entry must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
 		defer cancel()
 
 		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
@@ -320,7 +332,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 	})
 
 	t.Run("add an entry selection to an entry with an invalid season must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
 		defer cancel()
 
 		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
@@ -335,7 +347,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 	})
 
 	t.Run("add an entry selection with rankings that include an invalid team ID must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
 		defer cancel()
 
 		rankings := models.NewRankingCollectionFromIDs(testSeason.TeamIDs)
@@ -357,7 +369,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 	})
 
 	t.Run("add an entry selection with rankings that include a missing team ID must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
 		defer cancel()
 
 		rankings := models.NewRankingCollectionFromIDs(testSeason.TeamIDs)
@@ -387,7 +399,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 	})
 
 	t.Run("add an entry selection with rankings that include a duplicate team ID must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
 		defer cancel()
 
 		rankings := models.NewRankingCollectionFromIDs(testSeason.TeamIDs)
