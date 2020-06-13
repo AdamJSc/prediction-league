@@ -14,12 +14,13 @@ const (
 
 // Season defines the structure of a Season against which Entries are played
 type Season struct {
-	ID              string
-	ClientID        ResourceIdentifier
-	Name            string
-	Active          TimeFrame
-	EntriesAccepted TimeFrame
-	TeamIDs         []string
+	ID                 string
+	ClientID           ResourceIdentifier
+	Name               string
+	Active             TimeFrame
+	EntriesAccepted    TimeFrame
+	SelectionsAccepted []TimeFrame
+	TeamIDs            []string
 }
 
 // GetStatus determines a Season's status based on a supplied timestamp/object

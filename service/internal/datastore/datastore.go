@@ -167,13 +167,19 @@ func MustInflate() {
 			ID:       "201920_1",
 			ClientID: models.SeasonIdentifier{SeasonID: "PL"},
 			Name:     "Premier League 2019/20",
+			Active: models.TimeFrame{
+				From:  time.Date(2019, 8, 9, 19, 0, 0, 0, loc),
+				Until: time.Date(2020, 5, 17, 23, 59, 59, 0, loc),
+			},
 			EntriesAccepted: models.TimeFrame{
 				From:  time.Date(2019, 7, 1, 0, 0, 0, 0, loc),
 				Until: time.Date(2019, 8, 9, 19, 0, 0, 0, loc),
 			},
-			Active: models.TimeFrame{
-				From:  time.Date(2019, 8, 9, 19, 0, 0, 0, loc),
-				Until: time.Date(2020, 5, 17, 23, 59, 59, 0, loc),
+			SelectionsAccepted: []models.TimeFrame{
+				{
+					From:  time.Date(2019, 7, 1, 0, 0, 0, 0, loc),
+					Until: time.Date(2019, 8, 9, 19, 0, 0, 0, loc),
+				},
 			},
 			TeamIDs: []string{
 				"AFC",
