@@ -120,8 +120,15 @@ func expectedNonEmpty(t *testing.T, ref string) {
 	t.Fatalf("expected non-empty %s, got an empty value", ref)
 }
 
-// testContext returns a new domain context with default timeout and cancel function for testing purposes
-func testContext(t *testing.T) (context.Context, context.CancelFunc) {
+// testContextDefault returns a new domain context with default timeout and cancel function for testing purposes
+func testContextDefault(t *testing.T) (context.Context, context.CancelFunc) {
+	t.Helper()
+
+	return testContextWithGuardAttempt(t, testRealmPIN)
+}
+
+// testContextWithGuardAttempt provides a wrapper for setting a guard attempt value on a new testContextDefault
+func testContextWithGuardAttempt(t *testing.T, attempt string) (context.Context, context.CancelFunc) {
 	t.Helper()
 
 	ctx, cancel := domain.NewContext()
@@ -129,18 +136,6 @@ func testContext(t *testing.T) (context.Context, context.CancelFunc) {
 	realm := domain.RealmFromContext(ctx)
 	realm.Name = testRealmName
 	realm.PIN = testRealmPIN
-
-	guard := domain.GuardFromContext(ctx)
-	guard.SetAttempt(testRealmPIN)
-
-	return ctx, cancel
-}
-
-// testContextWithGuardAttempt provides a wrapper for setting a guard attempt value on a new testContext
-func testContextWithGuardAttempt(t *testing.T, attempt string) (context.Context, context.CancelFunc) {
-	t.Helper()
-
-	ctx, cancel := testContext(t)
 
 	domain.GuardFromContext(ctx).SetAttempt(attempt)
 
@@ -178,7 +173,7 @@ func generateTestStandings(t *testing.T) models.Standings {
 func insertStandings(t *testing.T, standings models.Standings) models.Standings {
 	t.Helper()
 
-	ctx, cancel := testContext(t)
+	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
 	if err := repositories.NewStandingsDatabaseRepository(db).Insert(ctx, &standings); err != nil {
@@ -192,7 +187,7 @@ func insertStandings(t *testing.T, standings models.Standings) models.Standings 
 func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail string) models.Entry {
 	t.Helper()
 
-	ctx, cancel := testContext(t)
+	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
 	id, err := uuid.NewV4()
@@ -227,7 +222,7 @@ func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail 
 func insertEntry(t *testing.T, entry models.Entry) models.Entry {
 	t.Helper()
 
-	ctx, cancel := testContext(t)
+	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
 	if err := repositories.NewEntryDatabaseRepository(db).Insert(ctx, &entry); err != nil {
@@ -255,7 +250,7 @@ func generateTestEntrySelection(t *testing.T, entryID uuid.UUID) models.EntrySel
 func insertEntrySelection(t *testing.T, entrySelection models.EntrySelection) models.EntrySelection {
 	t.Helper()
 
-	ctx, cancel := testContext(t)
+	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
 	if err := repositories.NewEntrySelectionDatabaseRepository(db).Insert(ctx, &entrySelection); err != nil {
@@ -279,7 +274,7 @@ func generateTestScoredEntrySelection(t *testing.T, entrySelectionID, standingsI
 func insertScoredEntrySelection(t *testing.T, scoredEntrySelection models.ScoredEntrySelection) models.ScoredEntrySelection {
 	t.Helper()
 
-	ctx, cancel := testContext(t)
+	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
 	if err := repositories.NewScoredEntrySelectionDatabaseRepository(db).Insert(ctx, &scoredEntrySelection); err != nil {

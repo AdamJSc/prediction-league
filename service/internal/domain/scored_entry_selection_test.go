@@ -24,7 +24,7 @@ func TestScoredEntrySelectionAgent_CreateScoredEntrySelection(t *testing.T) {
 	}
 
 	t.Run("create valid scored entry selection must succeed", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		createdScoredEntrySelection, err := agent.CreateScoredEntrySelection(ctx, scoredEntrySelection)
@@ -60,7 +60,7 @@ func TestScoredEntrySelectionAgent_CreateScoredEntrySelection(t *testing.T) {
 	})
 
 	t.Run("create invalid scored entry selection must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		missingEntrySelectionID := scoredEntrySelection
@@ -79,7 +79,7 @@ func TestScoredEntrySelectionAgent_CreateScoredEntrySelection(t *testing.T) {
 	})
 
 	t.Run("create scored entry selection for non-existent entry selection or standings must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		nonExistentID, err := uuid.NewV4()
@@ -117,7 +117,7 @@ func TestScoredEntrySelectionAgent_UpdateScoredEntrySelection(t *testing.T) {
 	}
 
 	t.Run("update valid scored entry selection must succeed", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		changedScoredEntrySelection := scoredEntrySelection
@@ -150,7 +150,7 @@ func TestScoredEntrySelectionAgent_UpdateScoredEntrySelection(t *testing.T) {
 	})
 
 	t.Run("update non-existent scored entry selection must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		nonExistentID, err := uuid.NewV4()
@@ -191,7 +191,7 @@ func TestScoredEntrySelectionAgent_RetrieveScoredEntrySelectionByIDs(t *testing.
 	}
 
 	t.Run("retrieve existent scored entry selection must succeed", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		retrievedScoredEntrySelection, err := agent.RetrieveScoredEntrySelectionByIDs(ctx, entrySelection.ID.String(), standings.ID.String())
@@ -220,7 +220,7 @@ func TestScoredEntrySelectionAgent_RetrieveScoredEntrySelectionByIDs(t *testing.
 	})
 
 	t.Run("retrieve non-existent scored entry selection must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		nonExistentID, err := uuid.NewV4()

@@ -50,7 +50,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	}
 
 	t.Run("create a valid entry with a valid guard value must succeed", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		// should succeed
@@ -117,7 +117,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	})
 
 	t.Run("create an entry with a nil season pointer must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		_, err := agent.CreateEntry(ctx, entry, nil)
@@ -127,10 +127,9 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	})
 
 	t.Run("create an entry with an invalid guard value must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextWithGuardAttempt(t, "not_the_correct_realm_pin")
 		defer cancel()
 
-		domain.GuardFromContext(ctx).SetAttempt("not_the_correct_realm_pin")
 		_, err := agent.CreateEntry(ctx, entry, &season)
 		if !cmp.ErrorType(err, domain.UnauthorizedError{})().Success() {
 			expectedTypeOfGot(t, domain.UnauthorizedError{}, err)
@@ -138,7 +137,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	})
 
 	t.Run("create an entry for a season that isn't accepting entries must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		seasonNotAcceptingEntries := season
@@ -163,7 +162,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	})
 
 	t.Run("create an entry with missing required fields must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		var invalidEntry models.Entry
@@ -203,7 +202,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	})
 
 	t.Run("create an entry with invalid nickname must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		invalidEntry := entry
@@ -223,7 +222,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	})
 
 	t.Run("create an entry with existing entrant data must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		invalidEntry := entry
@@ -445,7 +444,7 @@ func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
 	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
 
 	t.Run("retrieve an existent entry with valid credentials must succeed", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		// should succeed
@@ -500,7 +499,7 @@ func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
 	})
 
 	t.Run("retrieve a non-existent entry must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		_, err := agent.RetrieveEntryByID(ctx, "not_a_valid_id")
@@ -510,7 +509,7 @@ func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
 	})
 
 	t.Run("retrieve an entry with a mismatched realm must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		domain.RealmFromContext(ctx).Name = "DIFFERENT_REALM"
@@ -556,7 +555,7 @@ func TestEntryAgent_RetrieveEntriesBySeasonID(t *testing.T) {
 	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
 
 	t.Run("retrieve existing entries with valid credentials must succeed", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		// should succeed
@@ -583,7 +582,7 @@ func TestEntryAgent_RetrieveEntriesBySeasonID(t *testing.T) {
 	})
 
 	t.Run("retrieve non-existent entries must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		_, err := agent.RetrieveEntriesBySeasonID(ctx, "not_a_valid_season_id")
@@ -605,7 +604,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
 
 	t.Run("update an existent entry with a valid alternative entry must succeed", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		// define changed entry values
@@ -669,7 +668,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 	})
 
 	t.Run("update an existent entry with a changed realm must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		_, err := agent.UpdateEntry(ctx, models.Entry{ID: entry.ID, RealmName: "NOT_THE_ORIGINAL_REALM"})
@@ -679,7 +678,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 	})
 
 	t.Run("update a non-existent entry must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		_, err := agent.UpdateEntry(ctx, models.Entry{ID: uuid.Must(uuid.NewV4()), RealmName: entry.RealmName})
@@ -689,7 +688,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 	})
 
 	t.Run("update an existing entry with missing required fields must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		var invalidEntry models.Entry
@@ -729,7 +728,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 	})
 
 	t.Run("update an existing entry with invalid fields must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		var invalidEntry models.Entry
@@ -792,9 +791,8 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	paymentRef := "ABCD1234"
 
 	t.Run("update payment details for an existent entry with valid credentials must succeed", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextWithGuardAttempt(t, entry.ID.String())
 		defer cancel()
-		domain.GuardFromContext(ctx).SetAttempt(entry.ID.String())
 
 		entryWithPaymentDetails, err := agent.UpdateEntryPaymentDetails(
 			ctx,
@@ -816,9 +814,8 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update invalid payment method for an existent entry must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextWithGuardAttempt(t, entry.ID.String())
 		defer cancel()
-		domain.GuardFromContext(ctx).SetAttempt(entry.ID.String())
 
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
@@ -832,9 +829,8 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update missing payment ref for an existent entry must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextWithGuardAttempt(t, entry.ID.String())
 		defer cancel()
-		domain.GuardFromContext(ctx).SetAttempt(entry.ID.String())
 
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
@@ -848,9 +844,8 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update payment details for a non-existent entry must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextWithGuardAttempt(t, entry.ID.String())
 		defer cancel()
-		domain.GuardFromContext(ctx).SetAttempt(entry.ID.String())
 
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
@@ -864,11 +859,11 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update payment details for an existing entry with an invalid realm must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextWithGuardAttempt(t, entry.ID.String())
 		defer cancel()
 
-		domain.GuardFromContext(ctx).SetAttempt(entry.ID.String())
 		domain.RealmFromContext(ctx).Name = "DIFFERENT_REALM"
+
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
 			entry.ID.String(),
@@ -881,10 +876,9 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update payment details for an existing entry with an invalid lookup ref must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextWithGuardAttempt(t, "not_the_correct_entry_short_code")
 		defer cancel()
 
-		domain.GuardFromContext(ctx).SetAttempt("not_the_correct_entry_short_code")
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
 			entry.ID.String(),
@@ -897,7 +891,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update payment details for an existing entry with an invalid status must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextWithGuardAttempt(t, entry.ID.String())
 		defer cancel()
 
 		entryWithInvalidStatus := generateTestEntry(t,
@@ -907,8 +901,6 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 		)
 		entryWithInvalidStatus.Status = models.EntryStatusPaid
 		entryWithInvalidStatus = insertEntry(t, entryWithInvalidStatus)
-
-		domain.GuardFromContext(ctx).SetAttempt(entry.ID.String())
 
 		// now running the operation we're testing should fail
 		_, err := agent.UpdateEntryPaymentDetails(
@@ -951,7 +943,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
 
 	t.Run("approve existent entry short code with valid credentials must succeed", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 		domain.SetBasicAuthSuccessfulOnContext(ctx)
 
@@ -981,7 +973,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 	})
 
 	t.Run("approve existent entry with invalid credentials must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 		// basic auth success on context defaults to false so this should fail naturally
 
@@ -992,7 +984,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 	})
 
 	t.Run("approve non-existent entry with valid credentials must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 		domain.SetBasicAuthSuccessfulOnContext(ctx)
 
@@ -1003,7 +995,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 	})
 
 	t.Run("approve existent entry with invalid realm must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 		domain.SetBasicAuthSuccessfulOnContext(ctx)
 
@@ -1015,7 +1007,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 	})
 
 	t.Run("approve existent entry with pending status must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 		domain.SetBasicAuthSuccessfulOnContext(ctx)
 
@@ -1027,7 +1019,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 	})
 
 	t.Run("approve existent entry that has already been approved must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 		domain.SetBasicAuthSuccessfulOnContext(ctx)
 

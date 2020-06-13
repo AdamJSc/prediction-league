@@ -41,6 +41,7 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 			return
 		}
 
+		// get context from request
 		ctx, cancel, err := domain.ContextFromRequest(r, c.Config(), c.DebugTimestamp())
 		if err != nil {
 			responseFromError(err).WriteTo(w)
@@ -60,8 +61,7 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 			return
 		}
 
-		guard := domain.GuardFromContext(ctx)
-		guard.SetAttempt(input.RealmPIN)
+		domain.GuardFromContext(ctx).SetAttempt(input.RealmPIN)
 
 		// create entry
 		createdEntry, err := agent.CreateEntry(ctx, entry, &season)
@@ -108,6 +108,7 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 			return
 		}
 
+		// get context from request
 		ctx, cancel, err := domain.ContextFromRequest(r, c.Config(), c.DebugTimestamp())
 		if err != nil {
 			responseFromError(err).WriteTo(w)
@@ -115,8 +116,7 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 		}
 		defer cancel()
 
-		guard := domain.GuardFromContext(ctx)
-		guard.SetAttempt(input.EntryID)
+		domain.GuardFromContext(ctx).SetAttempt(input.EntryID)
 
 		// update payment details for entry
 		if _, err := agent.UpdateEntryPaymentDetails(ctx, entryID, input.PaymentMethod, input.PaymentRef); err != nil {
