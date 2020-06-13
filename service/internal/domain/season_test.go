@@ -29,8 +29,10 @@ func TestSeason_GetStatus(t *testing.T) {
 
 	season := models.Season{
 		EntriesFrom: now.Add(-7 * day), // 7 days ago
-		StartDate:   now.Add(-5 * day), // 5 days ago
-		EndDate:     now.Add(-3 * day), // 3 days ago
+		Active: models.TimeFrame{
+			From:  now.Add(-5 * day), // 5 days ago
+			Until: now.Add(-3 * day), // 3 days ago
+		},
 	}
 
 	t.Run("on a date prior to entriesfrom, season status must be forthcoming", func(t *testing.T) {

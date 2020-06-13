@@ -20,7 +20,7 @@ func TestTimeFrame_Valid(t *testing.T) {
 
 	t.Run("timeframe with only a from timestamp must be valid", func(t *testing.T) {
 		var tf = models.TimeFrame{
-			From: &now,
+			From: now,
 		}
 
 		if !tf.Valid() {
@@ -30,7 +30,7 @@ func TestTimeFrame_Valid(t *testing.T) {
 
 	t.Run("timeframe with only an until timestamp must be valid", func(t *testing.T) {
 		var tf = models.TimeFrame{
-			Until: &now,
+			Until: now,
 		}
 
 		if !tf.Valid() {
@@ -40,8 +40,8 @@ func TestTimeFrame_Valid(t *testing.T) {
 
 	t.Run("timeframe with an until timestamp occurring after a from timestamp must be valid", func(t *testing.T) {
 		var tf = models.TimeFrame{
-			From:  &oneNanosecondAgo,
-			Until: &now,
+			From:  oneNanosecondAgo,
+			Until: now,
 		}
 
 		if !tf.Valid() {
@@ -51,8 +51,8 @@ func TestTimeFrame_Valid(t *testing.T) {
 
 	t.Run("timeframe with a from timestamp occurring after an until timestamp must not be valid", func(t *testing.T) {
 		var tf = models.TimeFrame{
-			From:  &now,
-			Until: &oneNanosecondAgo,
+			From:  now,
+			Until: oneNanosecondAgo,
 		}
 
 		if tf.Valid() {
@@ -62,8 +62,8 @@ func TestTimeFrame_Valid(t *testing.T) {
 
 	t.Run("timeframe with a from timestamp equal to an until timestamp must not be valid", func(t *testing.T) {
 		var tf = models.TimeFrame{
-			From:  &now,
-			Until: &now,
+			From:  now,
+			Until: now,
 		}
 
 		if tf.Valid() {
@@ -78,7 +78,7 @@ func TestTimeFrame_HasBegunBy(t *testing.T) {
 
 	t.Run("timeframe with empty from timestamp must return true", func(t *testing.T) {
 		var tf = models.TimeFrame{
-			Until: &now,
+			Until: now,
 		}
 
 		if !tf.HasBegunBy(now) {
@@ -88,7 +88,7 @@ func TestTimeFrame_HasBegunBy(t *testing.T) {
 
 	t.Run("timeframe with from timestamp in the past must return true", func(t *testing.T) {
 		var tf = models.TimeFrame{
-			From: &oneNanosecondAgo,
+			From: oneNanosecondAgo,
 		}
 
 		if !tf.HasBegunBy(now) {
@@ -98,7 +98,7 @@ func TestTimeFrame_HasBegunBy(t *testing.T) {
 
 	t.Run("timeframe with from timestamp in the future must return false", func(t *testing.T) {
 		var tf = models.TimeFrame{
-			From: &now,
+			From: now,
 		}
 
 		if tf.HasBegunBy(oneNanosecondAgo) {
@@ -108,7 +108,7 @@ func TestTimeFrame_HasBegunBy(t *testing.T) {
 
 	t.Run("timeframe with from timestamp that matches current timestamp must return true", func(t *testing.T) {
 		var tf = models.TimeFrame{
-			From: &now,
+			From: now,
 		}
 
 		if !tf.HasBegunBy(now) {
@@ -123,7 +123,7 @@ func TestTimeFrame_HasElapsedBy(t *testing.T) {
 
 	t.Run("timeframe with empty until timestamp must return false", func(t *testing.T) {
 		var tf = models.TimeFrame{
-			From: &now,
+			From: now,
 		}
 
 		if tf.HasElapsedBy(now) {
@@ -133,7 +133,7 @@ func TestTimeFrame_HasElapsedBy(t *testing.T) {
 
 	t.Run("timeframe with until timestamp in the past must return true", func(t *testing.T) {
 		var tf = models.TimeFrame{
-			Until: &oneNanosecondAgo,
+			Until: oneNanosecondAgo,
 		}
 
 		if !tf.HasElapsedBy(now) {
@@ -143,7 +143,7 @@ func TestTimeFrame_HasElapsedBy(t *testing.T) {
 
 	t.Run("timeframe with until timestamp in the future must return false", func(t *testing.T) {
 		var tf = models.TimeFrame{
-			Until: &now,
+			Until: now,
 		}
 
 		if tf.HasElapsedBy(oneNanosecondAgo) {
@@ -153,7 +153,7 @@ func TestTimeFrame_HasElapsedBy(t *testing.T) {
 
 	t.Run("timeframe with until timestamp that matches current timestamp must return false", func(t *testing.T) {
 		var tf = models.TimeFrame{
-			Until: &now,
+			Until: now,
 		}
 
 		if tf.HasElapsedBy(now) {

@@ -168,8 +168,10 @@ func MustInflate() {
 			ClientID:    models.SeasonIdentifier{SeasonID: "PL"},
 			Name:        "Premier League 2019/20",
 			EntriesFrom: time.Date(2019, 7, 1, 0, 0, 0, 0, loc),
-			StartDate:   time.Date(2019, 8, 9, 19, 0, 0, 0, loc),
-			EndDate:     time.Date(2020, 5, 17, 23, 59, 59, 0, loc),
+			Active: models.TimeFrame{
+				From:  time.Date(2019, 8, 9, 19, 0, 0, 0, loc),
+				Until: time.Date(2020, 5, 17, 23, 59, 59, 0, loc),
+			},
 			TeamIDs: []string{
 				"AFC",
 				"AFCB",

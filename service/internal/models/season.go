@@ -17,9 +17,8 @@ type Season struct {
 	ID          string
 	ClientID    ResourceIdentifier
 	Name        string
+	Active      TimeFrame
 	EntriesFrom time.Time
-	StartDate   time.Time
-	EndDate     time.Time
 	TeamIDs     []string
 }
 
@@ -28,9 +27,9 @@ func (s Season) GetStatus(ts time.Time) string {
 	switch {
 	case ts.Before(s.EntriesFrom):
 		return SeasonStatusForthcoming
-	case ts.Before(s.StartDate):
+	case ts.Before(s.Active.From):
 		return SeasonStatusAcceptingEntries
-	case ts.Before(s.EndDate):
+	case ts.Before(s.Active.Until):
 		return SeasonStatusActive
 	}
 	return SeasonStatusElapsed

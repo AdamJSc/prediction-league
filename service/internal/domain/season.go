@@ -23,14 +23,14 @@ func ValidateSeason(s models.Season) error {
 	}
 
 	// validate timestamps
-	emptyTime := time.Time{}.Format(time.RFC3339Nano)
-	if s.StartDate.Format(time.RFC3339Nano) == emptyTime {
-		validationMsgs = append(validationMsgs, "Start Date must not be empty")
+	var emptyTime time.Time
+	if s.Active.From.Equal(emptyTime) {
+		validationMsgs = append(validationMsgs, "Active From Date must not be empty")
 	}
-	if s.EndDate.Format(time.RFC3339Nano) == emptyTime {
-		validationMsgs = append(validationMsgs, "End Date must not be empty")
+	if s.Active.Until.Equal(emptyTime) {
+		validationMsgs = append(validationMsgs, "Active Until Date must not be empty")
 	}
-	if s.EntriesFrom.Format(time.RFC3339Nano) == emptyTime {
+	if s.EntriesFrom.Equal(emptyTime) {
 		validationMsgs = append(validationMsgs, "Entries From Date must not be empty")
 	}
 
@@ -52,13 +52,13 @@ func ValidateSeason(s models.Season) error {
 		}
 	}
 
-	if !s.EntriesFrom.Before(s.StartDate) {
+	if !s.EntriesFrom.Before(s.Active.From) {
 		return ValidationError{
 			Reasons: []string{"EntriesFrom date cannot occur before Start date"},
 		}
 	}
 
-	if !s.StartDate.Before(s.EndDate) {
+	if !s.Active.From.Before(s.Active.Until) {
 		return ValidationError{
 			Reasons: []string{"End date cannot occur before Start date"},
 		}
