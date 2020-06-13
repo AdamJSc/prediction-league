@@ -76,9 +76,9 @@ func TestTimeFrame_HasBegunBy(t *testing.T) {
 	var now = time.Now()
 	var oneNanosecondAgo = now.Add(-time.Nanosecond)
 
-	t.Run("timeframe with empty from timestamp must return true", func(t *testing.T) {
+	t.Run("timeframe with from timestamp in the past must return true", func(t *testing.T) {
 		var tf = models.TimeFrame{
-			Until: now,
+			From: oneNanosecondAgo,
 		}
 
 		if !tf.HasBegunBy(now) {
@@ -86,9 +86,9 @@ func TestTimeFrame_HasBegunBy(t *testing.T) {
 		}
 	})
 
-	t.Run("timeframe with from timestamp in the past must return true", func(t *testing.T) {
+	t.Run("timeframe with from timestamp that matches current timestamp must return true", func(t *testing.T) {
 		var tf = models.TimeFrame{
-			From: oneNanosecondAgo,
+			From: now,
 		}
 
 		if !tf.HasBegunBy(now) {
@@ -105,35 +105,25 @@ func TestTimeFrame_HasBegunBy(t *testing.T) {
 			t.Fatalf("expected timeframe %+v to have not begun by %+v, but it had", tf, now)
 		}
 	})
-
-	t.Run("timeframe with from timestamp that matches current timestamp must return true", func(t *testing.T) {
-		var tf = models.TimeFrame{
-			From: now,
-		}
-
-		if !tf.HasBegunBy(now) {
-			t.Fatalf("expected timeframe %+v to have begun by %+v, but it had not", tf, now)
-		}
-	})
 }
 
 func TestTimeFrame_HasElapsedBy(t *testing.T) {
 	var now = time.Now()
 	var oneNanosecondAgo = now.Add(-time.Nanosecond)
 
-	t.Run("timeframe with empty until timestamp must return false", func(t *testing.T) {
-		var tf = models.TimeFrame{
-			From: now,
-		}
-
-		if tf.HasElapsedBy(now) {
-			t.Fatalf("expected timeframe %+v to have not elapsed by %+v, but it had", tf, now)
-		}
-	})
-
 	t.Run("timeframe with until timestamp in the past must return true", func(t *testing.T) {
 		var tf = models.TimeFrame{
 			Until: oneNanosecondAgo,
+		}
+
+		if !tf.HasElapsedBy(now) {
+			t.Fatalf("expected timeframe %+v to have elapsed by %+v, but it had not", tf, now)
+		}
+	})
+
+	t.Run("timeframe with until timestamp that matches current timestamp must return true", func(t *testing.T) {
+		var tf = models.TimeFrame{
+			Until: now,
 		}
 
 		if !tf.HasElapsedBy(now) {
@@ -150,14 +140,106 @@ func TestTimeFrame_HasElapsedBy(t *testing.T) {
 			t.Fatalf("expected timeframe %+v to have not elapsed by %+v, but it had", tf, now)
 		}
 	})
+}
 
-	t.Run("timeframe with until timestamp that matches current timestamp must return false", func(t *testing.T) {
-		var tf = models.TimeFrame{
+func TestTimeFrame_OverlapsWith(t *testing.T) {
+	var now = time.Now()
+	var oneNanosecondAgo = now.Add(-time.Nanosecond)
+	var twoNanosecondsAgo = now.Add(-2 * time.Nanosecond)
+	var threeNanosecondsAgo = now.Add(-3 * time.Nanosecond)
+
+	t.Run("timeframes that do not overlap at all must return false", func(t *testing.T) {
+		tf1 := models.TimeFrame{
+			From:  threeNanosecondsAgo,
+			Until: twoNanosecondsAgo,
+		}
+		tf2 := models.TimeFrame{
+			From:  oneNanosecondAgo,
 			Until: now,
 		}
 
-		if tf.HasElapsedBy(now) {
-			t.Fatalf("expected timeframe %+v to have not elapsed by %+v, but it had", tf, now)
+		if tf1.OverlapsWith(tf2) {
+			t.Fatalf("expected timeframe %+v to not overlap with %+v, but it did", tf1, tf2)
+		}
+
+		if tf2.OverlapsWith(tf1) {
+			t.Fatalf("expected timeframe %+v to not overlap with %+v, but it did", tf2, tf1)
+		}
+	})
+
+	t.Run("timeframes that are identical must return true", func(t *testing.T) {
+		tf1 := models.TimeFrame{
+			From:  oneNanosecondAgo,
+			Until: now,
+		}
+		tf2 := models.TimeFrame{
+			From:  oneNanosecondAgo,
+			Until: now,
+		}
+
+		if !tf1.OverlapsWith(tf2) {
+			t.Fatalf("expected timeframe %+v to overlap with %+v, but it did not", tf1, tf2)
+		}
+
+		if !tf2.OverlapsWith(tf1) {
+			t.Fatalf("expected timeframe %+v to overlap with %+v, but it did not", tf2, tf1)
+		}
+	})
+
+	t.Run("timeframes that overlap completely must return true", func(t *testing.T) {
+		tf1 := models.TimeFrame{
+			From:  threeNanosecondsAgo,
+			Until: now,
+		}
+		tf2 := models.TimeFrame{
+			From:  twoNanosecondsAgo,
+			Until: oneNanosecondAgo,
+		}
+
+		if !tf1.OverlapsWith(tf2) {
+			t.Fatalf("expected timeframe %+v to overlap with %+v, but it did not", tf1, tf2)
+		}
+
+		if !tf2.OverlapsWith(tf1) {
+			t.Fatalf("expected timeframe %+v to overlap with %+v, but it did not", tf2, tf1)
+		}
+	})
+
+	t.Run("timeframes that overlap partially must return true", func(t *testing.T) {
+		tf1 := models.TimeFrame{
+			From:  threeNanosecondsAgo,
+			Until: oneNanosecondAgo,
+		}
+		tf2 := models.TimeFrame{
+			From:  twoNanosecondsAgo,
+			Until: now,
+		}
+
+		if !tf1.OverlapsWith(tf2) {
+			t.Fatalf("expected timeframe %+v to overlap with %+v, but it did not", tf1, tf2)
+		}
+
+		if !tf2.OverlapsWith(tf1) {
+			t.Fatalf("expected timeframe %+v to overlap with %+v, but it did not", tf2, tf1)
+		}
+	})
+
+	t.Run("timeframes that are consecutive must return false", func(t *testing.T) {
+		tf1 := models.TimeFrame{
+			From:  threeNanosecondsAgo,
+			Until: twoNanosecondsAgo,
+		}
+		tf2 := models.TimeFrame{
+			From:  twoNanosecondsAgo,
+			Until: oneNanosecondAgo,
+		}
+
+		if tf1.OverlapsWith(tf2) {
+			t.Fatalf("expected timeframe %+v to not overlap with %+v, but it did", tf1, tf2)
+		}
+
+		if tf2.OverlapsWith(tf1) {
+			t.Fatalf("expected timeframe %+v to not overlap with %+v, but it did", tf2, tf1)
 		}
 	})
 }

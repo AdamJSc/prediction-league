@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 var emptyTime time.Time
 
@@ -28,18 +30,26 @@ func (t TimeFrame) Valid() bool {
 
 // HasBegunBy determines whether the provided timestamp occurs before the start of the associated TimeFrame
 func (t TimeFrame) HasBegunBy(ts time.Time) bool {
-	if t.From.Equal(emptyTime) || !ts.Before(t.From) {
-		return true
-	}
-
-	return false
+	return t.From.Before(ts) || t.From.Equal(ts)
 }
 
 // HasElapsedBy determines whether the provided timestamp occurs after the end of the associated TimeFrame
 func (t TimeFrame) HasElapsedBy(ts time.Time) bool {
-	if t.Until.Equal(emptyTime) || !ts.After(t.Until) {
+	return t.Until.Before(ts) || t.Until.Equal(ts)
+}
+
+// OverlapsWith determines whether the associated TimeFrame overlaps at any point with the provided TimeFrame
+func (t TimeFrame) OverlapsWith(tf TimeFrame) bool {
+	if tf.From.Equal(t.Until) || tf.Until.Equal(t.From) {
+		// these timeframes are consecutive
 		return false
 	}
 
-	return true
+	tStartOverlaps := tf.HasBegunBy(t.From) && !tf.HasElapsedBy(t.From)
+	tEndOverlaps := tf.HasBegunBy(t.Until) && !tf.HasElapsedBy(t.Until)
+
+	tfStartOverlaps := t.HasBegunBy(tf.From) && !t.HasElapsedBy(tf.From)
+	tfEndOverlaps := t.HasBegunBy(tf.Until) && !t.HasElapsedBy(tf.Until)
+
+	return tStartOverlaps || tEndOverlaps || tfStartOverlaps || tfEndOverlaps
 }
