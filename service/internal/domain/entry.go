@@ -39,7 +39,7 @@ func (e EntryAgent) CreateEntry(ctx context.Context, entry models.Entry, s *mode
 	}
 
 	// check if season is currently accepting entries
-	if !s.GetState(*TimestampFromContext(ctx)).IsAcceptingEntries {
+	if !s.GetState(TimestampFromContext(ctx)).IsAcceptingEntries {
 		return models.Entry{}, ConflictError{errors.New("season is not currently accepting entries")}
 	}
 

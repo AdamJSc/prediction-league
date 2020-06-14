@@ -50,7 +50,7 @@ func main() {
 		mysql:          db,
 		router:         mux.NewRouter(),
 		templates:      domain.ParseTemplates(),
-		debugTimestamp: parseDebugTimestamp(*ts),
+		debugTimestamp: parseTimeString(ts),
 	})
 	handlers.RegisterRoutes(httpAppContainer)
 
@@ -89,23 +89,28 @@ func (d dependencies) Router() *mux.Router        { return d.router }
 func (d dependencies) Template() *views.Templates { return d.templates }
 func (d dependencies) DebugTimestamp() *time.Time { return d.debugTimestamp }
 
-func parseDebugTimestamp(timeString string) *time.Time {
+func parseTimeString(t *string) *time.Time {
+	if t == nil {
+		return nil
+	}
+
+	timeString := *t
 	if timeString == "" {
 		return nil
 	}
 
 	var (
-		ts  time.Time
-		err error
+		parsed time.Time
+		err    error
 	)
 
-	ts, err = time.Parse("20060102150405", timeString)
+	parsed, err = time.Parse("20060102150405", timeString)
 	if err != nil {
-		ts, err = time.Parse("20060102", timeString)
+		parsed, err = time.Parse("20060102", timeString)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	return &ts
+	return &parsed
 }

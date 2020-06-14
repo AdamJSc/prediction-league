@@ -167,7 +167,7 @@ The `Target` is usually a "known" value that the `Attempt` must match in order t
 
 For example...
 
-Most route handlers will at some point invoke `ctx := domain.NewContextFromRequest(r, config)` to generate a `domain.Context` object,
+Most route handlers will at some point invoke `ctx := contextFromRequest(r, c)` to inflate a standard `context.Context` object,
 which comprises an arbitrary `Guard` field, as well as a `Realm` field that has been populated with details of the system's
 current Realm.
 

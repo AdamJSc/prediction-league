@@ -2,10 +2,6 @@ package domain
 
 import (
 	"context"
-	"encoding/base64"
-	"errors"
-	"net/http"
-	"strings"
 	"time"
 )
 
@@ -55,53 +51,18 @@ func NewContext() (context.Context, context.CancelFunc) {
 	return ctx, cancel
 }
 
-// ContextFromRequest extracts data from a given request object and returns an inflated context
-func ContextFromRequest(r *http.Request, config Config, debug *time.Time) (context.Context, context.CancelFunc, error) {
-	ctx, cancel := NewContext()
-
-	// realm name is host (strip port)
-	realmName := strings.Trim(strings.Split(r.Host, ":")[0], " ")
-
-	// see if we can find this realm in our config
-	realm, ok := config.Realms[realmName]
-	if !ok {
-		return nil, nil, errors.New("realm not configured")
-	}
-
-	ctxRealm := RealmFromContext(ctx)
-	*ctxRealm = realm
-
-	// see if request contains any basic auth credentials
-	var userPass []byte
-	authHeader := r.Header.Get("Authorization")
-	split := strings.Split(authHeader, "Basic ")
-	if len(split) == 2 {
-		userPass, _ = base64.StdEncoding.DecodeString(split[1])
-		// if username and password supplied, check if it matches the expected from env/config
-		if string(userPass) == config.AdminBasicAuth {
-			SetBasicAuthSuccessfulOnContext(ctx)
-		}
-	}
-
-	if debug != nil {
-		setTimestampOnContext(&ctx, debug)
-	}
-
-	return ctx, cancel, nil
-}
-
-// TimestampFromContext retrieves a timestamp override if set on the provided context
-func TimestampFromContext(ctx context.Context) *time.Time {
+// TimestampFromContext retrieves a timestamp override if set on the provided context, otherwise returns current timestamp
+func TimestampFromContext(ctx context.Context) time.Time {
 	var ts = time.Now()
 
 	val := ctx.Value(contextKeyTimestamp)
 
 	switch val.(type) {
-	case *time.Time:
-		return val.(*time.Time)
+	case time.Time:
+		return val.(time.Time)
 	}
 
-	return &ts
+	return ts
 }
 
 // GuardFromContext retrieves the Guard from the provided context
@@ -156,7 +117,7 @@ func IsBasicAuthSuccessful(ctx context.Context) bool {
 	}
 }
 
-// setTimestampOnContext sets the provided timestamp on the provided context
-func setTimestampOnContext(ctx *context.Context, ts *time.Time) {
+// SetTimestampOnContext sets the provided timestamp on the provided context
+func SetTimestampOnContext(ctx *context.Context, ts time.Time) {
 	*(ctx) = context.WithValue(*ctx, contextKeyTimestamp, ts)
 }
