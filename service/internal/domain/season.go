@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/models"
-	"time"
 )
 
 // ValidateSeason returns an error if validation rules are not satisfied for the provided Season
 func ValidateSeason(s models.Season) error {
 	var validationMsgs []string
 
-	// validate strings
+	// ensure strings are not empty
 	for k, v := range map[string]string{
 		"ID":       s.ID,
 		"ClientID": s.ClientID.Value(),
@@ -22,19 +21,46 @@ func ValidateSeason(s models.Season) error {
 		}
 	}
 
-	// validate timestamps
-	emptyTime := time.Time{}.Format(time.RFC3339Nano)
-	if s.StartDate.Format(time.RFC3339Nano) == emptyTime {
-		validationMsgs = append(validationMsgs, "Start Date must not be empty")
+	// ensure timeframes are valid
+	if !s.Active.Valid() {
+		validationMsgs = append(validationMsgs, "Active timeframe must be valid")
 	}
-	if s.EndDate.Format(time.RFC3339Nano) == emptyTime {
-		validationMsgs = append(validationMsgs, "End Date must not be empty")
+	if !s.EntriesAccepted.Valid() {
+		validationMsgs = append(validationMsgs, "Entries Accepted timeframe must be valid")
 	}
-	if s.EntriesFrom.Format(time.RFC3339Nano) == emptyTime {
-		validationMsgs = append(validationMsgs, "Entries From Date must not be empty")
+	if s.EntriesAccepted.OverlapsWith(s.Active) {
+		return ValidationError{
+			Reasons: []string{"Entries Accepted timeframe must have elapsed before Active timeframe begins"},
+		}
+	}
+	switch {
+	case len(s.SelectionsAccepted) < 1:
+		validationMsgs = append(validationMsgs, "At least 1 Selections Accepted timeframe must exist")
+	default:
+		if !s.SelectionsAccepted[0].From.Equal(s.EntriesAccepted.From) || !s.SelectionsAccepted[0].Until.Equal(s.EntriesAccepted.Until) {
+			validationMsgs = append(validationMsgs, "First Selections Accepted timeframe must be identical to Entries Accepted timeframe")
+		}
 	}
 
-	// validate teams
+	for idx := 1; idx < len(s.SelectionsAccepted); idx++ {
+		count := idx + 1
+		thisTimeframe := s.SelectionsAccepted[idx]
+		nextTimeframe := s.SelectionsAccepted[count]
+
+		if !thisTimeframe.Valid() {
+			validationMsgs = append(validationMsgs, fmt.Sprintf("Selections Accepted timeframe #%d must be valid", count))
+		}
+		if thisTimeframe.OverlapsWith(nextTimeframe) {
+			validationMsgs = append(validationMsgs, fmt.Sprintf("Selections Accepted timeframe #%d must not overlap with #%d", count, count+1))
+		}
+		if !thisTimeframe.Until.Before(nextTimeframe.From) {
+			validationMsgs = append(validationMsgs, fmt.Sprintf("Selections Accepted timeframes #%d and #%d must be chronological", count, count+1))
+		}
+
+		count++
+	}
+
+	// verify that each team exists and is not duplicated
 	var teams = make(map[string]struct{})
 	for _, id := range s.TeamIDs {
 		if _, err := datastore.Teams.GetByID(id); err != nil {
@@ -49,18 +75,6 @@ func ValidateSeason(s models.Season) error {
 	if len(validationMsgs) > 0 {
 		return ValidationError{
 			Reasons: validationMsgs,
-		}
-	}
-
-	if !s.EntriesFrom.Before(s.StartDate) {
-		return ValidationError{
-			Reasons: []string{"EntriesFrom date cannot occur before Start date"},
-		}
-	}
-
-	if !s.StartDate.Before(s.EndDate) {
-		return ValidationError{
-			Reasons: []string{"End date cannot occur before Start date"},
 		}
 	}
 
