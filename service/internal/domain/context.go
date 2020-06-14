@@ -96,13 +96,8 @@ func RealmFromContext(ctx context.Context) *Realm {
 }
 
 // SetBasicAuthSuccessfulOnContext sets a successful Basic Auth attempt on the provided context
-func SetBasicAuthSuccessfulOnContext(ctx context.Context) {
-	val := ctx.Value(contextKeyBasicAuthSuccess)
-
-	switch val.(type) {
-	case *bool:
-		*(val.(*bool)) = true
-	}
+func SetBasicAuthSuccessfulOnContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, contextKeyBasicAuthSuccess, true)
 }
 
 // IsBasicAuthSuccessful determines whether a successful Basic Auth attempt exists on the provided context
@@ -110,14 +105,14 @@ func IsBasicAuthSuccessful(ctx context.Context) bool {
 	val := ctx.Value(contextKeyBasicAuthSuccess)
 
 	switch val.(type) {
-	case *bool:
-		return *(val.(*bool))
-	default:
-		return false
+	case bool:
+		return val.(bool)
 	}
+
+	return false
 }
 
 // SetTimestampOnContext sets the provided timestamp on the provided context
-func SetTimestampOnContext(ctx *context.Context, ts time.Time) {
-	*(ctx) = context.WithValue(*ctx, contextKeyTimestamp, ts)
+func SetTimestampOnContext(ctx context.Context, ts time.Time) context.Context {
+	return context.WithValue(ctx, contextKeyTimestamp, ts)
 }

@@ -56,7 +56,7 @@ func contextFromRequest(r *http.Request, c *httph.HTTPAppContainer) (context.Con
 		userPass, _ = base64.StdEncoding.DecodeString(split[1])
 		// if username and password supplied, check if it matches the expected from env/config
 		if string(userPass) == config.AdminBasicAuth {
-			domain.SetBasicAuthSuccessfulOnContext(ctx)
+			ctx = domain.SetBasicAuthSuccessfulOnContext(ctx)
 		}
 	}
 
@@ -65,7 +65,8 @@ func contextFromRequest(r *http.Request, c *httph.HTTPAppContainer) (context.Con
 	if debugTs != nil {
 		ts = *debugTs
 	}
-	domain.SetTimestampOnContext(&ctx, ts)
+
+	ctx = domain.SetTimestampOnContext(ctx, ts)
 
 	return ctx, cancel, nil
 }

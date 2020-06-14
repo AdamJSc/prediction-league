@@ -228,20 +228,25 @@ func (e EntryAgent) AddEntrySelectionToEntry(ctx context.Context, entrySelection
 		return models.Entry{}, UnauthorizedError{errors.New("invalid short code")}
 	}
 
-	// ensure that Entry realm matches current realm
+	// ensure that entry realm matches current realm
 	if RealmFromContext(ctx).Name != entry.RealmName {
 		return models.Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
-	// ensure the Entry exists
+	// ensure the entry exists
 	if err := entryRepo.ExistsByID(ctx, entry.ID.String()); err != nil {
 		return models.Entry{}, domainErrorFromDBError(err)
 	}
 
-	// retrieve the Entry's Season
+	// retrieve the entry's Season
 	season, err := datastore.Seasons.GetByID(entry.SeasonID)
 	if err != nil {
 		return models.Entry{}, NotFoundError{err}
+	}
+
+	// check if season is currently accepting entries
+	if !season.GetState(TimestampFromContext(ctx)).IsAcceptingSelections {
+		return models.Entry{}, ConflictError{errors.New("season is not currently accepting entries")}
 	}
 
 	var invalidRankingIDs, missingRankingIDs, duplicateRankingIDs []string

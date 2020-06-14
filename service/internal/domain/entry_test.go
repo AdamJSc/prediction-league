@@ -1,11 +1,13 @@
 package domain_test
 
 import (
+	"context"
 	"fmt"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
 	gocmp "github.com/google/go-cmp/cmp"
 	"gotest.tools/assert/cmp"
+	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/models"
 	"sort"
@@ -266,6 +268,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 
 	t.Run("add an entry selection to an existing entry with valid guard value must succeed", func(t *testing.T) {
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
 		teamIDs := models.NewRankingCollectionFromIDs(testSeason.TeamIDs)
@@ -294,6 +297,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 
 	t.Run("add an entry selection to an existing entry with invalid guard attempt must fail", func(t *testing.T) {
 		ctx, cancel := testContextWithGuardAttempt(t, "not_the_same_as_entry.ShortCode")
+		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
 		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
@@ -306,6 +310,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 
 	t.Run("add an entry selection to an existing entry with invalid realm name must fail", func(t *testing.T) {
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
 		domain.RealmFromContext(ctx).Name = "NOT_TEST_REALM"
@@ -320,6 +325,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 
 	t.Run("add an entry selection to a non-existing entry must fail", func(t *testing.T) {
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
 		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
@@ -340,6 +346,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 
 	t.Run("add an entry selection to an entry with an invalid season must fail", func(t *testing.T) {
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
 		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
@@ -353,8 +360,23 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 		}
 	})
 
+	t.Run("add an entry selection to an entry whose season is not currently accepting entries must fail", func(t *testing.T) {
+		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		// ensure that context timestamp falls outside an accepting entries timeframe for the provided season
+		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, false)
+		defer cancel()
+
+		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
+
+		_, err := agent.AddEntrySelectionToEntry(ctx, entrySelection, entry)
+		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
+			expectedTypeOfGot(t, domain.ConflictError{}, err)
+		}
+	})
+
 	t.Run("add an entry selection with rankings that include an invalid team ID must fail", func(t *testing.T) {
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
 		rankings := models.NewRankingCollectionFromIDs(testSeason.TeamIDs)
@@ -377,6 +399,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 
 	t.Run("add an entry selection with rankings that include a missing team ID must fail", func(t *testing.T) {
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
 		rankings := models.NewRankingCollectionFromIDs(testSeason.TeamIDs)
@@ -407,6 +430,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 
 	t.Run("add an entry selection with rankings that include a duplicate team ID must fail", func(t *testing.T) {
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
 		rankings := models.NewRankingCollectionFromIDs(testSeason.TeamIDs)
@@ -952,8 +976,8 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 
 	t.Run("approve existent entry short code with valid credentials must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
+		ctx = domain.SetBasicAuthSuccessfulOnContext(ctx)
 		defer cancel()
-		domain.SetBasicAuthSuccessfulOnContext(ctx)
 
 		// attempt to approve entry with paid status
 		approvedEntry, err := agent.ApproveEntryByShortCode(ctx, entryWithPaidStatus.ShortCode)
@@ -982,8 +1006,8 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 
 	t.Run("approve existent entry with invalid credentials must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
-		defer cancel()
 		// basic auth success on context defaults to false so this should fail naturally
+		defer cancel()
 
 		_, err := agent.ApproveEntryByShortCode(ctx, entry.ShortCode)
 		if !cmp.ErrorType(err, domain.UnauthorizedError{})().Success() {
@@ -993,8 +1017,8 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 
 	t.Run("approve non-existent entry with valid credentials must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
+		ctx = domain.SetBasicAuthSuccessfulOnContext(ctx)
 		defer cancel()
-		domain.SetBasicAuthSuccessfulOnContext(ctx)
 
 		_, err := agent.ApproveEntryByShortCode(ctx, "non_existent_short_code")
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
@@ -1004,8 +1028,8 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 
 	t.Run("approve existent entry with invalid realm must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
+		ctx = domain.SetBasicAuthSuccessfulOnContext(ctx)
 		defer cancel()
-		domain.SetBasicAuthSuccessfulOnContext(ctx)
 
 		domain.RealmFromContext(ctx).Name = "DIFFERENT_REALM"
 		_, err := agent.ApproveEntryByShortCode(ctx, entry.ShortCode)
@@ -1016,8 +1040,8 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 
 	t.Run("approve existent entry with pending status must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
+		ctx = domain.SetBasicAuthSuccessfulOnContext(ctx)
 		defer cancel()
-		domain.SetBasicAuthSuccessfulOnContext(ctx)
 
 		// initial entry object should still have default "pending" status so just attempt to approve this
 		_, err := agent.ApproveEntryByShortCode(ctx, entry.ShortCode)
@@ -1028,8 +1052,8 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 
 	t.Run("approve existent entry that has already been approved must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
+		ctx = domain.SetBasicAuthSuccessfulOnContext(ctx)
 		defer cancel()
-		domain.SetBasicAuthSuccessfulOnContext(ctx)
 
 		// just try to approve the same entry again
 		_, err := agent.ApproveEntryByShortCode(ctx, entryWithPaidStatus.ShortCode)
@@ -1037,4 +1061,30 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
 	})
+}
+
+func setContextTimestampRelativeToSeasonAcceptingEntries(t *testing.T, ctx context.Context, seasonID string, withinTimeframe bool) context.Context {
+	t.Helper()
+
+	season, ok := datastore.Seasons[seasonID]
+	if !ok {
+		return ctx
+	}
+
+	if len(season.SelectionsAccepted) < 1 {
+		return ctx
+	}
+
+	tf := season.SelectionsAccepted[0]
+
+	// default timestamp to one which is OUTSIDE the first selections accepted timeframe
+	var ts = tf.From.Add(-time.Nanosecond)
+	if withinTimeframe {
+		// set timestamp to one which is INSIDE the first selections accepted timeframe
+		ts = tf.From.Add(time.Nanosecond)
+	}
+
+	ctx = domain.SetTimestampOnContext(ctx, ts)
+
+	return ctx
 }
