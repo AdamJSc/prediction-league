@@ -4,6 +4,7 @@ import (
 	"github.com/LUSHDigital/core/rest"
 	"net/http"
 	"prediction-league/service/internal/domain"
+	"prediction-league/service/internal/models"
 	"strings"
 )
 
@@ -11,6 +12,11 @@ type createEntryResponse struct {
 	ID        string `json:"id"`
 	Nickname  string `json:"nickname"`
 	ShortCode string `json:"short_code"`
+}
+
+type retrieveSeasonResponse struct {
+	Name  string        `json:"name"`
+	Teams []models.Team `json:"teams"`
 }
 
 // responseFromError returns a rest package-level error from a domain-level error
