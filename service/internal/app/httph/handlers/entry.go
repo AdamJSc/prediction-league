@@ -9,6 +9,7 @@ import (
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
+	"prediction-league/service/internal/models"
 )
 
 func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
@@ -129,7 +130,7 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 	}
 }
 
-func createEntrySelection(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func createEntrySelectionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	agent := domain.EntryAgent{EntryAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -175,7 +176,7 @@ func createEntrySelection(c *httph.HTTPAppContainer) func(w http.ResponseWriter,
 
 		domain.GuardFromContext(ctx).SetAttempt(input.EntryShortCode)
 
-		// create entry selection for for entry
+		// create entry selection for entry
 		if _, err := agent.AddEntrySelectionToEntry(ctx, entrySelection, entry); err != nil {
 			responseFromError(err).WriteTo(w)
 			return
@@ -183,6 +184,69 @@ func createEntrySelection(c *httph.HTTPAppContainer) func(w http.ResponseWriter,
 
 		// success!
 		rest.OKResponse(nil, nil).WriteTo(w)
+	}
+}
+
+func retrieveLatestEntrySelectionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+	agent := domain.EntryAgent{EntryAgentInjector: c}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// parse entry ID from route
+		var entryID string
+		if err := getRouteParam(r, "entry_id", &entryID); err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		// get context from request
+		ctx, cancel, err := contextFromRequest(r, c)
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+		defer cancel()
+
+		// get entry
+		entry, err := agent.RetrieveEntryByID(ctx, entryID)
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		if len(entry.EntrySelections) < 1 {
+			// exit if we don't have any entry selections
+			rest.NotFoundError(fmt.Errorf("no entry selections for entry: %s", entryID)).WriteTo(w)
+			return
+		}
+
+		// get latest entry selection by date created
+		var entrySelection = &entry.EntrySelections[0]
+		for _, es := range entry.EntrySelections {
+			if entrySelection.CreatedAt.Before(es.CreatedAt) {
+				selection := es
+				entrySelection = &selection
+			}
+		}
+
+		// get teams that correlate to entry seleciton's ranking IDs
+		var teams []models.Team
+		for _, teamID := range entrySelection.Rankings.GetIDs() {
+			team, err := datastore.Teams.GetByID(teamID)
+			if err != nil {
+				rest.NotFoundError(fmt.Errorf("invalid team: %s", teamID)).WriteTo(w)
+				return
+			}
+
+			teams = append(teams, team)
+		}
+
+		rest.OKResponse(&rest.Data{
+			Type: "entry_selection",
+			Content: retrieveLatestEntrySelectionResponse{
+				Teams:       teams,
+				LastUpdated: entrySelection.CreatedAt,
+			},
+		}, nil).WriteTo(w)
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/models"
 	"strings"
+	"time"
 )
 
 type createEntryResponse struct {
@@ -17,6 +18,11 @@ type createEntryResponse struct {
 type retrieveSeasonResponse struct {
 	Name  string        `json:"name"`
 	Teams []models.Team `json:"teams"`
+}
+
+type retrieveLatestEntrySelectionResponse struct {
+	Teams       []models.Team `json:"teams"`
+	LastUpdated time.Time     `json:"last_updated"`
 }
 
 // responseFromError returns a rest package-level error from a domain-level error

@@ -39,7 +39,7 @@ func retrieveSeasonHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter
 			return
 		}
 
-		// get teams
+		// get teams that correlate to season's team IDs
 		var teams []models.Team
 		for _, teamID := range season.TeamIDs {
 			team, err := datastore.Teams.GetByID(teamID)
