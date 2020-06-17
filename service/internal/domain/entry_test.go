@@ -1063,6 +1063,104 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 	})
 }
 
+func TestEntryAgent_GetEntrySelectionByTimestamp(t *testing.T) {
+	defer truncate(t)
+
+	entry := insertEntry(t, generateTestEntry(t,
+		"Harry Redknapp",
+		"MrHarryR",
+		"harry.redknapp@football.net",
+	))
+
+	var entrySelections []models.EntrySelection
+	for i := 1; i <= 2; i++ {
+		// ensure each entry selection is 48 hours apart
+		days := time.Duration(i) * 48 * time.Hour
+
+		entrySelection := generateTestEntrySelection(t, entry.ID)
+		entrySelection.CreatedAt = time.Now().Add(days)
+		entrySelection = insertEntrySelection(t, entrySelection)
+
+		entrySelections = append(entrySelections, entrySelection)
+	}
+
+	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
+
+	t.Run("retrieve entry selection by timestamp that occurs before earliest selection must fail", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		_, err := agent.RetrieveEntrySelectionByTimestamp(ctx, entry, entrySelections[0].CreatedAt.Add(-time.Second))
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		}
+	})
+
+	t.Run("retrieve entry selection by timestamp that equals earliest selection must return earliest selection", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		actualEntrySelection, err := agent.RetrieveEntrySelectionByTimestamp(ctx, entry, entrySelections[0].CreatedAt)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expectedEntrySelection := entrySelections[0]
+
+		if !actualEntrySelection.CreatedAt.Equal(expectedEntrySelection.CreatedAt) {
+			expectedGot(t, expectedEntrySelection.CreatedAt, actualEntrySelection.CreatedAt)
+		}
+	})
+
+	t.Run("retrieve entry selection by timestamp that occurs before latest selection must return previous selection", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		actualEntrySelection, err := agent.RetrieveEntrySelectionByTimestamp(ctx, entry, entrySelections[1].CreatedAt.Add(-time.Second))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expectedEntrySelection := entrySelections[0]
+
+		if !actualEntrySelection.CreatedAt.Equal(expectedEntrySelection.CreatedAt) {
+			expectedGot(t, expectedEntrySelection.CreatedAt, actualEntrySelection.CreatedAt)
+		}
+	})
+
+	t.Run("retrieve entry selection by timestamp that equals latest selection must return latest selection", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		actualEntrySelection, err := agent.RetrieveEntrySelectionByTimestamp(ctx, entry, entrySelections[1].CreatedAt)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expectedEntrySelection := entrySelections[1]
+
+		if !actualEntrySelection.CreatedAt.Equal(expectedEntrySelection.CreatedAt) {
+			expectedGot(t, expectedEntrySelection.CreatedAt, actualEntrySelection.CreatedAt)
+		}
+	})
+
+	t.Run("retrieve entry selection by timestamp that occurs after latest selection must return latest selection", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		actualEntrySelection, err := agent.RetrieveEntrySelectionByTimestamp(ctx, entry, entrySelections[1].CreatedAt.Add(time.Second))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expectedEntrySelection := entrySelections[1]
+
+		if !actualEntrySelection.CreatedAt.Equal(expectedEntrySelection.CreatedAt) {
+			expectedGot(t, expectedEntrySelection.CreatedAt, actualEntrySelection.CreatedAt)
+		}
+	})
+}
+
 func setContextTimestampRelativeToSeasonAcceptingEntries(t *testing.T, ctx context.Context, seasonID string, withinTimeframe bool) context.Context {
 	t.Helper()
 

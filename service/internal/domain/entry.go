@@ -426,6 +426,19 @@ func (e EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode strin
 	return entry, nil
 }
 
+// RetrieveEntrySelectionByTimestamp returns the entry selection affiliated with the provided entry id that is valid at the point the provided timestamp occurs
+func (e EntryAgent) RetrieveEntrySelectionByTimestamp(ctx context.Context, entry models.Entry, ts time.Time) (models.EntrySelection, error) {
+	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
+
+	// retrieve entry selection
+	entrySelection, err := entrySelectionRepo.SelectByEntryIDAndTimestamp(ctx, entry.ID.String(), ts)
+	if err != nil {
+		return models.EntrySelection{}, domainErrorFromDBError(err)
+	}
+
+	return entrySelection, nil
+}
+
 // sanitiseEntry sanitises and validates an Entry
 func sanitiseEntry(entry *models.Entry) error {
 	// only permit alphanumeric characters withing entrant nickname

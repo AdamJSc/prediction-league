@@ -213,22 +213,14 @@ func retrieveLatestEntrySelectionHandler(c *httph.HTTPAppContainer) func(w http.
 			return
 		}
 
-		if len(entry.EntrySelections) < 1 {
-			// exit if we don't have any entry selections
-			rest.NotFoundError(fmt.Errorf("no entry selections for entry: %s", entryID)).WriteTo(w)
+		// get entry selection that pertains to context timestamp
+		entrySelection, err := agent.RetrieveEntrySelectionByTimestamp(ctx, entry, domain.TimestampFromContext(ctx))
+		if err != nil {
+			responseFromError(err).WriteTo(w)
 			return
 		}
 
-		// get latest entry selection by date created
-		var entrySelection = &entry.EntrySelections[0]
-		for _, es := range entry.EntrySelections {
-			if entrySelection.CreatedAt.Before(es.CreatedAt) {
-				selection := es
-				entrySelection = &selection
-			}
-		}
-
-		// get teams that correlate to entry seleciton's ranking IDs
+		// get teams that correlate to entry selection's ranking IDs
 		var teams []models.Team
 		for _, teamID := range entrySelection.Rankings.GetIDs() {
 			team, err := datastore.Teams.GetByID(teamID)
