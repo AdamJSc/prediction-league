@@ -36,9 +36,9 @@ func TestTeam_FilterTeamsByIDs(t *testing.T) {
 			"ID789",
 		}
 
-		expectedCollection := models.TeamCollection{
-			"ID123": models.Team{ID: "ID123"},
-			"ID789": models.Team{ID: "ID789"},
+		expectedResult := []models.Team{
+			{ID: "ID123"},
+			{ID: "ID789"},
 		}
 
 		actualCollection, err := domain.FilterTeamsByIDs(ids, collection)
@@ -46,14 +46,13 @@ func TestTeam_FilterTeamsByIDs(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(expectedCollection) != len(actualCollection) {
-			expectedGot(t, len(expectedCollection), len(actualCollection))
+		if len(expectedResult) != len(actualCollection) {
+			expectedGot(t, len(expectedResult), len(actualCollection))
 		}
-		if expectedCollection["ID123"].ID != actualCollection["ID123"].ID {
-			expectedGot(t, expectedCollection["ID123"].ID, actualCollection["ID123"].ID)
-		}
-		if expectedCollection["ID789"].ID != actualCollection["ID789"].ID {
-			expectedGot(t, expectedCollection["ID789"].ID, actualCollection["ID789"].ID)
+		for idx := range expectedResult {
+			if expectedResult[idx].ID != actualCollection[idx].ID {
+				expectedGot(t, expectedResult[idx].ID, actualCollection[idx].ID)
+			}
 		}
 	})
 
@@ -64,7 +63,7 @@ func TestTeam_FilterTeamsByIDs(t *testing.T) {
 			"ID789",
 		}
 
-		expectedError := errors.New("invalid team id: not_a_valid_team_id")
+		expectedError := errors.New("missing team id: not_a_valid_team_id")
 		if _, err := domain.FilterTeamsByIDs(ids, collection); err == nil || err.Error() != expectedError.Error() {
 			expectedGot(t, expectedError, err)
 		}

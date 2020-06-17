@@ -9,7 +9,6 @@ import (
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 )
 
 func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
@@ -221,15 +220,10 @@ func retrieveLatestEntrySelectionHandler(c *httph.HTTPAppContainer) func(w http.
 		}
 
 		// get teams that correlate to entry selection's ranking IDs
-		var teams []models.Team
-		for _, teamID := range entrySelection.Rankings.GetIDs() {
-			team, err := datastore.Teams.GetByID(teamID)
-			if err != nil {
-				rest.NotFoundError(fmt.Errorf("invalid team: %s", teamID)).WriteTo(w)
-				return
-			}
-
-			teams = append(teams, team)
+		teams, err := domain.FilterTeamsByIDs(entrySelection.Rankings.GetIDs(), datastore.Teams)
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
 		}
 
 		rest.OKResponse(&rest.Data{

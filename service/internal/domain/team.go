@@ -27,8 +27,10 @@ func ValidateTeam(t models.Team) error {
 }
 
 // FilterTeamsByIDs returns the provided TeamCollection filtered by the provided IDs
-func FilterTeamsByIDs(ids []string, collection models.TeamCollection) (models.TeamCollection, error) {
-	var teams = make(models.TeamCollection)
+func FilterTeamsByIDs(ids []string, collection models.TeamCollection) ([]models.Team, error) {
+	var teams []models.Team
+
+	seen := make(map[string]struct{})
 
 	for _, id := range ids {
 		team, err := collection.GetByID(id)
@@ -36,11 +38,12 @@ func FilterTeamsByIDs(ids []string, collection models.TeamCollection) (models.Te
 			return nil, NotFoundError{fmt.Errorf("missing team id: %s", id)}
 		}
 
-		if _, ok := teams[id]; ok {
+		if _, ok := seen[id]; ok {
 			return nil, ConflictError{fmt.Errorf("team id exists multiple times: %s", id)}
 		}
 
-		teams[id] = team
+		teams = append(teams, team)
+		seen[id] = struct{}{}
 	}
 
 	return teams, nil
