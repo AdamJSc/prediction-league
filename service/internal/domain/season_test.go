@@ -18,7 +18,7 @@ func TestSeason_CheckValidation(t *testing.T) {
 			}
 
 			if err := domain.ValidateSeason(season); err != nil {
-				t.Fatal(fmt.Errorf("invalid season id: %s %+v", id, err))
+				t.Fatal(fmt.Errorf("invalid season id %s: %s", id, err.Error()))
 			}
 		}
 	})

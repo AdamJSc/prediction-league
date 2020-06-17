@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"errors"
 	"fmt"
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/models"
@@ -8,74 +9,55 @@ import (
 
 // ValidateSeason returns an error if validation rules are not satisfied for the provided Season
 func ValidateSeason(s models.Season) error {
-	var validationMsgs []string
-
 	// ensure strings are not empty
 	for k, v := range map[string]string{
-		"ID":       s.ID,
-		"ClientID": s.ClientID.Value(),
-		"Name":     s.Name,
+		"id":       s.ID,
+		"clientID": s.ClientID.Value(),
+		"name":     s.Name,
 	} {
 		if v == "" {
-			validationMsgs = append(validationMsgs, fmt.Sprintf("%s must not be empty", k))
+			return fmt.Errorf("%s must not be empty", k)
 		}
 	}
 
 	// ensure timeframes are valid
 	if !s.Active.Valid() {
-		validationMsgs = append(validationMsgs, "Active timeframe must be valid")
+		return errors.New("active timeframe must be valid")
 	}
 	if !s.EntriesAccepted.Valid() {
-		validationMsgs = append(validationMsgs, "Entries Accepted timeframe must be valid")
+		return errors.New("entries accepted timeframe must be valid")
 	}
 	if s.EntriesAccepted.OverlapsWith(s.Active) {
-		return ValidationError{
-			Reasons: []string{"Entries Accepted timeframe must have elapsed before Active timeframe begins"},
-		}
+		return errors.New("entries accepted timeframe must have elapsed before active timeframe begins")
 	}
 	switch {
 	case len(s.SelectionsAccepted) < 1:
-		validationMsgs = append(validationMsgs, "At least 1 Selections Accepted timeframe must exist")
+		return errors.New("at least 1 selections accepted timeframe must exist")
 	default:
 		if !s.SelectionsAccepted[0].From.Equal(s.EntriesAccepted.From) || !s.SelectionsAccepted[0].Until.Equal(s.EntriesAccepted.Until) {
-			validationMsgs = append(validationMsgs, "First Selections Accepted timeframe must be identical to Entries Accepted timeframe")
+			return errors.New("first selections accepted timeframe must be identical to entries accepted timeframe")
 		}
 	}
 
-	for idx := 1; idx < len(s.SelectionsAccepted); idx++ {
-		count := idx + 1
+	for idx := 0; idx < len(s.SelectionsAccepted)-1; idx++ {
+		nextIdx := idx + 1
 		thisTimeframe := s.SelectionsAccepted[idx]
-		nextTimeframe := s.SelectionsAccepted[count]
+		nextTimeframe := s.SelectionsAccepted[nextIdx]
 
 		if !thisTimeframe.Valid() {
-			validationMsgs = append(validationMsgs, fmt.Sprintf("Selections Accepted timeframe #%d must be valid", count))
+			return fmt.Errorf("selections accepted timeframe idx %d must be valid", idx)
 		}
 		if thisTimeframe.OverlapsWith(nextTimeframe) {
-			validationMsgs = append(validationMsgs, fmt.Sprintf("Selections Accepted timeframe #%d must not overlap with #%d", count, count+1))
+			return fmt.Errorf("selections accepted timeframe idx %d must not overlap with idx %d", idx, nextIdx)
 		}
 		if !thisTimeframe.Until.Before(nextTimeframe.From) {
-			validationMsgs = append(validationMsgs, fmt.Sprintf("Selections Accepted timeframes #%d and #%d must be chronological", count, count+1))
+			return fmt.Errorf("selections accepted timeframes idx %d and idx %d must be chronological", idx, nextIdx)
 		}
-
-		count++
 	}
 
 	// verify that each team exists and is not duplicated
-	var teams = make(map[string]struct{})
-	for _, id := range s.TeamIDs {
-		if _, err := datastore.Teams.GetByID(id); err != nil {
-			validationMsgs = append(validationMsgs, fmt.Sprintf("Invalid Team ID '%s'", id))
-		}
-		if _, ok := teams[id]; ok {
-			validationMsgs = append(validationMsgs, fmt.Sprintf("Team ID '%s' exists multiple times", id))
-		}
-		teams[id] = struct{}{}
-	}
-
-	if len(validationMsgs) > 0 {
-		return ValidationError{
-			Reasons: validationMsgs,
-		}
+	if _, err := FilterTeamsByIDs(s.TeamIDs, datastore.Teams); err != nil {
+		return err
 	}
 
 	return nil

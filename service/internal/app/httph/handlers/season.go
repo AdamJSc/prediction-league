@@ -7,7 +7,6 @@ import (
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 )
 
 func retrieveSeasonHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
@@ -40,15 +39,10 @@ func retrieveSeasonHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter
 		}
 
 		// get teams that correlate to season's team IDs
-		var teams []models.Team
-		for _, teamID := range season.TeamIDs {
-			team, err := datastore.Teams.GetByID(teamID)
-			if err != nil {
-				rest.NotFoundError(fmt.Errorf("invalid team: %s", teamID)).WriteTo(w)
-				return
-			}
-
-			teams = append(teams, team)
+		teams, err := domain.FilterTeamsByIDs(season.TeamIDs, datastore.Teams)
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
 		}
 
 		rest.OKResponse(&rest.Data{

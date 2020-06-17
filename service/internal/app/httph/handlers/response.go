@@ -16,8 +16,8 @@ type createEntryResponse struct {
 }
 
 type retrieveSeasonResponse struct {
-	Name  string        `json:"name"`
-	Teams []models.Team `json:"teams"`
+	Name  string                `json:"name"`
+	Teams models.TeamCollection `json:"teams"`
 }
 
 type retrieveLatestEntrySelectionResponse struct {
