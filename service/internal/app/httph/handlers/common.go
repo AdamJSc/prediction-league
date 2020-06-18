@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+const authCookieName = "PL_AUTH"
+
 func closeBody(r *http.Request) {
 	if err := r.Body.Close(); err != nil {
 		log.Println(err)
@@ -73,4 +75,26 @@ func contextFromRequest(r *http.Request, c *httph.HTTPAppContainer) (context.Con
 
 func stripPort(host string) string {
 	return strings.Trim(strings.Split(host, ":")[0], " ")
+}
+
+// setAuthCookieValue sets an authorization cookie with the provided value
+func setAuthCookieValue(w http.ResponseWriter, value string, domain string) {
+	cookie := &http.Cookie{
+		Name:    authCookieName,
+		Value:   value,
+		Domain:  domain,
+		Expires: time.Now().Add(60 * time.Minute),
+	}
+	http.SetCookie(w, cookie)
+}
+
+// getAuthCookieValue retrieves the current value of the authorization cookie
+func getAuthCookieValue(r *http.Request) (string, error) {
+	for _, cookie := range r.Cookies() {
+		if cookie.Name == authCookieName {
+			return cookie.Value, nil
+		}
+	}
+
+	return "", errors.New("auth cookie not set")
 }
