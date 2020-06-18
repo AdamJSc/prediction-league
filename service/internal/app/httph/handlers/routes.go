@@ -27,4 +27,8 @@ func RegisterRoutes(c *httph.HTTPAppContainer) {
 	c.Router().HandleFunc("/results", frontendResultsHandler(c)).Methods(http.MethodGet)
 	c.Router().HandleFunc("/faq", frontendFAQHandler(c)).Methods(http.MethodGet)
 	c.Router().HandleFunc("/enter", frontendEnterHandler(c)).Methods(http.MethodGet)
+
+	// temporary routes
+	c.Router().HandleFunc("/login", frontendLoginHandler(c)).Methods(http.MethodGet)
+	c.Router().HandleFunc("/selection", frontendSelectionHandler(c)).Methods(http.MethodGet)
 }

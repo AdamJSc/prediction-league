@@ -1,5 +1,7 @@
 package pages
 
+import "prediction-league/service/internal/models"
+
 type MenuLink struct {
 	Label    string
 	Key      string
@@ -63,4 +65,8 @@ type Base struct {
 	Data  interface{}
 }
 
+type SelectionPageData struct {
+	Err                    error
+	IsAcceptingSelections  bool
+	SelectionsNextAccepted *models.TimeFrame
 }
