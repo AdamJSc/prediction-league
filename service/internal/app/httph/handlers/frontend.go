@@ -8,7 +8,10 @@ import (
 )
 
 func frontendIndexHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	var p = pages.NewBase("Home", "home")
+	var p = pages.Base{
+		Title: "Home",
+		Menu:  pages.InflatedMenu("home"),
+	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := c.Template().ExecuteTemplate(w, "index", p); err != nil {
@@ -19,7 +22,10 @@ func frontendIndexHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter,
 }
 
 func frontendResultsHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	var p = pages.NewBase("Results", "results")
+	var p = pages.Base{
+		Title: "Results",
+		Menu:  pages.InflatedMenu("results"),
+	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := c.Template().ExecuteTemplate(w, "results", p); err != nil {
@@ -30,7 +36,10 @@ func frontendResultsHandler(c *httph.HTTPAppContainer) func(w http.ResponseWrite
 }
 
 func frontendFAQHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	var p = pages.NewBase("FAQ", "faq")
+	var p = pages.Base{
+		Title: "FAQ",
+		Menu:  pages.InflatedMenu("faq"),
+	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := c.Template().ExecuteTemplate(w, "faq", p); err != nil {
@@ -41,7 +50,10 @@ func frontendFAQHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 }
 
 func frontendEnterHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	var p = pages.NewBase("Enter", "enter")
+	var p = pages.Base{
+		Title: "Enter",
+		Menu:  pages.InflatedMenu("enter"),
+	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := c.Template().ExecuteTemplate(w, "enter", p); err != nil {

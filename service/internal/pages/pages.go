@@ -10,8 +10,8 @@ type MenuLink struct {
 
 type Menu []MenuLink
 
-func (m *Menu) Inflate() *Menu {
-	*m = Menu{
+func getInflatedMenu() Menu {
+	return Menu{
 		{
 			Label: "Home",
 			Key:   "home",
@@ -35,36 +35,32 @@ func (m *Menu) Inflate() *Menu {
 		{
 			Label: "Login",
 			Key:   "login",
+			Href:  "/login",
 			ID:    "login-link",
 		},
+	}
+}
+
+func setActiveMenuLink(m Menu, key string) Menu {
+	for idx := range m {
+		link := &m[idx]
+		if link.Key == key {
+			link.IsActive = true
+			return m
+		}
 	}
 
 	return m
 }
 
-func (m *Menu) SetActiveLink(key string) {
-	menu := *m
-	for idx := range menu {
-		link := &menu[idx]
-		if link.Key == key {
-			link.IsActive = true
-			return
-		}
-	}
+func InflatedMenu(activeLink string) Menu {
+	return setActiveMenuLink(getInflatedMenu(), activeLink)
 }
 
 type Base struct {
 	Title string
-	Menu  *Menu
+	Menu  Menu
+	Data  interface{}
 }
 
-func NewBase(title string, activeLink string) Base {
-	var b = Base{
-		Title: title,
-		Menu:  &Menu{},
-	}
-
-	b.Menu.Inflate().SetActiveLink(activeLink)
-
-	return b
 }

@@ -37,7 +37,7 @@ func contextFromRequest(r *http.Request, c *httph.HTTPAppContainer) (context.Con
 	debugTs := c.DebugTimestamp()
 
 	// realm name is host (strip port)
-	realmName := strings.Trim(strings.Split(r.Host, ":")[0], " ")
+	realmName := stripPort(r.Host)
 
 	// see if we can find this realm in our config
 	realm, ok := config.Realms[realmName]
@@ -69,4 +69,8 @@ func contextFromRequest(r *http.Request, c *httph.HTTPAppContainer) (context.Con
 	ctx = domain.SetTimestampOnContext(ctx, ts)
 
 	return ctx, cancel, nil
+}
+
+func stripPort(host string) string {
+	return strings.Trim(strings.Split(host, ":")[0], " ")
 }
