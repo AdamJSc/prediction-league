@@ -7,6 +7,10 @@ Vue.component("registration-workflow", require("./components/registration/Regist
 Vue.component("registration-form", require("./components/registration/RegistrationFormComponent.vue").default)
 Vue.component("registration-payment", require("./components/registration/RegistrationPaymentComponent.vue").default)
 
+Vue.component("no-more-selections", require("./components/selection/NoMoreSelectionsComponent.vue").default)
+Vue.component("next-selection", require("./components/selection/NextSelectionComponent.vue").default)
+Vue.component("open-selection", require("./components/selection/OpenSelectionComponent.vue").default)
+
 new Vue({
     el: '#app'
 })

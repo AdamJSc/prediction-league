@@ -120,8 +120,8 @@ func generateRandomAlphaNumericString(length int) string {
 }
 
 var templateFunctions = template.FuncMap{
-	"format_timestamp": func(ts time.Time, format string) string {
-		return ts.Format(format)
+	"timestamp_as_unix": func(ts time.Time) int64 {
+		return ts.Unix()
 	},
 }
 

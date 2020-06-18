@@ -1,4 +1,4 @@
-{{define "edit"}}
+{{define "selection"}}
     {{template "header" .}}
     {{with .Data}}
         <div id="app" class="container-fluid">
@@ -15,18 +15,13 @@
                         <h1>Make Your Selection</h1>
                     </div>
                     {{if .IsAcceptingSelections}}
-                        <div class="col-md-8 offset-md-2">
-                            <p>Accepting Selections!</p>
-                        </div>
+                        <open-selection></open-selection>
                     {{else}}
-                        <div class="col-md-8 offset-md-2">
-                            <p>Not Accepting Selections</p>
-                            {{if .SelectionsNextAccepted}}
-                                <p>Next window begins {{format_timestamp .SelectionsNextAccepted.From "02/01/2006 @ 15:04"}}</p>
-                            {{else}}
-                                <p>No more windows!</p>
-                            {{end}}
-                        </div>
+                        {{if .SelectionsNextAccepted}}
+                            <next-selection unix="{{timestamp_as_unix .SelectionsNextAccepted.From}}"></next-selection>
+                        {{else}}
+                            <no-more-selections></no-more-selections>
+                        {{end}}
                     {{end}}
                 {{end}}
             </div>

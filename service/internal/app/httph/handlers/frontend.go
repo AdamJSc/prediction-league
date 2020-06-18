@@ -82,7 +82,7 @@ func frontendSelectionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWri
 	return func(w http.ResponseWriter, r *http.Request) {
 		p.Data = getSelectionPageData(r, c)
 
-		if err := c.Template().ExecuteTemplate(w, "edit", p); err != nil {
+		if err := c.Template().ExecuteTemplate(w, "selection", p); err != nil {
 			rest.InternalError(err).WriteTo(w)
 			return
 		}
