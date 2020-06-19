@@ -1,6 +1,15 @@
 <template>
     <div class="col-md-8 offset-md-2">
-        Teams = {{teamsCount}}
+        <div class="teams-container">
+            <p>Drag to reorder</p>
+            <div v-for="(team, index) in teams" class="team-wrapper">
+                <div class="dragger"><i class="fa fa-bars" aria-hidden="true"></i></div>
+                <div class="position">{{index+1}}</div>
+                <div class="crest"><img :alt="team.name" :src="team.crest_url" /></div>
+                <div class="name">{{team.short_name}}</div>
+            </div>
+            <button class="btn btn-primary">Save</button>
+        </div>
     </div>
 </template>
 
@@ -16,17 +25,6 @@
             return {
                 teams: JSON.parse(this.teamsPayload)
             }
-        },
-        computed: {
-            teamsCount: function() {
-                return this.teams.length
-            }
-        },
-        mounted: function() {
-            let teams = this.teams
-            setInterval(function() {
-                teams.pop()
-            }, 1000)
         }
     }
 </script>

@@ -102,3 +102,44 @@ h1, h2, h3, h4 {
     transition: all .1s ease-in-out;
   }
 }
+
+.teams-container {
+
+  .team-wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 75px;
+    font-size: 1.3rem;
+
+    .dragger {
+      display: inline-block;
+      padding: 0 1rem;
+    }
+
+    .position {
+      display: inline-block;
+      font-weight: bold;
+      padding: 0 1rem;
+      width: 70px;
+      text-align: right;
+    }
+
+    .crest {
+      display: inline-block;
+      max-width: 30px;
+      max-height: 50px;
+      overflow: hidden;
+
+      img {
+        width: 100%;
+      }
+    }
+
+    .name {
+      display: inline-block;
+      font-weight: bold;
+      padding: 0 1rem;
+    }
+  }
+}
