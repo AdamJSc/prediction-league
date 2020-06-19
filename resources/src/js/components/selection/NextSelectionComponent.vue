@@ -16,16 +16,17 @@
             }
         },
         data: function() {
-            let now = moment()
-            let target = moment.unix(this.unix)
-
-            let remaining = moment.duration(target.diff(now))
-
             return {
-                remaining: remaining
+                remaining: this.getRemaining(this.unix)
             }
         },
         methods: {
+            getRemaining: function(unix) {
+                let now = moment()
+                let target = moment.unix(unix)
+
+                return moment.duration(target.diff(now))
+            },
             decrementRemaining: function() {
                 this.remaining.subtract(1, 's')
             }
