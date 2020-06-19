@@ -69,4 +69,5 @@ type SelectionPageData struct {
 	Err                    error
 	IsAcceptingSelections  bool
 	SelectionsNextAccepted *models.TimeFrame
+	TeamsPayload           string
 }

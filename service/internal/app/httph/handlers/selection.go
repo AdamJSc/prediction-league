@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/datastore"
@@ -41,10 +42,36 @@ func getSelectionPageData(r *http.Request, c *httph.HTTPAppContainer) pages.Sele
 		return data
 	}
 
+	// default teams IDs should be the current season
+	var teamIDs = season.TeamIDs
+
+	// if entry has an associated entry selection
+	// then override the team IDs with the most recent selection
+	entrySelection, err := agent.RetrieveEntrySelectionByTimestamp(ctx, entry, domain.TimestampFromContext(ctx))
+	if err == nil {
+		teamIDs = entrySelection.Rankings.GetIDs()
+	}
+
+	// retrieve teams
+	teams, err := domain.FilterTeamsByIDs(teamIDs, datastore.Teams)
+	if err != nil {
+		// something went wrong
+		data.Err = err
+		return data
+	}
+
+	teamsPayload, err := json.Marshal(teams)
+	if err != nil {
+		// something went wrong
+		data.Err = err
+		return data
+	}
+
 	// ensure that season is accepting selections currently
 	state := season.GetState(domain.TimestampFromContext(ctx))
 	data.IsAcceptingSelections = state.IsAcceptingSelections
 	data.SelectionsNextAccepted = state.SelectionsNextAccepted
+	data.TeamsPayload = string(teamsPayload)
 
 	return data
 }
