@@ -12,7 +12,7 @@
                     </div>
                 </transition>
                 <form id="registration-form" class="form-primary">
-                    <button class="btn btn-lg btn-primary btn-block" v-on:click="submitPayment">Pay Later</button>
+                    <button class="btn btn-primary" v-on:click="submitPayment">Pay Later</button>
                 </form>
             </div>
         </div>

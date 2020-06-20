@@ -31,7 +31,7 @@
                         <label for="inputPIN">PIN</label>
                     </div>
 
-                    <button class="btn btn-lg btn-primary btn-block" v-on:click="submitRegistration">Enter</button>
+                    <button class="btn btn-primary" v-on:click="submitRegistration">Enter</button>
                 </form>
             </div>
         </div>

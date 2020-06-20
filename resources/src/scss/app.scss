@@ -112,6 +112,15 @@ h1, h2, h3, h4 {
     height: 75px;
     font-size: 1.3rem;
 
+    &:hover {
+      cursor: pointer;
+    }
+
+    &.selected {
+      background: $active-highlight-light;
+      border: 2px solid $active-highlight-dark;
+    }
+
     .dragger {
       display: inline-block;
       padding: 0 1rem;
