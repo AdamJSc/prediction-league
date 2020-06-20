@@ -94,10 +94,8 @@
                                 vm.errorMessages.push("Something went wrong :(")
                                 break
                         }
+                        vm.working = false
                     })
-                .finally(function() {
-                    vm.working = false
-                })
             }
         }
     }

@@ -80,8 +80,6 @@
                                 vm.errorMessages.push("Something went wrong :(")
                                 break
                         }
-                    })
-                    .finally(function () {
                         vm.working = false
                     })
             }

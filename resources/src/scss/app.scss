@@ -106,12 +106,6 @@ h1, h2, h3, h4 {
 }
 
 .teams-reorder {
-
-  &, .teams-reorder-admin {
-    width: 100%;
-    margin: 0 auto;
-  }
-
   .team-row {
     height: 75px;
     font-size: 1.3rem;
@@ -162,6 +156,11 @@ h1, h2, h3, h4 {
       padding: 0 1rem;
     }
   }
+}
+
+.teams-reorder, .teams-reorder-admin {
+  width: 100%;
+  margin: 0 auto;
 }
 
 @media screen and (min-width: 768px) {

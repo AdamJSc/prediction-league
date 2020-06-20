@@ -76,4 +76,8 @@ type SelectionPageData struct {
 		Raw         string
 		LastUpdated time.Time
 	}
+	Entry struct {
+		ID        string
+		ShortCode string
+	}
 }

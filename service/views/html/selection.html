@@ -15,7 +15,7 @@
                         <h1>Make Your Selection</h1>
                     </div>
                     {{if .IsAcceptingSelections}}
-                        <open-selection teams-raw="{{.Teams.Raw}}" unix="{{timestamp_as_unix .Teams.LastUpdated}}"></open-selection>
+                        <open-selection v-bind:entry="{id: '{{.Entry.ID}}', shortCode: '{{.Entry.ShortCode}}'}" raw-teams="{{.Teams.Raw}}" unix="{{timestamp_as_unix .Teams.LastUpdated}}"></open-selection>
                     {{else}}
                         {{if .SelectionsNextAccepted}}
                             <next-selection unix="{{timestamp_as_unix .SelectionsNextAccepted.From}}"></next-selection>
