@@ -23,10 +23,11 @@
                                     Last updated on {{lastUpdated.format('ddd Do MMM YYYY [at] h:mma')}}
                                 </div>
                                 <div class="submit-wrapper">
-                                    <button v-on:click="updateOnClick" class="btn btn-primary" v-bind:disabled="dirtyTeamIDs.length === 0 || working">
-                                        <span v-if="working">Working...</span>
-                                        <span v-else>Update</span>
-                                    </button>
+                                    <action-button
+                                            label="Update"
+                                            @clicked="updateOnClick"
+                                            :is-disabled="dirtyTeamIDs.length === 0 || working"
+                                            :is-working="working"></action-button>
                                     <button v-on:click="resetState" class="btn btn-secondary">Reset</button>
                                 </div>
                             </div>
@@ -139,10 +140,11 @@
                 this.selectedTeamID = null
             },
             updateOnClick: function(e) {
-                this.working = true
-                this.lastUpdated = moment()
-                this.storeReorderedTeams()
-                this.resetState()
+                const vm = this
+                vm.working = true
+                vm.lastUpdated = moment()
+                vm.storeReorderedTeams()
+                vm.resetState()
             }
         },
     }

@@ -32,7 +32,11 @@
                     </div>
 
                     <div class="submit-wrapper">
-                        <button class="btn btn-primary" v-on:click="submitRegistration">Enter</button>
+                        <action-button
+                                label="Enter"
+                                @clicked="enterOnClick"
+                                :is-disabled="working"
+                                :is-working="working"></action-button>
                     </div>
                 </form>
             </div>
@@ -47,6 +51,7 @@
         name: 'RegistrationForm',
         data: function() {
             return {
+                working: false,
                 errorMessages: [],
                 formData: {}
             }
@@ -55,9 +60,9 @@
             resetErrorMessages: function() {
                 this.errorMessages = []
             },
-            submitRegistration: function(e) {
-                e.preventDefault()
+            enterOnClick: function(e) {
                 const vm = this
+                vm.working = true
                 vm.resetErrorMessages()
                 axios.request({
                     method: 'post',
@@ -90,6 +95,9 @@
                                 break
                         }
                     })
+                .finally(function() {
+                    vm.working = false
+                })
             }
         }
     }

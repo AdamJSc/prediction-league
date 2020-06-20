@@ -12,7 +12,11 @@
                     </div>
                 </transition>
                 <form id="registration-payment-form" class="form-primary">
-                    <button class="btn btn-primary" v-on:click="submitPayment">Pay Later</button>
+                    <action-button
+                            label="Pay Later"
+                            @clicked="submitPayment"
+                            :is-disabled="working"
+                            :is-working="working"></action-button>
                 </form>
             </div>
         </div>
@@ -27,6 +31,7 @@
         name: 'RegistrationPayment',
         data: function() {
             return {
+                working: false,
                 errorMessages: []
             }
         },
@@ -49,8 +54,8 @@
                 this.errorMessages = []
             },
             submitPayment: function(e) {
-                e.preventDefault()
                 const vm = this
+                vm.working = true
                 vm.resetErrorMessages()
                 let url = `/api/entry/${vm.entryData.entryID}/payment`
                 axios.request({
@@ -75,6 +80,9 @@
                                 vm.errorMessages.push("Something went wrong :(")
                                 break
                         }
+                    })
+                    .finally(function () {
+                        vm.working = false
                     })
             }
         }

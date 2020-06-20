@@ -1,6 +1,7 @@
 .btn {
   font-size: 1.2rem;
   padding: 0.5rem 2rem;
+  min-height: 60px;
 }
 
 .btn-lg {
@@ -11,6 +12,7 @@
 }
 
 .btn-primary {
+  min-width: 150px;
   color: $primary-light;
   background-color: $secondary-dark;
   border-color: $secondary-dark;
@@ -38,6 +40,10 @@
         border-color: $secondary-dark-tint-dark;
       }
     }
+  }
+
+  img {
+    width: 40px;
   }
 }
 
