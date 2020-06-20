@@ -121,6 +121,11 @@ func generateRandomAlphaNumericString(length int) string {
 
 var templateFunctions = template.FuncMap{
 	"timestamp_as_unix": func(ts time.Time) int64 {
+		var emptyTime time.Time
+
+		if ts.Equal(emptyTime) {
+			return 0
+		}
 		return ts.Unix()
 	},
 }

@@ -1,6 +1,9 @@
 package pages
 
-import "prediction-league/service/internal/models"
+import (
+	"prediction-league/service/internal/models"
+	"time"
+)
 
 type MenuLink struct {
 	Label    string
@@ -69,5 +72,8 @@ type SelectionPageData struct {
 	Err                    error
 	IsAcceptingSelections  bool
 	SelectionsNextAccepted *models.TimeFrame
-	TeamsPayload           string
+	Teams                  struct {
+		Raw         string
+		LastUpdated time.Time
+	}
 }

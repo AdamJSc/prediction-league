@@ -71,7 +71,8 @@ func getSelectionPageData(r *http.Request, c *httph.HTTPAppContainer) pages.Sele
 	state := season.GetState(domain.TimestampFromContext(ctx))
 	data.IsAcceptingSelections = state.IsAcceptingSelections
 	data.SelectionsNextAccepted = state.SelectionsNextAccepted
-	data.TeamsPayload = string(teamsPayload)
+	data.Teams.Raw = string(teamsPayload)
+	data.Teams.LastUpdated = entrySelection.CreatedAt
 
 	return data
 }

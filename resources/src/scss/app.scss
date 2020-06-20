@@ -36,7 +36,12 @@ h1, h2, h3, h4 {
 }
 
 .submit-wrapper {
+  margin-top: 1rem;
   text-align: center;
+}
+
+.call-to-action-wrapper {
+  padding-top: 1rem;
 }
 
 .form-label-group {
@@ -100,13 +105,20 @@ h1, h2, h3, h4 {
   }
 }
 
-.teams-table {
-  width: 100%;
-  margin: 0 auto;
+.teams-reorder {
+
+  &, .teams-reorder-admin {
+    width: 100%;
+    margin: 0 auto;
+  }
 
   .team-row {
     height: 75px;
     font-size: 1.3rem;
+
+    &:not(:last-child) {
+      border-bottom: solid 1px $primary-dark-tint-light;
+    }
 
     &:hover {
       cursor: pointer;
@@ -153,7 +165,7 @@ h1, h2, h3, h4 {
 }
 
 @media screen and (min-width: 768px) {
-  .teams-table {
+  .teams-reorder, .teams-reorder-admin {
     width: 75%;
   }
 }

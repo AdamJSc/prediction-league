@@ -15,7 +15,7 @@
                         <h1>Make Your Selection</h1>
                     </div>
                     {{if .IsAcceptingSelections}}
-                        <open-selection teams-payload="{{.TeamsPayload}}"></open-selection>
+                        <open-selection teams-raw="{{.Teams.Raw}}" unix="{{timestamp_as_unix .Teams.LastUpdated}}"></open-selection>
                     {{else}}
                         {{if .SelectionsNextAccepted}}
                             <next-selection unix="{{timestamp_as_unix .SelectionsNextAccepted.From}}"></next-selection>

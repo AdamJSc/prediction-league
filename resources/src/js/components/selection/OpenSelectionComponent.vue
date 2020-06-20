@@ -4,23 +4,34 @@
             <p v-if="dirtyTeamIDs.length > 0">Changed {{dirtyTeamIDs.length}} team(s).</p>
             <p v-if="!isSelected()">Select a team to change their position.</p>
             <p v-else>Who do you want to swap {{getTeamByID(selectedTeamID).short_name}} with?</p>
-            <table class="teams-table">
+            <table class="teams-reorder">
                 <tbody>
-                <tr v-for="(id, index) in teamsIDSequence" v-on:click="teamOnClick" v-bind:team-id="id"
-                    v-bind:class="['team-row', { 'selected': isSelected(id), 'dirty': isDirtyAndNotSelected(id) }]">
-                    <td class="position">{{index+1}}</td>
-                    <td class="crest-outer"><div class="crest"><img :alt="getTeamByID(id).name" :src="getTeamByID(id).crest_url" /></div></td>
-                    <td><span class="name">{{getTeamByID(id).short_name}}</span></td>
-                </tr>
-                <tr>
-                    <td colspan="3" class="submit-wrapper">
-                        <button v-on:click="updateOnClick" class="btn btn-primary" v-bind:disabled="dirtyTeamIDs.length === 0 || working">
-                            <span v-if="working">Working...</span>
-                            <span v-else>Update</span>
-                        </button>
-                        <button v-on:click="resetState" class="btn btn-secondary">Reset</button>
-                    </td>
-                </tr>
+                    <tr v-for="(id, index) in teamsIDSequence" v-on:click="teamOnClick" v-bind:team-id="id"
+                        v-bind:class="['team-row', { 'selected': isSelected(id), 'dirty': isDirtyAndNotSelected(id) }]">
+                        <td class="position">{{index+1}}</td>
+                        <td class="crest-outer"><div class="crest"><img :alt="getTeamByID(id).name" :src="getTeamByID(id).crest_url" /></div></td>
+                        <td><span class="name">{{getTeamByID(id).short_name}}</span></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="teams-reorder-admin">
+                <tbody>
+                    <tr>
+                        <td colspan="3">
+                            <div class="call-to-action-wrapper">
+                                <div v-if="lastUpdated" class="text-center">
+                                    Last updated on {{lastUpdated.format('ddd Do MMM [at] h:mma')}}
+                                </div>
+                                <div class="submit-wrapper">
+                                    <button v-on:click="updateOnClick" class="btn btn-primary" v-bind:disabled="dirtyTeamIDs.length === 0 || working">
+                                        <span v-if="working">Working...</span>
+                                        <span v-else>Update</span>
+                                    </button>
+                                    <button v-on:click="resetState" class="btn btn-secondary">Reset</button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -28,17 +39,28 @@
 </template>
 
 <script>
+    const moment = require('moment')
+
     export default {
         name: 'OpenSelection',
         props: {
-            teamsPayload: {
+            teamsRaw: {
                 type: String,
+            },
+            unix: {
+                type: String
             }
         },
         data: function() {
+            let lastUpdated = null
+            if (this.unix !== "0") {
+                lastUpdated = moment.unix(this.unix)
+            }
+
             return {
                 working: false,
-                teams: JSON.parse(this.teamsPayload),
+                teams: JSON.parse(this.teamsRaw),
+                lastUpdated: lastUpdated,
                 teamsIDSequence: [],
                 selectedTeamID: null,
                 dirtyTeamIDs: []
@@ -118,6 +140,7 @@
             },
             updateOnClick: function(e) {
                 this.working = true
+                this.lastUpdated = moment()
                 this.storeReorderedTeams()
                 this.resetState()
             }
