@@ -20,7 +20,7 @@
                         <td colspan="3">
                             <div class="call-to-action-wrapper">
                                 <div v-if="lastUpdated" class="text-center">
-                                    Last updated on {{lastUpdated.format('ddd Do MMM [at] h:mma')}}
+                                    Last updated on {{lastUpdated.format('ddd Do MMM YYYY [at] h:mma')}}
                                 </div>
                                 <div class="submit-wrapper">
                                     <button v-on:click="updateOnClick" class="btn btn-primary" v-bind:disabled="dirtyTeamIDs.length === 0 || working">
