@@ -8,7 +8,7 @@
                         <ul><li v-for="msg in errorMessages">{{ msg }}</li></ul>
                     </div>
                 </transition>
-                <form id="registration-form" class="form-primary">
+                <form id="registration-entry-form" class="form-primary">
                     <div class="form-label-group">
                         <input v-model="formData.entrant_name" type="text" id="inputName" name="name" class="form-control" placeholder="Name" required autofocus>
                         <label for="inputName">Name</label>
@@ -31,7 +31,9 @@
                         <label for="inputPIN">PIN</label>
                     </div>
 
-                    <button class="btn btn-primary" v-on:click="submitRegistration">Enter</button>
+                    <div class="submit-wrapper">
+                        <button class="btn btn-primary" v-on:click="submitRegistration">Enter</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -68,7 +70,7 @@
                             entryShortCode: response.data.data.entry.short_code,
                             entryNickname: response.data.data.entry.nickname,
                         })
-                        vm.$el.querySelector('#registration-form').reset()
+                        vm.$el.querySelector('#registration-entry-form').reset()
                         vm.$emit('workflow-step-change', 'registrationPayment')
                     })
                     .catch(function (error) {

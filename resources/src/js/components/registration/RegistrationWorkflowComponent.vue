@@ -3,7 +3,7 @@
         <div class="carousel slide">
             <div class="carousel-inner">
                 <div class="carousel-item active">
-                    <registration-form v-show="showRegistrationForm" v-on="onListeners"></registration-form>
+                    <registration-entry v-show="showRegistrationForm" v-on="onListeners"></registration-entry>
                 </div>
                 <div class="carousel-item">
                     <registration-payment v-show="showRegistrationPayment" v-bind:entry-data="entryData"></registration-payment>

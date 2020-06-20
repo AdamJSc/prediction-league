@@ -1,15 +1,33 @@
+.btn {
+  font-size: 1.2rem;
+  padding: 0.5rem 2rem;
+}
+
+.btn-lg {
+  border-radius: 1rem;
+  font-weight: bold;
+  padding: 1rem;
+  transition: all 0.2s;
+}
+
 .btn-primary {
   color: $primary-light;
   background-color: $secondary-dark;
   border-color: $secondary-dark;
 
-  &:focus, &:hover, &:active {
+  &:focus, &:hover:enabled, &:active {
     background-color: $secondary-dark-tint-dark;
     border-color: $secondary-dark-tint-dark;
   }
 
   &:focus {
     box-shadow: 0 0 0 0.2rem $secondary-dark-tint-dark-alpha;
+  }
+
+  &:disabled, &.disabled {
+    color: $primary-light;
+    background-color: $secondary-dark-tint-dark;
+    border-color: $secondary-dark-tint-dark;
   }
 
   &:not(:disabled) {
@@ -20,6 +38,12 @@
         border-color: $secondary-dark-tint-dark;
       }
     }
+  }
+}
+
+.btn-secondary {
+  &:focus {
+    box-shadow: none;
   }
 }
 

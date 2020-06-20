@@ -11,7 +11,7 @@
                         <ul><li v-for="msg in errorMessages">{{ msg }}</li></ul>
                     </div>
                 </transition>
-                <form id="registration-form" class="form-primary">
+                <form id="registration-payment-form" class="form-primary">
                     <button class="btn btn-primary" v-on:click="submitPayment">Pay Later</button>
                 </form>
             </div>
