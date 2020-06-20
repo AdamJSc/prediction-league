@@ -103,12 +103,10 @@ h1, h2, h3, h4 {
   }
 }
 
-.teams-container {
+.teams-table {
+  width: 100%;
 
-  .team-wrapper {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
+  .team-row {
     height: 75px;
     font-size: 1.3rem;
 
@@ -127,26 +125,26 @@ h1, h2, h3, h4 {
     }
 
     .position {
-      display: inline-block;
       font-weight: bold;
       padding: 0 1rem;
-      width: 70px;
       text-align: right;
     }
 
-    .crest {
-      display: inline-block;
-      max-width: 30px;
-      max-height: 50px;
-      overflow: hidden;
+    .crest-outer {
+      text-align: center;
 
-      img {
-        width: 100%;
+      .crest {
+        display: inline-block;
+        width: 40px;
+        overflow: hidden;
+
+        img {
+          width: 100%;
+        }
       }
     }
 
     .name {
-      display: inline-block;
       font-weight: bold;
       padding: 0 1rem;
     }

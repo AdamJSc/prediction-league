@@ -3,12 +3,16 @@
         <div class="teams-container">
             <p v-if="!isSelected()">Select a team to change their position.</p>
             <p v-else>Who do you want to swap {{getTeamByID(selectedTeamID).short_name}} with?</p>
-            <div v-for="(id, index) in teamsIDSequence" v-on:click="teamOnClick" v-bind:team-id="id"
-                 v-bind:class="['team-wrapper', { 'selected': isSelected(id), 'dirty': isDirtyAndNotSelected(id) }]">
-                <div class="position">{{index+1}}</div>
-                <div class="crest"><img :alt="getTeamByID(id).name" :src="getTeamByID(id).crest_url" /></div>
-                <div class="name">{{getTeamByID(id).short_name}}</div>
-            </div>
+            <table class="teams-table">
+                <tbody>
+                <tr v-for="(id, index) in teamsIDSequence" v-on:click="teamOnClick" v-bind:team-id="id"
+                    v-bind:class="['team-row', { 'selected': isSelected(id), 'dirty': isDirtyAndNotSelected(id) }]">
+                    <td class="position">{{index+1}}</td>
+                    <td class="crest-outer"><div class="crest"><img :alt="getTeamByID(id).name" :src="getTeamByID(id).crest_url" /></div></td>
+                    <td><span class="name">{{getTeamByID(id).short_name}}</span></td>
+                </tr>
+                </tbody>
+            </table>
             <button class="btn btn-primary">Save</button>
         </div>
     </div>
