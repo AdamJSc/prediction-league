@@ -1,10 +1,10 @@
 <template>
     <div class="col-md-8 offset-md-2">
         <div class="teams-container">
-            <p>Click & Drag to reorder - don't forget to click "Save" at the bottom once you're done!</p>
+            <p v-if="!isSelected()">Select a team to change their position.</p>
+            <p v-else>Who do you want to swap {{getTeamByID(selectedTeamID).short_name}} with?</p>
             <div v-for="(id, index) in teamsIDSequence" v-on:click="teamOnClick" v-bind:team-id="id"
-                 v-bind:class="['team-wrapper', { 'selected': isSelected(id) }]">
-                <div class="dragger"><i class="fa fa-bars" aria-hidden="true"></i></div>
+                 v-bind:class="['team-wrapper', { 'selected': isSelected(id), 'dirty': isDirtyAndNotSelected(id) }]">
                 <div class="position">{{index+1}}</div>
                 <div class="crest"><img :alt="getTeamByID(id).name" :src="getTeamByID(id).crest_url" /></div>
                 <div class="name">{{getTeamByID(id).short_name}}</div>
@@ -26,7 +26,8 @@
             return {
                 teams: JSON.parse(this.teamsPayload),
                 teamsIDSequence: [],
-                selectedTeamID: null
+                selectedTeamID: null,
+                dirtyTeamIDs: []
             }
         },
         mounted: function() {
@@ -43,14 +44,32 @@
                 }
             },
             isSelected: function(id) {
+                if (typeof id === 'undefined') {
+                    return this.selectedTeamID !== null
+                }
                 return this.selectedTeamID === id
+            },
+            isDirtyAndNotSelected: function(id) {
+                if (this.isSelected(id)) {
+                    return false
+                }
+                return this.dirtyTeamIDs.indexOf(id) !== -1
             },
             swapTeams: function(idA, idB) {
                 let indexOfA = this.teamsIDSequence.indexOf(idA)
                 let indexOfB = this.teamsIDSequence.indexOf(idB)
 
+                // swap teams
                 this.teamsIDSequence[indexOfA] = idB
                 this.teamsIDSequence[indexOfB] = idA
+
+                // refresh dirty teams
+                this.dirtyTeamIDs = []
+                for (let i = 0; i < this.teamsIDSequence.length; i++) {
+                    if (this.teamsIDSequence[i] !== this.teams[i].id) {
+                        this.dirtyTeamIDs.push(this.teamsIDSequence[i])
+                    }
+                }
             },
             teamOnClick: function(e) {
                 let id = e.currentTarget.getAttribute('team-id')

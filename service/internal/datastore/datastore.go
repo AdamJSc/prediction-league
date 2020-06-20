@@ -19,7 +19,7 @@ var Teams = models.TeamCollection{
 		ID:        "AFCB",
 		ClientID:  models.TeamIdentifier{TeamID: 1044},
 		Name:      "Bournemouth",
-		ShortName: "Cherries",
+		ShortName: "Bournemouth",
 		CrestURL:  "https://upload.wikimedia.org/wikipedia/en/e/e5/AFC_Bournemouth_%282013%29.svg",
 	},
 	"AVFC": {
@@ -110,7 +110,7 @@ var Teams = models.TeamCollection{
 		ID:        "SUFC",
 		ClientID:  models.TeamIdentifier{TeamID: 356},
 		Name:      "Sheffield United",
-		ShortName: "Sheffield",
+		ShortName: "Sheff Utd",
 		CrestURL:  "https://upload.wikimedia.org/wikipedia/en/9/9c/Sheffield_United_FC_logo.svg",
 	},
 	"SFC": {

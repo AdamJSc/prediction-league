@@ -121,9 +121,9 @@ h1, h2, h3, h4 {
       border: 2px solid $active-highlight-dark;
     }
 
-    .dragger {
-      display: inline-block;
-      padding: 0 1rem;
+    &.dirty {
+      background: $dirty-highlight-light;
+      border: 2px solid $dirty-highlight-dark;
     }
 
     .position {
