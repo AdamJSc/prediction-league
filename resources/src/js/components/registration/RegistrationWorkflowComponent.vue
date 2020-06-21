@@ -3,10 +3,13 @@
         <div class="carousel slide">
             <div class="carousel-inner">
                 <div class="carousel-item active">
-                    <registration-entry v-show="showRegistrationForm" v-on="onListeners"></registration-entry>
+                    <registration-entry v-show="showRegistrationSteps.registrationForm" v-on:workflow-step-change="changeWorkflowStep" v-on:refresh-entry-data="refreshEntryData"></registration-entry>
                 </div>
                 <div class="carousel-item">
-                    <registration-payment v-show="showRegistrationPayment" v-bind:entry-data="entryData"></registration-payment>
+                    <registration-payment v-show="showRegistrationSteps.registrationPayment" v-on:workflow-step-change="changeWorkflowStep" v-bind:entry-data="entryData"></registration-payment>
+                </div>
+                <div class="carousel-item">
+                    <registration-confirmed v-show="showRegistrationSteps.registrationConfirmed" v-bind:entry-data="entryData"></registration-confirmed>
                 </div>
             </div>
         </div>
@@ -21,7 +24,8 @@
                 carousel: {},
                 showRegistrationSteps: {
                     registrationForm: true,
-                    registrationPayment: false
+                    registrationPayment: false,
+                    registrationConfirmed: false
                 },
                 entryData: {entryID: "", entryShortCode: ""}
             }
@@ -30,33 +34,18 @@
             this.carousel = $(this.$el.querySelector('.carousel'))
             this.carousel.carousel({interval: false})
         },
-        computed: {
-            onListeners: function() {
-                let vm = this
-                return Object.assign({},
-                    this.$listeners,
-                    {
-                        "workflow-step-change": function(newWorkflowStep) {
-                            vm.showAllRegistrationSteps()
-                            vm.carousel.on('slid.bs.carousel', function () {
-                                vm.showOnlyRegistrationStep(newWorkflowStep)
-                            })
-                            vm.carousel.carousel('next')
-                        },
-                        "refresh-entry-data": function(newEntryData) {
-                            vm.entryData = newEntryData
-                        }
-                    }
-                )
-            },
-            showRegistrationForm: function() {
-                return this.showRegistrationSteps.registrationForm
-            },
-            showRegistrationPayment: function() {
-                return this.showRegistrationSteps.registrationPayment
-            }
-        },
         methods: {
+            refreshEntryData: function(newEntryData) {
+                this.entryData = newEntryData
+            },
+            changeWorkflowStep: function(newWorkflowStep) {
+                const vm = this
+                vm.showAllRegistrationSteps()
+                vm.carousel.on('slid.bs.carousel', function () {
+                    vm.showOnlyRegistrationStep(newWorkflowStep)
+                })
+                vm.carousel.carousel('next')
+            },
             showAllRegistrationSteps: function() {
                 let keys = Object.keys(this.showRegistrationSteps)
                 for (let i = 0; i < keys.length; i++) {

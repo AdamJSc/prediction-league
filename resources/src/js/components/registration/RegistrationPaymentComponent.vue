@@ -1,7 +1,9 @@
 <template>
     <div class="payment-step-container">
         <div class="row">
-            <div class="col-md-8 offset-md-2"><h2>Make payment</h2></div>
+            <div class="col-md-8 offset-md-2">
+                <h1>Make Payment</h1>
+            </div>
         </div>
         <div class="row">
             <div class="col-md-8 offset-md-2">
@@ -64,8 +66,7 @@
                     data: this.formData
                 })
                     .then(function (response) {
-                        // redirect to team selection
-                        window.location = `${location.origin}/${encodeURI(vm.entryData.entryNickname)}/${vm.entryData.entryShortCode}/teams`
+                        vm.$emit('workflow-step-change', 'registrationConfirmed')
                     })
                     .catch(function (error) {
                         let response = error.response
