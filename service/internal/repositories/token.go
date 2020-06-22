@@ -105,12 +105,12 @@ func (t TokenDatabaseRepository) ExistsByID(ctx context.Context, id string) erro
 func (t TokenDatabaseRepository) DeleteByID(ctx context.Context, id string) error {
 	stmt := `DELETE FROM token WHERE id = ?`
 
-	_, err := t.agent.QueryContext(ctx, stmt, id)
+	rows, err := t.agent.QueryContext(ctx, stmt, id)
 	if err != nil {
 		return wrapDBError(err)
 	}
 
-	return nil
+	return rows.Err()
 }
 
 // NewTokenDatabaseRepository instantiates a new TokenDatabaseRepository with the provided DB agent

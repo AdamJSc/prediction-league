@@ -5,30 +5,14 @@ import (
 )
 
 const (
-	tokenDuration = 20 * time.Minute
-
 	TokenTypeAuthToken = iota
 )
 
 // Token defines a token model
 type Token struct {
-	ID       string    `db:"id"`
-	Type     int       `db:"type"`
-	Value    string    `db:"value"`
-	IssuedAt time.Time `db:"issued_at"`
-	ExpiresAt  time.Time `db:"expires_at"`
-}
-
-// NewToken generates a new token
-func NewToken(id string, typ int, value string) *Token {
-	now := time.Now().Truncate(time.Second)
-	expires := now.Add(tokenDuration)
-
-	return &Token{
-		ID:       id,
-		Type:     typ,
-		Value:    value,
-		IssuedAt: now,
-		ExpiresAt:  expires,
-	}
+	ID        string    `db:"id"`
+	Type      int       `db:"type"`
+	Value     string    `db:"value"`
+	IssuedAt  time.Time `db:"issued_at"`
+	ExpiresAt time.Time `db:"expires_at"`
 }
