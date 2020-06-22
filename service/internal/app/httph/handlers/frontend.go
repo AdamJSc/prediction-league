@@ -8,12 +8,13 @@ import (
 )
 
 func frontendIndexHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	var p = pages.Base{
-		Title: "Home",
-		Menu:  pages.InflatedMenu("home"),
-	}
-
 	return func(w http.ResponseWriter, r *http.Request) {
+		var p = pages.Base{
+			Title:      "Home",
+			ActivePage: "home",
+			IsLoggedIn: isLoggedIn(r),
+		}
+
 		if err := c.Template().ExecuteTemplate(w, "index", p); err != nil {
 			rest.InternalError(err).WriteTo(w)
 			return
@@ -22,12 +23,13 @@ func frontendIndexHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter,
 }
 
 func frontendResultsHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	var p = pages.Base{
-		Title: "Results",
-		Menu:  pages.InflatedMenu("results"),
-	}
-
 	return func(w http.ResponseWriter, r *http.Request) {
+		var p = pages.Base{
+			Title:      "Results",
+			ActivePage: "results",
+			IsLoggedIn: isLoggedIn(r),
+		}
+
 		if err := c.Template().ExecuteTemplate(w, "results", p); err != nil {
 			rest.InternalError(err).WriteTo(w)
 			return
@@ -36,12 +38,13 @@ func frontendResultsHandler(c *httph.HTTPAppContainer) func(w http.ResponseWrite
 }
 
 func frontendFAQHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	var p = pages.Base{
-		Title: "FAQ",
-		Menu:  pages.InflatedMenu("faq"),
-	}
-
 	return func(w http.ResponseWriter, r *http.Request) {
+		var p = pages.Base{
+			Title:      "FAQ",
+			ActivePage: "faq",
+			IsLoggedIn: isLoggedIn(r),
+		}
+
 		if err := c.Template().ExecuteTemplate(w, "faq", p); err != nil {
 			rest.InternalError(err).WriteTo(w)
 			return
@@ -50,12 +53,13 @@ func frontendFAQHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 }
 
 func frontendEnterHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	var p = pages.Base{
-		Title: "Enter",
-		Menu:  pages.InflatedMenu("enter"),
-	}
-
 	return func(w http.ResponseWriter, r *http.Request) {
+		var p = pages.Base{
+			Title:      "Enter",
+			ActivePage: "enter",
+			IsLoggedIn: isLoggedIn(r),
+		}
+
 		if err := c.Template().ExecuteTemplate(w, "enter", p); err != nil {
 			rest.InternalError(err).WriteTo(w)
 			return
@@ -74,13 +78,13 @@ func frontendLoginHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter,
 }
 
 func frontendSelectionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	var p = pages.Base{
-		Title: "Make Selection",
-		Menu:  pages.InflatedMenu("home"),
-	}
-
 	return func(w http.ResponseWriter, r *http.Request) {
-		p.Data = getSelectionPageData(r, c)
+		var p = pages.Base{
+			Title:      "Make Selection",
+			ActivePage: "selection",
+			IsLoggedIn: isLoggedIn(r),
+			Data:       getSelectionPageData(r, c),
+		}
 
 		if err := c.Template().ExecuteTemplate(w, "selection", p); err != nil {
 			rest.InternalError(err).WriteTo(w)

@@ -98,3 +98,11 @@ func getAuthCookieValue(r *http.Request) (string, error) {
 
 	return "", errors.New("auth cookie not set")
 }
+
+// isLoggedIn determines whether the provided request represents a logged in user
+func isLoggedIn(r *http.Request) bool {
+	if _, err := getAuthCookieValue(r); err != nil {
+		return false
+	}
+	return true
+}

@@ -1,7 +1,5 @@
 import Vue from "vue/dist/vue.esm.js"
 
-Vue.component("hello-world", require("./components/HelloWorldComponent.vue").default)
-
 // load components
 Vue.component("registration-workflow", require("./components/registration/RegistrationWorkflowComponent.vue").default)
 Vue.component("registration-entry", require("./components/registration/RegistrationEntryComponent.vue").default)
@@ -14,8 +12,10 @@ Vue.component("open-selection", require("./components/selection/OpenSelectionCom
 
 Vue.component("action-button", require("./components/ActionButton.vue").default)
 
-new Vue({
-    el: '#app'
-})
+if (document.getElementById('app') !== null) {
+    new Vue({
+        el: '#app'
+    })
+}
 
 console.log("compiled!")
