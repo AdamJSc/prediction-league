@@ -16,7 +16,7 @@ type Token struct {
 	Type     int       `db:"type"`
 	Value    string    `db:"value"`
 	IssuedAt time.Time `db:"issued_at"`
-	Expires  time.Time `db:"updated_at"`
+	ExpiresAt  time.Time `db:"expires_at"`
 }
 
 // NewToken generates a new token
@@ -29,6 +29,6 @@ func NewToken(id string, typ int, value string) *Token {
 		Type:     typ,
 		Value:    value,
 		IssuedAt: now,
-		Expires:  expires,
+		ExpiresAt:  expires,
 	}
 }
