@@ -1,7 +1,6 @@
 <template>
-    <div class="col-md-8 offset-md-2">
-        <p>Selections Window opens in:</p>
-        <p>{{remainingVerbose}}</p>
+    <div class="selection-countdown-container">
+        <p>{{label}} <span class="remaining">{{remainingVerbose}}</span></p>
     </div>
 </template>
 
@@ -9,15 +8,28 @@
     const moment = require('moment')
 
     export default {
-        name: 'NextSelection',
+        name: 'SelectionCountdown',
         props: {
             unix: {
+                type: String,
+            },
+            target: {
                 type: String,
             }
         },
         data: function() {
+            let label = ''
+            switch (this.target) {
+                case 'selection-close':
+                    label = 'Current window closes in'
+                    break
+                case 'selection-open':
+                    label = 'Next window opens in'
+                    break
+            }
             return {
-                remaining: this.getRemaining(this.unix)
+                remaining: this.getRemaining(this.unix),
+                label: label,
             }
         },
         methods: {
@@ -29,13 +41,17 @@
             },
             decrementRemaining: function() {
                 this.remaining.subtract(1, 's')
+
+                if (this.remaining.asSeconds() < 1) {
+                    window.location.reload()
+                }
             }
         },
         computed: {
             remainingVerbose: function() {
                 let remaining = this.remaining
 
-                if (remaining.asSeconds() < 0) {
+                if (remaining.asSeconds() < 1) {
                     return '0 seconds'
                 }
 

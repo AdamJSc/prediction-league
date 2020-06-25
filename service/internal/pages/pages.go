@@ -1,7 +1,6 @@
 package pages
 
 import (
-	"prediction-league/service/internal/models"
 	"time"
 )
 
@@ -13,14 +12,15 @@ type Base struct {
 }
 
 type SelectionPageData struct {
-	Err    error
-	Season struct {
-		IsAcceptingSelections  bool
-		SelectionsNextAccepted *models.TimeFrame
+	Err        error
+	Selections struct {
+		BeingAccepted    bool
+		NextAcceptedFrom *time.Time
+		AcceptedUntil    *time.Time
 	}
 	Teams struct {
 		Raw         string
-		LastUpdated time.Time
+		LastUpdated *time.Time
 	}
 	Entry struct {
 		ID        string

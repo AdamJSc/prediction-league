@@ -42,15 +42,20 @@ func (s Season) GetState(ts time.Time) SeasonState {
 
 	// is season currently accepting selections?
 	for _, tf := range s.SelectionsAccepted {
+		thisTf := tf
+
 		if tf.HasBegunBy(ts) && !tf.HasElapsedBy(ts) {
+			// next selections window should be the current timeframe if selections are currently being accepted
 			state.IsAcceptingSelections = true
+			state.NextSelectionsWindow = &thisTf
 			break
 		}
 
 		// if we aren't currently accepting selections, does this tf represent the next time that we are?
-		if state.SelectionsNextAccepted == nil && !tf.HasBegunBy(ts) {
+		if !state.IsAcceptingSelections && !tf.HasBegunBy(ts) {
 			nextTf := tf
-			state.SelectionsNextAccepted = &nextTf
+			state.NextSelectionsWindow = &nextTf
+			break
 		}
 	}
 
@@ -59,10 +64,10 @@ func (s Season) GetState(ts time.Time) SeasonState {
 
 // SeasonState defines the state of a Season
 type SeasonState struct {
-	Status                 string
-	IsAcceptingEntries     bool
-	IsAcceptingSelections  bool
-	SelectionsNextAccepted *TimeFrame
+	Status                string
+	IsAcceptingEntries    bool
+	IsAcceptingSelections bool
+	NextSelectionsWindow  *TimeFrame
 }
 
 // SeasonCollection is map of Seasons

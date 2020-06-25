@@ -1,6 +1,6 @@
 {{define "selection"}}
     {{template "header" .}}
-    {{$page := .}}
+    {{$parent := .}}
     {{with .Data}}
         <div id="app" class="main-container container-fluid">
             <div class="row">
@@ -14,21 +14,25 @@
                     <div class="col-md-8 offset-md-2">
                         <h1>Update My Selection</h1>
                     </div>
-                    {{if .Season.IsAcceptingSelections}}
+                    {{if .Selections.BeingAccepted}}
                         <div class="col-md-8 offset-md-2">
-                            <p>X time left to update your selection</p>
+                            <selection-countdown target="selection-close" unix="{{timestamp_as_unix .Selections.AcceptedUntil}}"></selection-countdown>
                         </div>
-                        {{if $page.IsLoggedIn}}
+                        {{if $parent.IsLoggedIn}}
                             <open-selection v-bind:entry="{id: '{{.Entry.ID}}', shortCode: '{{.Entry.ShortCode}}'}" raw-teams="{{.Teams.Raw}}" unix="{{timestamp_as_unix .Teams.LastUpdated}}"></open-selection>
                         {{else}}
                             <div class="col-md-8 offset-md-2">
                                 <p>You're not logged in yet!</p>
                             </div>
                         {{end}}
-                    {{else if .Season.SelectionsNextAccepted}}
-                            <next-selection unix="{{timestamp_as_unix .SelectionsNextAccepted.From}}"></next-selection>
+                    {{else if .Selections.NextAcceptedFrom}}
+                        <div class="col-md-8 offset-md-2">
+                            <selection-countdown target="selection-open" unix="{{timestamp_as_unix .Selections.NextAcceptedFrom}}"></selection-countdown>
+                        </div>
                     {{else}}
-                        <no-more-selections></no-more-selections>
+                        <div class="col-md-8 offset-md-2">
+                            <p>That's it for the current season... Good luck!</p>
+                        </div>
                     {{end}}
                 {{end}}
             </div>

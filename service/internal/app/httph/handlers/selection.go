@@ -30,9 +30,15 @@ func getSelectionPageData(r *http.Request, c *httph.HTTPAppContainer) pages.Sele
 	}
 
 	seasonState := season.GetState(domain.TimestampFromContext(ctx))
-
-	data.Season.IsAcceptingSelections = seasonState.IsAcceptingSelections
-	data.Season.SelectionsNextAccepted = seasonState.SelectionsNextAccepted
+	data.Selections.BeingAccepted = seasonState.IsAcceptingSelections
+	if seasonState.NextSelectionsWindow != nil {
+		switch data.Selections.BeingAccepted {
+		case true:
+			data.Selections.AcceptedUntil = &seasonState.NextSelectionsWindow.Until
+		default:
+			data.Selections.NextAcceptedFrom = &seasonState.NextSelectionsWindow.From
+		}
+	}
 
 	// retrieve cookie value
 	authCookieValue, err := getAuthCookieValue(r)
@@ -76,7 +82,7 @@ func getSelectionPageData(r *http.Request, c *httph.HTTPAppContainer) pages.Sele
 
 	// populate remaining teams and entry data
 	data.Teams.Raw = string(teamsPayload)
-	data.Teams.LastUpdated = entrySelection.CreatedAt
+	data.Teams.LastUpdated = &entrySelection.CreatedAt
 	data.Entry.ID = entry.ID.String()
 	data.Entry.ShortCode = entry.ShortCode
 

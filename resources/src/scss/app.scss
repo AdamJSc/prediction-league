@@ -105,6 +105,13 @@ h1, h2, h3, h4 {
   }
 }
 
+.selection-countdown-container {
+  .remaining {
+    color: $secondary-dark;
+    font-weight: bold;
+  }
+}
+
 .teams-reorder {
   .team-row {
     height: 75px;

@@ -135,80 +135,92 @@ func TestSeason_GetState(t *testing.T) {
 		}
 	})
 
-	t.Run("on a date prior to first selections accepted from date, is_accepting_selections must be false and selections_next_accepted must be first timeframe", func(t *testing.T) {
+	t.Run("on a date prior to first selections accepted from date, is_accepting_selections must be false and next_selections_window must be first timeframe", func(t *testing.T) {
 		ts := selectionsAcceptedTimeframes[0].From.Add(-day)
 		state := season.GetState(ts)
 		if state.IsAcceptingSelections {
 			t.Fatalf("expected season to not be accepting selections, but it was, state: %+v", state)
 		}
-		if !cmp.Equal(*state.SelectionsNextAccepted, selectionsAcceptedTimeframes[0]) {
-			t.Fatal(cmp.Diff(*state.SelectionsNextAccepted, selectionsAcceptedTimeframes[0]))
+		if !cmp.Equal(*state.NextSelectionsWindow, selectionsAcceptedTimeframes[0]) {
+			t.Fatal(cmp.Diff(*state.NextSelectionsWindow, selectionsAcceptedTimeframes[0]))
 		}
 	})
 
-	t.Run("on first selections accepted from date, is_accepting_selections must be true and selections_next_accepted must be empty", func(t *testing.T) {
+	t.Run("on first selections accepted from date, is_accepting_selections must be true and next_selections_window must be first timeframe", func(t *testing.T) {
 		ts := selectionsAcceptedTimeframes[0].From
 		state := season.GetState(ts)
 		if !state.IsAcceptingSelections {
 			t.Fatalf("expected season to be accepting selections, but it wasn't, state: %+v", state)
 		}
-		if state.SelectionsNextAccepted != nil {
-			expectedGot(t, nil, state.SelectionsNextAccepted)
+		if !state.NextSelectionsWindow.From.Equal(selectionsAcceptedTimeframes[0].From) {
+			expectedGot(t, selectionsAcceptedTimeframes[0].From, state.NextSelectionsWindow.From)
+		}
+		if !state.NextSelectionsWindow.Until.Equal(selectionsAcceptedTimeframes[0].Until) {
+			expectedGot(t, selectionsAcceptedTimeframes[0].Until, state.NextSelectionsWindow.Until)
 		}
 	})
 
-	t.Run("on a date between first selections accepted from date and first selections accepted until date, is_accepting_selections must be true and selections_next_accepted must be empty", func(t *testing.T) {
+	t.Run("on a date between first selections accepted from date and first selections accepted until date, is_accepting_selections must be true and next_selections_window must be first timeframe", func(t *testing.T) {
 		ts := selectionsAcceptedTimeframes[0].From.Add(day)
 		state := season.GetState(ts)
 		if !state.IsAcceptingSelections {
 			t.Fatalf("expected season to be accepting selections, but it wasn't, state: %+v", state)
 		}
-		if state.SelectionsNextAccepted != nil {
-			expectedGot(t, nil, state.SelectionsNextAccepted)
+		if !state.NextSelectionsWindow.From.Equal(selectionsAcceptedTimeframes[0].From) {
+			expectedGot(t, selectionsAcceptedTimeframes[0].From, state.NextSelectionsWindow.From)
+		}
+		if !state.NextSelectionsWindow.Until.Equal(selectionsAcceptedTimeframes[0].Until) {
+			expectedGot(t, selectionsAcceptedTimeframes[0].Until, state.NextSelectionsWindow.Until)
 		}
 	})
 
-	t.Run("on first selections accepted until date, is_accepting_selections must be false and selections_next_accepted must be second timeframe", func(t *testing.T) {
+	t.Run("on first selections accepted until date, is_accepting_selections must be false and next_selections_window must be second timeframe", func(t *testing.T) {
 		ts := selectionsAcceptedTimeframes[0].Until
 		state := season.GetState(ts)
 		if state.IsAcceptingSelections {
 			t.Fatalf("expected season to not be accepting selections, but it was, state: %+v", state)
 		}
-		if !cmp.Equal(*state.SelectionsNextAccepted, selectionsAcceptedTimeframes[1]) {
-			t.Fatal(cmp.Diff(*state.SelectionsNextAccepted, selectionsAcceptedTimeframes[1]))
+		if !cmp.Equal(*state.NextSelectionsWindow, selectionsAcceptedTimeframes[1]) {
+			t.Fatal(cmp.Diff(*state.NextSelectionsWindow, selectionsAcceptedTimeframes[1]))
 		}
 	})
 
-	t.Run("on a date between first selections accepted until date and second selections accepted from date, is_accepting_selections must be false and selections_next_accepted must be second timeframe", func(t *testing.T) {
+	t.Run("on a date between first selections accepted until date and second selections accepted from date, is_accepting_selections must be false and next_selections_window must be second timeframe", func(t *testing.T) {
 		ts := selectionsAcceptedTimeframes[1].From.Add(-day)
 		state := season.GetState(ts)
 		if state.IsAcceptingSelections {
 			t.Fatalf("expected season to not be accepting selections, but it was, state: %+v", state)
 		}
-		if !cmp.Equal(*state.SelectionsNextAccepted, selectionsAcceptedTimeframes[1]) {
-			t.Fatal(cmp.Diff(*state.SelectionsNextAccepted, selectionsAcceptedTimeframes[1]))
+		if !cmp.Equal(*state.NextSelectionsWindow, selectionsAcceptedTimeframes[1]) {
+			t.Fatal(cmp.Diff(*state.NextSelectionsWindow, selectionsAcceptedTimeframes[1]))
 		}
 	})
 
-	t.Run("on second selections accepted from date, is_accepting_selections must be true and selections_next_accepted must be empty", func(t *testing.T) {
+	t.Run("on second selections accepted from date, is_accepting_selections must be true and next_selections_window must be second timeframe", func(t *testing.T) {
 		ts := selectionsAcceptedTimeframes[1].From
 		state := season.GetState(ts)
 		if !state.IsAcceptingSelections {
 			t.Fatalf("expected season to be accepting selections, but it wasn't, state: %+v", state)
 		}
-		if state.SelectionsNextAccepted != nil {
-			expectedGot(t, nil, state.SelectionsNextAccepted)
+		if !state.NextSelectionsWindow.From.Equal(selectionsAcceptedTimeframes[1].From) {
+			expectedGot(t, selectionsAcceptedTimeframes[1].From, state.NextSelectionsWindow.From)
+		}
+		if !state.NextSelectionsWindow.Until.Equal(selectionsAcceptedTimeframes[1].Until) {
+			expectedGot(t, selectionsAcceptedTimeframes[1].Until, state.NextSelectionsWindow.Until)
 		}
 	})
 
-	t.Run("on a date between second selections accepted from date and second selections accepted until date, is_accepting_selections must be true and selections_next_accepted must be empty", func(t *testing.T) {
+	t.Run("on a date between second selections accepted from date and second selections accepted until date, is_accepting_selections must be true and selections_next_accepted must be second timeframe", func(t *testing.T) {
 		ts := selectionsAcceptedTimeframes[1].From.Add(day)
 		state := season.GetState(ts)
 		if !state.IsAcceptingSelections {
 			t.Fatalf("expected season to be accepting selections, but it wasn't, state: %+v", state)
 		}
-		if state.SelectionsNextAccepted != nil {
-			expectedGot(t, nil, state.SelectionsNextAccepted)
+		if !state.NextSelectionsWindow.From.Equal(selectionsAcceptedTimeframes[1].From) {
+			expectedGot(t, selectionsAcceptedTimeframes[1].From, state.NextSelectionsWindow.From)
+		}
+		if !state.NextSelectionsWindow.Until.Equal(selectionsAcceptedTimeframes[1].Until) {
+			expectedGot(t, selectionsAcceptedTimeframes[1].Until, state.NextSelectionsWindow.Until)
 		}
 	})
 
@@ -218,8 +230,8 @@ func TestSeason_GetState(t *testing.T) {
 		if state.IsAcceptingSelections {
 			t.Fatalf("expected season to not be accepting selections, but it was, state: %+v", state)
 		}
-		if state.SelectionsNextAccepted != nil {
-			expectedGot(t, nil, state.SelectionsNextAccepted)
+		if state.NextSelectionsWindow != nil {
+			expectedGot(t, nil, state.NextSelectionsWindow)
 		}
 	})
 
@@ -229,8 +241,8 @@ func TestSeason_GetState(t *testing.T) {
 		if state.IsAcceptingSelections {
 			t.Fatalf("expected season to not be accepting selections, but it was, state: %+v", state)
 		}
-		if state.SelectionsNextAccepted != nil {
-			expectedGot(t, nil, state.SelectionsNextAccepted)
+		if state.NextSelectionsWindow != nil {
+			expectedGot(t, nil, state.NextSelectionsWindow)
 		}
 	})
 }
