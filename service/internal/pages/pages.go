@@ -20,7 +20,7 @@ type SelectionPageData struct {
 	}
 	Teams struct {
 		Raw         string
-		LastUpdated *time.Time
+		LastUpdated time.Time
 	}
 	Entry struct {
 		ID        string

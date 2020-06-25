@@ -84,25 +84,25 @@ func setAuthCookieValue(value string, w http.ResponseWriter, r *http.Request) {
 		Value:   value,
 		Domain:  stripPort(r.Host),
 		Expires: time.Now().Add(domain.TokenDurationInMinutes * time.Minute),
-		Path: "/",
+		Path:    "/",
 	}
 	http.SetCookie(w, cookie)
 }
 
 // getAuthCookieValue retrieves the current value of the authorization cookie
-func getAuthCookieValue(r *http.Request) (string, error) {
+func getAuthCookieValue(r *http.Request) string {
 	for _, cookie := range r.Cookies() {
 		if cookie.Name == authCookieName {
-			return cookie.Value, nil
+			return cookie.Value
 		}
 	}
 
-	return "", errors.New("auth cookie not set")
+	return ""
 }
 
 // isLoggedIn determines whether the provided request represents a logged in user
 func isLoggedIn(r *http.Request) bool {
-	if _, err := getAuthCookieValue(r); err != nil {
+	if cookieValue := getAuthCookieValue(r); cookieValue == "" {
 		return false
 	}
 	return true

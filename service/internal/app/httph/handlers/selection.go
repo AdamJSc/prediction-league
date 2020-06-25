@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"github.com/LUSHDigital/core/rest"
 	"io/ioutil"
 	"net/http"
@@ -93,17 +95,8 @@ func selectionLoginHandler(c *httph.HTTPAppContainer) func(http.ResponseWriter, 
 	}
 }
 
-func getSelectionPageData(r *http.Request, c *httph.HTTPAppContainer) pages.SelectionPageData {
+func getSelectionPageData(ctx context.Context, authToken string, entryAgent domain.EntryAgent, tokenAgent domain.TokenAgent) pages.SelectionPageData {
 	var data pages.SelectionPageData
-
-	agent := domain.EntryAgent{EntryAgentInjector: c}
-
-	ctx, cancel, err := contextFromRequest(r, c)
-	if err != nil {
-		data.Err = err
-		return data
-	}
-	defer cancel()
 
 	// retrieve season and determine its current state
 	seasonID := domain.RealmFromContext(ctx).SeasonID
@@ -124,29 +117,42 @@ func getSelectionPageData(r *http.Request, c *httph.HTTPAppContainer) pages.Sele
 		}
 	}
 
-	// retrieve cookie value
-	authCookieValue, err := getAuthCookieValue(r)
-	if err != nil {
-		// no auth, so return early
-		// we already have our season-related data so this is fine to do
-		return data
-	}
-
 	// default teams IDs should reflect those of the current season
-	var teamIDs = season.TeamIDs
+	teamIDs := season.TeamIDs
 
-	// check that entry id is valid
-	entry, err := agent.RetrieveEntryByID(ctx, authCookieValue)
-	if err != nil {
-		data.Err = err
-		return data
-	}
+	switch {
+	case authToken != "":
+		// retrieve the entry ID that the auth token pertains to
+		token, err := tokenAgent.RetrieveTokenByID(ctx, authToken)
+		if err != nil {
+			switch err.(type) {
+			case domain.NotFoundError:
+				data.Err = errors.New("Invalid auth token")
+			default:
+				data.Err = err
+			}
+			return data
+		}
 
-	// if entry has an associated entry selection
-	// then override the team IDs with the most recent selection
-	entrySelection, err := agent.RetrieveEntrySelectionByTimestamp(ctx, entry, domain.TimestampFromContext(ctx))
-	if err == nil {
-		teamIDs = entrySelection.Rankings.GetIDs()
+		// check that entry id is valid
+		entry, err := entryAgent.RetrieveEntryByID(ctx, token.Value)
+		if err != nil {
+			data.Err = err
+			return data
+		}
+
+		// we have our entry, let's capture what we need for our view
+		data.Entry.ID = entry.ID.String()
+		data.Entry.ShortCode = entry.ShortCode
+
+		// if entry has an associated entry selection
+		// then override the team IDs with the most recent selection
+		entrySelection, err := entryAgent.RetrieveEntrySelectionByTimestamp(ctx, entry, domain.TimestampFromContext(ctx))
+		if err == nil {
+			// we have an entry selection, let's capture what we need for our view
+			data.Teams.LastUpdated = entrySelection.CreatedAt
+			teamIDs = entrySelection.Rankings.GetIDs()
+		}
 	}
 
 	// retrieve teams
@@ -164,11 +170,7 @@ func getSelectionPageData(r *http.Request, c *httph.HTTPAppContainer) pages.Sele
 		return data
 	}
 
-	// populate remaining teams and entry data
 	data.Teams.Raw = string(teamsPayload)
-	data.Teams.LastUpdated = &entrySelection.CreatedAt
-	data.Entry.ID = entry.ID.String()
-	data.Entry.ShortCode = entry.ShortCode
 
 	return data
 }
