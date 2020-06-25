@@ -1,51 +1,42 @@
 <template>
     <div class="registration-form-container">
-        <div class="row">
-            <div class="col-md-8 offset-md-2">
-                <h1>Enter Now</h1>
+        <transition name="fade">
+            <div v-if="errorMessages.length > 0" class="alert alert-block alert-danger">
+                <button type="button" class="close" v-on:click="resetErrorMessages">&times;</button>
+                <ul><li v-for="msg in errorMessages">{{ msg }}</li></ul>
             </div>
-        </div>
-        <div class="row">
-            <div class="col-md-8 offset-md-2">
-                <transition name="fade">
-                    <div v-if="errorMessages.length > 0" class="alert alert-block alert-danger">
-                        <button type="button" class="close" v-on:click="resetErrorMessages">&times;</button>
-                        <ul><li v-for="msg in errorMessages">{{ msg }}</li></ul>
-                    </div>
-                </transition>
-                <form id="registration-entry-form" class="form-primary">
-                    <div class="form-label-group">
-                        <input v-model="formData.entrant_name" type="text" id="inputName" name="name" class="form-control" placeholder="Name" required autofocus>
-                        <label for="inputName">Name</label>
-                    </div>
-
-                    <div class="form-label-group">
-                        <input v-model="formData.entrant_email" type="email" id="inputEmail" name="email" class="form-control" placeholder="Email" required>
-                        <label for="inputEmail">Email</label>
-                    </div>
-
-                    <hr>
-
-                    <div class="form-label-group">
-                        <input v-model="formData.entrant_nickname" type="text" id="inputNickname" class="form-control" placeholder="Nickname" required>
-                        <label for="inputNickname">Nickname</label>
-                    </div>
-
-                    <div class="form-label-group">
-                        <input v-model="formData.pin" type="password" id="inputPIN" class="form-control" placeholder="Password" required>
-                        <label for="inputPIN">PIN</label>
-                    </div>
-
-                    <div class="submit-wrapper">
-                        <action-button
-                                label="Enter"
-                                @clicked="enterOnClick"
-                                :is-disabled="working"
-                                :is-working="working"></action-button>
-                    </div>
-                </form>
+        </transition>
+        <form id="registration-entry-form" class="form-primary">
+            <div class="form-label-group">
+                <input v-model="formData.entrant_name" type="text" id="inputName" name="name" class="form-control" placeholder="Name" required autofocus>
+                <label for="inputName">Name</label>
             </div>
-        </div>
+
+            <div class="form-label-group">
+                <input v-model="formData.entrant_email" type="email" id="inputEmail" name="email" class="form-control" placeholder="Email" required>
+                <label for="inputEmail">Email</label>
+            </div>
+
+            <hr>
+
+            <div class="form-label-group">
+                <input v-model="formData.entrant_nickname" type="text" id="inputNickname" class="form-control" placeholder="Nickname" required>
+                <label for="inputNickname">Nickname</label>
+            </div>
+
+            <div class="form-label-group">
+                <input v-model="formData.pin" type="password" id="inputPIN" class="form-control" placeholder="Password" required>
+                <label for="inputPIN">PIN</label>
+            </div>
+
+            <div class="submit-wrapper">
+                <action-button
+                        label="Enter"
+                        @clicked="enterOnClick"
+                        :is-disabled="working"
+                        :is-working="working"></action-button>
+            </div>
+        </form>
     </div>
 </template>
 
@@ -65,7 +56,7 @@
             resetErrorMessages: function() {
                 this.errorMessages = []
             },
-            enterOnClick: function(e) {
+            enterOnClick: function() {
                 const vm = this
                 vm.working = true
                 vm.resetErrorMessages()

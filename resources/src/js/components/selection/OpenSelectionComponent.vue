@@ -1,52 +1,50 @@
 <template>
-    <div class="col-md-8 offset-md-2">
-        <div class="teams-container">
-            <p v-if="dirtyTeamIDs.length > 0">Changed {{dirtyTeamIDs.length}} team(s).</p>
-            <p v-if="!isSelected()">Select a team to change their position.</p>
-            <p v-else>Who do you want to swap {{getTeamByID(selectedTeamID).short_name}} with?</p>
-            <table class="teams-reorder">
-                <tbody>
-                    <tr v-for="(id, index) in teamsIDSequence" v-on:click="teamOnClick" v-bind:team-id="id"
-                        v-bind:class="['team-row', { 'selected': isSelected(id), 'dirty': isDirty(id) && !isSelected(id) }]">
-                        <td class="position">{{index+1}}</td>
-                        <td class="crest-outer"><div class="crest"><img :alt="getTeamByID(id).name" :src="getTeamByID(id).crest_url" /></div></td>
-                        <td><span class="name">{{getTeamByID(id).short_name}}</span></td>
-                    </tr>
-                </tbody>
-            </table>
-            <table class="teams-reorder-admin">
-                <tbody>
-                    <tr>
-                        <td colspan="3">
-                            <div class="call-to-action-wrapper">
-                                <div v-if="lastUpdated" class="text-center">
-                                    Last updated on {{lastUpdated.format('ddd Do MMM YYYY [at] h:mma')}}
+    <div class="teams-container">
+        <p v-if="dirtyTeamIDs.length > 0">Changed {{dirtyTeamIDs.length}} team(s).</p>
+        <p v-if="!isSelected()">Select a team to change their position.</p>
+        <p v-else>Who do you want to swap {{getTeamByID(selectedTeamID).short_name}} with?</p>
+        <table class="teams-reorder">
+            <tbody>
+            <tr v-for="(id, index) in teamsIDSequence" v-on:click="teamOnClick" v-bind:team-id="id"
+                v-bind:class="['team-row', { 'selected': isSelected(id), 'dirty': isDirty(id) && !isSelected(id) }]">
+                <td class="position">{{index+1}}</td>
+                <td class="crest-outer"><div class="crest"><img :alt="getTeamByID(id).name" :src="getTeamByID(id).crest_url" /></div></td>
+                <td><span class="name">{{getTeamByID(id).short_name}}</span></td>
+            </tr>
+            </tbody>
+        </table>
+        <table class="teams-reorder-admin">
+            <tbody>
+                <tr>
+                    <td colspan="3">
+                        <div class="call-to-action-wrapper">
+                            <div v-if="lastUpdated" class="text-center">
+                                Last updated on {{lastUpdated.format('ddd Do MMM YYYY [at] h:mma')}}
+                            </div>
+                            <div class="submit-wrapper">
+                                <transition name="fade">
+                                    <div v-if="errorMessages.length > 0" class="alert alert-block alert-danger">
+                                        <button type="button" class="close" v-on:click="resetErrorMessages">&times;</button>
+                                        <p v-for="msg in errorMessages" v-html="msg"></p>
+                                    </div>
+                                </transition>
+                                <div v-if="success" class="alert alert-block alert-success">
+                                    Your selection has been updated. Good luck!
                                 </div>
-                                <div class="submit-wrapper">
-                                    <transition name="fade">
-                                        <div v-if="errorMessages.length > 0" class="alert alert-block alert-danger">
-                                            <button type="button" class="close" v-on:click="resetErrorMessages">&times;</button>
-                                            <p v-for="msg in errorMessages" v-html="msg"></p>
-                                        </div>
-                                    </transition>
-                                    <div v-if="success" class="alert alert-block alert-success">
-                                        Your selection has been updated. Good luck!
-                                    </div>
-                                    <div v-else>
-                                        <action-button
-                                                label="Update"
-                                                @clicked="updateOnClick"
-                                                :is-disabled="dirtyTeamIDs.length === 0 || working"
-                                                :is-working="working"></action-button>
-                                        <button v-on:click="resetState" class="btn btn-secondary">Reset</button>
-                                    </div>
+                                <div v-else>
+                                    <action-button
+                                            label="Update"
+                                            @clicked="updateOnClick"
+                                            :is-disabled="dirtyTeamIDs.length === 0 || working"
+                                            :is-working="working"></action-button>
+                                    <button v-on:click="resetState" class="btn btn-secondary">Reset</button>
                                 </div>
                             </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 </template>
 

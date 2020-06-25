@@ -8,6 +8,7 @@ Vue.component("registration-confirmed", require("./components/registration/Regis
 
 Vue.component("open-selection", require("./components/selection/OpenSelectionComponent.vue").default)
 Vue.component("selection-countdown", require("./components/selection/SelectionCountdownComponent.vue").default)
+Vue.component("selection-login", require("./components/selection/SelectionLoginComponent.vue").default)
 
 Vue.component("action-button", require("./components/ActionButton.vue").default)
 
