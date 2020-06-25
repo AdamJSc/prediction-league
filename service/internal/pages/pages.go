@@ -13,10 +13,12 @@ type Base struct {
 }
 
 type SelectionPageData struct {
-	Err                    error
-	IsAcceptingSelections  bool
-	SelectionsNextAccepted *models.TimeFrame
-	Teams                  struct {
+	Err    error
+	Season struct {
+		IsAcceptingSelections  bool
+		SelectionsNextAccepted *models.TimeFrame
+	}
+	Teams struct {
 		Raw         string
 		LastUpdated time.Time
 	}

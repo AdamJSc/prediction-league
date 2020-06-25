@@ -80,7 +80,7 @@ func frontendLoginHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter,
 func frontendSelectionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var p = pages.Base{
-			Title:      "Make Selection",
+			Title:      "Update My Selection",
 			ActivePage: "selection",
 			IsLoggedIn: isLoggedIn(r),
 			Data:       getSelectionPageData(r, c),

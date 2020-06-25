@@ -39,21 +39,15 @@
                                 FAQ {{if eq .ActivePage "faq"}}<span class="sr-only">(current)</span>{{end}}
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link{{if eq .ActivePage "selection"}} active{{end}}" href="/selection">
+                                My Selection
+                            </a>
+                        </li>
                         {{if .IsLoggedIn}}
-                            <li class="nav-item">
-                                <a class="nav-link{{if eq .ActivePage "selection"}} active{{end}}" href="/selection">
-                                    Edit Selection
-                                </a>
-                            </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="/logout">
                                     Logout <i class="fa fa-sign-out" aria-hidden="true"></i>
-                                </a>
-                            </li>
-                        {{else}}
-                            <li class="nav-item">
-                                <a class="nav-link" href="/login">
-                                    Login
                                 </a>
                             </li>
                         {{end}}

@@ -14,13 +14,6 @@ func getSelectionPageData(r *http.Request, c *httph.HTTPAppContainer) pages.Sele
 
 	agent := domain.EntryAgent{EntryAgentInjector: c}
 
-	// retrieve cookie value
-	authCookieValue, err := getAuthCookieValue(r)
-	if err != nil {
-		data.Err = err
-		return data
-	}
-
 	ctx, cancel, err := contextFromRequest(r, c)
 	if err != nil {
 		data.Err = err
@@ -28,22 +21,36 @@ func getSelectionPageData(r *http.Request, c *httph.HTTPAppContainer) pages.Sele
 	}
 	defer cancel()
 
+	// retrieve season and determine its current state
+	seasonID := domain.RealmFromContext(ctx).SeasonID
+	season, err := datastore.Seasons.GetByID(seasonID)
+	if err != nil {
+		data.Err = err
+		return data
+	}
+
+	seasonState := season.GetState(domain.TimestampFromContext(ctx))
+
+	data.Season.IsAcceptingSelections = seasonState.IsAcceptingSelections
+	data.Season.SelectionsNextAccepted = seasonState.SelectionsNextAccepted
+
+	// retrieve cookie value
+	authCookieValue, err := getAuthCookieValue(r)
+	if err != nil {
+		// no auth, so return early
+		// we already have our season-related data so this is fine to do
+		return data
+	}
+
+	// default teams IDs should reflect those of the current season
+	var teamIDs = season.TeamIDs
+
 	// check that entry id is valid
 	entry, err := agent.RetrieveEntryByID(ctx, authCookieValue)
 	if err != nil {
 		data.Err = err
 		return data
 	}
-
-	// retrieve season
-	season, err := datastore.Seasons.GetByID(entry.SeasonID)
-	if err != nil {
-		data.Err = err
-		return data
-	}
-
-	// default teams IDs should be the current season
-	var teamIDs = season.TeamIDs
 
 	// if entry has an associated entry selection
 	// then override the team IDs with the most recent selection
@@ -67,12 +74,7 @@ func getSelectionPageData(r *http.Request, c *httph.HTTPAppContainer) pages.Sele
 		return data
 	}
 
-	// ensure that season is accepting selections currently
-	state := season.GetState(domain.TimestampFromContext(ctx))
-	data.IsAcceptingSelections = state.IsAcceptingSelections
-
-	// populate remaining data
-	data.SelectionsNextAccepted = state.SelectionsNextAccepted
+	// populate remaining teams and entry data
 	data.Teams.Raw = string(teamsPayload)
 	data.Teams.LastUpdated = entrySelection.CreatedAt
 	data.Entry.ID = entry.ID.String()
