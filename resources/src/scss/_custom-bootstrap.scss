@@ -53,13 +53,17 @@
   }
 }
 
-.form-control:focus {
-  color: $primary-dark-tint-light;
-  background-color: $primary-light;
-  border-color: $primary-dark-tint-light;
-  outline: 0;
-  border: 2px solid $secondary-dark;
-  box-shadow: none;
+.form-control {
+  border-width: 2px;
+
+  &:focus {
+    color: $primary-dark-tint-light;
+    background-color: $primary-light;
+    border-color: $primary-dark-tint-light;
+    outline: 0;
+    border-color: $secondary-dark;
+    box-shadow: none;
+  }
 }
 
 .alert {

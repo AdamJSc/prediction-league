@@ -1,7 +1,7 @@
 <template>
     <div class="selection-login-container">
         <transition name="fade">
-            <div v-if="errorMessages.length > 0" class="alert alert-block alert-danger">
+            <div v-if="errorMessages.length > 0" class="error-messages alert alert-block alert-danger">
                 <button type="button" class="close" v-on:click="resetErrorMessages">&times;</button>
                 <ul><li v-for="msg in errorMessages">{{ msg }}</li></ul>
             </div>
@@ -45,7 +45,29 @@
                 this.errorMessages = []
             },
             loginOnClick: function() {
-                console.log("log in now...")
+                const vm = this
+                vm.working = true
+                vm.resetErrorMessages()
+                axios.request({
+                    method: 'post',
+                    url: '/api/login',
+                    data: this.formData
+                })
+                    .then(function (response) {
+                        console.log(response)
+                    })
+                    .catch(function (error) {
+                        let response = error.response
+                        switch (response.status) {
+                            case 401:
+                                vm.errorMessages.push("Those details don't match our records. Please try again.")
+                                break
+                            default:
+                                vm.errorMessages.push("Something went wrong :(")
+                                break
+                        }
+                        vm.working = false
+                    })
             }
         }
     }

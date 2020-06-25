@@ -8,7 +8,7 @@
         <div class="row">
             <div class="col-md-8 offset-md-2">
                 <transition name="fade">
-                    <div v-if="errorMessages.length > 0" class="alert alert-block alert-danger">
+                    <div v-if="errorMessages.length > 0" class="error-messages alert alert-block alert-danger">
                         <button type="button" class="close" v-on:click="resetErrorMessages">&times;</button>
                         <ul><li v-for="msg in errorMessages">{{ msg }}</li></ul>
                     </div>

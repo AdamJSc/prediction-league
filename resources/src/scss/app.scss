@@ -27,12 +27,24 @@ h1, h2, h3, h4 {
   color: $secondary-dark;
 }
 
+.error-messages {
+  ul {
+    list-style-type: none;
+    padding-left: 0;
+  }
+}
+
 .main-container {
   padding-top: 2rem;
 }
 
 .form-primary {
   width: 100%;
+
+  hr {
+    border-top-style: dashed;
+    margin: 2rem;
+  }
 }
 
 .submit-wrapper {
