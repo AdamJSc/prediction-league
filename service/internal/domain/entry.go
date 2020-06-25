@@ -154,6 +154,76 @@ func (e EntryAgent) RetrieveEntryByID(ctx context.Context, id string) (models.En
 	return entry, nil
 }
 
+// RetrieveEntryByEntrantEmail handles the retrieval of an existing Entry in the database by its email
+func (e EntryAgent) RetrieveEntryByEntrantEmail(ctx context.Context, email string) (models.Entry, error) {
+	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
+	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
+
+	entries, err := entryRepo.Select(ctx, map[string]interface{}{
+		"entrant_email": email,
+	}, false)
+	if err != nil {
+		return models.Entry{}, domainErrorFromDBError(err)
+	}
+	entry := entries[0]
+
+	// ensure that Entry realm matches current realm
+	if RealmFromContext(ctx).Name != entry.RealmName {
+		return models.Entry{}, ConflictError{errors.New("invalid realm")}
+	}
+
+	// retrieve and inflate all entry selections
+	entry.EntrySelections, err = entrySelectionRepo.Select(ctx, map[string]interface{}{
+		"entry_id": entry.ID,
+	}, false)
+	if err != nil {
+		err = domainErrorFromDBError(err)
+		switch err.(type) {
+		case NotFoundError:
+			// all good
+		default:
+			return models.Entry{}, domainErrorFromDBError(err)
+		}
+	}
+
+	return entry, nil
+}
+
+// RetrieveEntryByEntrantNickname handles the retrieval of an existing Entry in the database by its nickname
+func (e EntryAgent) RetrieveEntryByEntrantNickname(ctx context.Context, email string) (models.Entry, error) {
+	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
+	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
+
+	entries, err := entryRepo.Select(ctx, map[string]interface{}{
+		"entrant_nickname": email,
+	}, false)
+	if err != nil {
+		return models.Entry{}, domainErrorFromDBError(err)
+	}
+	entry := entries[0]
+
+	// ensure that Entry realm matches current realm
+	if RealmFromContext(ctx).Name != entry.RealmName {
+		return models.Entry{}, ConflictError{errors.New("invalid realm")}
+	}
+
+	// retrieve and inflate all entry selections
+	entry.EntrySelections, err = entrySelectionRepo.Select(ctx, map[string]interface{}{
+		"entry_id": entry.ID,
+	}, false)
+	if err != nil {
+		err = domainErrorFromDBError(err)
+		switch err.(type) {
+		case NotFoundError:
+			// all good
+		default:
+			return models.Entry{}, domainErrorFromDBError(err)
+		}
+	}
+
+	return entry, nil
+}
+
 // RetrieveEntriesBySeasonID handles the retrieval of existing Entries in the database by their Season ID
 func (e EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID string) ([]models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())

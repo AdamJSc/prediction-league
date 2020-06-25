@@ -71,7 +71,7 @@ func frontendLoginHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter,
 	return func(w http.ResponseWriter, r *http.Request) {
 		// temporary proxy for setting a cookie and redirecting to edit page
 		// in reality this will be a post route that verifies login credentials
-		setAuthCookieValue(w, "7bee64af-7768-40f2-bed3-690786962304", stripPort(r.Host)) // arbitrary seeded user
+		setAuthCookieValue("7bee64af-7768-40f2-bed3-690786962304", w, r) // arbitrary seeded user
 		w.Header().Set("Location", "/selection")
 		w.WriteHeader(http.StatusSeeOther)
 	}

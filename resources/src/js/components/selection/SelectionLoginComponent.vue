@@ -50,11 +50,13 @@
                 vm.resetErrorMessages()
                 axios.request({
                     method: 'post',
-                    url: '/api/login',
+                    url: '/api/selection/login',
                     data: this.formData
                 })
                     .then(function (response) {
-                        console.log(response)
+                        // response was successful, so auth cookie should have been set
+                        // refresh the page so that this will render with our new auth token
+                        window.location.reload()
                     })
                     .catch(function (error) {
                         let response = error.response

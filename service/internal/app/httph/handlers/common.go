@@ -78,12 +78,13 @@ func stripPort(host string) string {
 }
 
 // setAuthCookieValue sets an authorization cookie with the provided value
-func setAuthCookieValue(w http.ResponseWriter, value string, domain string) {
+func setAuthCookieValue(value string, w http.ResponseWriter, r *http.Request) {
 	cookie := &http.Cookie{
 		Name:    authCookieName,
 		Value:   value,
-		Domain:  domain,
-		Expires: time.Now().Add(60 * time.Minute),
+		Domain:  stripPort(r.Host),
+		Expires: time.Now().Add(domain.TokenDurationInMinutes * time.Minute),
+		Path: "/",
 	}
 	http.SetCookie(w, cookie)
 }
