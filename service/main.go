@@ -24,6 +24,8 @@ import (
 )
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	// setup env and config
 	config := domain.MustLoadConfigFromEnvPaths(".env", "infra/app.env")
 

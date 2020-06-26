@@ -16,6 +16,10 @@ app.restart:
 app.kill:
 	docker-compose down
 
+app.build:
+	pkger -include /service/views/html && mv pkged.go service/pkged.go \
+	&& go build -o ./bin/prediction-league ./service
+
 test.run:
 	docker-compose up -d db_test && go test -v ./...
 
