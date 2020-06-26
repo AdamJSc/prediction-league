@@ -30,7 +30,7 @@ type Client struct {
 func (c Client) RetrieveLatestStandingsBySeason(ctx context.Context, s models.Season) (models.Standings, error) {
 	var url = getClientFullURL(c, fmt.Sprintf("/v2/competitions/%s/standings?season=%d&standingType=TOTAL",
 		s.ClientID.Value(),
-		s.StartDate.Year()),
+		s.Active.From.Year()),
 	)
 
 	httpResponse, err := getResponse(c, ctx, url)

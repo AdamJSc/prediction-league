@@ -119,10 +119,21 @@ func generateRandomAlphaNumericString(length int) string {
 	return string(b)
 }
 
+var templateFunctions = template.FuncMap{
+	"timestamp_as_unix": func(ts time.Time) int64 {
+		var emptyTime time.Time
+
+		if ts.Equal(emptyTime) {
+			return 0
+		}
+		return ts.Unix()
+	},
+}
+
 // ParseTemplates parses our HTML templates and returns them collectively for use
 func ParseTemplates() *views.Templates {
 	// prepare the templates
-	tpl := template.New("prediction-league")
+	tpl := template.New("prediction-league").Funcs(templateFunctions)
 
 	walkPathAndParseTemplates(tpl, "/service/views/html")
 

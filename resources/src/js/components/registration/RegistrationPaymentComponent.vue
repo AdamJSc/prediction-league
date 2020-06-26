@@ -1,18 +1,24 @@
 <template>
     <div class="payment-step-container">
         <div class="row">
-            <div class="col-md-8 offset-md-2"><h2>Make payment</h2></div>
+            <div class="col-md-8 offset-md-2">
+                <h1>Make Payment</h1>
+            </div>
         </div>
         <div class="row">
             <div class="col-md-8 offset-md-2">
                 <transition name="fade">
-                    <div v-if="errorMessages.length > 0" class="alert alert-block alert-danger">
+                    <div v-if="errorMessages.length > 0" class="error-messages alert alert-block alert-danger">
                         <button type="button" class="close" v-on:click="resetErrorMessages">&times;</button>
                         <ul><li v-for="msg in errorMessages">{{ msg }}</li></ul>
                     </div>
                 </transition>
-                <form id="registration-form" class="form-primary">
-                    <button class="btn btn-lg btn-primary btn-block" v-on:click="submitPayment">Pay Later</button>
+                <form id="registration-payment-form" class="form-primary">
+                    <action-button
+                            label="Pay Later"
+                            @clicked="submitPayment"
+                            :is-disabled="working"
+                            :is-working="working"></action-button>
                 </form>
             </div>
         </div>
@@ -27,6 +33,7 @@
         name: 'RegistrationPayment',
         data: function() {
             return {
+                working: false,
                 errorMessages: []
             }
         },
@@ -49,8 +56,8 @@
                 this.errorMessages = []
             },
             submitPayment: function(e) {
-                e.preventDefault()
                 const vm = this
+                vm.working = true
                 vm.resetErrorMessages()
                 let url = `/api/entry/${vm.entryData.entryID}/payment`
                 axios.request({
@@ -59,8 +66,7 @@
                     data: this.formData
                 })
                     .then(function (response) {
-                        // redirect to team selection
-                        window.location = `${location.origin}/${encodeURI(vm.entryData.entryNickname)}/${vm.entryData.entryShortCode}/teams`
+                        vm.$emit('workflow-step-change', 'registrationConfirmed')
                     })
                     .catch(function (error) {
                         let response = error.response
@@ -75,6 +81,7 @@
                                 vm.errorMessages.push("Something went wrong :(")
                                 break
                         }
+                        vm.working = false
                     })
             }
         }

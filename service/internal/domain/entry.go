@@ -25,7 +25,7 @@ type EntryAgentInjector interface {
 type EntryAgent struct{ EntryAgentInjector }
 
 // CreateEntry handles the creation of a new Entry in the database
-func (e EntryAgent) CreateEntry(ctx Context, entry models.Entry, s *models.Season) (models.Entry, error) {
+func (e EntryAgent) CreateEntry(ctx context.Context, entry models.Entry, s *models.Season) (models.Entry, error) {
 	db := e.MySQL()
 
 	if s == nil {
@@ -33,12 +33,13 @@ func (e EntryAgent) CreateEntry(ctx Context, entry models.Entry, s *models.Seaso
 	}
 
 	// check realm PIN is ok
-	if !ctx.Guard.AttemptMatchesTarget(ctx.Realm.PIN) {
+	ctxRealm := RealmFromContext(ctx)
+	if !GuardFromContext(ctx).AttemptMatches(ctxRealm.PIN) {
 		return models.Entry{}, UnauthorizedError{errors.New("invalid PIN")}
 	}
 
-	// check season status is ok
-	if s.GetStatus(time.Now()) != models.SeasonStatusAcceptingEntries {
+	// check if season is currently accepting entries
+	if !s.GetState(TimestampFromContext(ctx)).IsAcceptingEntries {
 		return models.Entry{}, ConflictError{errors.New("season is not currently accepting entries")}
 	}
 
@@ -51,7 +52,7 @@ func (e EntryAgent) CreateEntry(ctx Context, entry models.Entry, s *models.Seaso
 	// override these values
 	entry.ID = id
 	entry.SeasonID = s.ID
-	entry.RealmName = ctx.Realm.Name
+	entry.RealmName = ctxRealm.Name
 	entry.Status = models.EntryStatusPending
 	entry.PaymentMethod = sqltypes.NullString{}
 	entry.PaymentRef = sqltypes.NullString{}
@@ -119,7 +120,7 @@ func (e EntryAgent) CreateEntry(ctx Context, entry models.Entry, s *models.Seaso
 }
 
 // RetrieveEntryByID handles the retrieval of an existing Entry in the database by its ID
-func (e EntryAgent) RetrieveEntryByID(ctx Context, id string) (models.Entry, error) {
+func (e EntryAgent) RetrieveEntryByID(ctx context.Context, id string) (models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
 
@@ -132,7 +133,77 @@ func (e EntryAgent) RetrieveEntryByID(ctx Context, id string) (models.Entry, err
 	entry := entries[0]
 
 	// ensure that Entry realm matches current realm
-	if ctx.Realm.Name != entry.RealmName {
+	if RealmFromContext(ctx).Name != entry.RealmName {
+		return models.Entry{}, ConflictError{errors.New("invalid realm")}
+	}
+
+	// retrieve and inflate all entry selections
+	entry.EntrySelections, err = entrySelectionRepo.Select(ctx, map[string]interface{}{
+		"entry_id": entry.ID,
+	}, false)
+	if err != nil {
+		err = domainErrorFromDBError(err)
+		switch err.(type) {
+		case NotFoundError:
+			// all good
+		default:
+			return models.Entry{}, domainErrorFromDBError(err)
+		}
+	}
+
+	return entry, nil
+}
+
+// RetrieveEntryByEntrantEmail handles the retrieval of an existing Entry in the database by its email
+func (e EntryAgent) RetrieveEntryByEntrantEmail(ctx context.Context, email string) (models.Entry, error) {
+	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
+	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
+
+	entries, err := entryRepo.Select(ctx, map[string]interface{}{
+		"entrant_email": email,
+	}, false)
+	if err != nil {
+		return models.Entry{}, domainErrorFromDBError(err)
+	}
+	entry := entries[0]
+
+	// ensure that Entry realm matches current realm
+	if RealmFromContext(ctx).Name != entry.RealmName {
+		return models.Entry{}, ConflictError{errors.New("invalid realm")}
+	}
+
+	// retrieve and inflate all entry selections
+	entry.EntrySelections, err = entrySelectionRepo.Select(ctx, map[string]interface{}{
+		"entry_id": entry.ID,
+	}, false)
+	if err != nil {
+		err = domainErrorFromDBError(err)
+		switch err.(type) {
+		case NotFoundError:
+			// all good
+		default:
+			return models.Entry{}, domainErrorFromDBError(err)
+		}
+	}
+
+	return entry, nil
+}
+
+// RetrieveEntryByEntrantNickname handles the retrieval of an existing Entry in the database by its nickname
+func (e EntryAgent) RetrieveEntryByEntrantNickname(ctx context.Context, email string) (models.Entry, error) {
+	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
+	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
+
+	entries, err := entryRepo.Select(ctx, map[string]interface{}{
+		"entrant_nickname": email,
+	}, false)
+	if err != nil {
+		return models.Entry{}, domainErrorFromDBError(err)
+	}
+	entry := entries[0]
+
+	// ensure that Entry realm matches current realm
+	if RealmFromContext(ctx).Name != entry.RealmName {
 		return models.Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
@@ -187,11 +258,11 @@ func (e EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID stri
 }
 
 // UpdateEntry handles the updating of an existing Entry in the database
-func (e EntryAgent) UpdateEntry(ctx Context, entry models.Entry) (models.Entry, error) {
+func (e EntryAgent) UpdateEntry(ctx context.Context, entry models.Entry) (models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 
 	// ensure that Entry realm matches current realm
-	if ctx.Realm.Name != entry.RealmName {
+	if RealmFromContext(ctx).Name != entry.RealmName {
 		return models.Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
@@ -218,12 +289,17 @@ func (e EntryAgent) UpdateEntry(ctx Context, entry models.Entry) (models.Entry, 
 }
 
 // AddEntrySelectionToEntry adds the provided EntrySelection to the provided Entry
-func (e EntryAgent) AddEntrySelectionToEntry(ctx Context, entrySelection models.EntrySelection, entry models.Entry) (models.Entry, error) {
+func (e EntryAgent) AddEntrySelectionToEntry(ctx context.Context, entrySelection models.EntrySelection, entry models.Entry) (models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
 
-	// ensure that Entry realm matches current realm
-	if ctx.Realm.Name != entry.RealmName {
+	// check short code is ok
+	if !GuardFromContext(ctx).AttemptMatches(entry.ShortCode) {
+		return models.Entry{}, UnauthorizedError{errors.New("invalid short code")}
+	}
+
+	// ensure that entry realm matches current realm
+	if RealmFromContext(ctx).Name != entry.RealmName {
 		return models.Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
@@ -232,48 +308,56 @@ func (e EntryAgent) AddEntrySelectionToEntry(ctx Context, entrySelection models.
 		return models.Entry{}, domainErrorFromDBError(err)
 	}
 
+	// retrieve the entry's Season
 	season, err := datastore.Seasons.GetByID(entry.SeasonID)
 	if err != nil {
 		return models.Entry{}, NotFoundError{err}
 	}
 
-	var invalidTeamIDs, missingTeamIDs, duplicateTeamIDs []string
+	// check if season is currently accepting entries
+	if !season.GetState(TimestampFromContext(ctx)).IsAcceptingSelections {
+		return models.Entry{}, ConflictError{errors.New("season is not currently accepting entries")}
+	}
+
+	var invalidRankingIDs, missingRankingIDs, duplicateRankingIDs []string
 	var teamIDCount = make(map[string]int)
 
 	for _, teamID := range season.TeamIDs {
 		teamIDCount[teamID] = 0
 	}
 
+	// make sure we have no invalid IDs
 	for _, selectionID := range entrySelection.Rankings.GetIDs() {
 		if _, ok := teamIDCount[selectionID]; ok {
 			teamIDCount[selectionID]++
 			continue
 		}
-		invalidTeamIDs = append(invalidTeamIDs, selectionID)
+		invalidRankingIDs = append(invalidRankingIDs, selectionID)
 	}
 
+	// make sure we have no missing or duplicate IDs
 	for teamID, count := range teamIDCount {
 		switch {
 		case count == 0:
-			missingTeamIDs = append(missingTeamIDs, teamID)
+			missingRankingIDs = append(missingRankingIDs, teamID)
 		case count > 1:
-			duplicateTeamIDs = append(duplicateTeamIDs, teamID)
+			duplicateRankingIDs = append(duplicateRankingIDs, teamID)
 		}
 	}
 
 	var validationMsgs []string
-	if len(invalidTeamIDs) > 0 {
-		for _, teamID := range invalidTeamIDs {
+	if len(invalidRankingIDs) > 0 {
+		for _, teamID := range invalidRankingIDs {
 			validationMsgs = append(validationMsgs, fmt.Sprintf("Invalid Team ID: %s", teamID))
 		}
 	}
-	if len(missingTeamIDs) > 0 {
-		for _, teamID := range missingTeamIDs {
+	if len(missingRankingIDs) > 0 {
+		for _, teamID := range missingRankingIDs {
 			validationMsgs = append(validationMsgs, fmt.Sprintf("Missing Team ID: %s", teamID))
 		}
 	}
-	if len(duplicateTeamIDs) > 0 {
-		for _, teamID := range duplicateTeamIDs {
+	if len(duplicateRankingIDs) > 0 {
+		for _, teamID := range duplicateRankingIDs {
 			validationMsgs = append(validationMsgs, fmt.Sprintf("Duplicate Team ID: %s", teamID))
 		}
 	}
@@ -282,6 +366,13 @@ func (e EntryAgent) AddEntrySelectionToEntry(ctx Context, entrySelection models.
 		return models.Entry{}, ValidationError{Reasons: validationMsgs}
 	}
 
+	// generate a new entry ID
+	id, err := uuid.NewV4()
+	if err != nil {
+		return models.Entry{}, InternalError{err}
+	}
+
+	entrySelection.ID = id
 	entrySelection.EntryID = entry.ID
 
 	if err := entrySelectionRepo.Insert(ctx, &entrySelection); err != nil {
@@ -294,7 +385,7 @@ func (e EntryAgent) AddEntrySelectionToEntry(ctx Context, entrySelection models.
 }
 
 // UpdateEntryPaymentDetails provides a shortcut to updating the payment details for a provided entryID
-func (e EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMethod, paymentRef string) (models.Entry, error) {
+func (e EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, paymentMethod, paymentRef string) (models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 
 	// ensure that payment method is valid
@@ -326,12 +417,12 @@ func (e EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMetho
 	entry := entries[0]
 
 	// ensure that Entry realm matches current realm
-	if ctx.Realm.Name != entry.RealmName {
+	if RealmFromContext(ctx).Name != entry.RealmName {
 		return models.Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
 	// ensure that Guard value matches Entry ID
-	if !ctx.Guard.AttemptMatchesTarget(entry.ID.String()) {
+	if !GuardFromContext(ctx).AttemptMatches(entry.ID.String()) {
 		return models.Entry{}, ValidationError{
 			Reasons: []string{"Invalid Entry ID"},
 		}
@@ -355,11 +446,11 @@ func (e EntryAgent) UpdateEntryPaymentDetails(ctx Context, entryID, paymentMetho
 }
 
 // ApproveEntryByShortCode provides a shortcut to approving an entry by its short code
-func (e EntryAgent) ApproveEntryByShortCode(ctx Context, shortCode string) (models.Entry, error) {
+func (e EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode string) (models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 
 	// ensure basic auth has been provided and matches admin credentials
-	if !ctx.BasicAuthSuccessful {
+	if !IsBasicAuthSuccessful(ctx) {
 		return models.Entry{}, UnauthorizedError{}
 	}
 
@@ -378,7 +469,7 @@ func (e EntryAgent) ApproveEntryByShortCode(ctx Context, shortCode string) (mode
 	entry := entries[0]
 
 	// ensure that Entry realm matches current realm
-	if ctx.Realm.Name != entry.RealmName {
+	if RealmFromContext(ctx).Name != entry.RealmName {
 		return models.Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
@@ -395,7 +486,7 @@ func (e EntryAgent) ApproveEntryByShortCode(ctx Context, shortCode string) (mode
 		return models.Entry{}, ConflictError{errors.New("entry has already been approved")}
 	}
 
-	entry.ApprovedAt = sqltypes.ToNullTime(time.Now().Truncate(time.Second))
+	entry.ApprovedAt = sqltypes.ToNullTime(TimestampFromContext(ctx).Truncate(time.Second))
 
 	// write to database
 	if err := entryRepo.Update(ctx, &entry); err != nil {
@@ -403,6 +494,19 @@ func (e EntryAgent) ApproveEntryByShortCode(ctx Context, shortCode string) (mode
 	}
 
 	return entry, nil
+}
+
+// RetrieveEntrySelectionByTimestamp returns the entry selection affiliated with the provided entry id that is valid at the point the provided timestamp occurs
+func (e EntryAgent) RetrieveEntrySelectionByTimestamp(ctx context.Context, entry models.Entry, ts time.Time) (models.EntrySelection, error) {
+	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
+
+	// retrieve entry selection
+	entrySelection, err := entrySelectionRepo.SelectByEntryIDAndTimestamp(ctx, entry.ID.String(), ts)
+	if err != nil {
+		return models.EntrySelection{}, domainErrorFromDBError(err)
+	}
+
+	return entrySelection, nil
 }
 
 // sanitiseEntry sanitises and validates an Entry

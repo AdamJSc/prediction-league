@@ -41,7 +41,8 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 			return
 		}
 
-		ctx, cancel, err := domain.ContextFromRequest(r, c.Config())
+		// get context from request
+		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return
@@ -50,7 +51,7 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 
 		if seasonID == "latest" {
 			// use the current realm's season ID instead
-			seasonID = ctx.Realm.SeasonID
+			seasonID = domain.RealmFromContext(ctx).SeasonID
 		}
 
 		// retrieve the season we need
@@ -60,7 +61,7 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 			return
 		}
 
-		ctx.Guard.SetAttempt(input.RealmPIN)
+		domain.GuardFromContext(ctx).SetAttempt(input.RealmPIN)
 
 		// create entry
 		createdEntry, err := agent.CreateEntry(ctx, entry, &season)
@@ -107,14 +108,15 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 			return
 		}
 
-		ctx, cancel, err := domain.ContextFromRequest(r, c.Config())
+		// get context from request
+		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return
 		}
 		defer cancel()
 
-		ctx.Guard.SetAttempt(input.EntryID)
+		domain.GuardFromContext(ctx).SetAttempt(input.EntryID)
 
 		// update payment details for entry
 		if _, err := agent.UpdateEntryPaymentDetails(ctx, entryID, input.PaymentMethod, input.PaymentRef); err != nil {
@@ -124,6 +126,113 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 
 		// success!
 		rest.OKResponse(nil, nil).WriteTo(w)
+	}
+}
+
+func createEntrySelectionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+	agent := domain.EntryAgent{EntryAgentInjector: c}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		var input createEntrySelectionRequest
+
+		// read request body
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			rest.InternalError(err).WriteTo(w)
+			return
+		}
+		defer closeBody(r)
+
+		// parse request body
+		if err := json.Unmarshal(body, &input); err != nil {
+			responseFromError(domain.BadRequestError{Err: err}).WriteTo(w)
+			return
+		}
+
+		// parse entry ID from route
+		var entryID string
+		if err := getRouteParam(r, "entry_id", &entryID); err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		// get context from request
+		ctx, cancel, err := contextFromRequest(r, c)
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+		defer cancel()
+
+		// get entry
+		entry, err := agent.RetrieveEntryByID(ctx, entryID)
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		entrySelection := input.ToEntrySelectionModel()
+
+		domain.GuardFromContext(ctx).SetAttempt(input.EntryShortCode)
+
+		// create entry selection for entry
+		if _, err := agent.AddEntrySelectionToEntry(ctx, entrySelection, entry); err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		// success!
+		rest.OKResponse(nil, nil).WriteTo(w)
+	}
+}
+
+func retrieveLatestEntrySelectionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+	agent := domain.EntryAgent{EntryAgentInjector: c}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// parse entry ID from route
+		var entryID string
+		if err := getRouteParam(r, "entry_id", &entryID); err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		// get context from request
+		ctx, cancel, err := contextFromRequest(r, c)
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+		defer cancel()
+
+		// get entry
+		entry, err := agent.RetrieveEntryByID(ctx, entryID)
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		// get entry selection that pertains to context timestamp
+		entrySelection, err := agent.RetrieveEntrySelectionByTimestamp(ctx, entry, domain.TimestampFromContext(ctx))
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		// get teams that correlate to entry selection's ranking IDs
+		teams, err := domain.FilterTeamsByIDs(entrySelection.Rankings.GetIDs(), datastore.Teams)
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		rest.OKResponse(&rest.Data{
+			Type: "entry_selection",
+			Content: retrieveLatestEntrySelectionResponse{
+				Teams:       teams,
+				LastUpdated: entrySelection.CreatedAt,
+			},
+		}, nil).WriteTo(w)
 	}
 }
 
@@ -138,7 +247,7 @@ func approveEntryByShortCodeHandler(c *httph.HTTPAppContainer) func(w http.Respo
 			return
 		}
 
-		ctx, cancel, err := domain.ContextFromRequest(r, c.Config())
+		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return

@@ -6,11 +6,11 @@ import (
 
 // Team defines the structure of a Team that belongs to a Season
 type Team struct {
-	ID        string
-	ClientID  ResourceIdentifier
-	Name      string
-	ShortName string
-	CrestURL  string
+	ID        string             `json:"id"`
+	ClientID  ResourceIdentifier `json:"-"`
+	Name      string             `json:"name"`
+	ShortName string             `json:"short_name"`
+	CrestURL  string             `json:"crest_url"`
 }
 
 // TeamCollection is map of Teams

@@ -89,7 +89,7 @@ func TestMain(m *testing.M) {
 // truncate clears our test tables of all previous data between tests
 func truncate(t *testing.T) {
 	t.Helper()
-	for _, tableName := range []string{"scored_entry_selection", "entry_selection", "standings", "entry"} {
+	for _, tableName := range []string{"token", "scored_entry_selection", "entry_selection", "standings", "entry"} {
 		if _, err := db.Exec(fmt.Sprintf("DELETE FROM %s", tableName)); err != nil {
 			t.Fatal(err)
 		}
@@ -120,25 +120,26 @@ func expectedNonEmpty(t *testing.T, ref string) {
 	t.Fatalf("expected non-empty %s, got an empty value", ref)
 }
 
-// testContext returns a new context with default timeout and cancel function for testing purposes
-func testContext(t *testing.T) (context.Context, context.CancelFunc) {
+// testContextDefault returns a new domain context with default timeout and cancel function for testing purposes
+func testContextDefault(t *testing.T) (context.Context, context.CancelFunc) {
 	t.Helper()
 
-	return context.WithTimeout(context.Background(), 5*time.Second)
+	return testContextWithGuardAttempt(t, testRealmPIN)
 }
 
-// testDomainContext returns a new domain context with default timeout and cancel function for testing purposes
-func testDomainContext(t *testing.T) (domain.Context, context.CancelFunc) {
+// testContextWithGuardAttempt provides a wrapper for setting a guard attempt value on a new testContextDefault
+func testContextWithGuardAttempt(t *testing.T, attempt string) (context.Context, context.CancelFunc) {
 	t.Helper()
 
-	ctx, cancel := testContext(t)
+	ctx, cancel := domain.NewContext()
 
-	var domainCtx = domain.Context{Context: ctx}
-	domainCtx.Realm.Name = testRealmName
-	domainCtx.Realm.PIN = testRealmPIN
-	domainCtx.Guard.SetAttempt(testRealmPIN)
+	realm := domain.RealmFromContext(ctx)
+	realm.Name = testRealmName
+	realm.PIN = testRealmPIN
 
-	return domainCtx, cancel
+	domain.GuardFromContext(ctx).SetAttempt(attempt)
+
+	return ctx, cancel
 }
 
 // generateTestStandings generates a new Standings entity for use within the testsuite
@@ -172,7 +173,7 @@ func generateTestStandings(t *testing.T) models.Standings {
 func insertStandings(t *testing.T, standings models.Standings) models.Standings {
 	t.Helper()
 
-	ctx, cancel := testContext(t)
+	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
 	if err := repositories.NewStandingsDatabaseRepository(db).Insert(ctx, &standings); err != nil {
@@ -186,7 +187,7 @@ func insertStandings(t *testing.T, standings models.Standings) models.Standings 
 func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail string) models.Entry {
 	t.Helper()
 
-	ctx, cancel := testContext(t)
+	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
 	id, err := uuid.NewV4()
@@ -221,7 +222,7 @@ func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail 
 func insertEntry(t *testing.T, entry models.Entry) models.Entry {
 	t.Helper()
 
-	ctx, cancel := testContext(t)
+	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
 	if err := repositories.NewEntryDatabaseRepository(db).Insert(ctx, &entry); err != nil {
@@ -249,7 +250,7 @@ func generateTestEntrySelection(t *testing.T, entryID uuid.UUID) models.EntrySel
 func insertEntrySelection(t *testing.T, entrySelection models.EntrySelection) models.EntrySelection {
 	t.Helper()
 
-	ctx, cancel := testContext(t)
+	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
 	if err := repositories.NewEntrySelectionDatabaseRepository(db).Insert(ctx, &entrySelection); err != nil {
@@ -273,7 +274,7 @@ func generateTestScoredEntrySelection(t *testing.T, entrySelectionID, standingsI
 func insertScoredEntrySelection(t *testing.T, scoredEntrySelection models.ScoredEntrySelection) models.ScoredEntrySelection {
 	t.Helper()
 
-	ctx, cancel := testContext(t)
+	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
 	if err := repositories.NewScoredEntrySelectionDatabaseRepository(db).Insert(ctx, &scoredEntrySelection); err != nil {

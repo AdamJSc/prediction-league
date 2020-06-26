@@ -21,7 +21,7 @@ func TestStandingsAgent_CreateStandings(t *testing.T) {
 	standings := generateTestStandings(t)
 
 	t.Run("create valid standings must succeed", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		createdStandings, err := agent.CreateStandings(ctx, standings)
@@ -68,7 +68,7 @@ func TestStandingsAgent_UpdateStandings(t *testing.T) {
 	}
 
 	t.Run("update valid standings must succeed", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		changedStandings := standings
@@ -102,7 +102,7 @@ func TestStandingsAgent_UpdateStandings(t *testing.T) {
 	})
 
 	t.Run("update non-existent standings must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		changedStandings := standings
@@ -131,7 +131,7 @@ func TestStandingsAgent_RetrieveStandingsByID(t *testing.T) {
 	}
 
 	t.Run("retrieve existent standings must succeed", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		retrievedStandings, err := agent.RetrieveStandingsByID(ctx, standings.ID.String())
@@ -160,7 +160,7 @@ func TestStandingsAgent_RetrieveStandingsByID(t *testing.T) {
 	})
 
 	t.Run("retrieve non-existent standings must fail", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		nonExistentID, err := uuid.NewV4()
@@ -197,7 +197,7 @@ func TestStandingsAgent_RetrieveStandingsBySeasonAndRoundNumber(t *testing.T) {
 	}
 
 	t.Run("retrieve existent standings must succeed", func(t *testing.T) {
-		ctx, cancel := testContext(t)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		seasonID := reflect.ValueOf(datastore.Seasons).MapKeys()[0].String()

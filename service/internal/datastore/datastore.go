@@ -19,7 +19,7 @@ var Teams = models.TeamCollection{
 		ID:        "AFCB",
 		ClientID:  models.TeamIdentifier{TeamID: 1044},
 		Name:      "Bournemouth",
-		ShortName: "Cherries",
+		ShortName: "Bournemouth",
 		CrestURL:  "https://upload.wikimedia.org/wikipedia/en/e/e5/AFC_Bournemouth_%282013%29.svg",
 	},
 	"AVFC": {
@@ -110,7 +110,7 @@ var Teams = models.TeamCollection{
 		ID:        "SUFC",
 		ClientID:  models.TeamIdentifier{TeamID: 356},
 		Name:      "Sheffield United",
-		ShortName: "Sheffield",
+		ShortName: "Sheff Utd",
 		CrestURL:  "https://upload.wikimedia.org/wikipedia/en/9/9c/Sheffield_United_FC_logo.svg",
 	},
 	"SFC": {
@@ -164,12 +164,23 @@ func MustInflate() {
 	// we can't do this directly when defining the struct because we need to load the location at runtime
 	Seasons = models.SeasonCollection{
 		"201920_1": {
-			ID:          "201920_1",
-			ClientID:    models.SeasonIdentifier{SeasonID: "PL"},
-			Name:        "Premier League 2019/20",
-			EntriesFrom: time.Date(2019, 7, 1, 0, 0, 0, 0, loc),
-			StartDate:   time.Date(2019, 8, 9, 19, 0, 0, 0, loc),
-			EndDate:     time.Date(2020, 5, 17, 23, 59, 59, 0, loc),
+			ID:       "201920_1",
+			ClientID: models.SeasonIdentifier{SeasonID: "PL"},
+			Name:     "Premier League 2019/20",
+			Active: models.TimeFrame{
+				From:  time.Date(2019, 8, 9, 19, 0, 0, 0, loc),
+				Until: time.Date(2020, 5, 17, 23, 59, 59, 0, loc),
+			},
+			EntriesAccepted: models.TimeFrame{
+				From:  time.Date(2019, 7, 1, 0, 0, 0, 0, loc),
+				Until: time.Date(2019, 8, 9, 19, 0, 0, 0, loc),
+			},
+			SelectionsAccepted: []models.TimeFrame{
+				{
+					From:  time.Date(2019, 7, 1, 0, 0, 0, 0, loc),
+					Until: time.Date(2019, 8, 9, 19, 0, 0, 0, loc),
+				},
+			},
 			TeamIDs: []string{
 				"AFC",
 				"AFCB",

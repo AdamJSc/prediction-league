@@ -32,7 +32,12 @@ func (e EntrySelectionDatabaseRepository) Insert(ctx context.Context, entrySelec
 	stmt := `INSERT INTO entry_selection (id, ` + getDBFieldsStringFromFields(entrySelectionDBFields) + `, created_at)
 					VALUES (?, ?, ?, ?)`
 
-	now := time.Now().Truncate(time.Second)
+	var emptyTime time.Time
+	if entrySelection.CreatedAt.Equal(emptyTime) {
+		entrySelection.CreatedAt = time.Now()
+	}
+
+	entrySelection.CreatedAt = entrySelection.CreatedAt.Truncate(time.Second)
 
 	rawRankings, err := json.Marshal(&entrySelection.Rankings)
 	if err != nil {
@@ -45,12 +50,10 @@ func (e EntrySelectionDatabaseRepository) Insert(ctx context.Context, entrySelec
 		entrySelection.ID,
 		entrySelection.EntryID,
 		rawRankings,
-		now,
+		entrySelection.CreatedAt,
 	); err != nil {
 		return wrapDBError(err)
 	}
-
-	entrySelection.CreatedAt = now
 
 	return nil
 }
@@ -111,6 +114,35 @@ func (e EntrySelectionDatabaseRepository) ExistsByID(ctx context.Context, id str
 	}
 
 	return nil
+}
+
+// SelectByIDAndTimestamp retrieves the most recent EntrySelection that exists for the provided entry ID and timestamp
+func (e EntrySelectionDatabaseRepository) SelectByEntryIDAndTimestamp(ctx context.Context, entryID string, ts time.Time) (models.EntrySelection, error) {
+	stmt := `SELECT id, ` + getDBFieldsStringFromFields(entrySelectionDBFields) + `, created_at From entry_selection
+			WHERE entry_id = ?
+			AND created_at <= ?
+			ORDER BY created_at DESC
+			LIMIT 1`
+
+	row := e.agent.QueryRowContext(ctx, stmt, entryID, ts)
+
+	var entrySelection models.EntrySelection
+	var rawRankings []byte
+
+	if err := row.Scan(
+		&entrySelection.ID,
+		&entrySelection.EntryID,
+		&rawRankings,
+		&entrySelection.CreatedAt,
+	); err != nil {
+		return models.EntrySelection{}, wrapDBError(err)
+	}
+
+	if err := json.Unmarshal(rawRankings, &entrySelection.Rankings); err != nil {
+		return models.EntrySelection{}, err
+	}
+
+	return entrySelection, nil
 }
 
 // NewEntrySelectionDatabaseRepository instantiates a new EntrySelectionDatabaseRepository with the provided DB agent

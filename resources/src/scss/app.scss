@@ -27,15 +27,33 @@ h1, h2, h3, h4 {
   color: $secondary-dark;
 }
 
+.error-messages {
+  ul {
+    list-style-type: none;
+    padding-left: 0;
+  }
+}
+
+.main-container {
+  padding-top: 2rem;
+}
+
 .form-primary {
   width: 100%;
 
-  .btn-lg {
-    border-radius: 1rem;
-    font-weight: bold;
-    padding: 1rem;
-    transition: all 0.2s;
+  hr {
+    border-top-style: dashed;
+    margin: 2rem;
   }
+}
+
+.submit-wrapper {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.call-to-action-wrapper {
+  padding-top: 1rem;
 }
 
 .form-label-group {
@@ -92,9 +110,80 @@ h1, h2, h3, h4 {
     margin-bottom: 0;
     /* Override default `<label>` margin */
     line-height: 1.5;
-    color: $primary-dark;
+    color: $primary-light-tint-dark;
     border: 1px solid transparent;
     border-radius: .25rem;
     transition: all .1s ease-in-out;
+  }
+}
+
+.selection-countdown-container {
+  .remaining {
+    color: $secondary-dark;
+    font-weight: bold;
+  }
+}
+
+.teams-reorder {
+  .team-row {
+    height: 75px;
+    font-size: 1.3rem;
+
+    &:not(:last-child) {
+      border-bottom: solid 1px $primary-dark-tint-light;
+    }
+
+    &:hover {
+      cursor: pointer;
+    }
+
+    &.selected {
+      background: $active-highlight-light;
+      border: 2px solid $active-highlight-dark;
+    }
+
+    &.dirty {
+      background: $dirty-highlight-light;
+      border: 2px solid $dirty-highlight-dark;
+    }
+
+    .position {
+      width: 15px;
+      font-weight: bold;
+      padding: 0 1rem;
+      text-align: right;
+    }
+
+    .crest-outer {
+      width: 50px;
+      text-align: center;
+
+      .crest {
+        display: inline-block;
+        width: 40px;
+        padding: 0.25rem 0;
+        overflow: hidden;
+
+        img {
+          width: 100%;
+        }
+      }
+    }
+
+    .name {
+      font-weight: bold;
+      padding: 0 1rem;
+    }
+  }
+}
+
+.teams-reorder, .teams-reorder-admin {
+  width: 100%;
+  margin: 0 auto;
+}
+
+@media screen and (min-width: 768px) {
+  .teams-reorder, .teams-reorder-admin {
+    width: 75%;
   }
 }

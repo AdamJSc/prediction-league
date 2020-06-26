@@ -27,8 +27,17 @@ func dbWhereStmt(criteria map[string]interface{}, matchAny bool) (stmt string, p
 	var conditions []string
 
 	for field, value := range criteria {
-		conditions = append(conditions, fmt.Sprintf("(%s = ?)", field))
-		params = append(params, value)
+		var condition Condition
+		switch value.(type) {
+		case Condition:
+			condition = value.(Condition)
+		default:
+			condition.Operator = "="
+			condition.Operand = value
+		}
+
+		conditions = append(conditions, fmt.Sprintf("(%s %s ?)", field, condition.Operator))
+		params = append(params, condition.Operand)
 	}
 
 	comparison := " AND "
@@ -41,4 +50,10 @@ func dbWhereStmt(criteria map[string]interface{}, matchAny bool) (stmt string, p
 	}
 
 	return stmt, params
+}
+
+// Condition represents an operator/operand pair
+type Condition struct {
+	Operator string
+	Operand  interface{}
 }
