@@ -17,8 +17,19 @@ app.kill:
 	docker-compose down
 
 app.build:
-	pkger -include /service/views/html && mv pkged.go service/pkged.go \
-	&& go build -o ./bin/prediction-league ./service
+	# go mod vendor
+	docker run --rm -v ${PWD}:/app -w /app golang:1.14-alpine go mod vendor
+
+	# package static assets
+	docker build --tag prediction-league-pkger:v1 ./docker/images/pkger
+	docker run --rm -v ${PWD}:/app prediction-league-pkger:v1 pkger -include /service/views/html
+	mv pkged.go service/pkged.go
+
+	# go build
+	docker run --rm -v ${PWD}:/app -w /app -e CGO_ENABLED="0" golang:1.14-alpine go build -mod vendor -o ./bin/prediction-league ./service
+
+	# clean up
+	rm -rf vendor
 
 test.run:
 	docker-compose up -d db_test && go test -v ./...
