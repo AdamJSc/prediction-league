@@ -12,6 +12,14 @@ pipelines:
             - export MYSQL_URL="test-db-user:test-db-pwd@tcp(localhost:3306)/test-db-name?parseTime=true"
             - go test -v ./...
       - step:
+          name: Front-End Build
+          image: node:13.10
+          script:
+            - npm install
+            - npm run prod
+          artifacts:
+            - resources/dist/**
+      - step:
           name: Go Build
           image: atlassian/default-image:2
           services:
@@ -34,6 +42,14 @@ pipelines:
     build-with-tag:
       - variables:
           - name: BuildTag
+      - step:
+          name: Front-End Build
+          image: node:13.10
+          script:
+            - npm install
+            - npm run prod
+          artifacts:
+            - resources/dist/**
       - step:
           name: Build with Tag
           image: atlassian/default-image:2

@@ -19,7 +19,11 @@ app.kill:
 app.release:
 	# requires following vars to be passed to command: BUILD_TAG, RELEASE_TAG, SSH_KEY, SSH_USER, SSH_HOST, HOST_DIR
 
-	# build and tag
+	# build front end assets
+	npm install
+	npm run prod
+
+	# build and tag image
 	docker image build --rm --tag prediction-league-app:${BUILD_TAG} -f ${PWD}/docker/app.Dockerfile .
 	docker tag prediction-league-app:${BUILD_TAG} adamjsc/prediction-league-app:${BUILD_TAG}
 	docker tag prediction-league-app:${BUILD_TAG} adamjsc/prediction-league-app:latest
