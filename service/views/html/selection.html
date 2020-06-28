@@ -20,7 +20,7 @@
                 {{if .Selections.BeingAccepted}}
                     <div class="row">
                         <div class="col-md-8 offset-md-2">
-                            <selection-countdown target="selection-close" unix="{{timestamp_as_unix .Selections.AcceptedUntil}}"></selection-countdown>
+                            <selection-countdown subject="selection-close" unix="{{timestamp_as_unix .Selections.AcceptedUntil}}"></selection-countdown>
                         </div>
                     </div>
                     {{if $parent.IsLoggedIn}}
@@ -39,7 +39,7 @@
                 {{else if .Selections.NextAcceptedFrom}}
                     <div class="row">
                         <div class="col-md-8 offset-md-2">
-                            <selection-countdown target="selection-open" unix="{{timestamp_as_unix .Selections.NextAcceptedFrom}}"></selection-countdown>
+                            <selection-countdown subject="selection-open" unix="{{timestamp_as_unix .Selections.NextAcceptedFrom}}"></selection-countdown>
                         </div>
                     </div>
                 {{else}}

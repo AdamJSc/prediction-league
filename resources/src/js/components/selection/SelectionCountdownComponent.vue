@@ -5,21 +5,19 @@
 </template>
 
 <script>
-    const moment = require('moment')
-
     export default {
         name: 'SelectionCountdown',
         props: {
             unix: {
                 type: String,
             },
-            target: {
+            subject: {
                 type: String,
             }
         },
         data: function() {
             let label = ''
-            switch (this.target) {
+            switch (this.subject) {
                 case 'selection-close':
                     label = 'Current window closes in'
                     break
@@ -28,37 +26,33 @@
                     break
             }
             return {
-                remaining: this.getRemaining(this.unix),
+                now: new Date(),
+                target: new Date(parseFloat(this.unix + '000')),
                 label: label,
             }
         },
         methods: {
-            getRemaining: function(unix) {
-                let now = moment()
-                let target = moment.unix(unix)
-
-                return moment.duration(target.diff(now))
-            },
-            decrementRemaining: function() {
-                this.remaining.subtract(1, 's')
-
-                if (this.remaining.asSeconds() < 1) {
-                    window.location.reload()
-                }
+            refreshNow: function() {
+                this.now = new Date()
             }
         },
         computed: {
             remainingVerbose: function() {
-                let remaining = this.remaining
+                let diff = this.target - this.now
 
-                if (remaining.asSeconds() < 1) {
+                if (diff <= 0) {
                     return '0 seconds'
                 }
 
-                let numOfDays = remaining.days()
-                let numOfHours = remaining.hours()
-                let numOfMinutes = remaining.minutes()
-                let numOfSeconds = remaining.seconds()
+                let inSeconds = Math.floor(diff / 1000)
+                let inMinutes = Math.floor(diff / (1000 * 60))
+                let inHours = Math.floor(diff / (1000 * 60 * 60))
+                let inDays = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+                let numOfDays = inDays
+                let numOfHours = inHours - (inDays * 24)
+                let numOfMinutes = inMinutes - (inHours * 60)
+                let numOfSeconds = inSeconds - (inMinutes * 60)
 
                 let days = '', hours = '', minutes = '', seconds = ''
 
@@ -82,7 +76,7 @@
             }
         },
         mounted: function() {
-            setInterval(this.decrementRemaining, 1000)
+            setInterval(this.refreshNow, 1000)
         }
     }
 </script>
