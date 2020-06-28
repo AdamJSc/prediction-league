@@ -1,0 +1,23 @@
+pipelines:
+
+  custom:
+    tests:
+      - step:
+          name: Tests
+          image: golang:1.14
+          trigger: automatic
+          services:
+            - test-db-host
+          script:
+            - export MYSQL_URL="test-db-user:test-db-pwd@tcp(localhost:3306)/test-db-name?parseTime=true"
+            - go test -v ./...
+
+definitions:
+  services:
+    test-db-host:
+      image: mysql:5.7
+      variables:
+        MYSQL_USER: test-db-user
+        MYSQL_PASSWORD: test-db-pwd
+        MYSQL_DATABASE: test-db-name
+        MYSQL_ROOT_PASSWORD: root
