@@ -7,7 +7,13 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "watch-webpack": "CHOKIDAR_USEPOLLING=true ./node_modules/.bin/webpack --watch --verbose --mode=development",
     "watch-sass": "CHOKIDAR_USEPOLLING=true node-sass-chokidar --watch --no-source-map ./resources/src/scss/app.scss -o ./resources/dist",
-    "watch": "npm run watch-webpack | npm run watch-sass"
+    "watch": "npm run watch-webpack | npm run watch-sass",
+    "dev-webpack": "./node_modules/.bin/webpack --verbose --mode=development",
+    "dev-sass": "node-sass --output-style expanded ./resources/src/scss/app.scss -o ./resources/dist",
+    "dev": "npm run dev-webpack && npm run dev-sass",
+    "prod-webpack": "./node_modules/.bin/webpack --verbose --mode=production",
+    "prod-sass": "node-sass --output-style compressed ./resources/src/scss/app.scss -o ./resources/dist",
+    "prod": "npm run prod-webpack && npm run prod-sass"
   },
   "repository": {
     "type": "git",
