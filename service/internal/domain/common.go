@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"github.com/LUSHDigital/core-mage/env"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/markbates/pkger"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"prediction-league/service/internal/views"
 	"strings"
 	"time"
@@ -135,7 +136,7 @@ func ParseTemplates() *views.Templates {
 	// prepare the templates
 	tpl := template.New("prediction-league").Funcs(templateFunctions)
 
-	walkPathAndParseTemplates(tpl, "/service/views/html")
+	walkPathAndParseTemplates(tpl, "./service/views/html")
 
 	// return our wrapped template struct
 	return &views.Templates{Template: tpl}
@@ -144,7 +145,7 @@ func ParseTemplates() *views.Templates {
 // walkPathAndParseTemplates recursively parses templates within a given top-level directory
 func walkPathAndParseTemplates(tpl *template.Template, path string) {
 	// walk through our views folder and parse each item to pack the assets
-	err := pkger.Walk(path, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		// we already have an error from a recursive call, so just return with that
 		if err != nil {
 			return err
@@ -156,10 +157,11 @@ func walkPathAndParseTemplates(tpl *template.Template, path string) {
 		}
 
 		// open the current file
-		file, err := pkger.Open(path)
+		contents, err := ioutil.ReadFile(path)
 		if err != nil {
 			return err
 		}
+		file := bytes.NewReader(contents)
 
 		// copy file contents as a byte stream and then parse as a template
 		var b bytes.Buffer
