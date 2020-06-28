@@ -16,8 +16,26 @@ app.restart:
 app.kill:
 	docker-compose down
 
-app.build:
-	docker build --tag prediction-league-app:latest -f ${PWD}/docker/app.Dockerfile .
+app.release:
+	# requires following vars to be passed to command: BUILD_TAG, RELEASE_TAG, SSH_KEY, SSH_USER, SSH_HOST, HOST_DIR
+
+	# build and tag
+	docker image build --rm --tag prediction-league-app:${BUILD_TAG} -f ${PWD}/docker/app.Dockerfile .
+	docker tag prediction-league-app:${BUILD_TAG} adamjsc/prediction-league-app:${BUILD_TAG}
+	docker tag prediction-league-app:${BUILD_TAG} adamjsc/prediction-league-app:latest
+
+	# push to docker repo
+	cat ${PWD}/release/docker-access-token | docker login --username adamjsc --password-stdin
+	docker push adamjsc/prediction-league-app:${BUILD_TAG}
+	docker push adamjsc/prediction-league-app:latest
+
+	# release
+	ssh -i ${SSH_KEY} ${SSH_USER}@${SSH_HOST} '/bin/sh -s' < release.sh ${HOST_DIR} ${RELEASE_TAG}
+
+	# clean up locally
+	docker image rm prediction-league-app:${BUILD_TAG}
+	docker image rm adamjsc/prediction-league-app:${BUILD_TAG}
+	docker image rm adamjsc/prediction-league-app:latest
 	rm -rf vendor
 
 test.run:
