@@ -1,16 +1,35 @@
 pipelines:
 
   custom:
+
     tests:
       - step:
           name: Tests
           image: golang:1.14
-          trigger: automatic
           services:
             - test-db-host
           script:
             - export MYSQL_URL="test-db-user:test-db-pwd@tcp(localhost:3306)/test-db-name?parseTime=true"
             - go test -v ./...
+
+    build-and-release:
+      - step:
+          name: Build
+          image: atlassian/default-image:2
+          services:
+            - docker
+          script:
+            - docker image build --rm --tag prediction-league-app:build-number-${BITBUCKET_BUILD_NUMBER} -f ${PWD}/docker/app.Dockerfile .
+            - docker tag prediction-league-app:build-number-${BITBUCKET_BUILD_NUMBER} adamjsc/prediction-league-app:build-number-${BITBUCKET_BUILD_NUMBER}
+            - docker tag prediction-league-app:build-number-${BITBUCKET_BUILD_NUMBER} adamjsc/prediction-league-app:latest
+            - echo ${DOCKER_ACCESS_TOKEN} | docker login --username adamjsc --password-stdin
+            - docker push adamjsc/prediction-league-app:build-number-${BITBUCKET_BUILD_NUMBER}
+            - docker push adamjsc/prediction-league-app:latest
+      - step:
+          name: Release
+          image: atlassian/default-image:2
+          script:
+            - ssh ${PROD_SSH_USER}@${PROD_SSH_HOST} '/bin/sh -s' < release.sh ${PROD_HOST_DIR} build-number-${BITBUCKET_BUILD_NUMBER}
 
 definitions:
   services:
