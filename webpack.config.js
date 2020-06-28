@@ -1,4 +1,17 @@
-const buildMode = process.argv.mode
+const parseBuildMode = (args) => {
+    for (let idx in args) {
+        let arg = args[idx]
+        if (arg.startsWith('--mode=')) {
+            let parts = arg.split('=', -1)
+            if (parts.length === 2) {
+                return parts[1]
+            }
+            return 'development'
+        }
+    }
+}
+
+const buildMode = parseBuildMode(process.argv)
 console.log(`building in ${buildMode} mode...`)
 
 const path = require('path')
@@ -8,10 +21,12 @@ const CopyPlugin = require('copy-webpack-plugin')
 
 module.exports = {
     mode: buildMode,
-    entry: path.resolve(__dirname, 'resources', 'src', 'js', 'main.js'),
+    entry: {
+        main: path.resolve(__dirname, 'resources', 'src', 'js', 'main.js')
+    },
     output: {
         path: path.resolve(__dirname, 'resources', 'dist'),
-        filename: 'app.js'
+        filename: 'app.[name].js'
     },
     module: {
         rules: [
@@ -46,5 +61,5 @@ module.exports = {
     ],
     resolve: {
         extensions: ['.json', '.js', '.jsx'],
-    },
+    }
 }

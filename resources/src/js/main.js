@@ -1,5 +1,3 @@
-import Vue from "vue/dist/vue.esm.js"
-
 // load components
 Vue.component("registration-workflow", require("./components/registration/RegistrationWorkflowComponent.vue").default)
 Vue.component("registration-entry", require("./components/registration/RegistrationEntryComponent.vue").default)

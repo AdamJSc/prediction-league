@@ -1,7 +1,9 @@
 .idea/
 .env
+bin/
 docker/db/data/*
 !docker/db/data/.gitkeep
 node_modules/
 resources/dist/
+service/pkged.go
 vendor/

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"github.com/markbates/pkger"
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 )
@@ -21,7 +20,7 @@ func RegisterRoutes(c *httph.HTTPAppContainer) {
 	api.HandleFunc("/entry/{entry_short_code}/approve", approveEntryByShortCodeHandler(c)).Methods(http.MethodPatch)
 
 	// serve static assets
-	assets := pkger.Dir("/resources/dist")
+	assets := http.Dir("./resources/dist")
 	c.Router().PathPrefix("/assets").Handler(http.StripPrefix("/assets", http.FileServer(assets)))
 
 	// frontend endpoints

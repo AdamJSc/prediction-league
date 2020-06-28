@@ -1,0 +1,4 @@
+*
+!./go.mod
+!./resources/dist
+!./service

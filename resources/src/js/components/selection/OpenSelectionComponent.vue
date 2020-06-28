@@ -19,7 +19,7 @@
                     <td colspan="3">
                         <div class="call-to-action-wrapper">
                             <div v-if="lastUpdated" class="text-center">
-                                Last updated on {{lastUpdated.format('ddd Do MMM YYYY [at] h:mma')}}
+                                Last updated on {{lastUpdatedVerbose}}
                             </div>
                             <div class="submit-wrapper">
                                 <transition name="fade">
@@ -50,7 +50,6 @@
 
 <script>
     const axios = require('axios').default
-    const moment = require('moment')
 
     export default {
         name: 'OpenSelection',
@@ -68,7 +67,7 @@
         data: function() {
             let lastUpdated = null
             if (this.unix !== "0") {
-                lastUpdated = moment.unix(this.unix)
+                lastUpdated = new Date(parseFloat(this.unix + '000'))
             }
 
             return {
@@ -174,7 +173,7 @@
                     .then(function (response) {
                         vm.working = false
                         vm.success = true
-                        vm.lastUpdated = moment()
+                        vm.lastUpdated = new Date()
                         vm.storeReorderedTeams()
                         vm.resetState()
                     })
@@ -185,5 +184,10 @@
                     })
             }
         },
+        computed: {
+            lastUpdatedVerbose: function() {
+                return this.lastUpdated.toISOString()
+            },
+        }
     }
 </script>
