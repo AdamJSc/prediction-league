@@ -1,0 +1,65 @@
+pipelines:
+
+  tags:
+
+    v*.*.*:
+      - step:
+          name: Go Test
+          image: golang:1.14
+          services:
+            - test-db
+          script:
+            - export MYSQL_URL="test-db-user:test-db-pwd@tcp(localhost:3306)/test-db-name?parseTime=true"
+            - go test -v ./...
+      - step:
+          name: Go Build
+          image: atlassian/default-image:2
+          services:
+            - docker
+          script:
+            - docker image build --rm --tag prediction-league-app:${BITBUCKET_TAG} -f ${PWD}/docker/app.Dockerfile .
+            - docker tag prediction-league-app:${BITBUCKET_TAG} adamjsc/prediction-league-app:${BITBUCKET_TAG}
+            - docker tag prediction-league-app:${BITBUCKET_TAG} adamjsc/prediction-league-app:latest
+            - echo ${DOCKER_ACCESS_TOKEN} | docker login --username adamjsc --password-stdin
+            - docker push adamjsc/prediction-league-app:${BITBUCKET_TAG}
+            - docker push adamjsc/prediction-league-app:latest
+      - step:
+          name: Release
+          image: atlassian/default-image:2
+          script:
+            - ssh ${PROD_SSH_USER}@${PROD_SSH_HOST} '/bin/sh -s' < release.sh ${PROD_HOST_DIR} ${BITBUCKET_TAG}
+
+  custom:
+
+    build-with-tag:
+      - variables:
+          - name: BuildTag
+      - step:
+          name: Build with Tag
+          image: atlassian/default-image:2
+          services:
+            - docker
+          script:
+            - docker image build --rm --tag prediction-league-app:${BuildTag} -f ${PWD}/docker/app.Dockerfile .
+            - docker tag prediction-league-app:${BuildTag} adamjsc/prediction-league-app:${BuildTag}
+            - echo ${DOCKER_ACCESS_TOKEN} | docker login --username adamjsc --password-stdin
+            - docker push adamjsc/prediction-league-app:${BuildTag}
+
+    release-with-tag:
+      - variables:
+          - name: BuildTag
+      - step:
+          name: Release with Tag
+          image: atlassian/default-image:2
+          script:
+            - ssh ${PROD_SSH_USER}@${PROD_SSH_HOST} '/bin/sh -s' < release.sh ${PROD_HOST_DIR} ${BuildTag}
+
+definitions:
+  services:
+    test-db:
+      image: mysql:5.7
+      variables:
+        MYSQL_USER: test-db-user
+        MYSQL_PASSWORD: test-db-pwd
+        MYSQL_DATABASE: test-db-name
+        MYSQL_ROOT_PASSWORD: root
