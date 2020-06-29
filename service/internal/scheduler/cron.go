@@ -1,50 +1,55 @@
 package scheduler
 
 import (
-	"context"
-	"fmt"
-	"github.com/pkg/errors"
 	"log"
-	"time"
+	"prediction-league/service/internal/app/httph"
+	footballdata "prediction-league/service/internal/clients/football-data-org"
+	"prediction-league/service/internal/datastore"
+	"prediction-league/service/internal/domain"
+
+	"github.com/robfig/cron/v3"
 )
 
-// Cron determines our sequence of jobs to execute
-type Cron struct {
-	Jobs []Job
+// LoadCron returns our populated cron
+func LoadCron(config domain.Config, container *httph.HTTPAppContainer) *cron.Cron {
+	c := cron.New()
+
+	for _, j := range mustGenerateJobs(config, container) {
+		c.AddFunc(j.spec(), j.function())
+	}
+
+	return c
 }
 
-func (c Cron) Halt(_ context.Context) error {
-	log.Println("halting cron...")
-
-	return nil
+// job provides our cron job interface
+type job interface {
+	name() string
+	spec() string
+	function() func()
 }
 
-// Run continuously executes our sequence of Jobs
-func (c Cron) Run(ctx context.Context) error {
-	log.Println("running cron...")
+// mustGenerateJobs generates the jobs to be used by the cron
+func mustGenerateJobs(config domain.Config, container *httph.HTTPAppContainer) []job {
+	// get the current season ID for all realms
+	var seasonIDs = make(map[string]struct{})
+	for _, realm := range config.Realms {
+		seasonIDs[realm.SeasonID] = struct{}{}
+	}
 
-	var runJob = func(ctx context.Context, j Job, ch chan Job) {
-		result, err := j.Run(ctx)
-		switch {
-		case err != nil:
-			log.Println(errors.Wrap(err, fmt.Sprintf("** ERROR **: [%s]:", j.Name())))
-		default:
-			log.Printf("[%s]: %s", j.Name(), result)
+	// add a job for each unique season ID that retrieves the latest standings
+	var jobs []job
+	for id := range seasonIDs {
+		season, err := datastore.Seasons.GetByID(id)
+		if err != nil {
+			log.Fatal(err)
 		}
 
-		time.Sleep(time.Duration(j.IntervalInSeconds()) * time.Second)
-		ch <- j
+		jobs = append(jobs, retrieveLatestStandingsJob{
+			MySQLInjector: container,
+			season:        season,
+			client:        footballdata.NewClient(config.FootballDataAPIToken),
+		})
 	}
 
-	var jobC = make(chan Job)
-
-	for _, j := range c.Jobs {
-		go runJob(ctx, j, jobC)
-	}
-
-	for j := range jobC {
-		go runJob(ctx, j, jobC)
-	}
-
-	return nil
+	return jobs
 }
