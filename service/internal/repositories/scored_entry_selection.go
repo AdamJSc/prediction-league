@@ -41,7 +41,7 @@ func (s ScoredEntrySelectionDatabaseRepository) Insert(ctx context.Context, scor
 		return err
 	}
 
-	if _, err := s.agent.QueryContext(
+	rows, err := s.agent.QueryContext(
 		ctx,
 		stmt,
 		scoredEntrySelection.EntrySelectionID,
@@ -49,9 +49,11 @@ func (s ScoredEntrySelectionDatabaseRepository) Insert(ctx context.Context, scor
 		rawRankings,
 		scoredEntrySelection.Score,
 		now,
-	); err != nil {
+	)
+	if err != nil {
 		return wrapDBError(err)
 	}
+	defer rows.Close()
 
 	scoredEntrySelection.CreatedAt = now
 
@@ -71,7 +73,7 @@ func (s ScoredEntrySelectionDatabaseRepository) Update(ctx context.Context, scor
 		return err
 	}
 
-	if _, err := s.agent.QueryContext(
+	rows, err := s.agent.QueryContext(
 		ctx,
 		stmt,
 		rawRankings,
@@ -79,9 +81,11 @@ func (s ScoredEntrySelectionDatabaseRepository) Update(ctx context.Context, scor
 		now,
 		scoredEntrySelection.EntrySelectionID,
 		scoredEntrySelection.StandingsID,
-	); err != nil {
+	)
+	if err != nil {
 		return wrapDBError(err)
 	}
+	defer rows.Close()
 
 	scoredEntrySelection.UpdatedAt = now
 
@@ -99,6 +103,7 @@ func (s ScoredEntrySelectionDatabaseRepository) Select(ctx context.Context, crit
 	if err != nil {
 		return []models.ScoredEntrySelection{}, wrapDBError(err)
 	}
+	defer rows.Close()
 
 	var scoredEntrySelections []models.ScoredEntrySelection
 	var rawRankings []byte

@@ -42,7 +42,7 @@ func (s StandingsDatabaseRepository) Insert(ctx context.Context, standings *mode
 		return err
 	}
 
-	if _, err := s.agent.QueryContext(
+	rows, err := s.agent.QueryContext(
 		ctx,
 		stmt,
 		standings.ID,
@@ -50,9 +50,11 @@ func (s StandingsDatabaseRepository) Insert(ctx context.Context, standings *mode
 		standings.RoundNumber,
 		rankings,
 		now,
-	); err != nil {
+	)
+	if err != nil {
 		return wrapDBError(err)
 	}
+	defer rows.Close()
 
 	standings.CreatedAt = now
 
@@ -72,7 +74,7 @@ func (s StandingsDatabaseRepository) Update(ctx context.Context, standings *mode
 		return err
 	}
 
-	if _, err := s.agent.QueryContext(
+	rows, err := s.agent.QueryContext(
 		ctx,
 		stmt,
 		standings.SeasonID,
@@ -80,9 +82,11 @@ func (s StandingsDatabaseRepository) Update(ctx context.Context, standings *mode
 		rankings,
 		now,
 		standings.ID,
-	); err != nil {
+	)
+	if err != nil {
 		return wrapDBError(err)
 	}
+	defer rows.Close()
 
 	standings.UpdatedAt = now
 
@@ -99,6 +103,7 @@ func (s StandingsDatabaseRepository) Select(ctx context.Context, criteria map[st
 	if err != nil {
 		return []models.Standings{}, wrapDBError(err)
 	}
+	defer rows.Close()
 
 	var retrievedStandings []models.Standings
 	var rankings []byte

@@ -44,16 +44,18 @@ func (e EntrySelectionDatabaseRepository) Insert(ctx context.Context, entrySelec
 		return err
 	}
 
-	if _, err := e.agent.QueryContext(
+	rows, err := e.agent.QueryContext(
 		ctx,
 		stmt,
 		entrySelection.ID,
 		entrySelection.EntryID,
 		rawRankings,
 		entrySelection.CreatedAt,
-	); err != nil {
+	)
+	if err != nil {
 		return wrapDBError(err)
 	}
+	defer rows.Close()
 
 	return nil
 }
@@ -68,6 +70,7 @@ func (e EntrySelectionDatabaseRepository) Select(ctx context.Context, criteria m
 	if err != nil {
 		return []models.EntrySelection{}, wrapDBError(err)
 	}
+	defer rows.Close()
 
 	var entrySelections []models.EntrySelection
 	var rawRankings []byte

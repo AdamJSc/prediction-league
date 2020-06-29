@@ -43,7 +43,7 @@ func (e EntryDatabaseRepository) Insert(ctx context.Context, entry *models.Entry
 
 	now := time.Now().Truncate(time.Second)
 
-	if _, err := e.agent.QueryContext(
+	rows, err := e.agent.QueryContext(
 		ctx,
 		stmt,
 		entry.ID,
@@ -58,9 +58,11 @@ func (e EntryDatabaseRepository) Insert(ctx context.Context, entry *models.Entry
 		entry.PaymentRef,
 		entry.ApprovedAt,
 		now,
-	); err != nil {
+	)
+	if err != nil {
 		return wrapDBError(err)
 	}
+	defer rows.Close()
 
 	entry.CreatedAt = now
 
@@ -75,7 +77,7 @@ func (e EntryDatabaseRepository) Update(ctx context.Context, entry *models.Entry
 
 	now := sqltypes.ToNullTime(time.Now().Truncate(time.Second))
 
-	if _, err := e.agent.QueryContext(
+	rows, err := e.agent.QueryContext(
 		ctx,
 		stmt,
 		entry.ShortCode,
@@ -90,9 +92,11 @@ func (e EntryDatabaseRepository) Update(ctx context.Context, entry *models.Entry
 		entry.ApprovedAt,
 		now,
 		entry.ID,
-	); err != nil {
+	)
+	if err != nil {
 		return wrapDBError(err)
 	}
+	defer rows.Close()
 
 	entry.UpdatedAt = now
 
@@ -109,6 +113,7 @@ func (e EntryDatabaseRepository) Select(ctx context.Context, criteria map[string
 	if err != nil {
 		return []models.Entry{}, wrapDBError(err)
 	}
+	defer rows.Close()
 
 	var entries []models.Entry
 	for rows.Next() {
