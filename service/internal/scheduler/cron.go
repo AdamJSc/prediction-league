@@ -23,13 +23,12 @@ func LoadCron(config domain.Config, container *httph.HTTPAppContainer) *cron.Cro
 
 // job provides our cron job interface
 type job struct {
-	name string
 	spec string
 	task func()
 }
 
 // mustGenerateRetrieveLatestStandingsJobs generates the RetrieveLatestStandings jobs to be used by the cron
-func mustGenerateRetrieveLatestStandingsJobs(config domain.Config, container *httph.HTTPAppContainer) []job {
+func mustGenerateRetrieveLatestStandingsJobs(config domain.Config, container *httph.HTTPAppContainer) []*job {
 	// get the current season ID for all realms
 	var seasonIDs = make(map[string]struct{})
 	for _, realm := range config.Realms {
@@ -37,7 +36,7 @@ func mustGenerateRetrieveLatestStandingsJobs(config domain.Config, container *ht
 	}
 
 	// add a job for each unique season ID that retrieves the latest standings
-	var jobs []job
+	var jobs []*job
 	for id := range seasonIDs {
 		season, err := datastore.Seasons.GetByID(id)
 		if err != nil {

@@ -16,7 +16,7 @@ import (
 )
 
 // newRetrieveLatestStandingsJob returns a new job that retrieves the latest standings, pertaining to the provided season
-func newRetrieveLatestStandingsJob(season models.Season, client clients.FootballDataSource, injector app.MySQLInjector) job {
+func newRetrieveLatestStandingsJob(season models.Season, client clients.FootballDataSource, injector app.MySQLInjector) *job {
 	jobName := strings.ToLower(fmt.Sprintf("retrieve-latest-standings-%s", season.ID))
 
 	var task = func() {
@@ -56,8 +56,7 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 		log.Println(wrapJobStatus(jobName, "done!"))
 	}
 
-	return job{
-		name: jobName,
+	return &job{
 		spec: "15 * * * *",
 		task: task,
 	}
@@ -95,7 +94,8 @@ func retrieveCurrentEntrySelectionsForSeason(
 	for _, entry := range seasonEntries {
 		es, err := domain.GetEntrySelectionValidAtTimestamp(entry.EntrySelections, now)
 		if err != nil {
-			return nil, errors.Wrapf(err, "entry selection for entrant nickname %s", entry.EntrantNickname)
+			// error indicates that no selection has been found, so just ignore this entry and continue to the next
+			continue
 		}
 
 		currentEntrySelections = append(currentEntrySelections, es)
