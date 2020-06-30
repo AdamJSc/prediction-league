@@ -166,6 +166,7 @@ func generateTestStandings(t *testing.T) models.Standings {
 		SeasonID:    season.ID,
 		RoundNumber: 1,
 		Rankings:    rankings,
+		Finalised:   true,
 	}
 }
 

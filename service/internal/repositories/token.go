@@ -33,7 +33,7 @@ func (t TokenDatabaseRepository) Insert(ctx context.Context, token *models.Token
 	stmt := `INSERT INTO token (id, ` + getDBFieldsStringFromFields(tokenDBFields) + `)
 					VALUES (?, ?, ?, ?, ?)`
 
-	if _, err := t.agent.QueryContext(
+	rows, err := t.agent.QueryContext(
 		ctx,
 		stmt,
 		token.ID,
@@ -41,9 +41,11 @@ func (t TokenDatabaseRepository) Insert(ctx context.Context, token *models.Token
 		token.Value,
 		token.IssuedAt,
 		token.ExpiresAt,
-	); err != nil {
+	)
+	if err != nil {
 		return wrapDBError(err)
 	}
+	defer rows.Close()
 
 	return nil
 }
@@ -58,6 +60,7 @@ func (t TokenDatabaseRepository) Select(ctx context.Context, criteria map[string
 	if err != nil {
 		return nil, wrapDBError(err)
 	}
+	defer rows.Close()
 
 	var tokens []models.Token
 	for rows.Next() {
@@ -109,6 +112,7 @@ func (t TokenDatabaseRepository) DeleteByID(ctx context.Context, id string) erro
 	if err != nil {
 		return wrapDBError(err)
 	}
+	defer rows.Close()
 
 	return rows.Err()
 }

@@ -1,27 +1,52 @@
+# Run natively
+
+app.install:
+	docker-compose up -d db
+	npm install
+
 app.run:
-	docker-compose up -d db \
-	&& npm install \
-	&& npm run watch \
+	npm run watch \
 	| go run service/main.go
 
-app.up:
-	docker-compose up -d app && docker-compose logs -f
+test.run:
+	docker-compose up -d db_test
+	sleep 5
+	go test -v ./...
+	docker-compose stop db_test
 
-app.stop:
+# Run via Docker
+
+app.docker.up:
+	docker-compose up -d app
+	docker-compose logs -f
+
+app.docker.stop:
 	docker-compose stop
 
-app.restart:
-	docker-compose stop app && docker-compose up -d app
+app.docker.restart:
+	docker-compose stop app
+	docker-compose up -d app
 
-app.kill:
+app.docker.kill:
 	docker-compose down
 
+test.docker.up:
+	docker-compose up app_test
+
+test.docker.stop:
+	docker-compose stop app_test db_test
+
+# Release from local working directory
+
+app.test:
+
+	docker run --rm node:13.10
+
 app.release:
-	# requires following vars to be passed to command: BUILD_TAG, RELEASE_TAG, SSH_KEY, SSH_USER, SSH_HOST, HOST_DIR
+	# requires following vars to be passed to command: BUILD_TAG, RELEASE_TAG, SSH_KEY, SSH_USER, SSH_HOST, DOCKER_PROJECT_DIR
 
 	# build front end assets
-	npm install
-	npm run prod
+	docker run --rm -v ${PWD}:/app -w /app node:13.10 npm install && npm run prod
 
 	# build and tag image
 	docker image build --rm --tag prediction-league-app:${BUILD_TAG} -f ${PWD}/docker/app.Dockerfile .
@@ -34,19 +59,10 @@ app.release:
 	docker push adamjsc/prediction-league-app:latest
 
 	# release
-	ssh -i ${SSH_KEY} ${SSH_USER}@${SSH_HOST} '/bin/sh -s' < release.sh ${HOST_DIR} ${RELEASE_TAG}
+	ssh -i ${SSH_KEY} ${SSH_USER}@${SSH_HOST} '/bin/sh -s' < release.sh ${DOCKER_PROJECT_DIR} ${RELEASE_TAG}
 
 	# clean up locally
 	docker image rm prediction-league-app:${BUILD_TAG}
 	docker image rm adamjsc/prediction-league-app:${BUILD_TAG}
 	docker image rm adamjsc/prediction-league-app:latest
 	rm -rf vendor
-
-test.run:
-	docker-compose up -d db_test && go test -v ./...
-
-test.up:
-	docker-compose up app_test
-
-test.stop:
-	docker-compose stop app_test db_test

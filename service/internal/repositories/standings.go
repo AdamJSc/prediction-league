@@ -15,6 +15,7 @@ var standingsDBFields = []string{
 	"season_id",
 	"round_number",
 	"rankings",
+	"finalised",
 }
 
 // StandingsRepository defines the interface for transacting with our Standings data source
@@ -33,7 +34,7 @@ type StandingsDatabaseRepository struct {
 // Insert inserts a new Standings into the database
 func (s StandingsDatabaseRepository) Insert(ctx context.Context, standings *models.Standings) error {
 	stmt := `INSERT INTO standings (id, ` + getDBFieldsStringFromFields(standingsDBFields) + `, created_at)
-					VALUES (?, ?, ?, ?, ?)`
+					VALUES (?, ?, ?, ?, ?, ?)`
 
 	now := time.Now().Truncate(time.Second)
 
@@ -42,17 +43,20 @@ func (s StandingsDatabaseRepository) Insert(ctx context.Context, standings *mode
 		return err
 	}
 
-	if _, err := s.agent.QueryContext(
+	rows, err := s.agent.QueryContext(
 		ctx,
 		stmt,
 		standings.ID,
 		standings.SeasonID,
 		standings.RoundNumber,
 		rankings,
+		standings.Finalised,
 		now,
-	); err != nil {
+	)
+	if err != nil {
 		return wrapDBError(err)
 	}
+	defer rows.Close()
 
 	standings.CreatedAt = now
 
@@ -72,17 +76,20 @@ func (s StandingsDatabaseRepository) Update(ctx context.Context, standings *mode
 		return err
 	}
 
-	if _, err := s.agent.QueryContext(
+	rows, err := s.agent.QueryContext(
 		ctx,
 		stmt,
 		standings.SeasonID,
 		standings.RoundNumber,
 		rankings,
+		standings.Finalised,
 		now,
 		standings.ID,
-	); err != nil {
+	)
+	if err != nil {
 		return wrapDBError(err)
 	}
+	defer rows.Close()
 
 	standings.UpdatedAt = now
 
@@ -97,8 +104,9 @@ func (s StandingsDatabaseRepository) Select(ctx context.Context, criteria map[st
 
 	rows, err := s.agent.QueryContext(ctx, stmt, params...)
 	if err != nil {
-		return []models.Standings{}, wrapDBError(err)
+		return nil, wrapDBError(err)
 	}
+	defer rows.Close()
 
 	var retrievedStandings []models.Standings
 	var rankings []byte
@@ -111,21 +119,22 @@ func (s StandingsDatabaseRepository) Select(ctx context.Context, criteria map[st
 			&standings.SeasonID,
 			&standings.RoundNumber,
 			&rankings,
+			&standings.Finalised,
 			&standings.CreatedAt,
 			&standings.UpdatedAt,
 		); err != nil {
-			return []models.Standings{}, wrapDBError(err)
+			return nil, wrapDBError(err)
 		}
 
 		if err := json.Unmarshal(rankings, &standings.Rankings); err != nil {
-			return []models.Standings{}, wrapDBError(err)
+			return nil, wrapDBError(err)
 		}
 
 		retrievedStandings = append(retrievedStandings, standings)
 	}
 
 	if len(retrievedStandings) == 0 {
-		return []models.Standings{}, MissingDBRecordError{errors.New("no standings found")}
+		return nil, MissingDBRecordError{errors.New("no standings found")}
 	}
 
 	return retrievedStandings, nil

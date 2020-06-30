@@ -24,10 +24,9 @@ Or...
 
 This project can be run either fully-Dockerised (runs exclusively within containers) or
 partly-Dockerised (dependencies and build tools are in containers, but the service runs
-using Golang on the host).
+using npm/nvm and Golang on the host).
 
-At the very least, this project runs a MySQL container for a persistent data store, as well as an
-"assets" (Node) container to take care of all front-end builds. The builds comprise Sass for CSS and
+At the very least, this project runs a MySQL container for a persistent data store. The builds comprise Sass for CSS and
 Babel via Webpack for JavaScript (including Vue).
 
 The idea was originally to use a single process (Webpack) to generate both JavaScript and CSS, but
@@ -55,35 +54,25 @@ Look out for CPU with this option. Where the asset builds are watching for chang
 can get quite resource-hungry...
 
 ```bash
-make app.up
+make app.docker.up
 ```
 
 #### Partly-Dockerised
 
 Requires more dependencies but results in generally quieter fans...
 
+Make sure you're using npm version 13.10
+
 ```bash
 nvm install 13.10
 nvm use 13.10
+```
+
+Then start your engines:
+
+```bash
+make app.install
 make app.run
-```
-
-#### Stop local environment
-
-```bash
-make app.stop
-```
-
-#### Restart app container in local environment
-
-```bash
-make app.restart
-```
-
-#### Destroy local environment
-
-```bash
-make app.kill
 ```
 
 ### Run Testsuite
@@ -91,21 +80,16 @@ make app.kill
 #### Fully-Dockerised
 
 ```bash
-make test.run
+make test.docker.up
 ```
 
 #### Partly-Dockerised
 
 ```bash
-make test.start
-go test -v ./...
+make test.run
 ```
 
-#### Stop local test environment
-
-```bash
-make test.stop
-```
+Take a look at the other `make` commands in the project root `Makefile` which help to automate some of the stop/restart/kill workflows.
 
 ## Domain Knowledge
 

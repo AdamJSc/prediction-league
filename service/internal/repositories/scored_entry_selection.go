@@ -41,7 +41,7 @@ func (s ScoredEntrySelectionDatabaseRepository) Insert(ctx context.Context, scor
 		return err
 	}
 
-	if _, err := s.agent.QueryContext(
+	rows, err := s.agent.QueryContext(
 		ctx,
 		stmt,
 		scoredEntrySelection.EntrySelectionID,
@@ -49,9 +49,11 @@ func (s ScoredEntrySelectionDatabaseRepository) Insert(ctx context.Context, scor
 		rawRankings,
 		scoredEntrySelection.Score,
 		now,
-	); err != nil {
+	)
+	if err != nil {
 		return wrapDBError(err)
 	}
+	defer rows.Close()
 
 	scoredEntrySelection.CreatedAt = now
 
@@ -71,7 +73,7 @@ func (s ScoredEntrySelectionDatabaseRepository) Update(ctx context.Context, scor
 		return err
 	}
 
-	if _, err := s.agent.QueryContext(
+	rows, err := s.agent.QueryContext(
 		ctx,
 		stmt,
 		rawRankings,
@@ -79,9 +81,11 @@ func (s ScoredEntrySelectionDatabaseRepository) Update(ctx context.Context, scor
 		now,
 		scoredEntrySelection.EntrySelectionID,
 		scoredEntrySelection.StandingsID,
-	); err != nil {
+	)
+	if err != nil {
 		return wrapDBError(err)
 	}
+	defer rows.Close()
 
 	scoredEntrySelection.UpdatedAt = now
 
@@ -97,8 +101,9 @@ func (s ScoredEntrySelectionDatabaseRepository) Select(ctx context.Context, crit
 
 	rows, err := s.agent.QueryContext(ctx, stmt, params...)
 	if err != nil {
-		return []models.ScoredEntrySelection{}, wrapDBError(err)
+		return nil, wrapDBError(err)
 	}
+	defer rows.Close()
 
 	var scoredEntrySelections []models.ScoredEntrySelection
 	var rawRankings []byte
@@ -114,18 +119,18 @@ func (s ScoredEntrySelectionDatabaseRepository) Select(ctx context.Context, crit
 			&scoredEntrySelection.CreatedAt,
 			&scoredEntrySelection.UpdatedAt,
 		); err != nil {
-			return []models.ScoredEntrySelection{}, wrapDBError(err)
+			return nil, wrapDBError(err)
 		}
 
 		if err := json.Unmarshal(rawRankings, &scoredEntrySelection.Rankings); err != nil {
-			return []models.ScoredEntrySelection{}, err
+			return nil, err
 		}
 
 		scoredEntrySelections = append(scoredEntrySelections, scoredEntrySelection)
 	}
 
 	if len(scoredEntrySelections) == 0 {
-		return []models.ScoredEntrySelection{}, MissingDBRecordError{errors.New("no entries found")}
+		return nil, MissingDBRecordError{errors.New("no scored entry selections found")}
 	}
 
 	return scoredEntrySelections, nil

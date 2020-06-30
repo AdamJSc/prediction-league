@@ -43,6 +43,9 @@ func TestStandingsAgent_CreateStandings(t *testing.T) {
 		if createdStandings.SeasonID != standings.SeasonID {
 			expectedGot(t, standings.SeasonID, createdStandings.SeasonID)
 		}
+		if !createdStandings.Finalised {
+			t.Fatal("expected finalised to be true, but it was not")
+		}
 		if createdStandings.CreatedAt.Equal(emptyTime) {
 			expectedNonEmpty(t, "CreatedAt")
 		}
@@ -75,6 +78,7 @@ func TestStandingsAgent_UpdateStandings(t *testing.T) {
 		changedStandings.RoundNumber = 2
 		changedStandings.Rankings[0].Ranking.ID = "bonjour"
 		changedStandings.Rankings[1].Ranking.ID = "monde"
+		changedStandings.Finalised = false
 
 		updatedStandings, err := agent.UpdateStandings(ctx, changedStandings)
 		if err != nil {
@@ -92,6 +96,9 @@ func TestStandingsAgent_UpdateStandings(t *testing.T) {
 		}
 		if updatedStandings.SeasonID != changedStandings.SeasonID {
 			expectedGot(t, changedStandings.SeasonID, updatedStandings.SeasonID)
+		}
+		if updatedStandings.Finalised != changedStandings.Finalised {
+			expectedGot(t, changedStandings.Finalised, updatedStandings.Finalised)
 		}
 		if !changedStandings.CreatedAt.Equal(updatedStandings.CreatedAt) {
 			expectedGot(t, changedStandings.CreatedAt, updatedStandings.CreatedAt)
@@ -150,6 +157,9 @@ func TestStandingsAgent_RetrieveStandingsByID(t *testing.T) {
 		}
 		if retrievedStandings.SeasonID != standings.SeasonID {
 			expectedGot(t, standings.SeasonID, retrievedStandings.SeasonID)
+		}
+		if retrievedStandings.Finalised != standings.Finalised {
+			expectedGot(t, standings.Finalised, retrievedStandings.Finalised)
 		}
 		if !standings.CreatedAt.Equal(retrievedStandings.CreatedAt) {
 			expectedGot(t, standings.CreatedAt, retrievedStandings.CreatedAt)
@@ -218,6 +228,9 @@ func TestStandingsAgent_RetrieveStandingsBySeasonAndRoundNumber(t *testing.T) {
 		}
 		if retrievedStandings.SeasonID != standings2.SeasonID {
 			expectedGot(t, standings2.SeasonID, retrievedStandings.SeasonID)
+		}
+		if retrievedStandings.Finalised != standings2.Finalised {
+			expectedGot(t, standings2.Finalised, retrievedStandings.Finalised)
 		}
 		if !standings2.CreatedAt.Equal(retrievedStandings.CreatedAt) {
 			expectedGot(t, standings2.CreatedAt, retrievedStandings.CreatedAt)

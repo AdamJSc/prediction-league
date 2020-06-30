@@ -61,9 +61,8 @@ func main() {
 		Handler: httpAppContainer.Router(),
 	})
 
-	jobScheduler := scheduler.Cron{
-		Jobs: scheduler.MustGenerateCronJobs(config, httpAppContainer),
-	}
+	// start cron
+	scheduler.LoadCron(config, httpAppContainer).Start()
 
 	// run service
 	svc := &core.Service{
@@ -73,7 +72,6 @@ func main() {
 	svc.MustRun(
 		context.Background(),
 		httpServer,
-		jobScheduler,
 	)
 }
 

@@ -12,6 +12,7 @@ type Standings struct {
 	SeasonID    string            `db:"season_id"`
 	RoundNumber int               `db:"round_number"`
 	Rankings    []RankingWithMeta `db:"rankings"`
+	Finalised   bool              `db:"finalised"`
 	CreatedAt   time.Time         `db:"created_at"`
 	UpdatedAt   sqltypes.NullTime `db:"updated_at"`
 }
