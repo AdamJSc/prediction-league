@@ -14,7 +14,7 @@ import (
 func LoadCron(config domain.Config, container *httph.HTTPAppContainer) *cron.Cron {
 	c := cron.New()
 
-	for _, j := range mustGenerateJobs(config, container) {
+	for _, j := range mustGenerateRetrieveLatestStandingsJobs(config, container) {
 		c.AddFunc(j.spec, j.task)
 	}
 
@@ -28,8 +28,8 @@ type job struct {
 	task func()
 }
 
-// mustGenerateJobs generates the jobs to be used by the cron
-func mustGenerateJobs(config domain.Config, container *httph.HTTPAppContainer) []job {
+// mustGenerateRetrieveLatestStandingsJobs generates the RetrieveLatestStandings jobs to be used by the cron
+func mustGenerateRetrieveLatestStandingsJobs(config domain.Config, container *httph.HTTPAppContainer) []job {
 	// get the current season ID for all realms
 	var seasonIDs = make(map[string]struct{})
 	for _, realm := range config.Realms {

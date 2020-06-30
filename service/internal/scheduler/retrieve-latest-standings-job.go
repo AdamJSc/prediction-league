@@ -22,6 +22,13 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
+		// ensure that season is currently active
+		now := time.Now()
+		if !season.Active.HasBegunBy(now) || season.Active.HasElapsedBy(now) {
+			// season is not currently active so don't carry on
+			return
+		}
+
 		// get latest standings from client
 		standings, err := client.RetrieveLatestStandingsBySeason(ctx, season)
 		if err != nil {
@@ -41,7 +48,7 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 			}
 		}
 
-		// store standings
+		// save standings to database
 		standingsAgent := domain.StandingsAgent{
 			StandingsAgentInjector: m,
 		}
