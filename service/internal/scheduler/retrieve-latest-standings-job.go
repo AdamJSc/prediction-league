@@ -128,10 +128,7 @@ func retrieveAndSaveStandingsForSeason(
 	}
 
 	// save standings to database
-	standingsAgent := domain.StandingsAgent{
-		StandingsAgentInjector: injector,
-	}
-	if err := saveStandings(ctx, standings, standingsAgent, season.ID); err != nil {
+	if err := saveStandings(ctx, injector, standings, season.ID); err != nil {
 		return nil, errors.Wrapf(err, "save standings with id %s", standings.ID)
 	}
 
@@ -159,11 +156,8 @@ func processEntrySelectionWithStandings(
 		Score:            rws.GetTotal(),
 	}
 
-	// store scored entry selection
-	scoredEntrySelectionAgent := domain.ScoredEntrySelectionAgent{
-		ScoredEntrySelectionAgentInjector: injector,
-	}
-	if err := saveScoredEntrySelection(ctx, &ses, scoredEntrySelectionAgent); err != nil {
+	// save scored entry selection
+	if err := saveScoredEntrySelection(ctx, injector, &ses); err != nil {
 		return errors.Wrapf(err, "save scored entry selection with standings id %s and entry selection id %s", ses.StandingsID, ses.EntrySelectionID)
 	}
 
@@ -173,7 +167,11 @@ func processEntrySelectionWithStandings(
 }
 
 // saveStandings upserts the provided Standings depending on whether or not it already exists
-func saveStandings(ctx context.Context, s *models.Standings, agent domain.StandingsAgent, seasonID string) error {
+func saveStandings(ctx context.Context, injector app.MySQLInjector, s *models.Standings, seasonID string) error {
+	agent := domain.StandingsAgent{
+		StandingsAgentInjector: injector,
+	}
+
 	existingStandings, err := agent.RetrieveStandingsBySeasonAndRoundNumber(ctx, seasonID, s.RoundNumber)
 	if err != nil {
 		switch err.(type) {
@@ -206,8 +204,17 @@ func saveStandings(ctx context.Context, s *models.Standings, agent domain.Standi
 }
 
 // saveScoredEntrySelection upserts the provided ScoredEntrySelection depending on whether or not it already exists
-func saveScoredEntrySelection(ctx context.Context, ses *models.ScoredEntrySelection, agent domain.ScoredEntrySelectionAgent) error {
-	existingScoredEntrySelection, err := agent.RetrieveScoredEntrySelectionByIDs(ctx, ses.EntrySelectionID.String(), ses.StandingsID.String())
+func saveScoredEntrySelection(ctx context.Context, injector app.MySQLInjector, ses *models.ScoredEntrySelection) error {
+	agent := domain.ScoredEntrySelectionAgent{
+		ScoredEntrySelectionAgentInjector: injector,
+	}
+
+	// see if we have an existing scored entry selection that matches our provided ses
+	existingScoredEntrySelection, err := agent.RetrieveScoredEntrySelectionByIDs(
+		ctx,
+		ses.EntrySelectionID.String(),
+		ses.StandingsID.String(),
+	)
 	if err != nil {
 		switch err.(type) {
 		case domain.NotFoundError:

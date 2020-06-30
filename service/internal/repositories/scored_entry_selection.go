@@ -130,7 +130,7 @@ func (s ScoredEntrySelectionDatabaseRepository) Select(ctx context.Context, crit
 	}
 
 	if len(scoredEntrySelections) == 0 {
-		return nil, MissingDBRecordError{errors.New("no entries found")}
+		return nil, MissingDBRecordError{errors.New("no scored entry selections found")}
 	}
 
 	return scoredEntrySelections, nil
