@@ -15,17 +15,17 @@ func LoadCron(config domain.Config, container *httph.HTTPAppContainer) *cron.Cro
 	c := cron.New()
 
 	for _, j := range mustGenerateJobs(config, container) {
-		c.AddFunc(j.spec(), j.function())
+		c.AddFunc(j.spec, j.task)
 	}
 
 	return c
 }
 
 // job provides our cron job interface
-type job interface {
-	name() string
-	spec() string
-	function() func()
+type job struct {
+	name string
+	spec string
+	task func()
 }
 
 // mustGenerateJobs generates the jobs to be used by the cron
@@ -44,11 +44,11 @@ func mustGenerateJobs(config domain.Config, container *httph.HTTPAppContainer) [
 			log.Fatal(err)
 		}
 
-		jobs = append(jobs, retrieveLatestStandingsJob{
-			MySQLInjector: container,
-			season:        season,
-			client:        footballdata.NewClient(config.FootballDataAPIToken),
-		})
+		jobs = append(jobs, newRetrieveLatestStandingsJob(
+			season,
+			footballdata.NewClient(config.FootballDataAPIToken),
+			container,
+		))
 	}
 
 	return jobs

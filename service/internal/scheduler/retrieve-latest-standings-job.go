@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
 	"github.com/pkg/errors"
 	"log"
 	"prediction-league/service/internal/app"
@@ -10,35 +11,29 @@ import (
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/models"
 	"sort"
+	"strings"
 	"time"
 )
 
-// retrieveLatestStandingsJob represents our job that retrieves the latest league standings for a given season
-type retrieveLatestStandingsJob struct {
-	app.MySQLInjector
-	season models.Season
-	client clients.FootballDataSource
+func newRetrieveLatestStandingsJob(season models.Season, client clients.FootballDataSource, m app.MySQLInjector) job {
+	jobName := strings.ToLower(fmt.Sprintf("retrieve-latest-standings-%s", season.ID))
+	return job{
+		name: jobName,
+		spec: "15 * * * *",
+		task: newRetrieveLatestStandingsTask(jobName, season, client, m),
+	}
 }
 
-func (r retrieveLatestStandingsJob) name() string {
-	return "retrieve_latest_standings"
-}
-
-func (r retrieveLatestStandingsJob) spec() string {
-	// every 15 minutes
-	return "15 * * * *"
-}
-
-func (r retrieveLatestStandingsJob) function() func() {
+func newRetrieveLatestStandingsTask(jobName string, season models.Season, client clients.FootballDataSource, m app.MySQLInjector) func() {
 	return func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
 		// get latest standings from client
-		standings, err := r.client.RetrieveLatestStandingsBySeason(ctx, r.season)
+		standings, err := client.RetrieveLatestStandingsBySeason(ctx, season)
 		if err != nil {
-			wrapped := errors.Wrapf(err, "retrieve latest standings by season id %s", r.season.ID)
-			log.Println(wrapJobError(r, wrapped))
+			wrapped := errors.Wrapf(err, "retrieve latest standings by season id %s", season.ID)
+			log.Println(wrapJobError(jobName, wrapped))
 			return
 		}
 
@@ -48,29 +43,29 @@ func (r retrieveLatestStandingsJob) function() func() {
 		for _, ranking := range standings.Rankings {
 			if _, err := datastore.Teams.GetByID(ranking.ID); err != nil {
 				wrapped := errors.Wrapf(err, "get team by id %s", ranking.ID)
-				log.Println(wrapJobError(r, wrapped))
+				log.Println(wrapJobError(jobName, wrapped))
 				return
 			}
 		}
 
 		// store standings
 		standingsAgent := domain.StandingsAgent{
-			StandingsAgentInjector: r,
+			StandingsAgentInjector: m,
 		}
-		if err := saveStandings(ctx, &standings, standingsAgent, r.season.ID); err != nil {
+		if err := saveStandings(ctx, &standings, standingsAgent, season.ID); err != nil {
 			wrapped := errors.Wrapf(err, "save standings with id %s", standings.ID)
-			log.Println(wrapJobError(r, wrapped))
+			log.Println(wrapJobError(jobName, wrapped))
 			return
 		}
 
 		// retrieve all entries for current season
 		entriesAgent := domain.EntryAgent{
-			EntryAgentInjector: r,
+			EntryAgentInjector: m,
 		}
-		seasonEntries, err := entriesAgent.RetrieveEntriesBySeasonID(ctx, r.season.ID)
+		seasonEntries, err := entriesAgent.RetrieveEntriesBySeasonID(ctx, season.ID)
 		if err != nil {
-			wrapped := errors.Wrapf(err, "retrieve entries by season id %s", r.season.ID)
-			log.Println(wrapJobError(r, wrapped))
+			wrapped := errors.Wrapf(err, "retrieve entries by season id %s", season.ID)
+			log.Println(wrapJobError(jobName, wrapped))
 			return
 		}
 
@@ -85,7 +80,7 @@ func (r retrieveLatestStandingsJob) function() func() {
 			es, err := domain.GetEntrySelectionValidAtTimestamp(entry.EntrySelections, standingsTs)
 			if err != nil {
 				wrapped := errors.Wrapf(err, "entry selection for entrant nickname %s", entry.EntrantNickname)
-				log.Println(wrapJobError(r, wrapped))
+				log.Println(wrapJobError(jobName, wrapped))
 				return
 			}
 
@@ -93,7 +88,7 @@ func (r retrieveLatestStandingsJob) function() func() {
 		}
 
 		scoredEntrySelectionAgent := domain.ScoredEntrySelectionAgent{
-			ScoredEntrySelectionAgentInjector: r,
+			ScoredEntrySelectionAgentInjector: m,
 		}
 
 		// calculate ranking scores for each entry selection based on the retrieved standings
@@ -102,7 +97,7 @@ func (r retrieveLatestStandingsJob) function() func() {
 			rws, err := domain.CalculateRankingsScores(es.Rankings, standingsRankingCollection)
 			if err != nil {
 				wrapped := errors.Wrapf(err, "calculate rankings scores for entry selection with id %s", es.ID)
-				log.Println(wrapJobError(r, wrapped))
+				log.Println(wrapJobError(jobName, wrapped))
 				return
 			}
 
@@ -116,14 +111,14 @@ func (r retrieveLatestStandingsJob) function() func() {
 			// store scored entry selection
 			if err := saveScoredEntrySelection(ctx, &ses, scoredEntrySelectionAgent); err != nil {
 				wrapped := errors.Wrapf(err, "save scored entry selection with standings id %s and entry selection id %s", ses.StandingsID, ses.EntrySelectionID)
-				log.Println(wrapJobError(r, wrapped))
+				log.Println(wrapJobError(jobName, wrapped))
 				return
 			}
 
 			// TODO - check for elapsed standings round and send notifications to all entries if elapsed
 		}
 
-		log.Println(wrapJobStatus(r, "done!"))
+		log.Println(wrapJobStatus(jobName, "done!"))
 	}
 }
 
