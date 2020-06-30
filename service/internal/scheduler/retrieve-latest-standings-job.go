@@ -64,6 +64,11 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 		}
 		seasonEntries, err := entriesAgent.RetrieveEntriesBySeasonID(ctx, season.ID)
 		if err != nil {
+			switch err.(type) {
+			case domain.NotFoundError:
+				// no entries for this season yet so don't carry on
+				return
+			}
 			wrapped := errors.Wrapf(err, "retrieve entries by season id %s", season.ID)
 			log.Println(wrapJobError(jobName, wrapped))
 			return
