@@ -27,7 +27,7 @@ type Client struct {
 }
 
 // RetrieveLatestStandingsBySeason implements this method on the clients.FootballDataSource interface
-func (c Client) RetrieveLatestStandingsBySeason(ctx context.Context, s models.Season) (models.Standings, error) {
+func (c *Client) RetrieveLatestStandingsBySeason(ctx context.Context, s *models.Season) (*models.Standings, error) {
 	var url = getClientFullURL(c, fmt.Sprintf("/v2/competitions/%s/standings?season=%d&standingType=TOTAL",
 		s.ClientID.Value(),
 		s.Active.From.Year()),
@@ -35,21 +35,21 @@ func (c Client) RetrieveLatestStandingsBySeason(ctx context.Context, s models.Se
 
 	httpResponse, err := getResponse(c, ctx, url)
 	if err != nil {
-		return models.Standings{}, err
+		return nil, err
 	}
 
 	body, err := ioutil.ReadAll(httpResponse.Body)
 	if err != nil {
-		return models.Standings{}, err
+		return nil, err
 	}
 
 	var standingsResponse competitionStandingsGetResponse
 	if err := json.Unmarshal(body, &standingsResponse); err != nil {
-		return models.Standings{}, err
+		return nil, err
 	}
 
 	if len(standingsResponse.Standings) != 1 {
-		return models.Standings{}, fmt.Errorf("expected standings length of 1, got %d", len(standingsResponse.Standings))
+		return nil, fmt.Errorf("expected standings length of 1, got %d", len(standingsResponse.Standings))
 	}
 
 	standings := models.Standings{
@@ -59,29 +59,29 @@ func (c Client) RetrieveLatestStandingsBySeason(ctx context.Context, s models.Se
 	for _, tableElem := range standingsResponse.Standings[0].Table {
 		ranking, err := tableElem.toRankingWithMeta()
 		if err != nil {
-			return models.Standings{}, err
+			return nil, err
 		}
 		standings.Rankings = append(standings.Rankings, ranking)
 	}
 
-	return standings, nil
+	return &standings, nil
 }
 
 // NewClient generates a new Client
-func NewClient(apiToken string) Client {
-	return Client{
+func NewClient(apiToken string) *Client {
+	return &Client{
 		apiToken: apiToken,
 		baseURL:  baseURL,
 	}
 }
 
 // getClientFullURL appends the provided endpoint to the provided Client's base URL
-func getClientFullURL(c Client, endpoint string) string {
+func getClientFullURL(c *Client, endpoint string) string {
 	return fmt.Sprintf("%s/%s", c.baseURL, strings.Trim(endpoint, "/"))
 }
 
 // getResponse performs a GET request to the provided URL and returns a response object
-func getResponse(c Client, ctx context.Context, url string) (*http.Response, error) {
+func getResponse(c *Client, ctx context.Context, url string) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ type tableElem struct {
 }
 
 // toRankingWithMeta transforms a tableElem object to a more abstracted RankingWithMeta object
-func (t tableElem) toRankingWithMeta() (models.RankingWithMeta, error) {
+func (t *tableElem) toRankingWithMeta() (models.RankingWithMeta, error) {
 	r := models.NewRankingWithMeta()
 
 	team, err := datastore.Teams.GetByResourceID(models.TeamIdentifier{TeamID: t.Team.ID})

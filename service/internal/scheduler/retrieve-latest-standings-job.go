@@ -15,112 +15,42 @@ import (
 	"time"
 )
 
-func newRetrieveLatestStandingsJob(season models.Season, client clients.FootballDataSource, m app.MySQLInjector) job {
+// newRetrieveLatestStandingsJob returns a new job that retrieves the latest standings, pertaining to the provided season
+func newRetrieveLatestStandingsJob(season models.Season, client clients.FootballDataSource, injector app.MySQLInjector) job {
 	jobName := strings.ToLower(fmt.Sprintf("retrieve-latest-standings-%s", season.ID))
 
 	var task = func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		// ensure that season is currently active
-		now := time.Now()
-		if !season.Active.HasBegunBy(now) || season.Active.HasElapsedBy(now) {
-			// season is not currently active so don't carry on
-			return
-		}
-
-		// get latest standings from client
-		standings, err := client.RetrieveLatestStandingsBySeason(ctx, season)
+		// retrieve current entry selections for provided season
+		currentEntrySelections, err := retrieveCurrentEntrySelectionsForSeason(ctx, &season, injector)
 		if err != nil {
-			wrapped := errors.Wrapf(err, "retrieve latest standings by season id %s", season.ID)
-			log.Println(wrapJobError(jobName, wrapped))
+			log.Println(wrapJobError(jobName, err))
+			return
+		}
+		if currentEntrySelections == nil {
+			// silent fail
 			return
 		}
 
-		sort.Sort(standings)
-
-		// ensure that all team IDs are valid
-		for _, ranking := range standings.Rankings {
-			if _, err := datastore.Teams.GetByID(ranking.ID); err != nil {
-				wrapped := errors.Wrapf(err, "get team by id %s", ranking.ID)
-				log.Println(wrapJobError(jobName, wrapped))
-				return
-			}
-		}
-
-		// save standings to database
-		standingsAgent := domain.StandingsAgent{
-			StandingsAgentInjector: m,
-		}
-		if err := saveStandings(ctx, &standings, standingsAgent, season.ID); err != nil {
-			wrapped := errors.Wrapf(err, "save standings with id %s", standings.ID)
-			log.Println(wrapJobError(jobName, wrapped))
-			return
-		}
-
-		// retrieve all entries for current season
-		entriesAgent := domain.EntryAgent{
-			EntryAgentInjector: m,
-		}
-		seasonEntries, err := entriesAgent.RetrieveEntriesBySeasonID(ctx, season.ID)
+		// retrieve and save standings from upstream data source for provided season
+		standings, err := retrieveAndSaveStandingsForSeason(ctx, &season, client, injector)
 		if err != nil {
-			switch err.(type) {
-			case domain.NotFoundError:
-				// no entries for this season yet so don't carry on
-				return
-			}
-			wrapped := errors.Wrapf(err, "retrieve entries by season id %s", season.ID)
-			log.Println(wrapJobError(jobName, wrapped))
+			log.Println(wrapJobError(jobName, err))
+			return
+		}
+		if standings == nil {
+			// silent fail
 			return
 		}
 
-		standingsTs := standings.CreatedAt
-		if standings.UpdatedAt.Valid {
-			standingsTs = standings.UpdatedAt.Time
-		}
-
-		// get the current entry selection for each of the entries we've just retrieved
-		var currentEntrySelections []models.EntrySelection
-		for _, entry := range seasonEntries {
-			es, err := domain.GetEntrySelectionValidAtTimestamp(entry.EntrySelections, standingsTs)
-			if err != nil {
-				wrapped := errors.Wrapf(err, "entry selection for entrant nickname %s", entry.EntrantNickname)
-				log.Println(wrapJobError(jobName, wrapped))
+		// calculate and save ranking scores for each entry selection based on the retrieved standings
+		for _, entrySelection := range currentEntrySelections {
+			if err := processEntrySelectionWithStandings(ctx, &entrySelection, standings, injector); err != nil {
+				log.Println(wrapJobError(jobName, err))
 				return
 			}
-
-			currentEntrySelections = append(currentEntrySelections, es)
-		}
-
-		scoredEntrySelectionAgent := domain.ScoredEntrySelectionAgent{
-			ScoredEntrySelectionAgentInjector: m,
-		}
-
-		// calculate ranking scores for each entry selection based on the retrieved standings
-		standingsRankingCollection := models.NewRankingCollectionFromRankingWithMetas(standings.Rankings)
-		for _, es := range currentEntrySelections {
-			rws, err := domain.CalculateRankingsScores(es.Rankings, standingsRankingCollection)
-			if err != nil {
-				wrapped := errors.Wrapf(err, "calculate rankings scores for entry selection with id %s", es.ID)
-				log.Println(wrapJobError(jobName, wrapped))
-				return
-			}
-
-			ses := models.ScoredEntrySelection{
-				EntrySelectionID: es.ID,
-				StandingsID:      standings.ID,
-				Rankings:         rws,
-				Score:            rws.GetTotal(),
-			}
-
-			// store scored entry selection
-			if err := saveScoredEntrySelection(ctx, &ses, scoredEntrySelectionAgent); err != nil {
-				wrapped := errors.Wrapf(err, "save scored entry selection with standings id %s and entry selection id %s", ses.StandingsID, ses.EntrySelectionID)
-				log.Println(wrapJobError(jobName, wrapped))
-				return
-			}
-
-			// TODO - check for elapsed standings round and send notifications to all entries if elapsed
 		}
 
 		log.Println(wrapJobStatus(jobName, "done!"))
@@ -131,6 +61,115 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 		spec: "15 * * * *",
 		task: task,
 	}
+}
+
+// retrieveCurrentEntrySelectionsForSeason retrieves all current entry selections for the provided season
+func retrieveCurrentEntrySelectionsForSeason(
+	ctx context.Context,
+	season *models.Season,
+	injector app.MySQLInjector,
+) ([]models.EntrySelection, error) {
+	// ensure that season is currently active
+	now := time.Now()
+	if !season.Active.HasBegunBy(now) || season.Active.HasElapsedBy(now) {
+		// season is not currently active so don't carry on (silent fail)
+		return nil, nil
+	}
+
+	// retrieve all entries for current season
+	entriesAgent := domain.EntryAgent{
+		EntryAgentInjector: injector,
+	}
+	seasonEntries, err := entriesAgent.RetrieveEntriesBySeasonID(ctx, season.ID)
+	if err != nil {
+		switch err.(type) {
+		case domain.NotFoundError:
+			// no entries for this season yet so don't carry on (silent fail)
+			return nil, nil
+		}
+		return nil, errors.Wrapf(err, "retrieve entries by season id %s", season.ID)
+	}
+
+	// get the current entry selection for each of the entries we've just retrieved
+	var currentEntrySelections []models.EntrySelection
+	for _, entry := range seasonEntries {
+		es, err := domain.GetEntrySelectionValidAtTimestamp(entry.EntrySelections, now)
+		if err != nil {
+			return nil, errors.Wrapf(err, "entry selection for entrant nickname %s", entry.EntrantNickname)
+		}
+
+		currentEntrySelections = append(currentEntrySelections, es)
+	}
+
+	return currentEntrySelections, nil
+}
+
+// retrieveAndSaveStandingsForSeason retrieves all current entry selections for the provided season
+func retrieveAndSaveStandingsForSeason(
+	ctx context.Context,
+	season *models.Season,
+	client clients.FootballDataSource,
+	injector app.MySQLInjector,
+) (*models.Standings, error) {
+	// get latest standings from client
+	standings, err := client.RetrieveLatestStandingsBySeason(ctx, season)
+	if err != nil {
+		return nil, errors.Wrapf(err, "retrieve latest standings by season id %s", season.ID)
+	}
+
+	// default standings sort (ascending by Rankings[].Position)
+	sort.Sort(standings)
+
+	// ensure that all team IDs are valid
+	for _, ranking := range standings.Rankings {
+		if _, err := datastore.Teams.GetByID(ranking.ID); err != nil {
+			return nil, errors.Wrapf(err, "get team by id %s", ranking.ID)
+		}
+	}
+
+	// save standings to database
+	standingsAgent := domain.StandingsAgent{
+		StandingsAgentInjector: injector,
+	}
+	if err := saveStandings(ctx, standings, standingsAgent, season.ID); err != nil {
+		return nil, errors.Wrapf(err, "save standings with id %s", standings.ID)
+	}
+
+	return standings, nil
+}
+
+// processEntrySelectionWithStandings
+func processEntrySelectionWithStandings(
+	ctx context.Context,
+	entrySelection *models.EntrySelection,
+	standings *models.Standings,
+	injector app.MySQLInjector,
+) error {
+	standingsRankingCollection := models.NewRankingCollectionFromRankingWithMetas(standings.Rankings)
+
+	rws, err := domain.CalculateRankingsScores(entrySelection.Rankings, standingsRankingCollection)
+	if err != nil {
+		return errors.Wrapf(err, "calculate rankings scores for entry selection with id %s", entrySelection.ID)
+	}
+
+	ses := models.ScoredEntrySelection{
+		EntrySelectionID: entrySelection.ID,
+		StandingsID:      standings.ID,
+		Rankings:         rws,
+		Score:            rws.GetTotal(),
+	}
+
+	// store scored entry selection
+	scoredEntrySelectionAgent := domain.ScoredEntrySelectionAgent{
+		ScoredEntrySelectionAgentInjector: injector,
+	}
+	if err := saveScoredEntrySelection(ctx, &ses, scoredEntrySelectionAgent); err != nil {
+		return errors.Wrapf(err, "save scored entry selection with standings id %s and entry selection id %s", ses.StandingsID, ses.EntrySelectionID)
+	}
+
+	// TODO - check for elapsed standings round and send notifications to all entries if elapsed
+
+	return nil
 }
 
 // saveStandings upserts the provided Standings depending on whether or not it already exists
