@@ -203,6 +203,7 @@ func MustInflate() {
 				"WWFC",
 				"WHUFC",
 			},
+			MaxRounds: 38,
 		},
 	}
 }

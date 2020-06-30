@@ -15,6 +15,7 @@ var standingsDBFields = []string{
 	"season_id",
 	"round_number",
 	"rankings",
+	"finalised",
 }
 
 // StandingsRepository defines the interface for transacting with our Standings data source
@@ -33,7 +34,7 @@ type StandingsDatabaseRepository struct {
 // Insert inserts a new Standings into the database
 func (s StandingsDatabaseRepository) Insert(ctx context.Context, standings *models.Standings) error {
 	stmt := `INSERT INTO standings (id, ` + getDBFieldsStringFromFields(standingsDBFields) + `, created_at)
-					VALUES (?, ?, ?, ?, ?)`
+					VALUES (?, ?, ?, ?, ?, ?)`
 
 	now := time.Now().Truncate(time.Second)
 
@@ -49,6 +50,7 @@ func (s StandingsDatabaseRepository) Insert(ctx context.Context, standings *mode
 		standings.SeasonID,
 		standings.RoundNumber,
 		rankings,
+		standings.Finalised,
 		now,
 	)
 	if err != nil {
@@ -80,6 +82,7 @@ func (s StandingsDatabaseRepository) Update(ctx context.Context, standings *mode
 		standings.SeasonID,
 		standings.RoundNumber,
 		rankings,
+		standings.Finalised,
 		now,
 		standings.ID,
 	)
@@ -116,6 +119,7 @@ func (s StandingsDatabaseRepository) Select(ctx context.Context, criteria map[st
 			&standings.SeasonID,
 			&standings.RoundNumber,
 			&rankings,
+			&standings.Finalised,
 			&standings.CreatedAt,
 			&standings.UpdatedAt,
 		); err != nil {

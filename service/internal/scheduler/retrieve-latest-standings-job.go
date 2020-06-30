@@ -7,6 +7,7 @@ import (
 	"log"
 	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/clients"
+	footballdata "prediction-league/service/internal/clients/football-data-org"
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/models"
@@ -50,6 +51,32 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 			if err := processEntrySelectionWithStandings(ctx, &entrySelection, standings, injector); err != nil {
 				log.Println(wrapJobError(jobName, err))
 				return
+			}
+		}
+
+		switch {
+		case standings.Finalised:
+			// TODO - send notifications to all entries that the previous game round has been finalised
+		case standings.RoundNumber == season.MaxRounds:
+			for _, r := range standings.Rankings {
+				// determine whether all teams have played the maximum number of games
+				if played, ok := r.MetaData[footballdata.MetaKeyPlayedGames]; !ok || played != season.MaxRounds {
+					// no they haven't...
+					break
+				}
+
+				// yes they have!
+				// let's finalise the current (final) standings round
+				standingsAgent := domain.StandingsAgent{
+					StandingsAgentInjector: injector,
+				}
+				standings.Finalised = true
+				if _, err := standingsAgent.UpdateStandings(ctx, *standings); err != nil {
+					log.Println(wrapJobError(jobName, err))
+					return
+				}
+
+				// TODO - send notifications to all entries that the final game round has been finalised
 			}
 		}
 
@@ -135,7 +162,7 @@ func retrieveAndSaveStandingsForSeason(
 	return standings, nil
 }
 
-// processEntrySelectionWithStandings
+// processEntrySelectionWithStandings scores the provided entry selection against the provided standings and saves
 func processEntrySelectionWithStandings(
 	ctx context.Context,
 	entrySelection *models.EntrySelection,
@@ -161,45 +188,81 @@ func processEntrySelectionWithStandings(
 		return errors.Wrapf(err, "save scored entry selection with standings id %s and entry selection id %s", ses.StandingsID, ses.EntrySelectionID)
 	}
 
-	// TODO - check for elapsed standings round and send notifications to all entries if elapsed
-
 	return nil
 }
 
-// saveStandings upserts the provided Standings depending on whether or not it already exists
+// saveStandings upserts the provided Standings depending on whether or not it already exists.
+// This method will also re-point the provided Standings pointer to the previous Standings, if these have not been finalised
+// at the point of invocation, so that the rest of the sequence chain will act on the previous Standings instead
 func saveStandings(ctx context.Context, injector app.MySQLInjector, s *models.Standings, seasonID string) error {
 	agent := domain.StandingsAgent{
 		StandingsAgentInjector: injector,
 	}
 
 	existingStandings, err := agent.RetrieveStandingsBySeasonAndRoundNumber(ctx, seasonID, s.RoundNumber)
-	if err != nil {
+	switch err.(type) {
+	case nil:
+		// we have scraped an existing standings round!
+		// let's update it...
+		existingStandings.Rankings = s.Rankings
+		*s = existingStandings
+		return updateExistingStandings(ctx, injector, s)
+	case domain.NotFoundError:
+		// we have scraped a new standings round!
+		// we'll handle this in a minute
+	default:
+		// something went wrong with retrieving our existing standings...
+		return err
+	}
+
+	// we now know we have a new standings round
+	// let's see if we need to finalise the previous one instead
+	if s.RoundNumber > 1 {
+		previousStandings, err := agent.RetrieveStandingsBySeasonAndRoundNumber(ctx, seasonID, s.RoundNumber-1)
 		switch err.(type) {
 		case domain.NotFoundError:
-			// we have scraped a new standings round!
-			// let's create it...
-			createdStandings, err := agent.CreateStandings(ctx, *s)
-			if err != nil {
-				return err
+			// this should never happen, as we should always have consecutive standings rounds
+			// however, just in case, we're fine to carry on as if we don't need to finalise
+			// the previous standings, so let's drop through to creating a new one below
+		case nil:
+			if !previousStandings.Finalised {
+				// let's finalise the previous standings and continue on our quest with these instead of our newer scraped standings
+				// this means that subsequent methods which create scored entry selections will do so against the previous standings id,
+				// so that we make sure these scores are affiliated with the correct (previous) standings - our newer scraped standings
+				// will simply be picked up and created next time the cron job runs instead
+				previousStandings.Finalised = true
+				*s = previousStandings
+				return updateExistingStandings(ctx, injector, s)
 			}
-
-			*s = createdStandings
-			return nil
 		default:
-			// something went wrong with retrieving our existing standings...
+			// something went wrong with retrieving our previous standings...
 			return err
 		}
 	}
 
-	// we have scraped an existing standings round!
-	// let's update it...
-	existingStandings.Rankings = s.Rankings
-	updatedStandings, err := agent.UpdateStandings(ctx, existingStandings)
+	// we're still here!
+	// let's create our new standings
+	createdStandings, err := agent.CreateStandings(ctx, *s)
 	if err != nil {
 		return err
 	}
 
-	*s = updatedStandings
+	*s = createdStandings
+	return nil
+}
+
+// updateExistingStandings provides a helper method for updating the provided standings
+func updateExistingStandings(ctx context.Context, injector app.MySQLInjector, standings *models.Standings) error {
+	agent := domain.StandingsAgent{
+		StandingsAgentInjector: injector,
+	}
+
+	updatedStandings, err := agent.UpdateStandings(ctx, *standings)
+	if err != nil {
+		return err
+	}
+
+	*standings = updatedStandings
 	return nil
 }
 

@@ -12,6 +12,7 @@ import (
 )
 
 const (
+	MetaKeyPlayedGames    = "playedGames"
 	MetaKeyPoints         = "points"
 	MetaKeyGoalsFor       = "goalsFor"
 	MetaKeyGoalsAgainst   = "goalsAgainst"
@@ -114,6 +115,7 @@ type tableElem struct {
 		ID   int    `json:"id"`
 		Name string `json:"name"`
 	} `json:"team"`
+	PlayedGames    int `json:"playedGames"`
 	GoalsFor       int `json:"goalsFor"`
 	GoalsAgainst   int `json:"goalsAgainst"`
 	GoalDifference int `json:"goalDifference"`
@@ -131,6 +133,7 @@ func (t *tableElem) toRankingWithMeta() (models.RankingWithMeta, error) {
 
 	r.ID = team.ID
 	r.Position = t.Position
+	r.MetaData[MetaKeyPlayedGames] = t.PlayedGames
 	r.MetaData[MetaKeyPoints] = t.Points
 	r.MetaData[MetaKeyGoalsFor] = t.GoalsFor
 	r.MetaData[MetaKeyGoalsAgainst] = t.GoalsAgainst

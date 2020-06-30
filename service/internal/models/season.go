@@ -20,6 +20,7 @@ type Season struct {
 	EntriesAccepted    TimeFrame
 	SelectionsAccepted []TimeFrame
 	TeamIDs            []string
+	MaxRounds          int
 }
 
 // GetState determines a Season's state based on a supplied timestamp
