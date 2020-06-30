@@ -111,7 +111,7 @@ func (e EntryDatabaseRepository) Select(ctx context.Context, criteria map[string
 
 	rows, err := e.agent.QueryContext(ctx, stmt, params...)
 	if err != nil {
-		return []models.Entry{}, wrapDBError(err)
+		return nil, wrapDBError(err)
 	}
 	defer rows.Close()
 
@@ -134,14 +134,14 @@ func (e EntryDatabaseRepository) Select(ctx context.Context, criteria map[string
 			&entry.CreatedAt,
 			&entry.UpdatedAt,
 		); err != nil {
-			return []models.Entry{}, wrapDBError(err)
+			return nil, wrapDBError(err)
 		}
 
 		entries = append(entries, entry)
 	}
 
 	if len(entries) == 0 {
-		return []models.Entry{}, MissingDBRecordError{errors.New("no entries found")}
+		return nil, MissingDBRecordError{errors.New("no entries found")}
 	}
 
 	return entries, nil

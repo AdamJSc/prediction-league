@@ -101,7 +101,7 @@ func (s StandingsDatabaseRepository) Select(ctx context.Context, criteria map[st
 
 	rows, err := s.agent.QueryContext(ctx, stmt, params...)
 	if err != nil {
-		return []models.Standings{}, wrapDBError(err)
+		return nil, wrapDBError(err)
 	}
 	defer rows.Close()
 
@@ -119,18 +119,18 @@ func (s StandingsDatabaseRepository) Select(ctx context.Context, criteria map[st
 			&standings.CreatedAt,
 			&standings.UpdatedAt,
 		); err != nil {
-			return []models.Standings{}, wrapDBError(err)
+			return nil, wrapDBError(err)
 		}
 
 		if err := json.Unmarshal(rankings, &standings.Rankings); err != nil {
-			return []models.Standings{}, wrapDBError(err)
+			return nil, wrapDBError(err)
 		}
 
 		retrievedStandings = append(retrievedStandings, standings)
 	}
 
 	if len(retrievedStandings) == 0 {
-		return []models.Standings{}, MissingDBRecordError{errors.New("no standings found")}
+		return nil, MissingDBRecordError{errors.New("no standings found")}
 	}
 
 	return retrievedStandings, nil

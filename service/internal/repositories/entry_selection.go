@@ -68,7 +68,7 @@ func (e EntrySelectionDatabaseRepository) Select(ctx context.Context, criteria m
 
 	rows, err := e.agent.QueryContext(ctx, stmt, params...)
 	if err != nil {
-		return []models.EntrySelection{}, wrapDBError(err)
+		return nil, wrapDBError(err)
 	}
 	defer rows.Close()
 
@@ -84,18 +84,18 @@ func (e EntrySelectionDatabaseRepository) Select(ctx context.Context, criteria m
 			&rawRankings,
 			&entrySelection.CreatedAt,
 		); err != nil {
-			return []models.EntrySelection{}, wrapDBError(err)
+			return nil, wrapDBError(err)
 		}
 
 		if err := json.Unmarshal(rawRankings, &entrySelection.Rankings); err != nil {
-			return []models.EntrySelection{}, err
+			return nil, err
 		}
 
 		entrySelections = append(entrySelections, entrySelection)
 	}
 
 	if len(entrySelections) == 0 {
-		return []models.EntrySelection{}, MissingDBRecordError{errors.New("no entry selections found")}
+		return nil, MissingDBRecordError{errors.New("no entry selections found")}
 	}
 
 	return entrySelections, nil

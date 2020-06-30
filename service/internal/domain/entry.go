@@ -233,7 +233,7 @@ func (e EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID stri
 		"season_id": seasonID,
 	}, false)
 	if err != nil {
-		return []models.Entry{}, domainErrorFromDBError(err)
+		return nil, domainErrorFromDBError(err)
 	}
 
 	for idx := range entries {
@@ -249,7 +249,7 @@ func (e EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID stri
 			case NotFoundError:
 				// all good
 			default:
-				return []models.Entry{}, domainErrorFromDBError(err)
+				return nil, domainErrorFromDBError(err)
 			}
 		}
 	}

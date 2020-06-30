@@ -101,7 +101,7 @@ func (s ScoredEntrySelectionDatabaseRepository) Select(ctx context.Context, crit
 
 	rows, err := s.agent.QueryContext(ctx, stmt, params...)
 	if err != nil {
-		return []models.ScoredEntrySelection{}, wrapDBError(err)
+		return nil, wrapDBError(err)
 	}
 	defer rows.Close()
 
@@ -119,18 +119,18 @@ func (s ScoredEntrySelectionDatabaseRepository) Select(ctx context.Context, crit
 			&scoredEntrySelection.CreatedAt,
 			&scoredEntrySelection.UpdatedAt,
 		); err != nil {
-			return []models.ScoredEntrySelection{}, wrapDBError(err)
+			return nil, wrapDBError(err)
 		}
 
 		if err := json.Unmarshal(rawRankings, &scoredEntrySelection.Rankings); err != nil {
-			return []models.ScoredEntrySelection{}, err
+			return nil, err
 		}
 
 		scoredEntrySelections = append(scoredEntrySelections, scoredEntrySelection)
 	}
 
 	if len(scoredEntrySelections) == 0 {
-		return []models.ScoredEntrySelection{}, MissingDBRecordError{errors.New("no entries found")}
+		return nil, MissingDBRecordError{errors.New("no entries found")}
 	}
 
 	return scoredEntrySelections, nil
