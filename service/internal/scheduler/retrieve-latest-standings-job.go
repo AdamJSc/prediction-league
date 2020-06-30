@@ -17,15 +17,8 @@ import (
 
 func newRetrieveLatestStandingsJob(season models.Season, client clients.FootballDataSource, m app.MySQLInjector) job {
 	jobName := strings.ToLower(fmt.Sprintf("retrieve-latest-standings-%s", season.ID))
-	return job{
-		name: jobName,
-		spec: "15 * * * *",
-		task: newRetrieveLatestStandingsTask(jobName, season, client, m),
-	}
-}
 
-func newRetrieveLatestStandingsTask(jobName string, season models.Season, client clients.FootballDataSource, m app.MySQLInjector) func() {
-	return func() {
+	var task = func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
@@ -119,6 +112,12 @@ func newRetrieveLatestStandingsTask(jobName string, season models.Season, client
 		}
 
 		log.Println(wrapJobStatus(jobName, "done!"))
+	}
+
+	return job{
+		name: jobName,
+		spec: "15 * * * *",
+		task: task,
 	}
 }
 
