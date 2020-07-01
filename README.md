@@ -91,11 +91,9 @@ make test.run
 
 Take a look at the other `make` commands in the project root `Makefile` which help to automate some of the stop/restart/kill workflows.
 
-## Domain Knowledge
+## Entities
 
-### Entities
-
-#### Season
+### Season
 
 A Season represents a real-world tournament (such as "Premier League 1992/93"). The Seasons data used in the program
 is defined in code as a single data structure (see `datastore.Seasons`).
@@ -103,11 +101,19 @@ is defined in code as a single data structure (see `datastore.Seasons`).
 This is therefore deliberately controlled by the project maintainer as a one-off action approximately once a year,
 immediately prior to accepting entries into a game.
 
-#### Team
+For details on the system's default season, see ["FakeSeason"](#fakeseason) (below).
 
-#### Entry
+### Team
 
-#### Realm
+### Entry
+
+### Entry Selection
+
+### Scored Entry Selection
+
+## Other Domain Knowledge
+
+### Realm
 
 This is effectively an arbitrary flag that represents a distinct instance of the "game".
 
@@ -138,7 +144,7 @@ To set the Season ID pertaining to your local instance, use the Env Key `LOCALHO
 The values of each `*_REALM_PIN` and `*_REALM_SEASON_ID` key are consolidated as `Realm` objects and inflated on a `domain.Config`
 object within the main bootstrap, so that these can be passed around within the centralised object as required.
 
-#### Guard
+### Guard
 
 A Guard is an arbitrary means of assessing whether an agent method should continue its execution, and can be thought of
 as a very basic and rudimentary per-method permission system.
@@ -166,6 +172,34 @@ The handler will pass this context to the main agent method it invokes (e.g. `do
 The agent method can then invoke `ctx.Guard.AttemptMatchesTarget(ctx.Realm.PIN)` to determine if the incoming request
 can be authorised.
 
+### "FakeSeason"
+
+Much of the functionality within this system is time-sensitive in relation to the Season that applies to the current
+Realm. Functionality such as whether or not an Entry or Entry Selection can be created or updated at any given moment
+is determined by the corresponding timeframes set on the Season itself.
+
+Usually these will be **absolute** timeframes that pertain to the dates relevant to a real-world Season
+(see `201920_1` in the `datastore.Seasons` as an example).
+
+For this reason, the default Realm (`localhost`) is affiliated with a specific Season that has the ID `FakeSeason`.
+This Season's timeframes are **relative** to the point at which the system is run, so that core functionality can be
+immediately used.
+
+The schedule take place as follows:
+
+* 0 mins - 20 mins
+    * Entries can be created or updated
+    * Entry Selections can be created or updated
+* 20 mins - 40 mins
+    * No Entries can be created or updated
+    * No Entry Selections can be created or updated
+* 40 mins - 60 mins
+    * No Entries can be created or updated
+    * Entry Selections can be created or updated
+* 60 mins+
+    * No Entries can be created or updated
+    * No Entry Selections can be created or updated
+
 ## Maintenance
 
 ### To add a new Season...
@@ -175,3 +209,5 @@ Include a new `Season` struct in the map provided by `datastore.Seasons`.
 This struct must adhere to the validation rules found within `domain.ValidateSeason()`.
 
 Running the testsuite again will apply the rules to each `Season` in the map and fail if any aren't met.
+
+## TO DO
