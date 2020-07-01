@@ -9,6 +9,11 @@ import (
 
 // ValidateSeason returns an error if validation rules are not satisfied for the provided Season
 func ValidateSeason(s models.Season) error {
+	if s.ID == datastore.FakeSeasonID {
+		// don't validate our faked season
+		return nil
+	}
+
 	// ensure strings are not empty
 	for k, v := range map[string]string{
 		"id":       s.ID,

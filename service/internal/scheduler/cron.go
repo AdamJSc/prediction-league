@@ -43,6 +43,11 @@ func mustGenerateRetrieveLatestStandingsJobs(config domain.Config, container *ht
 			log.Fatal(err)
 		}
 
+		if season.ClientID == nil {
+			// skip if there is no client id (e.g. FakeSeason)
+			continue
+		}
+
 		jobs = append(jobs, newRetrieveLatestStandingsJob(
 			season,
 			footballdata.NewClient(config.FootballDataAPIToken),

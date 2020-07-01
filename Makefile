@@ -38,10 +38,6 @@ test.docker.stop:
 
 # Release from local working directory
 
-app.test:
-
-	docker run --rm node:13.10
-
 app.release:
 	# requires following vars to be passed to command: BUILD_TAG, RELEASE_TAG, SSH_KEY, SSH_USER, SSH_HOST, DOCKER_PROJECT_DIR
 
