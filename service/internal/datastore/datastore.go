@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+const FakeSeasonID = "FakeSeason"
+
 // Teams provides a pre-determined data structure of all Teams that can be referenced within the system
 var Teams = models.TeamCollection{
 	"AFC": {
@@ -163,6 +165,48 @@ func MustInflate() {
 	// inflate seasons using location
 	// we can't do this directly when defining the struct because we need to load the location at runtime
 	Seasons = models.SeasonCollection{
+		FakeSeasonID: {
+			ID:       FakeSeasonID,
+			ClientID: nil,	// will not trigger requests to client when running in retrieve latest standings job
+			Name:     "Localhost Season",
+			EntriesAccepted: models.TimeFrame{
+				From:  time.Now(),
+				Until: time.Now().Add(20 * time.Minute),
+			},
+			SelectionsAccepted: []models.TimeFrame{
+				{
+					From:  time.Now(),
+					Until: time.Now().Add(20 * time.Minute),
+				},
+				{
+					From:  time.Now().Add(40 * time.Minute),
+					Until: time.Now().Add(60 * time.Minute),
+				},
+			},
+			TeamIDs: []string{
+				"AFC",
+				"AFCB",
+				"AVFC",
+				"BFC",
+				"BHAFC",
+				"CFC",
+				"CPFC",
+				"EFC",
+				"LFC",
+				"LCFC",
+				"MCFC",
+				"MUFC",
+				"NCFC",
+				"NUFC",
+				"SUFC",
+				"SFC",
+				"THFC",
+				"WFC",
+				"WWFC",
+				"WHUFC",
+			},
+			MaxRounds: 38,
+		},
 		"201920_1": {
 			ID:       "201920_1",
 			ClientID: models.SeasonIdentifier{SeasonID: "PL"},

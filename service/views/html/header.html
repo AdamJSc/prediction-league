@@ -29,22 +29,25 @@
                                 Results {{if eq .ActivePage "results"}}<span class="sr-only">(current)</span>{{end}}
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link{{if eq .ActivePage "enter"}} active{{end}}" href="/enter">
-                                Enter {{if eq .ActivePage "enter"}}<span class="sr-only">(current)</span>{{end}}
-                            </a>
-                        </li>
+                        {{if not .IsLoggedIn}}
+                            <li class="nav-item">
+                                <a class="nav-link{{if eq .ActivePage "enter"}} active{{end}}" href="/enter">
+                                    Enter {{if eq .ActivePage "enter"}}<span class="sr-only">(current)</span>{{end}}
+                                </a>
+                            </li>
+                        {{end}}
                         <li class="nav-item">
                             <a class="nav-link{{if eq .ActivePage "faq"}} active{{end}}" href="/faq">
                                 FAQ {{if eq .ActivePage "faq"}}<span class="sr-only">(current)</span>{{end}}
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link{{if eq .ActivePage "selection"}} active{{end}}" href="/selection">
-                                My Selection
-                            </a>
-                        </li>
-                        {{if .IsLoggedIn}}
+                        {{if not .IsLoggedIn}}
+                            <li class="nav-item">
+                                <a class="nav-link{{if eq .ActivePage "selection"}} active{{end}}" href="/selection">
+                                    My Selection
+                                </a>
+                            </li>
+                        {{else}}
                             <li class="nav-item">
                                 <a class="nav-link" href="/logout">
                                     Logout <i class="fa fa-sign-out" aria-hidden="true"></i>
