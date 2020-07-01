@@ -7,7 +7,7 @@
         </div>
         <div class="row">
             <div class="col-md-8 offset-md-2">
-                <p>Login using the link above to pick your league table</p>
+                <p>Use the <em>My Selection</em> link in the menu to submit your league table prediction!</p>
                 <ul>
                     <li>Nickname: <strong>{{entryData.entryNickname}}</strong></li>
                     <li>Short Code: <strong>{{entryData.entryShortCode}}</strong></li>
