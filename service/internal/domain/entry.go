@@ -56,7 +56,7 @@ func (e EntryAgent) CreateEntry(ctx context.Context, entry models.Entry, s *mode
 	entry.Status = models.EntryStatusPending
 	entry.PaymentMethod = sqltypes.NullString{}
 	entry.PaymentRef = sqltypes.NullString{}
-	entry.EntrySelections = []models.EntrySelection{}
+	entry.EntryPredictions = []models.EntryPrediction{}
 	entry.ApprovedAt = sqltypes.NullTime{}
 	entry.CreatedAt = time.Time{}
 	entry.UpdatedAt = sqltypes.NullTime{}
@@ -122,7 +122,7 @@ func (e EntryAgent) CreateEntry(ctx context.Context, entry models.Entry, s *mode
 // RetrieveEntryByID handles the retrieval of an existing Entry in the database by its ID
 func (e EntryAgent) RetrieveEntryByID(ctx context.Context, id string) (models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
-	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
+	entryPredictionRepo := repositories.NewEntryPredictionDatabaseRepository(e.MySQL())
 
 	entries, err := entryRepo.Select(ctx, map[string]interface{}{
 		"id": id,
@@ -137,8 +137,8 @@ func (e EntryAgent) RetrieveEntryByID(ctx context.Context, id string) (models.En
 		return models.Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
-	// retrieve and inflate all entry selections
-	entry.EntrySelections, err = entrySelectionRepo.Select(ctx, map[string]interface{}{
+	// retrieve and inflate all entry predictions
+	entry.EntryPredictions, err = entryPredictionRepo.Select(ctx, map[string]interface{}{
 		"entry_id": entry.ID,
 	}, false)
 	if err != nil {
@@ -157,7 +157,7 @@ func (e EntryAgent) RetrieveEntryByID(ctx context.Context, id string) (models.En
 // RetrieveEntryByEntrantEmail handles the retrieval of an existing Entry in the database by its email
 func (e EntryAgent) RetrieveEntryByEntrantEmail(ctx context.Context, email string) (models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
-	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
+	entryPredictionRepo := repositories.NewEntryPredictionDatabaseRepository(e.MySQL())
 
 	entries, err := entryRepo.Select(ctx, map[string]interface{}{
 		"entrant_email": email,
@@ -172,8 +172,8 @@ func (e EntryAgent) RetrieveEntryByEntrantEmail(ctx context.Context, email strin
 		return models.Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
-	// retrieve and inflate all entry selections
-	entry.EntrySelections, err = entrySelectionRepo.Select(ctx, map[string]interface{}{
+	// retrieve and inflate all entry predictions
+	entry.EntryPredictions, err = entryPredictionRepo.Select(ctx, map[string]interface{}{
 		"entry_id": entry.ID,
 	}, false)
 	if err != nil {
@@ -192,7 +192,7 @@ func (e EntryAgent) RetrieveEntryByEntrantEmail(ctx context.Context, email strin
 // RetrieveEntryByEntrantNickname handles the retrieval of an existing Entry in the database by its nickname
 func (e EntryAgent) RetrieveEntryByEntrantNickname(ctx context.Context, email string) (models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
-	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
+	entryPredictionRepo := repositories.NewEntryPredictionDatabaseRepository(e.MySQL())
 
 	entries, err := entryRepo.Select(ctx, map[string]interface{}{
 		"entrant_nickname": email,
@@ -207,8 +207,8 @@ func (e EntryAgent) RetrieveEntryByEntrantNickname(ctx context.Context, email st
 		return models.Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
-	// retrieve and inflate all entry selections
-	entry.EntrySelections, err = entrySelectionRepo.Select(ctx, map[string]interface{}{
+	// retrieve and inflate all entry predictions
+	entry.EntryPredictions, err = entryPredictionRepo.Select(ctx, map[string]interface{}{
 		"entry_id": entry.ID,
 	}, false)
 	if err != nil {
@@ -227,7 +227,7 @@ func (e EntryAgent) RetrieveEntryByEntrantNickname(ctx context.Context, email st
 // RetrieveEntriesBySeasonID handles the retrieval of existing Entries in the database by their Season ID
 func (e EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID string) ([]models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
-	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
+	entryPredictionRepo := repositories.NewEntryPredictionDatabaseRepository(e.MySQL())
 
 	entries, err := entryRepo.Select(ctx, map[string]interface{}{
 		"season_id": seasonID,
@@ -239,8 +239,8 @@ func (e EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID stri
 	for idx := range entries {
 		entry := &entries[idx]
 
-		// retrieve and inflate all entry selections
-		entry.EntrySelections, err = entrySelectionRepo.Select(ctx, map[string]interface{}{
+		// retrieve and inflate all entry predictions
+		entry.EntryPredictions, err = entryPredictionRepo.Select(ctx, map[string]interface{}{
 			"entry_id": entry.ID,
 		}, false)
 		if err != nil {
@@ -288,10 +288,10 @@ func (e EntryAgent) UpdateEntry(ctx context.Context, entry models.Entry) (models
 	return entry, nil
 }
 
-// AddEntrySelectionToEntry adds the provided EntrySelection to the provided Entry
-func (e EntryAgent) AddEntrySelectionToEntry(ctx context.Context, entrySelection models.EntrySelection, entry models.Entry) (models.Entry, error) {
+// AddEntryPredictionToEntry adds the provided EntryPrediction to the provided Entry
+func (e EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPrediction models.EntryPrediction, entry models.Entry) (models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
-	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
+	entryPredictionRepo := repositories.NewEntryPredictionDatabaseRepository(e.MySQL())
 
 	// check short code is ok
 	if !GuardFromContext(ctx).AttemptMatches(entry.ShortCode) {
@@ -315,7 +315,7 @@ func (e EntryAgent) AddEntrySelectionToEntry(ctx context.Context, entrySelection
 	}
 
 	// check if season is currently accepting entries
-	if !season.GetState(TimestampFromContext(ctx)).IsAcceptingSelections {
+	if !season.GetState(TimestampFromContext(ctx)).IsAcceptingPredictions {
 		return models.Entry{}, ConflictError{errors.New("season is not currently accepting entries")}
 	}
 
@@ -327,12 +327,12 @@ func (e EntryAgent) AddEntrySelectionToEntry(ctx context.Context, entrySelection
 	}
 
 	// make sure we have no invalid IDs
-	for _, selectionID := range entrySelection.Rankings.GetIDs() {
-		if _, ok := teamIDCount[selectionID]; ok {
-			teamIDCount[selectionID]++
+	for _, predictionID := range entryPrediction.Rankings.GetIDs() {
+		if _, ok := teamIDCount[predictionID]; ok {
+			teamIDCount[predictionID]++
 			continue
 		}
-		invalidRankingIDs = append(invalidRankingIDs, selectionID)
+		invalidRankingIDs = append(invalidRankingIDs, predictionID)
 	}
 
 	// make sure we have no missing or duplicate IDs
@@ -372,14 +372,14 @@ func (e EntryAgent) AddEntrySelectionToEntry(ctx context.Context, entrySelection
 		return models.Entry{}, InternalError{err}
 	}
 
-	entrySelection.ID = id
-	entrySelection.EntryID = entry.ID
+	entryPrediction.ID = id
+	entryPrediction.EntryID = entry.ID
 
-	if err := entrySelectionRepo.Insert(ctx, &entrySelection); err != nil {
+	if err := entryPredictionRepo.Insert(ctx, &entryPrediction); err != nil {
 		return models.Entry{}, domainErrorFromDBError(err)
 	}
 
-	entry.EntrySelections = append(entry.EntrySelections, entrySelection)
+	entry.EntryPredictions = append(entry.EntryPredictions, entryPrediction)
 
 	return entry, nil
 }
@@ -496,17 +496,17 @@ func (e EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode strin
 	return entry, nil
 }
 
-// RetrieveEntrySelectionByTimestamp returns the entry selection affiliated with the provided entry id that is valid at the point the provided timestamp occurs
-func (e EntryAgent) RetrieveEntrySelectionByTimestamp(ctx context.Context, entry models.Entry, ts time.Time) (models.EntrySelection, error) {
-	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(e.MySQL())
+// RetrieveEntryPredictionByTimestamp returns the entry prediction affiliated with the provided entry id that is valid at the point the provided timestamp occurs
+func (e EntryAgent) RetrieveEntryPredictionByTimestamp(ctx context.Context, entry models.Entry, ts time.Time) (models.EntryPrediction, error) {
+	entryPredictionRepo := repositories.NewEntryPredictionDatabaseRepository(e.MySQL())
 
-	// retrieve entry selection
-	entrySelection, err := entrySelectionRepo.SelectByEntryIDAndTimestamp(ctx, entry.ID.String(), ts)
+	// retrieve entry prediction
+	entryPrediction, err := entryPredictionRepo.SelectByEntryIDAndTimestamp(ctx, entry.ID.String(), ts)
 	if err != nil {
-		return models.EntrySelection{}, domainErrorFromDBError(err)
+		return models.EntryPrediction{}, domainErrorFromDBError(err)
 	}
 
-	return entrySelection, nil
+	return entryPrediction, nil
 }
 
 // sanitiseEntry sanitises and validates an Entry
@@ -590,9 +590,9 @@ func GenerateUniqueShortCode(ctx context.Context, db coresql.Agent) (string, err
 	return "", err
 }
 
-// GetEntrySelectionValidAtTimestamp returns the latest EntrySelection that existed at the point of the provided timestamp
-func GetEntrySelectionValidAtTimestamp(entrySelections []models.EntrySelection, ts time.Time) (models.EntrySelection, error) {
-	desc := entrySelections
+// GetEntryPredictionValidAtTimestamp returns the latest EntryPrediction that existed at the point of the provided timestamp
+func GetEntryPredictionValidAtTimestamp(entryPredictions []models.EntryPrediction, ts time.Time) (models.EntryPrediction, error) {
+	desc := entryPredictions
 	sort.SliceStable(desc, func(i, j int) bool {
 		// sort descending
 		return desc[j].CreatedAt.Before(desc[i].CreatedAt)
@@ -606,7 +606,7 @@ func GetEntrySelectionValidAtTimestamp(entrySelections []models.EntrySelection, 
 		}
 	}
 
-	return models.EntrySelection{}, errors.New("not found")
+	return models.EntryPrediction{}, errors.New("not found")
 }
 
 func isValidEmail(email string) bool {

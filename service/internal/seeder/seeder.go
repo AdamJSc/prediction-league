@@ -17,8 +17,8 @@ var entries = []models.Entry{
 		EntrantName:     "Adam S",
 		EntrantNickname: "AdamS",
 		EntrantEmail:    "seeded1@example.net",
-		EntrySelections: []models.EntrySelection{
-			models.NewEntrySelection([]string{
+		EntryPredictions: []models.EntryPrediction{
+			models.NewEntryPrediction([]string{
 				"MCFC",
 				"LFC",
 				"THFC",
@@ -46,8 +46,8 @@ var entries = []models.Entry{
 		EntrantName:     "Ben M",
 		EntrantNickname: "BenM",
 		EntrantEmail:    "seeded2@example.net",
-		EntrySelections: []models.EntrySelection{
-			models.NewEntrySelection([]string{
+		EntryPredictions: []models.EntryPrediction{
+			models.NewEntryPrediction([]string{
 				"MCFC",
 				"LFC",
 				"CFC",
@@ -74,8 +74,8 @@ var entries = []models.Entry{
 		EntrantName:     "Chris F",
 		EntrantNickname: "ChrisF",
 		EntrantEmail:    "seeded3@example.net",
-		EntrySelections: []models.EntrySelection{
-			models.NewEntrySelection([]string{
+		EntryPredictions: []models.EntryPrediction{
+			models.NewEntryPrediction([]string{
 				"MCFC",
 				"THFC",
 				"LFC",
@@ -102,8 +102,8 @@ var entries = []models.Entry{
 		EntrantName:     "Dan N",
 		EntrantNickname: "DanN",
 		EntrantEmail:    "seeded4@example.net",
-		EntrySelections: []models.EntrySelection{
-			models.NewEntrySelection([]string{
+		EntryPredictions: []models.EntryPrediction{
+			models.NewEntryPrediction([]string{
 				"MCFC",
 				"LFC",
 				"THFC",
@@ -130,8 +130,8 @@ var entries = []models.Entry{
 		EntrantName:     "Ed T",
 		EntrantNickname: "EdT",
 		EntrantEmail:    "seeded5@example.net",
-		EntrySelections: []models.EntrySelection{
-			models.NewEntrySelection([]string{
+		EntryPredictions: []models.EntryPrediction{
+			models.NewEntryPrediction([]string{
 				"MCFC",
 				"LFC",
 				"AFC",
@@ -158,8 +158,8 @@ var entries = []models.Entry{
 		EntrantName:     "Gary B",
 		EntrantNickname: "GaryB",
 		EntrantEmail:    "seeded6@example.net",
-		EntrySelections: []models.EntrySelection{
-			models.NewEntrySelection([]string{
+		EntryPredictions: []models.EntryPrediction{
+			models.NewEntryPrediction([]string{
 				"LFC",
 				"MCFC",
 				"THFC",
@@ -186,8 +186,8 @@ var entries = []models.Entry{
 		EntrantName:     "Nigel B",
 		EntrantNickname: "NigelB",
 		EntrantEmail:    "seeded7@example.net",
-		EntrySelections: []models.EntrySelection{
-			models.NewEntrySelection([]string{
+		EntryPredictions: []models.EntryPrediction{
+			models.NewEntryPrediction([]string{
 				"LFC",
 				"MCFC",
 				"AFC",
@@ -214,8 +214,8 @@ var entries = []models.Entry{
 		EntrantName:     "Ray G",
 		EntrantNickname: "RayG",
 		EntrantEmail:    "seeded8@example.net",
-		EntrySelections: []models.EntrySelection{
-			models.NewEntrySelection([]string{
+		EntryPredictions: []models.EntryPrediction{
+			models.NewEntryPrediction([]string{
 				"LFC",
 				"MCFC",
 				"THFC",
@@ -242,8 +242,8 @@ var entries = []models.Entry{
 		EntrantName:     "Rich L",
 		EntrantNickname: "RichL",
 		EntrantEmail:    "seeded9@example.net",
-		EntrySelections: []models.EntrySelection{
-			models.NewEntrySelection([]string{
+		EntryPredictions: []models.EntryPrediction{
+			models.NewEntryPrediction([]string{
 				"MCFC",
 				"LFC",
 				"THFC",
@@ -270,8 +270,8 @@ var entries = []models.Entry{
 		EntrantName:     "Tom M",
 		EntrantNickname: "TomM",
 		EntrantEmail:    "seeded10@example.net",
-		EntrySelections: []models.EntrySelection{
-			models.NewEntrySelection([]string{
+		EntryPredictions: []models.EntryPrediction{
+			models.NewEntryPrediction([]string{
 				"MCFC",
 				"LFC",
 				"THFC",
@@ -298,8 +298,8 @@ var entries = []models.Entry{
 		EntrantName:     "Trev H",
 		EntrantNickname: "TrevH",
 		EntrantEmail:    "seede11@example.net",
-		EntrySelections: []models.EntrySelection{
-			models.NewEntrySelection([]string{
+		EntryPredictions: []models.EntryPrediction{
+			models.NewEntryPrediction([]string{
 				"MCFC",
 				"LFC",
 				"THFC",
@@ -328,7 +328,7 @@ var entries = []models.Entry{
 func MustSeed(db coresql.Agent) {
 	ctx := context.Background()
 	entryRepo := repositories.NewEntryDatabaseRepository(db)
-	entrySelectionRepo := repositories.NewEntrySelectionDatabaseRepository(db)
+	entryPredictionRepo := repositories.NewEntryPredictionDatabaseRepository(db)
 
 	seasonID := "201920_1"
 	realmName := "localhost"
@@ -360,11 +360,11 @@ func MustSeed(db coresql.Agent) {
 			log.Fatal(err)
 		}
 
-		for _, entrySelection := range entry.EntrySelections {
-			entrySelection.ID = uuid.Must(uuid.NewV4())
-			entrySelection.EntryID = entry.ID
+		for _, entryPrediction := range entry.EntryPredictions {
+			entryPrediction.ID = uuid.Must(uuid.NewV4())
+			entryPrediction.EntryID = entry.ID
 
-			if err := entrySelectionRepo.Insert(context.Background(), &entrySelection); err != nil {
+			if err := entryPredictionRepo.Insert(context.Background(), &entryPrediction); err != nil {
 				switch err.(type) {
 				case repositories.DuplicateDBRecordError:
 					// already seeded, so we can fail silently

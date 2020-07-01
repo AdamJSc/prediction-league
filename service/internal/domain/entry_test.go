@@ -51,8 +51,8 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		Status:        "entry_status",
 		PaymentMethod: sqltypes.ToNullString(&paymentMethod),
 		PaymentRef:    sqltypes.ToNullString(&paymentRef),
-		EntrySelections: []models.EntrySelection{
-			models.NewEntrySelection([]string{"entry_team_id_1", "entry_team_id_2"}),
+		EntryPredictions: []models.EntryPrediction{
+			models.NewEntryPrediction([]string{"entry_team_id_1", "entry_team_id_2"}),
 		},
 		ApprovedAt: sqltypes.ToNullTime(time.Now()),
 		CreatedAt:  time.Time{},
@@ -106,8 +106,8 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		if createdEntry.PaymentRef.Valid {
 			expectedEmpty(t, "Entry.PaymentRef", createdEntry.PaymentRef)
 		}
-		if len(createdEntry.EntrySelections) != 0 {
-			expectedEmpty(t, "Entry.EntrySelections", createdEntry.EntrySelections)
+		if len(createdEntry.EntryPredictions) != 0 {
+			expectedEmpty(t, "Entry.EntryPredictions", createdEntry.EntryPredictions)
 		}
 		if createdEntry.ApprovedAt.Valid {
 			expectedEmpty(t, "Entry.ApprovedAt", createdEntry.ApprovedAt)
@@ -255,7 +255,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	})
 }
 
-func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
+func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 	defer truncate(t)
 
 	entry := insertEntry(t, generateTestEntry(t,
@@ -266,69 +266,69 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 
 	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
 
-	t.Run("add an entry selection to an existing entry with valid guard value must succeed", func(t *testing.T) {
+	t.Run("add an entry prediction to an existing entry with valid guard value must succeed", func(t *testing.T) {
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
 		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
 		teamIDs := models.NewRankingCollectionFromIDs(testSeason.TeamIDs)
 
-		// reverse order of team IDs to ensure this is still an acceptable set of rankings when adding an entry selection
+		// reverse order of team IDs to ensure this is still an acceptable set of rankings when adding an entry prediction
 		var rankings models.RankingCollection
 		for i := len(teamIDs) - 1; i >= 0; i-- {
 			rankings = append(rankings, teamIDs[i])
 		}
 
-		entrySelection := models.EntrySelection{Rankings: rankings}
+		entryPrediction := models.EntryPrediction{Rankings: rankings}
 
-		entryWithSelection, err := agent.AddEntrySelectionToEntry(ctx, entrySelection, entry)
+		entryWithPrediction, err := agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if len(entryWithSelection.EntrySelections) != 1 {
-			expectedGot(t, 1, len(entryWithSelection.EntrySelections))
+		if len(entryWithPrediction.EntryPredictions) != 1 {
+			expectedGot(t, 1, len(entryWithPrediction.EntryPredictions))
 		}
 
-		if !gocmp.Equal(entryWithSelection.EntrySelections[0].Rankings, rankings) {
-			t.Fatal(gocmp.Diff(rankings, entryWithSelection.EntrySelections[0].Rankings))
+		if !gocmp.Equal(entryWithPrediction.EntryPredictions[0].Rankings, rankings) {
+			t.Fatal(gocmp.Diff(rankings, entryWithPrediction.EntryPredictions[0].Rankings))
 		}
 	})
 
-	t.Run("add an entry selection to an existing entry with invalid guard attempt must fail", func(t *testing.T) {
+	t.Run("add an entry prediction to an existing entry with invalid guard attempt must fail", func(t *testing.T) {
 		ctx, cancel := testContextWithGuardAttempt(t, "not_the_same_as_entry.ShortCode")
 		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
-		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
+		entryPrediction := models.EntryPrediction{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
 
-		_, err := agent.AddEntrySelectionToEntry(ctx, entrySelection, entry)
+		_, err := agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
 		if !cmp.ErrorType(err, domain.UnauthorizedError{})().Success() {
 			expectedTypeOfGot(t, domain.UnauthorizedError{}, err)
 		}
 	})
 
-	t.Run("add an entry selection to an existing entry with invalid realm name must fail", func(t *testing.T) {
+	t.Run("add an entry prediction to an existing entry with invalid realm name must fail", func(t *testing.T) {
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
 		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
 		domain.RealmFromContext(ctx).Name = "NOT_TEST_REALM"
 
-		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
+		entryPrediction := models.EntryPrediction{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
 
-		_, err := agent.AddEntrySelectionToEntry(ctx, entrySelection, entry)
+		_, err := agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
 	})
 
-	t.Run("add an entry selection to a non-existing entry must fail", func(t *testing.T) {
+	t.Run("add an entry prediction to a non-existing entry must fail", func(t *testing.T) {
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
 		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
-		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
+		entryPrediction := models.EntryPrediction{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
 
 		nonExistentEntryID, err := uuid.NewV4()
 		if err != nil {
@@ -338,43 +338,43 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 		nonExistentEntry := entry
 		nonExistentEntry.ID = nonExistentEntryID
 
-		_, err = agent.AddEntrySelectionToEntry(ctx, entrySelection, nonExistentEntry)
+		_, err = agent.AddEntryPredictionToEntry(ctx, entryPrediction, nonExistentEntry)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
 	})
 
-	t.Run("add an entry selection to an entry with an invalid season must fail", func(t *testing.T) {
+	t.Run("add an entry prediction to an entry with an invalid season must fail", func(t *testing.T) {
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
 		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
-		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
+		entryPrediction := models.EntryPrediction{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
 
 		entryWithInvalidSeason := entry
 		entryWithInvalidSeason.SeasonID = "not_a_valid_season"
 
-		_, err := agent.AddEntrySelectionToEntry(ctx, entrySelection, entryWithInvalidSeason)
+		_, err := agent.AddEntryPredictionToEntry(ctx, entryPrediction, entryWithInvalidSeason)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
 	})
 
-	t.Run("add an entry selection to an entry whose season is not currently accepting entries must fail", func(t *testing.T) {
+	t.Run("add an entry prediction to an entry whose season is not currently accepting entries must fail", func(t *testing.T) {
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
 		// ensure that context timestamp falls outside an accepting entries timeframe for the provided season
 		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, false)
 		defer cancel()
 
-		entrySelection := models.EntrySelection{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
+		entryPrediction := models.EntryPrediction{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
 
-		_, err := agent.AddEntrySelectionToEntry(ctx, entrySelection, entry)
+		_, err := agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
 	})
 
-	t.Run("add an entry selection with rankings that include an invalid team ID must fail", func(t *testing.T) {
+	t.Run("add an entry prediction with rankings that include an invalid team ID must fail", func(t *testing.T) {
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
 		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
@@ -383,9 +383,9 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 		rankings = append(rankings, models.Ranking{ID: "not_a_valid_team_id"})
 		expectedMessage := "Invalid Team ID: not_a_valid_team_id"
 
-		entrySelection := models.EntrySelection{Rankings: rankings}
+		entryPrediction := models.EntryPrediction{Rankings: rankings}
 
-		_, err := agent.AddEntrySelectionToEntry(ctx, entrySelection, entry)
+		_, err := agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
 
 		verr, ok := err.(domain.ValidationError)
 		if !ok {
@@ -397,7 +397,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 		}
 	})
 
-	t.Run("add an entry selection with rankings that include a missing team ID must fail", func(t *testing.T) {
+	t.Run("add an entry prediction with rankings that include a missing team ID must fail", func(t *testing.T) {
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
 		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
@@ -414,9 +414,9 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 		// trim final ranking
 		rankings = rankings[:uIdx]
 
-		entrySelection := models.EntrySelection{Rankings: rankings}
+		entryPrediction := models.EntryPrediction{Rankings: rankings}
 
-		_, err := agent.AddEntrySelectionToEntry(ctx, entrySelection, entry)
+		_, err := agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
 
 		verr, ok := err.(domain.ValidationError)
 		if !ok {
@@ -428,7 +428,7 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 		}
 	})
 
-	t.Run("add an entry selection with rankings that include a duplicate team ID must fail", func(t *testing.T) {
+	t.Run("add an entry prediction with rankings that include a duplicate team ID must fail", func(t *testing.T) {
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
 		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
@@ -445,9 +445,9 @@ func TestEntryAgent_AddEntrySelectionToEntry(t *testing.T) {
 		// append duplicate ID to rankings
 		rankings = append(rankings, models.Ranking{ID: duplicateID})
 
-		entrySelection := models.EntrySelection{Rankings: rankings}
+		entryPrediction := models.EntryPrediction{Rankings: rankings}
 
-		_, err := agent.AddEntrySelectionToEntry(ctx, entrySelection, entry)
+		_, err := agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
 
 		verr, ok := err.(domain.ValidationError)
 		if !ok {
@@ -470,7 +470,7 @@ func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
 	))
 
 	for i := 0; i < 3; i++ {
-		entry.EntrySelections = append(entry.EntrySelections, insertEntrySelection(t, generateTestEntrySelection(t, entry.ID)))
+		entry.EntryPredictions = append(entry.EntryPredictions, insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID)))
 	}
 
 	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
@@ -516,8 +516,8 @@ func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
 		if entry.PaymentRef != retrievedEntry.PaymentRef {
 			expectedGot(t, entry.PaymentRef, retrievedEntry.PaymentRef)
 		}
-		if len(entry.EntrySelections) != len(retrievedEntry.EntrySelections) {
-			t.Fatal(gocmp.Diff(entry.EntrySelections, retrievedEntry.EntrySelections))
+		if len(entry.EntryPredictions) != len(retrievedEntry.EntryPredictions) {
+			t.Fatal(gocmp.Diff(entry.EntryPredictions, retrievedEntry.EntryPredictions))
 		}
 		if entry.ApprovedAt.Time.In(utc) != retrievedEntry.ApprovedAt.Time.In(utc) {
 			expectedGot(t, entry.ApprovedAt, retrievedEntry.ApprovedAt)
@@ -563,7 +563,7 @@ func TestEntryAgent_RetrieveEntryByEntrantEmail(t *testing.T) {
 	))
 
 	for i := 0; i < 3; i++ {
-		entry.EntrySelections = append(entry.EntrySelections, insertEntrySelection(t, generateTestEntrySelection(t, entry.ID)))
+		entry.EntryPredictions = append(entry.EntryPredictions, insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID)))
 	}
 
 	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
@@ -609,8 +609,8 @@ func TestEntryAgent_RetrieveEntryByEntrantEmail(t *testing.T) {
 		if entry.PaymentRef != retrievedEntry.PaymentRef {
 			expectedGot(t, entry.PaymentRef, retrievedEntry.PaymentRef)
 		}
-		if len(entry.EntrySelections) != len(retrievedEntry.EntrySelections) {
-			t.Fatal(gocmp.Diff(entry.EntrySelections, retrievedEntry.EntrySelections))
+		if len(entry.EntryPredictions) != len(retrievedEntry.EntryPredictions) {
+			t.Fatal(gocmp.Diff(entry.EntryPredictions, retrievedEntry.EntryPredictions))
 		}
 		if entry.ApprovedAt.Time.In(utc) != retrievedEntry.ApprovedAt.Time.In(utc) {
 			expectedGot(t, entry.ApprovedAt, retrievedEntry.ApprovedAt)
@@ -656,7 +656,7 @@ func TestEntryAgent_RetrieveEntryByEntrantNickname(t *testing.T) {
 	))
 
 	for i := 0; i < 3; i++ {
-		entry.EntrySelections = append(entry.EntrySelections, insertEntrySelection(t, generateTestEntrySelection(t, entry.ID)))
+		entry.EntryPredictions = append(entry.EntryPredictions, insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID)))
 	}
 
 	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
@@ -702,8 +702,8 @@ func TestEntryAgent_RetrieveEntryByEntrantNickname(t *testing.T) {
 		if entry.PaymentRef != retrievedEntry.PaymentRef {
 			expectedGot(t, entry.PaymentRef, retrievedEntry.PaymentRef)
 		}
-		if len(entry.EntrySelections) != len(retrievedEntry.EntrySelections) {
-			t.Fatal(gocmp.Diff(entry.EntrySelections, retrievedEntry.EntrySelections))
+		if len(entry.EntryPredictions) != len(retrievedEntry.EntryPredictions) {
+			t.Fatal(gocmp.Diff(entry.EntryPredictions, retrievedEntry.EntryPredictions))
 		}
 		if entry.ApprovedAt.Time.In(utc) != retrievedEntry.ApprovedAt.Time.In(utc) {
 			expectedGot(t, entry.ApprovedAt, retrievedEntry.ApprovedAt)
@@ -1249,7 +1249,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 	})
 }
 
-func TestEntryAgent_GetEntrySelectionByTimestamp(t *testing.T) {
+func TestEntryAgent_GetEntryPredictionByTimestamp(t *testing.T) {
 	defer truncate(t)
 
 	entry := insertEntry(t, generateTestEntry(t,
@@ -1258,91 +1258,91 @@ func TestEntryAgent_GetEntrySelectionByTimestamp(t *testing.T) {
 		"harry.redknapp@football.net",
 	))
 
-	var entrySelections []models.EntrySelection
+	var entryPredictions []models.EntryPrediction
 	for i := 1; i <= 2; i++ {
-		// ensure each entry selection is 48 hours apart
+		// ensure each entry prediction is 48 hours apart
 		days := time.Duration(i) * 48 * time.Hour
 
-		entrySelection := generateTestEntrySelection(t, entry.ID)
-		entrySelection.CreatedAt = time.Now().Add(days)
-		entrySelection = insertEntrySelection(t, entrySelection)
+		entryPrediction := generateTestEntryPrediction(t, entry.ID)
+		entryPrediction.CreatedAt = time.Now().Add(days)
+		entryPrediction = insertEntryPrediction(t, entryPrediction)
 
-		entrySelections = append(entrySelections, entrySelection)
+		entryPredictions = append(entryPredictions, entryPrediction)
 	}
 
 	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
 
-	t.Run("retrieve entry selection by timestamp that occurs before earliest selection must fail", func(t *testing.T) {
+	t.Run("retrieve entry prediction by timestamp that occurs before earliest prediction must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		_, err := agent.RetrieveEntrySelectionByTimestamp(ctx, entry, entrySelections[0].CreatedAt.Add(-time.Second))
+		_, err := agent.RetrieveEntryPredictionByTimestamp(ctx, entry, entryPredictions[0].CreatedAt.Add(-time.Second))
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
 	})
 
-	t.Run("retrieve entry selection by timestamp that equals earliest selection must return earliest selection", func(t *testing.T) {
+	t.Run("retrieve entry prediction by timestamp that equals earliest prediction must return earliest prediction", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		actualEntrySelection, err := agent.RetrieveEntrySelectionByTimestamp(ctx, entry, entrySelections[0].CreatedAt)
+		actualEntryPrediction, err := agent.RetrieveEntryPredictionByTimestamp(ctx, entry, entryPredictions[0].CreatedAt)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		expectedEntrySelection := entrySelections[0]
+		expectedEntryPrediction := entryPredictions[0]
 
-		if !actualEntrySelection.CreatedAt.Equal(expectedEntrySelection.CreatedAt) {
-			expectedGot(t, expectedEntrySelection.CreatedAt, actualEntrySelection.CreatedAt)
+		if !actualEntryPrediction.CreatedAt.Equal(expectedEntryPrediction.CreatedAt) {
+			expectedGot(t, expectedEntryPrediction.CreatedAt, actualEntryPrediction.CreatedAt)
 		}
 	})
 
-	t.Run("retrieve entry selection by timestamp that occurs before latest selection must return previous selection", func(t *testing.T) {
+	t.Run("retrieve entry prediction by timestamp that occurs before latest prediction must return previous prediction", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		actualEntrySelection, err := agent.RetrieveEntrySelectionByTimestamp(ctx, entry, entrySelections[1].CreatedAt.Add(-time.Second))
+		actualEntryPrediction, err := agent.RetrieveEntryPredictionByTimestamp(ctx, entry, entryPredictions[1].CreatedAt.Add(-time.Second))
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		expectedEntrySelection := entrySelections[0]
+		expectedEntryPrediction := entryPredictions[0]
 
-		if !actualEntrySelection.CreatedAt.Equal(expectedEntrySelection.CreatedAt) {
-			expectedGot(t, expectedEntrySelection.CreatedAt, actualEntrySelection.CreatedAt)
+		if !actualEntryPrediction.CreatedAt.Equal(expectedEntryPrediction.CreatedAt) {
+			expectedGot(t, expectedEntryPrediction.CreatedAt, actualEntryPrediction.CreatedAt)
 		}
 	})
 
-	t.Run("retrieve entry selection by timestamp that equals latest selection must return latest selection", func(t *testing.T) {
+	t.Run("retrieve entry prediction by timestamp that equals latest prediction must return latest prediction", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		actualEntrySelection, err := agent.RetrieveEntrySelectionByTimestamp(ctx, entry, entrySelections[1].CreatedAt)
+		actualEntryPrediction, err := agent.RetrieveEntryPredictionByTimestamp(ctx, entry, entryPredictions[1].CreatedAt)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		expectedEntrySelection := entrySelections[1]
+		expectedEntryPrediction := entryPredictions[1]
 
-		if !actualEntrySelection.CreatedAt.Equal(expectedEntrySelection.CreatedAt) {
-			expectedGot(t, expectedEntrySelection.CreatedAt, actualEntrySelection.CreatedAt)
+		if !actualEntryPrediction.CreatedAt.Equal(expectedEntryPrediction.CreatedAt) {
+			expectedGot(t, expectedEntryPrediction.CreatedAt, actualEntryPrediction.CreatedAt)
 		}
 	})
 
-	t.Run("retrieve entry selection by timestamp that occurs after latest selection must return latest selection", func(t *testing.T) {
+	t.Run("retrieve entry prediction by timestamp that occurs after latest prediction must return latest prediction", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		actualEntrySelection, err := agent.RetrieveEntrySelectionByTimestamp(ctx, entry, entrySelections[1].CreatedAt.Add(time.Second))
+		actualEntryPrediction, err := agent.RetrieveEntryPredictionByTimestamp(ctx, entry, entryPredictions[1].CreatedAt.Add(time.Second))
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		expectedEntrySelection := entrySelections[1]
+		expectedEntryPrediction := entryPredictions[1]
 
-		if !actualEntrySelection.CreatedAt.Equal(expectedEntrySelection.CreatedAt) {
-			expectedGot(t, expectedEntrySelection.CreatedAt, actualEntrySelection.CreatedAt)
+		if !actualEntryPrediction.CreatedAt.Equal(expectedEntryPrediction.CreatedAt) {
+			expectedGot(t, expectedEntryPrediction.CreatedAt, actualEntryPrediction.CreatedAt)
 		}
 	})
 }
@@ -1355,16 +1355,16 @@ func setContextTimestampRelativeToSeasonAcceptingEntries(t *testing.T, ctx conte
 		return ctx
 	}
 
-	if len(season.SelectionsAccepted) < 1 {
+	if len(season.PredictionsAccepted) < 1 {
 		return ctx
 	}
 
-	tf := season.SelectionsAccepted[0]
+	tf := season.PredictionsAccepted[0]
 
-	// default timestamp to one which is OUTSIDE the first selections accepted timeframe
+	// default timestamp to one which is OUTSIDE the first predictions accepted timeframe
 	var ts = tf.From.Add(-time.Nanosecond)
 	if withinTimeframe {
-		// set timestamp to one which is INSIDE the first selections accepted timeframe
+		// set timestamp to one which is INSIDE the first predictions accepted timeframe
 		ts = tf.From.Add(time.Nanosecond)
 	}
 

@@ -25,18 +25,16 @@ type updateEntryPaymentDetailsRequest struct {
 	EntryID       string `json:"entry_id"`
 }
 
-type createEntrySelectionRequest struct {
+type createEntryPredictionRequest struct {
 	EntryShortCode string   `json:"entry_short_code"`
 	RankingIDs     []string `json:"ranking_ids"`
 }
 
-func (r createEntrySelectionRequest) ToEntrySelectionModel() models.EntrySelection {
-	return models.EntrySelection{
-		Rankings: models.NewRankingCollectionFromIDs(r.RankingIDs),
-	}
+func (r createEntryPredictionRequest) ToEntryPredictionModel() models.EntryPrediction {
+	return models.NewEntryPrediction(r.RankingIDs)
 }
 
-type selectionLoginRequest struct {
+type predictionLoginRequest struct {
 	EmailNickname string `json:"email_nickname"`
 	ShortCode     string `json:"short_code"`
 }

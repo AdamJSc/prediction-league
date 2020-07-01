@@ -20,7 +20,7 @@ type retrieveSeasonResponse struct {
 	Teams []models.Team `json:"teams"`
 }
 
-type retrieveLatestEntrySelectionResponse struct {
+type retrieveLatestEntryPredictionResponse struct {
 	Teams       []models.Team `json:"teams"`
 	LastUpdated time.Time     `json:"last_updated"`
 }

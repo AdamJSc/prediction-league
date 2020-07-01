@@ -107,9 +107,9 @@ For details on the system's default season, see ["FakeSeason"](#fakeseason) (bel
 
 ### Entry
 
-### Entry Selection
+### Entry Prediction
 
-### Scored Entry Selection
+### Scored Entry Prediction
 
 ## Other Domain Knowledge
 
@@ -175,7 +175,7 @@ can be authorised.
 ### "FakeSeason"
 
 Much of the functionality within this system is time-sensitive in relation to the Season that applies to the current
-Realm. Functionality such as whether or not an Entry or Entry Selection can be created or updated at any given moment
+Realm. Functionality such as whether or not an Entry or Entry Prediction can be created or updated at any given moment
 is determined by the corresponding timeframes set on the Season itself.
 
 Usually these will be **absolute** timeframes that pertain to the dates relevant to a real-world Season
@@ -189,16 +189,16 @@ The schedule take place as follows:
 
 * 0 mins - 20 mins
     * Entries can be created or updated
-    * Entry Selections can be created or updated
+    * Entry Predictions can be created or updated
 * 20 mins - 40 mins
     * No Entries can be created or updated
-    * No Entry Selections can be created or updated
+    * No Entry Predictions can be created or updated
 * 40 mins - 60 mins
     * No Entries can be created or updated
-    * Entry Selections can be created or updated
+    * Entry Predictions can be created or updated
 * 60 mins+
     * No Entries can be created or updated
-    * No Entry Selections can be created or updated
+    * No Entry Predictions can be created or updated
 
 ## Maintenance
 

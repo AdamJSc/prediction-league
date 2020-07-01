@@ -11,9 +11,9 @@ type Base struct {
 	Data       interface{}
 }
 
-type SelectionPageData struct {
+type PredictionPageData struct {
 	Err        error
-	Selections struct {
+	Predictions struct {
 		BeingAccepted    bool
 		NextAcceptedFrom *time.Time
 		AcceptedUntil    *time.Time

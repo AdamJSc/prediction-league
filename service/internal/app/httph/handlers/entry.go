@@ -129,11 +129,11 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 	}
 }
 
-func createEntrySelectionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func createEntryPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	agent := domain.EntryAgent{EntryAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		var input createEntrySelectionRequest
+		var input createEntryPredictionRequest
 
 		// read request body
 		body, err := ioutil.ReadAll(r.Body)
@@ -171,12 +171,12 @@ func createEntrySelectionHandler(c *httph.HTTPAppContainer) func(w http.Response
 			return
 		}
 
-		entrySelection := input.ToEntrySelectionModel()
+		entryPrediction := input.ToEntryPredictionModel()
 
 		domain.GuardFromContext(ctx).SetAttempt(input.EntryShortCode)
 
-		// create entry selection for entry
-		if _, err := agent.AddEntrySelectionToEntry(ctx, entrySelection, entry); err != nil {
+		// create entry prediction for entry
+		if _, err := agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry); err != nil {
 			responseFromError(err).WriteTo(w)
 			return
 		}
@@ -186,7 +186,7 @@ func createEntrySelectionHandler(c *httph.HTTPAppContainer) func(w http.Response
 	}
 }
 
-func retrieveLatestEntrySelectionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func retrieveLatestEntryPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	agent := domain.EntryAgent{EntryAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -212,25 +212,25 @@ func retrieveLatestEntrySelectionHandler(c *httph.HTTPAppContainer) func(w http.
 			return
 		}
 
-		// get entry selection that pertains to context timestamp
-		entrySelection, err := agent.RetrieveEntrySelectionByTimestamp(ctx, entry, domain.TimestampFromContext(ctx))
+		// get entry prediction that pertains to context timestamp
+		entryPrediction, err := agent.RetrieveEntryPredictionByTimestamp(ctx, entry, domain.TimestampFromContext(ctx))
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return
 		}
 
-		// get teams that correlate to entry selection's ranking IDs
-		teams, err := domain.FilterTeamsByIDs(entrySelection.Rankings.GetIDs(), datastore.Teams)
+		// get teams that correlate to entry prediction's ranking IDs
+		teams, err := domain.FilterTeamsByIDs(entryPrediction.Rankings.GetIDs(), datastore.Teams)
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return
 		}
 
 		rest.OKResponse(&rest.Data{
-			Type: "entry_selection",
-			Content: retrieveLatestEntrySelectionResponse{
+			Type: "entry_prediction",
+			Content: retrieveLatestEntryPredictionResponse{
 				Teams:       teams,
-				LastUpdated: entrySelection.CreatedAt,
+				LastUpdated: entryPrediction.CreatedAt,
 			},
 		}, nil).WriteTo(w)
 	}

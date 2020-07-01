@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS `standings` (
     `season_id` VARCHAR(10) NOT NULL,
     `round_number` VARCHAR(255) NOT NULL,
     `rankings` JSON NOT NULL,
+    `finalised` BOOLEAN NOT NULL,
     `created_at` DATETIME NOT NULL,
     `updated_at` DATETIME NULL,
     PRIMARY KEY (id),

@@ -14,12 +14,12 @@ import (
 	"prediction-league/service/internal/pages"
 )
 
-func selectionLoginHandler(c *httph.HTTPAppContainer) func(http.ResponseWriter, *http.Request) {
+func predictionLoginHandler(c *httph.HTTPAppContainer) func(http.ResponseWriter, *http.Request) {
 	entryAgent := domain.EntryAgent{EntryAgentInjector: c}
 	tokenAgent := domain.TokenAgent{TokenAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		var input selectionLoginRequest
+		var input predictionLoginRequest
 
 		// read request body
 		body, err := ioutil.ReadAll(r.Body)
@@ -43,7 +43,7 @@ func selectionLoginHandler(c *httph.HTTPAppContainer) func(http.ResponseWriter, 
 		}
 		defer cancel()
 
-		var retrieveEntryFromInput = func(input selectionLoginRequest) (*models.Entry, error) {
+		var retrieveEntryFromInput = func(input predictionLoginRequest) (*models.Entry, error) {
 			// see if we can retrieve by email
 			entry, err := entryAgent.RetrieveEntryByEntrantEmail(ctx, input.EmailNickname)
 			if err != nil {
@@ -95,8 +95,8 @@ func selectionLoginHandler(c *httph.HTTPAppContainer) func(http.ResponseWriter, 
 	}
 }
 
-func getSelectionPageData(ctx context.Context, authToken string, entryAgent domain.EntryAgent, tokenAgent domain.TokenAgent) pages.SelectionPageData {
-	var data pages.SelectionPageData
+func getPredictionPageData(ctx context.Context, authToken string, entryAgent domain.EntryAgent, tokenAgent domain.TokenAgent) pages.PredictionPageData {
+	var data pages.PredictionPageData
 
 	// retrieve season and determine its current state
 	seasonID := domain.RealmFromContext(ctx).SeasonID
@@ -107,13 +107,13 @@ func getSelectionPageData(ctx context.Context, authToken string, entryAgent doma
 	}
 
 	seasonState := season.GetState(domain.TimestampFromContext(ctx))
-	data.Selections.BeingAccepted = seasonState.IsAcceptingSelections
-	if seasonState.NextSelectionsWindow != nil {
-		switch data.Selections.BeingAccepted {
+	data.Predictions.BeingAccepted = seasonState.IsAcceptingPredictions
+	if seasonState.NextPredictionsWindow != nil {
+		switch data.Predictions.BeingAccepted {
 		case true:
-			data.Selections.AcceptedUntil = &seasonState.NextSelectionsWindow.Until
+			data.Predictions.AcceptedUntil = &seasonState.NextPredictionsWindow.Until
 		default:
-			data.Selections.NextAcceptedFrom = &seasonState.NextSelectionsWindow.From
+			data.Predictions.NextAcceptedFrom = &seasonState.NextPredictionsWindow.From
 		}
 	}
 
@@ -145,13 +145,13 @@ func getSelectionPageData(ctx context.Context, authToken string, entryAgent doma
 		data.Entry.ID = entry.ID.String()
 		data.Entry.ShortCode = entry.ShortCode
 
-		// if entry has an associated entry selection
-		// then override the team IDs with the most recent selection
-		entrySelection, err := entryAgent.RetrieveEntrySelectionByTimestamp(ctx, entry, domain.TimestampFromContext(ctx))
+		// if entry has an associated entry prediction
+		// then override the team IDs with the most recent prediction
+		entryPrediction, err := entryAgent.RetrieveEntryPredictionByTimestamp(ctx, entry, domain.TimestampFromContext(ctx))
 		if err == nil {
-			// we have an entry selection, let's capture what we need for our view
-			data.Teams.LastUpdated = entrySelection.CreatedAt
-			teamIDs = entrySelection.Rankings.GetIDs()
+			// we have an entry prediction, let's capture what we need for our view
+			data.Teams.LastUpdated = entryPrediction.CreatedAt
+			teamIDs = entryPrediction.Rankings.GetIDs()
 		}
 	}
 

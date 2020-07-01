@@ -1,4 +1,4 @@
-{{define "selection"}}
+{{define "prediction"}}
     {{template "header" .}}
     {{$parent := .}}
     {{with .Data}}
@@ -14,32 +14,32 @@
             {{else}}
                 <div class="row">
                     <div class="col-md-8 offset-md-2">
-                        <h1>Update My Selection</h1>
+                        <h1>Update My Prediction</h1>
                     </div>
                 </div>
-                {{if .Selections.BeingAccepted}}
+                {{if .Predictions.BeingAccepted}}
                     <div class="row">
                         <div class="col-md-8 offset-md-2">
-                            <selection-countdown subject="selection-close" unix="{{timestamp_as_unix .Selections.AcceptedUntil}}"></selection-countdown>
+                            <prediction-countdown subject="prediction-close" unix="{{timestamp_as_unix .Predictions.AcceptedUntil}}"></prediction-countdown>
                         </div>
                     </div>
                     {{if $parent.IsLoggedIn}}
                         <div class="row">
                             <div class="col-md-8 offset-md-2">
-                                <open-selection v-bind:entry="{id: '{{.Entry.ID}}', shortCode: '{{.Entry.ShortCode}}'}" raw-teams="{{.Teams.Raw}}" unix="{{timestamp_as_unix .Teams.LastUpdated}}"></open-selection>
+                                <open-prediction v-bind:entry="{id: '{{.Entry.ID}}', shortCode: '{{.Entry.ShortCode}}'}" raw-teams="{{.Teams.Raw}}" unix="{{timestamp_as_unix .Teams.LastUpdated}}"></open-prediction>
                             </div>
                         </div>
                     {{else}}
                         <div class="row">
                             <div class="col-md-8 offset-md-2">
-                                <selection-login></selection-login>
+                                <prediction-login></prediction-login>
                             </div>
                         </div>
                     {{end}}
-                {{else if .Selections.NextAcceptedFrom}}
+                {{else if .Predictions.NextAcceptedFrom}}
                     <div class="row">
                         <div class="col-md-8 offset-md-2">
-                            <selection-countdown subject="selection-open" unix="{{timestamp_as_unix .Selections.NextAcceptedFrom}}"></selection-countdown>
+                            <prediction-countdown subject="prediction-open" unix="{{timestamp_as_unix .Predictions.NextAcceptedFrom}}"></prediction-countdown>
                         </div>
                     </div>
                 {{else}}
