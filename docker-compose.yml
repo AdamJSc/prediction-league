@@ -5,6 +5,7 @@ services:
     image: mysql:5.7
     container_name: prediction-league-db
     volumes:
+      - ${PWD}/docker/db/mysql-override.cnf:/etc/mysql/mysql.conf.d/mysql-override.cnf
       - ${PWD}/docker/db/data:/var/lib/mysql
     ports:
       - 33060:3306
@@ -39,6 +40,8 @@ services:
   db_test:
     image: mysql:5.7
     container_name: prediction-league-db-test
+    volumes:
+      - ${PWD}/docker/db/mysql-override.cnf:/etc/mysql/mysql.conf.d/mysql-override.cnf
     ports:
       - 33070:3306
     environment:
