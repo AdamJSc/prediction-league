@@ -598,11 +598,11 @@ func GetEntryPredictionValidAtTimestamp(entryPredictions []models.EntryPredictio
 		return desc[j].CreatedAt.Before(desc[i].CreatedAt)
 	})
 
-	for _, es := range desc {
+	for _, ep := range desc {
 		// let's iterate until we get to the first element
 		// that was created prior to ts
-		if es.CreatedAt.Before(ts) {
-			return es, nil
+		if ep.CreatedAt.Before(ts) {
+			return ep, nil
 		}
 	}
 

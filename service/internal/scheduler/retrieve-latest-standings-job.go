@@ -176,7 +176,7 @@ func processEntryPredictionWithStandings(
 		return errors.Wrapf(err, "calculate rankings scores for entry prediction with id %s", entryPrediction.ID)
 	}
 
-	ses := models.ScoredEntryPrediction{
+	sep := models.ScoredEntryPrediction{
 		EntryPredictionID: entryPrediction.ID,
 		StandingsID:       standings.ID,
 		Rankings:          rws,
@@ -184,8 +184,8 @@ func processEntryPredictionWithStandings(
 	}
 
 	// save scored entry prediction
-	if err := saveScoredEntryPrediction(ctx, injector, &ses); err != nil {
-		return errors.Wrapf(err, "save scored entry prediction with standings id %s and entry prediction id %s", ses.StandingsID, ses.EntryPredictionID)
+	if err := saveScoredEntryPrediction(ctx, injector, &sep); err != nil {
+		return errors.Wrapf(err, "save scored entry prediction with standings id %s and entry prediction id %s", sep.StandingsID, sep.EntryPredictionID)
 	}
 
 	return nil
