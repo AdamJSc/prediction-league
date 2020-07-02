@@ -109,15 +109,21 @@ For details on the system's default season, see ["FakeSeason"](#fakeseason) (bel
 
 ### Entry Prediction
 
+### Standings
+
 ### Scored Entry Prediction
 
+### Token
+
 ## Other Domain Knowledge
+
+### Ingesting real-world standings
 
 ### Realm
 
 This is effectively an arbitrary flag that represents a distinct instance of the "game".
 
-Each entry pertains to a particular Realm which effectively acts as a sub-grouping of Entries. So two Entries that have
+Each Entry pertains to a particular Realm which effectively acts as a sub-grouping of Entries. So two Entries that have
 different Realm values belong to different "games" and are therefore not competing against each other.
 
 By default, and as a "quick-win", the Realm is determined by the domain/host name via which an Entry is created.
@@ -158,19 +164,19 @@ The `Target` is usually a "known" value that the `Attempt` must match in order t
 For example...
 
 Most route handlers will at some point invoke `ctx := contextFromRequest(r, c)` to inflate a standard `context.Context` object,
-which comprises an arbitrary `Guard` field, as well as a `Realm` field that has been populated with details of the system's
+which comprises an arbitrary `Guard` field, as well as a `Realm` field that has been populated with details of the request's
 current Realm.
 
 The route handler might then invoke `ctx.Guard.SetAttempt(input.PIN)` to set the Guard's Attempt value - i.e. the value
-"attempting" to match the Target.
+"attempting" to match the Target - using some data point that has been supplied in the user's request.
 
 (In this case, our Guard Attempt is the "PIN" field of the incoming request body, so our agent method will want this to
-match the PIN of the system's current Realm in order that it can allow the operation to continue).
+match the PIN of the request's current Realm in order that it can allow the operation to continue).
 
 The handler will pass this context to the main agent method it invokes (e.g. `domain.EntryAgent.CreateEntry(ctx ....)`).
 
-The agent method can then invoke `ctx.Guard.AttemptMatchesTarget(ctx.Realm.PIN)` to determine if the incoming request
-can be authorised.
+The agent method can then invoke `GuardFromContext(ctx).Guard.AttemptMatchesTarget(ctx.Realm.PIN)` which returns a `boolean`
+to determine whether or not the incoming request can be authorised.
 
 ### "FakeSeason"
 
