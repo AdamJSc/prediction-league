@@ -29,7 +29,7 @@
                                     </div>
                                 </transition>
                                 <div v-if="success" class="alert alert-block alert-success">
-                                    Your selection has been updated. Good luck!
+                                    Your prediction has been updated. Good luck!
                                 </div>
                                 <div v-else>
                                     <action-button
@@ -52,7 +52,7 @@
     const axios = require('axios').default
 
     export default {
-        name: 'OpenSelection',
+        name: 'OpenPrediction',
         props: {
             entry: {
                 type: Object,
@@ -161,7 +161,7 @@
                 const vm = this
                 vm.working = true
 
-                let url = `/api/entry/${vm.entry.id}/selection`
+                let url = `/api/entry/${vm.entry.id}/prediction`
                 axios.request({
                     method: 'post',
                     url: url,

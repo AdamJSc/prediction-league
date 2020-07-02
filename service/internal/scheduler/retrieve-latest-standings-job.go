@@ -24,13 +24,13 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		// retrieve current entry selections for provided season
-		currentEntrySelections, err := retrieveCurrentEntrySelectionsForSeason(ctx, &season, injector)
+		// retrieve current entry predictions for provided season
+		currentEntryPredictions, err := retrieveCurrentEntryPredictionsForSeason(ctx, &season, injector)
 		if err != nil {
 			log.Println(wrapJobError(jobName, err))
 			return
 		}
-		if currentEntrySelections == nil {
+		if currentEntryPredictions == nil {
 			// silent fail
 			return
 		}
@@ -46,9 +46,9 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 			return
 		}
 
-		// calculate and save ranking scores for each entry selection based on the retrieved standings
-		for _, entrySelection := range currentEntrySelections {
-			if err := processEntrySelectionWithStandings(ctx, &entrySelection, standings, injector); err != nil {
+		// calculate and save ranking scores for each entry prediction based on the retrieved standings
+		for _, entryPrediction := range currentEntryPredictions {
+			if err := processEntryPredictionWithStandings(ctx, &entryPrediction, standings, injector); err != nil {
 				log.Println(wrapJobError(jobName, err))
 				return
 			}
@@ -89,12 +89,12 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 	}
 }
 
-// retrieveCurrentEntrySelectionsForSeason retrieves all current entry selections for the provided season
-func retrieveCurrentEntrySelectionsForSeason(
+// retrieveCurrentEntryPredictionsForSeason retrieves all current entry predictions for the provided season
+func retrieveCurrentEntryPredictionsForSeason(
 	ctx context.Context,
 	season *models.Season,
 	injector app.MySQLInjector,
-) ([]models.EntrySelection, error) {
+) ([]models.EntryPrediction, error) {
 	// ensure that season is currently active
 	now := time.Now()
 	if !season.Active.HasBegunBy(now) || season.Active.HasElapsedBy(now) {
@@ -116,22 +116,22 @@ func retrieveCurrentEntrySelectionsForSeason(
 		return nil, errors.Wrapf(err, "retrieve entries by season id %s", season.ID)
 	}
 
-	// get the current entry selection for each of the entries we've just retrieved
-	var currentEntrySelections []models.EntrySelection
+	// get the current entry prediction for each of the entries we've just retrieved
+	var currentEntryPredictions []models.EntryPrediction
 	for _, entry := range seasonEntries {
-		es, err := domain.GetEntrySelectionValidAtTimestamp(entry.EntrySelections, now)
+		es, err := domain.GetEntryPredictionValidAtTimestamp(entry.EntryPredictions, now)
 		if err != nil {
-			// error indicates that no selection has been found, so just ignore this entry and continue to the next
+			// error indicates that no prediction has been found, so just ignore this entry and continue to the next
 			continue
 		}
 
-		currentEntrySelections = append(currentEntrySelections, es)
+		currentEntryPredictions = append(currentEntryPredictions, es)
 	}
 
-	return currentEntrySelections, nil
+	return currentEntryPredictions, nil
 }
 
-// retrieveAndSaveStandingsForSeason retrieves all current entry selections for the provided season
+// retrieveAndSaveStandingsForSeason retrieves all current entry predictions for the provided season
 func retrieveAndSaveStandingsForSeason(
 	ctx context.Context,
 	season *models.Season,
@@ -162,30 +162,30 @@ func retrieveAndSaveStandingsForSeason(
 	return standings, nil
 }
 
-// processEntrySelectionWithStandings scores the provided entry selection against the provided standings and saves
-func processEntrySelectionWithStandings(
+// processEntryPredictionWithStandings scores the provided entry prediction against the provided standings and saves
+func processEntryPredictionWithStandings(
 	ctx context.Context,
-	entrySelection *models.EntrySelection,
+	entryPrediction *models.EntryPrediction,
 	standings *models.Standings,
 	injector app.MySQLInjector,
 ) error {
 	standingsRankingCollection := models.NewRankingCollectionFromRankingWithMetas(standings.Rankings)
 
-	rws, err := domain.CalculateRankingsScores(entrySelection.Rankings, standingsRankingCollection)
+	rws, err := domain.CalculateRankingsScores(entryPrediction.Rankings, standingsRankingCollection)
 	if err != nil {
-		return errors.Wrapf(err, "calculate rankings scores for entry selection with id %s", entrySelection.ID)
+		return errors.Wrapf(err, "calculate rankings scores for entry prediction with id %s", entryPrediction.ID)
 	}
 
-	ses := models.ScoredEntrySelection{
-		EntrySelectionID: entrySelection.ID,
-		StandingsID:      standings.ID,
-		Rankings:         rws,
-		Score:            rws.GetTotal(),
+	ses := models.ScoredEntryPrediction{
+		EntryPredictionID: entryPrediction.ID,
+		StandingsID:       standings.ID,
+		Rankings:          rws,
+		Score:             rws.GetTotal(),
 	}
 
-	// save scored entry selection
-	if err := saveScoredEntrySelection(ctx, injector, &ses); err != nil {
-		return errors.Wrapf(err, "save scored entry selection with standings id %s and entry selection id %s", ses.StandingsID, ses.EntrySelectionID)
+	// save scored entry prediction
+	if err := saveScoredEntryPrediction(ctx, injector, &ses); err != nil {
+		return errors.Wrapf(err, "save scored entry prediction with standings id %s and entry prediction id %s", ses.StandingsID, ses.EntryPredictionID)
 	}
 
 	return nil
@@ -227,7 +227,7 @@ func saveStandings(ctx context.Context, injector app.MySQLInjector, s *models.St
 		case nil:
 			if !previousStandings.Finalised {
 				// let's finalise the previous standings and continue on our quest with these instead of our newer scraped standings
-				// this means that subsequent methods which create scored entry selections will do so against the previous standings id,
+				// this means that subsequent methods which create scored entry predictions will do so against the previous standings id,
 				// so that we make sure these scores are affiliated with the correct (previous) standings - our newer scraped standings
 				// will simply be picked up and created next time the cron job runs instead
 				previousStandings.Finalised = true
@@ -266,45 +266,45 @@ func updateExistingStandings(ctx context.Context, injector app.MySQLInjector, st
 	return nil
 }
 
-// saveScoredEntrySelection upserts the provided ScoredEntrySelection depending on whether or not it already exists
-func saveScoredEntrySelection(ctx context.Context, injector app.MySQLInjector, ses *models.ScoredEntrySelection) error {
-	agent := domain.ScoredEntrySelectionAgent{
-		ScoredEntrySelectionAgentInjector: injector,
+// saveScoredEntryPrediction upserts the provided ScoredEntryPrediction depending on whether or not it already exists
+func saveScoredEntryPrediction(ctx context.Context, injector app.MySQLInjector, ses *models.ScoredEntryPrediction) error {
+	agent := domain.ScoredEntryPredictionAgent{
+		ScoredEntryPredictionAgentInjector: injector,
 	}
 
-	// see if we have an existing scored entry selection that matches our provided ses
-	existingScoredEntrySelection, err := agent.RetrieveScoredEntrySelectionByIDs(
+	// see if we have an existing scored entry prediction that matches our provided ses
+	existingScoredEntryPrediction, err := agent.RetrieveScoredEntryPredictionByIDs(
 		ctx,
-		ses.EntrySelectionID.String(),
+		ses.EntryPredictionID.String(),
 		ses.StandingsID.String(),
 	)
 	if err != nil {
 		switch err.(type) {
 		case domain.NotFoundError:
-			// we have a new scored entry selection!
+			// we have a new scored entry prediction!
 			// let's create it...
-			createdScoredEntrySelection, err := agent.CreateScoredEntrySelection(ctx, *ses)
+			createdScoredEntryPrediction, err := agent.CreateScoredEntryPrediction(ctx, *ses)
 			if err != nil {
 				return err
 			}
 
-			*ses = createdScoredEntrySelection
+			*ses = createdScoredEntryPrediction
 			return nil
 		default:
-			// something went wrong with retrieving our existing ScoredEntrySelection...
+			// something went wrong with retrieving our existing ScoredEntryPrediction...
 			return err
 		}
 	}
 
-	// we have an existing scored entry selection!
+	// we have an existing scored entry prediction!
 	// let's update it...
-	existingScoredEntrySelection.Rankings = ses.Rankings
-	existingScoredEntrySelection.Score = ses.Score
-	updatedScoredEntrySelection, err := agent.UpdateScoredEntrySelection(ctx, existingScoredEntrySelection)
+	existingScoredEntryPrediction.Rankings = ses.Rankings
+	existingScoredEntryPrediction.Score = ses.Score
+	updatedScoredEntryPrediction, err := agent.UpdateScoredEntryPrediction(ctx, existingScoredEntryPrediction)
 	if err != nil {
 		return err
 	}
 
-	*ses = updatedScoredEntrySelection
+	*ses = updatedScoredEntryPrediction
 	return nil
 }

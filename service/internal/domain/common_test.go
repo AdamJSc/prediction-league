@@ -89,7 +89,7 @@ func TestMain(m *testing.M) {
 // truncate clears our test tables of all previous data between tests
 func truncate(t *testing.T) {
 	t.Helper()
-	for _, tableName := range []string{"token", "scored_entry_selection", "entry_selection", "standings", "entry"} {
+	for _, tableName := range []string{"token", "scored_entry_prediction", "entry_prediction", "standings", "entry"} {
 		if _, err := db.Exec(fmt.Sprintf("DELETE FROM %s", tableName)); err != nil {
 			t.Fatal(err)
 		}
@@ -205,17 +205,17 @@ func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail 
 	paymentRef := "my_payment_ref"
 
 	return models.Entry{
-		ID:              id,
-		ShortCode:       shortCode,
-		SeasonID:        testSeason.ID,
-		RealmName:       testRealmName,
-		EntrantName:     entrantName,
-		EntrantNickname: entrantNickname,
-		EntrantEmail:    entrantEmail,
-		Status:          models.EntryStatusPending,
-		PaymentMethod:   sqltypes.ToNullString(&paymentMethod),
-		PaymentRef:      sqltypes.ToNullString(&paymentRef),
-		EntrySelections: nil,
+		ID:               id,
+		ShortCode:        shortCode,
+		SeasonID:         testSeason.ID,
+		RealmName:        testRealmName,
+		EntrantName:      entrantName,
+		EntrantNickname:  entrantNickname,
+		EntrantEmail:     entrantEmail,
+		Status:           models.EntryStatusPending,
+		PaymentMethod:    sqltypes.ToNullString(&paymentMethod),
+		PaymentRef:       sqltypes.ToNullString(&paymentRef),
+		EntryPredictions: nil,
 	}
 }
 
@@ -233,54 +233,54 @@ func insertEntry(t *testing.T, entry models.Entry) models.Entry {
 	return entry
 }
 
-// generateTestEntrySelection generates a new EntrySelection entity for use within the testsuite
-func generateTestEntrySelection(t *testing.T, entryID uuid.UUID) models.EntrySelection {
+// generateTestEntryPrediction generates a new EntryPrediction entity for use within the testsuite
+func generateTestEntryPrediction(t *testing.T, entryID uuid.UUID) models.EntryPrediction {
 	id, err := uuid.NewV4()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	return models.EntrySelection{
+	return models.EntryPrediction{
 		ID:       id,
 		EntryID:  entryID,
 		Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs),
 	}
 }
 
-// insertEntrySelection inserts a generated EntrySelection entity into the DB for use within the testsuite
-func insertEntrySelection(t *testing.T, entrySelection models.EntrySelection) models.EntrySelection {
+// insertEntryPrediction inserts a generated EntryPrediction entity into the DB for use within the testsuite
+func insertEntryPrediction(t *testing.T, entryPrediction models.EntryPrediction) models.EntryPrediction {
 	t.Helper()
 
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := repositories.NewEntrySelectionDatabaseRepository(db).Insert(ctx, &entrySelection); err != nil {
+	if err := repositories.NewEntryPredictionDatabaseRepository(db).Insert(ctx, &entryPrediction); err != nil {
 		t.Fatal(err)
 	}
 
-	return entrySelection
+	return entryPrediction
 }
 
-// generateTestScoredEntrySelection generates a new ScoredEntrySelection entity for use within the testsuite
-func generateTestScoredEntrySelection(t *testing.T, entrySelectionID, standingsID uuid.UUID) models.ScoredEntrySelection {
-	return models.ScoredEntrySelection{
-		EntrySelectionID: entrySelectionID,
-		StandingsID:      standingsID,
-		Rankings:         models.NewRankingWithScoreCollectionFromIDs(testSeason.TeamIDs),
-		Score:            123,
+// generateTestScoredEntryPrediction generates a new ScoredEntryPrediction entity for use within the testsuite
+func generateTestScoredEntryPrediction(t *testing.T, entryPredictionID, standingsID uuid.UUID) models.ScoredEntryPrediction {
+	return models.ScoredEntryPrediction{
+		EntryPredictionID: entryPredictionID,
+		StandingsID:       standingsID,
+		Rankings:          models.NewRankingWithScoreCollectionFromIDs(testSeason.TeamIDs),
+		Score:             123,
 	}
 }
 
-// insertScoredEntrySelection inserts a generated ScoredEntrySelection entity into the DB for use within the testsuite
-func insertScoredEntrySelection(t *testing.T, scoredEntrySelection models.ScoredEntrySelection) models.ScoredEntrySelection {
+// insertScoredEntryPrediction inserts a generated ScoredEntryPrediction entity into the DB for use within the testsuite
+func insertScoredEntryPrediction(t *testing.T, scoredEntryPrediction models.ScoredEntryPrediction) models.ScoredEntryPrediction {
 	t.Helper()
 
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := repositories.NewScoredEntrySelectionDatabaseRepository(db).Insert(ctx, &scoredEntrySelection); err != nil {
+	if err := repositories.NewScoredEntryPredictionDatabaseRepository(db).Insert(ctx, &scoredEntryPrediction); err != nil {
 		t.Fatal(err)
 	}
 
-	return scoredEntrySelection
+	return scoredEntryPrediction
 }

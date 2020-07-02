@@ -1,12 +1,12 @@
 <template>
-    <div class="selection-login-container">
+    <div class="prediction-login-container">
         <transition name="fade">
             <div v-if="errorMessages.length > 0" class="error-messages alert alert-block alert-danger">
                 <button type="button" class="close" v-on:click="resetErrorMessages">&times;</button>
                 <ul><li v-for="msg in errorMessages">{{ msg }}</li></ul>
             </div>
         </transition>
-        <form id="selection-login-form" class="form-primary">
+        <form id="prediction-login-form" class="form-primary">
             <div class="form-label-group">
                 <input v-model="formData.email_nickname" type="email" id="inputEmailNickname" name="email_nickname" class="form-control" placeholder="Email or Nickname" required autofocus>
                 <label for="inputEmailNickname">Email or Nickname</label>
@@ -32,7 +32,7 @@
     const axios = require('axios').default
 
     export default {
-        name: 'SelectionLogin',
+        name: 'PredictionLogin',
         data: function() {
             return {
                 working: false,
@@ -50,7 +50,7 @@
                 vm.resetErrorMessages()
                 axios.request({
                     method: 'post',
-                    url: '/api/selection/login',
+                    url: '/api/prediction/login',
                     data: this.formData
                 })
                     .then(function (response) {

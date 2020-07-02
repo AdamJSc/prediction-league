@@ -68,41 +68,31 @@ func frontendEnterHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter,
 	}
 }
 
-func frontendLoginHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// temporary proxy for setting a cookie and redirecting to edit page
-		// in reality this will be a post route that verifies login credentials
-		setAuthCookieValue("7bee64af-7768-40f2-bed3-690786962304", w, r) // arbitrary seeded user
-		w.Header().Set("Location", "/selection")
-		w.WriteHeader(http.StatusSeeOther)
-	}
-}
-
-func frontendSelectionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		loggedIn := isLoggedIn(r)
 
-		var writeResponse = func(data pages.SelectionPageData, loggedIn bool) {
+		var writeResponse = func(data pages.PredictionPageData, loggedIn bool) {
 			var p = pages.Base{
-				Title:      "Update My Selection",
-				ActivePage: "selection",
+				Title:      "Update My Prediction",
+				ActivePage: "prediction",
 				IsLoggedIn: loggedIn,
 				Data:       data,
 			}
 
-			if err := c.Template().ExecuteTemplate(w, "selection", p); err != nil {
+			if err := c.Template().ExecuteTemplate(w, "prediction", p); err != nil {
 				rest.InternalError(err).WriteTo(w)
 			}
 		}
 
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			writeResponse(pages.SelectionPageData{Err: err}, loggedIn)
+			writeResponse(pages.PredictionPageData{Err: err}, loggedIn)
 			return
 		}
 		defer cancel()
 
-		data := getSelectionPageData(
+		data := getPredictionPageData(
 			ctx,
 			getAuthCookieValue(r),
 			domain.EntryAgent{EntryAgentInjector: c},

@@ -173,7 +173,7 @@ func MustInflate() {
 				From:  time.Now(),
 				Until: time.Now().Add(20 * time.Minute),
 			},
-			SelectionsAccepted: []models.TimeFrame{
+			PredictionsAccepted: []models.TimeFrame{
 				{
 					From:  time.Now(),
 					Until: time.Now().Add(20 * time.Minute),
@@ -219,7 +219,7 @@ func MustInflate() {
 				From:  time.Date(2019, 7, 1, 0, 0, 0, 0, loc),
 				Until: time.Date(2019, 8, 9, 19, 0, 0, 0, loc),
 			},
-			SelectionsAccepted: []models.TimeFrame{
+			PredictionsAccepted: []models.TimeFrame{
 				{
 					From:  time.Date(2019, 7, 1, 0, 0, 0, 0, loc),
 					Until: time.Date(2019, 8, 9, 19, 0, 0, 0, loc),

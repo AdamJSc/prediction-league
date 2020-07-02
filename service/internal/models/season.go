@@ -13,14 +13,14 @@ const (
 
 // Season defines the structure of a Season against which Entries are played
 type Season struct {
-	ID                 string
-	ClientID           ResourceIdentifier
-	Name               string
-	Active             TimeFrame
-	EntriesAccepted    TimeFrame
-	SelectionsAccepted []TimeFrame
-	TeamIDs            []string
-	MaxRounds          int
+	ID                  string
+	ClientID            ResourceIdentifier
+	Name                string
+	Active              TimeFrame
+	EntriesAccepted     TimeFrame
+	PredictionsAccepted []TimeFrame
+	TeamIDs             []string
+	MaxRounds           int
 }
 
 // GetState determines a Season's state based on a supplied timestamp
@@ -41,21 +41,21 @@ func (s Season) GetState(ts time.Time) SeasonState {
 		state.IsAcceptingEntries = true
 	}
 
-	// is season currently accepting selections?
-	for _, tf := range s.SelectionsAccepted {
+	// is season currently accepting predictions?
+	for _, tf := range s.PredictionsAccepted {
 		thisTf := tf
 
 		if tf.HasBegunBy(ts) && !tf.HasElapsedBy(ts) {
-			// next selections window should be the current timeframe if selections are currently being accepted
-			state.IsAcceptingSelections = true
-			state.NextSelectionsWindow = &thisTf
+			// next predictions window should be the current timeframe if predictions are currently being accepted
+			state.IsAcceptingPredictions = true
+			state.NextPredictionsWindow = &thisTf
 			break
 		}
 
-		// if we aren't currently accepting selections, does this tf represent the next time that we are?
-		if !state.IsAcceptingSelections && !tf.HasBegunBy(ts) {
+		// if we aren't currently accepting predictions, does this tf represent the next time that we are?
+		if !state.IsAcceptingPredictions && !tf.HasBegunBy(ts) {
 			nextTf := tf
-			state.NextSelectionsWindow = &nextTf
+			state.NextPredictionsWindow = &nextTf
 			break
 		}
 	}
@@ -65,10 +65,10 @@ func (s Season) GetState(ts time.Time) SeasonState {
 
 // SeasonState defines the state of a Season
 type SeasonState struct {
-	Status                string
-	IsAcceptingEntries    bool
-	IsAcceptingSelections bool
-	NextSelectionsWindow  *TimeFrame
+	Status                 string
+	IsAcceptingEntries     bool
+	IsAcceptingPredictions bool
+	NextPredictionsWindow  *TimeFrame
 }
 
 // SeasonCollection is map of Seasons

@@ -38,7 +38,7 @@ func TestSeason_GetState(t *testing.T) {
 		Until: now.Add(-7 * day), // 7 days ago
 	}
 
-	selectionsAcceptedTimeframes := []models.TimeFrame{
+	predictionsAcceptedTimeframes := []models.TimeFrame{
 		{
 			From:  now.Add(-9 * day), // 9 days ago
 			Until: now.Add(-7 * day), // 7 days ago
@@ -50,9 +50,9 @@ func TestSeason_GetState(t *testing.T) {
 	}
 
 	season := models.Season{
-		Active:             activeTimeframe,
-		EntriesAccepted:    entriesAcceptedTimeframe,
-		SelectionsAccepted: selectionsAcceptedTimeframes,
+		Active:              activeTimeframe,
+		EntriesAccepted:     entriesAcceptedTimeframe,
+		PredictionsAccepted: predictionsAcceptedTimeframes,
 	}
 
 	t.Run("on a date prior to active from, season status must be pending", func(t *testing.T) {
@@ -135,114 +135,114 @@ func TestSeason_GetState(t *testing.T) {
 		}
 	})
 
-	t.Run("on a date prior to first selections accepted from date, is_accepting_selections must be false and next_selections_window must be first timeframe", func(t *testing.T) {
-		ts := selectionsAcceptedTimeframes[0].From.Add(-day)
+	t.Run("on a date prior to first predictions accepted from date, is_accepting_predictions must be false and next_predictions_window must be first timeframe", func(t *testing.T) {
+		ts := predictionsAcceptedTimeframes[0].From.Add(-day)
 		state := season.GetState(ts)
-		if state.IsAcceptingSelections {
-			t.Fatalf("expected season to not be accepting selections, but it was, state: %+v", state)
+		if state.IsAcceptingPredictions {
+			t.Fatalf("expected season to not be accepting predictions, but it was, state: %+v", state)
 		}
-		if !cmp.Equal(*state.NextSelectionsWindow, selectionsAcceptedTimeframes[0]) {
-			t.Fatal(cmp.Diff(*state.NextSelectionsWindow, selectionsAcceptedTimeframes[0]))
+		if !cmp.Equal(*state.NextPredictionsWindow, predictionsAcceptedTimeframes[0]) {
+			t.Fatal(cmp.Diff(*state.NextPredictionsWindow, predictionsAcceptedTimeframes[0]))
 		}
 	})
 
-	t.Run("on first selections accepted from date, is_accepting_selections must be true and next_selections_window must be first timeframe", func(t *testing.T) {
-		ts := selectionsAcceptedTimeframes[0].From
+	t.Run("on first predictions accepted from date, is_accepting_predictions must be true and next_predictions_window must be first timeframe", func(t *testing.T) {
+		ts := predictionsAcceptedTimeframes[0].From
 		state := season.GetState(ts)
-		if !state.IsAcceptingSelections {
-			t.Fatalf("expected season to be accepting selections, but it wasn't, state: %+v", state)
+		if !state.IsAcceptingPredictions {
+			t.Fatalf("expected season to be accepting predictions, but it wasn't, state: %+v", state)
 		}
-		if !state.NextSelectionsWindow.From.Equal(selectionsAcceptedTimeframes[0].From) {
-			expectedGot(t, selectionsAcceptedTimeframes[0].From, state.NextSelectionsWindow.From)
+		if !state.NextPredictionsWindow.From.Equal(predictionsAcceptedTimeframes[0].From) {
+			expectedGot(t, predictionsAcceptedTimeframes[0].From, state.NextPredictionsWindow.From)
 		}
-		if !state.NextSelectionsWindow.Until.Equal(selectionsAcceptedTimeframes[0].Until) {
-			expectedGot(t, selectionsAcceptedTimeframes[0].Until, state.NextSelectionsWindow.Until)
+		if !state.NextPredictionsWindow.Until.Equal(predictionsAcceptedTimeframes[0].Until) {
+			expectedGot(t, predictionsAcceptedTimeframes[0].Until, state.NextPredictionsWindow.Until)
 		}
 	})
 
-	t.Run("on a date between first selections accepted from date and first selections accepted until date, is_accepting_selections must be true and next_selections_window must be first timeframe", func(t *testing.T) {
-		ts := selectionsAcceptedTimeframes[0].From.Add(day)
+	t.Run("on a date between first predictions accepted from date and first predictions accepted until date, is_accepting_predictions must be true and next_predictions_window must be first timeframe", func(t *testing.T) {
+		ts := predictionsAcceptedTimeframes[0].From.Add(day)
 		state := season.GetState(ts)
-		if !state.IsAcceptingSelections {
-			t.Fatalf("expected season to be accepting selections, but it wasn't, state: %+v", state)
+		if !state.IsAcceptingPredictions {
+			t.Fatalf("expected season to be accepting predictions, but it wasn't, state: %+v", state)
 		}
-		if !state.NextSelectionsWindow.From.Equal(selectionsAcceptedTimeframes[0].From) {
-			expectedGot(t, selectionsAcceptedTimeframes[0].From, state.NextSelectionsWindow.From)
+		if !state.NextPredictionsWindow.From.Equal(predictionsAcceptedTimeframes[0].From) {
+			expectedGot(t, predictionsAcceptedTimeframes[0].From, state.NextPredictionsWindow.From)
 		}
-		if !state.NextSelectionsWindow.Until.Equal(selectionsAcceptedTimeframes[0].Until) {
-			expectedGot(t, selectionsAcceptedTimeframes[0].Until, state.NextSelectionsWindow.Until)
+		if !state.NextPredictionsWindow.Until.Equal(predictionsAcceptedTimeframes[0].Until) {
+			expectedGot(t, predictionsAcceptedTimeframes[0].Until, state.NextPredictionsWindow.Until)
 		}
 	})
 
-	t.Run("on first selections accepted until date, is_accepting_selections must be false and next_selections_window must be second timeframe", func(t *testing.T) {
-		ts := selectionsAcceptedTimeframes[0].Until
+	t.Run("on first predictions accepted until date, is_accepting_predictions must be false and next_predictions_window must be second timeframe", func(t *testing.T) {
+		ts := predictionsAcceptedTimeframes[0].Until
 		state := season.GetState(ts)
-		if state.IsAcceptingSelections {
-			t.Fatalf("expected season to not be accepting selections, but it was, state: %+v", state)
+		if state.IsAcceptingPredictions {
+			t.Fatalf("expected season to not be accepting predictions, but it was, state: %+v", state)
 		}
-		if !cmp.Equal(*state.NextSelectionsWindow, selectionsAcceptedTimeframes[1]) {
-			t.Fatal(cmp.Diff(*state.NextSelectionsWindow, selectionsAcceptedTimeframes[1]))
+		if !cmp.Equal(*state.NextPredictionsWindow, predictionsAcceptedTimeframes[1]) {
+			t.Fatal(cmp.Diff(*state.NextPredictionsWindow, predictionsAcceptedTimeframes[1]))
 		}
 	})
 
-	t.Run("on a date between first selections accepted until date and second selections accepted from date, is_accepting_selections must be false and next_selections_window must be second timeframe", func(t *testing.T) {
-		ts := selectionsAcceptedTimeframes[1].From.Add(-day)
+	t.Run("on a date between first predictions accepted until date and second predictions accepted from date, is_accepting_predictions must be false and next_predictions_window must be second timeframe", func(t *testing.T) {
+		ts := predictionsAcceptedTimeframes[1].From.Add(-day)
 		state := season.GetState(ts)
-		if state.IsAcceptingSelections {
-			t.Fatalf("expected season to not be accepting selections, but it was, state: %+v", state)
+		if state.IsAcceptingPredictions {
+			t.Fatalf("expected season to not be accepting predictions, but it was, state: %+v", state)
 		}
-		if !cmp.Equal(*state.NextSelectionsWindow, selectionsAcceptedTimeframes[1]) {
-			t.Fatal(cmp.Diff(*state.NextSelectionsWindow, selectionsAcceptedTimeframes[1]))
+		if !cmp.Equal(*state.NextPredictionsWindow, predictionsAcceptedTimeframes[1]) {
+			t.Fatal(cmp.Diff(*state.NextPredictionsWindow, predictionsAcceptedTimeframes[1]))
 		}
 	})
 
-	t.Run("on second selections accepted from date, is_accepting_selections must be true and next_selections_window must be second timeframe", func(t *testing.T) {
-		ts := selectionsAcceptedTimeframes[1].From
+	t.Run("on second predictions accepted from date, is_accepting_predictions must be true and next_predictions_window must be second timeframe", func(t *testing.T) {
+		ts := predictionsAcceptedTimeframes[1].From
 		state := season.GetState(ts)
-		if !state.IsAcceptingSelections {
-			t.Fatalf("expected season to be accepting selections, but it wasn't, state: %+v", state)
+		if !state.IsAcceptingPredictions {
+			t.Fatalf("expected season to be accepting predictions, but it wasn't, state: %+v", state)
 		}
-		if !state.NextSelectionsWindow.From.Equal(selectionsAcceptedTimeframes[1].From) {
-			expectedGot(t, selectionsAcceptedTimeframes[1].From, state.NextSelectionsWindow.From)
+		if !state.NextPredictionsWindow.From.Equal(predictionsAcceptedTimeframes[1].From) {
+			expectedGot(t, predictionsAcceptedTimeframes[1].From, state.NextPredictionsWindow.From)
 		}
-		if !state.NextSelectionsWindow.Until.Equal(selectionsAcceptedTimeframes[1].Until) {
-			expectedGot(t, selectionsAcceptedTimeframes[1].Until, state.NextSelectionsWindow.Until)
+		if !state.NextPredictionsWindow.Until.Equal(predictionsAcceptedTimeframes[1].Until) {
+			expectedGot(t, predictionsAcceptedTimeframes[1].Until, state.NextPredictionsWindow.Until)
 		}
 	})
 
-	t.Run("on a date between second selections accepted from date and second selections accepted until date, is_accepting_selections must be true and selections_next_accepted must be second timeframe", func(t *testing.T) {
-		ts := selectionsAcceptedTimeframes[1].From.Add(day)
+	t.Run("on a date between second predictions accepted from date and second predictions accepted until date, is_accepting_predictions must be true and predictions_next_accepted must be second timeframe", func(t *testing.T) {
+		ts := predictionsAcceptedTimeframes[1].From.Add(day)
 		state := season.GetState(ts)
-		if !state.IsAcceptingSelections {
-			t.Fatalf("expected season to be accepting selections, but it wasn't, state: %+v", state)
+		if !state.IsAcceptingPredictions {
+			t.Fatalf("expected season to be accepting predictions, but it wasn't, state: %+v", state)
 		}
-		if !state.NextSelectionsWindow.From.Equal(selectionsAcceptedTimeframes[1].From) {
-			expectedGot(t, selectionsAcceptedTimeframes[1].From, state.NextSelectionsWindow.From)
+		if !state.NextPredictionsWindow.From.Equal(predictionsAcceptedTimeframes[1].From) {
+			expectedGot(t, predictionsAcceptedTimeframes[1].From, state.NextPredictionsWindow.From)
 		}
-		if !state.NextSelectionsWindow.Until.Equal(selectionsAcceptedTimeframes[1].Until) {
-			expectedGot(t, selectionsAcceptedTimeframes[1].Until, state.NextSelectionsWindow.Until)
+		if !state.NextPredictionsWindow.Until.Equal(predictionsAcceptedTimeframes[1].Until) {
+			expectedGot(t, predictionsAcceptedTimeframes[1].Until, state.NextPredictionsWindow.Until)
 		}
 	})
 
-	t.Run("on second selections accepted until date, is_accepting_selections must be false and selections_next_accepted must be empty", func(t *testing.T) {
-		ts := selectionsAcceptedTimeframes[1].Until
+	t.Run("on second predictions accepted until date, is_accepting_predictions must be false and predictions_next_accepted must be empty", func(t *testing.T) {
+		ts := predictionsAcceptedTimeframes[1].Until
 		state := season.GetState(ts)
-		if state.IsAcceptingSelections {
-			t.Fatalf("expected season to not be accepting selections, but it was, state: %+v", state)
+		if state.IsAcceptingPredictions {
+			t.Fatalf("expected season to not be accepting predictions, but it was, state: %+v", state)
 		}
-		if state.NextSelectionsWindow != nil {
-			expectedGot(t, nil, state.NextSelectionsWindow)
+		if state.NextPredictionsWindow != nil {
+			expectedGot(t, nil, state.NextPredictionsWindow)
 		}
 	})
 
-	t.Run("on a date after second selections accepted until date, is_accepting_selections must be false and selections_next_accepted must be empty", func(t *testing.T) {
-		ts := selectionsAcceptedTimeframes[1].Until.Add(day)
+	t.Run("on a date after second predictions accepted until date, is_accepting_predictions must be false and predictions_next_accepted must be empty", func(t *testing.T) {
+		ts := predictionsAcceptedTimeframes[1].Until.Add(day)
 		state := season.GetState(ts)
-		if state.IsAcceptingSelections {
-			t.Fatalf("expected season to not be accepting selections, but it was, state: %+v", state)
+		if state.IsAcceptingPredictions {
+			t.Fatalf("expected season to not be accepting predictions, but it was, state: %+v", state)
 		}
-		if state.NextSelectionsWindow != nil {
-			expectedGot(t, nil, state.NextSelectionsWindow)
+		if state.NextPredictionsWindow != nil {
+			expectedGot(t, nil, state.NextPredictionsWindow)
 		}
 	})
 }

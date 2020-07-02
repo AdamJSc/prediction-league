@@ -36,27 +36,27 @@ func ValidateSeason(s models.Season) error {
 		return errors.New("entries accepted timeframe must have elapsed before active timeframe begins")
 	}
 	switch {
-	case len(s.SelectionsAccepted) < 1:
-		return errors.New("at least 1 selections accepted timeframe must exist")
+	case len(s.PredictionsAccepted) < 1:
+		return errors.New("at least 1 predictions accepted timeframe must exist")
 	default:
-		if !s.SelectionsAccepted[0].From.Equal(s.EntriesAccepted.From) || !s.SelectionsAccepted[0].Until.Equal(s.EntriesAccepted.Until) {
-			return errors.New("first selections accepted timeframe must be identical to entries accepted timeframe")
+		if !s.PredictionsAccepted[0].From.Equal(s.EntriesAccepted.From) || !s.PredictionsAccepted[0].Until.Equal(s.EntriesAccepted.Until) {
+			return errors.New("first predictions accepted timeframe must be identical to entries accepted timeframe")
 		}
 	}
 
-	for idx := 0; idx < len(s.SelectionsAccepted)-1; idx++ {
+	for idx := 0; idx < len(s.PredictionsAccepted)-1; idx++ {
 		nextIdx := idx + 1
-		thisTimeframe := s.SelectionsAccepted[idx]
-		nextTimeframe := s.SelectionsAccepted[nextIdx]
+		thisTimeframe := s.PredictionsAccepted[idx]
+		nextTimeframe := s.PredictionsAccepted[nextIdx]
 
 		if !thisTimeframe.Valid() {
-			return fmt.Errorf("selections accepted timeframe idx %d must be valid", idx)
+			return fmt.Errorf("predictions accepted timeframe idx %d must be valid", idx)
 		}
 		if thisTimeframe.OverlapsWith(nextTimeframe) {
-			return fmt.Errorf("selections accepted timeframe idx %d must not overlap with idx %d", idx, nextIdx)
+			return fmt.Errorf("predictions accepted timeframe idx %d must not overlap with idx %d", idx, nextIdx)
 		}
 		if !thisTimeframe.Until.Before(nextTimeframe.From) {
-			return fmt.Errorf("selections accepted timeframes idx %d and idx %d must be chronological", idx, nextIdx)
+			return fmt.Errorf("predictions accepted timeframes idx %d and idx %d must be chronological", idx, nextIdx)
 		}
 	}
 

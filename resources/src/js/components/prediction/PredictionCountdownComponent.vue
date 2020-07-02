@@ -1,12 +1,12 @@
 <template>
-    <div class="selection-countdown-container">
+    <div class="prediction-countdown-container">
         <p>{{label}} <span class="remaining">{{remainingVerbose}}</span></p>
     </div>
 </template>
 
 <script>
     export default {
-        name: 'SelectionCountdown',
+        name: 'PredictionCountdown',
         props: {
             unix: {
                 type: String,
@@ -18,10 +18,10 @@
         data: function() {
             let label = ''
             switch (this.subject) {
-                case 'selection-close':
+                case 'prediction-close':
                     label = 'Current window closes in'
                     break
-                case 'selection-open':
+                case 'prediction-open':
                     label = 'Next window opens in'
                     break
             }
