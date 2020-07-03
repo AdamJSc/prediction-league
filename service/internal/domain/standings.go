@@ -37,7 +37,7 @@ func (s StandingsAgent) CreateStandings(ctx context.Context, standings models.St
 
 	// write entry to database
 	if err := standingsRepo.Insert(ctx, &standings); err != nil {
-		return models.Standings{}, domainErrorFromDBError(err)
+		return models.Standings{}, domainErrorFromRepositoryError(err)
 	}
 
 	return standings, nil
@@ -51,7 +51,7 @@ func (s StandingsAgent) RetrieveStandingsByID(ctx context.Context, id string) (m
 		"id": id,
 	}, false)
 	if err != nil {
-		return models.Standings{}, domainErrorFromDBError(err)
+		return models.Standings{}, domainErrorFromRepositoryError(err)
 	}
 
 	return retrievedStandings[0], nil
@@ -66,7 +66,7 @@ func (s StandingsAgent) RetrieveStandingsBySeasonAndRoundNumber(ctx context.Cont
 		"round_number": roundNumber,
 	}, false)
 	if err != nil {
-		return models.Standings{}, domainErrorFromDBError(err)
+		return models.Standings{}, domainErrorFromRepositoryError(err)
 	}
 
 	return retrievedStandings[0], nil
@@ -78,12 +78,12 @@ func (s StandingsAgent) UpdateStandings(ctx context.Context, standings models.St
 
 	// ensure the entry exists
 	if err := standingsRepo.ExistsByID(ctx, standings.ID.String()); err != nil {
-		return models.Standings{}, domainErrorFromDBError(err)
+		return models.Standings{}, domainErrorFromRepositoryError(err)
 	}
 
 	// write to database
 	if err := standingsRepo.Update(ctx, &standings); err != nil {
-		return models.Standings{}, domainErrorFromDBError(err)
+		return models.Standings{}, domainErrorFromRepositoryError(err)
 	}
 
 	return standings, nil

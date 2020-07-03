@@ -35,8 +35,8 @@ func (e ValidationError) Error() string {
 // InternalError translates to a 500 Internal Server Error response status code
 type InternalError struct{ error }
 
-// domainErrorFromDBError returns the appropriate domain-level error from a database-specific error
-func domainErrorFromDBError(err error) error {
+// domainErrorFromRepositoryError returns the appropriate domain-level error from a repository-specific error
+func domainErrorFromRepositoryError(err error) error {
 	switch err.(type) {
 	case repositories.DuplicateDBRecordError:
 		return ConflictError{err}

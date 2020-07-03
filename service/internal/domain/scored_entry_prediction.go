@@ -41,13 +41,13 @@ func (s ScoredEntryPredictionAgent) CreateScoredEntryPrediction(ctx context.Cont
 	// ensure that entryPrediction exists
 	entryPredictionRepo := repositories.NewEntryPredictionDatabaseRepository(db)
 	if err := entryPredictionRepo.ExistsByID(ctx, scoredEntryPrediction.EntryPredictionID.String()); err != nil {
-		return models.ScoredEntryPrediction{}, domainErrorFromDBError(err)
+		return models.ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
 
 	// ensure that standings exists
 	standingsRepo := repositories.NewStandingsDatabaseRepository(db)
 	if err := standingsRepo.ExistsByID(ctx, scoredEntryPrediction.StandingsID.String()); err != nil {
-		return models.ScoredEntryPrediction{}, domainErrorFromDBError(err)
+		return models.ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
 
 	// override these values
@@ -58,7 +58,7 @@ func (s ScoredEntryPredictionAgent) CreateScoredEntryPrediction(ctx context.Cont
 
 	// write scoredEntryPrediction to database
 	if err := scoredEntryPredictionRepo.Insert(ctx, &scoredEntryPrediction); err != nil {
-		return models.ScoredEntryPrediction{}, domainErrorFromDBError(err)
+		return models.ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
 
 	return scoredEntryPrediction, nil
@@ -73,7 +73,7 @@ func (s ScoredEntryPredictionAgent) RetrieveScoredEntryPredictionByIDs(ctx conte
 		"standings_id":       standingsID,
 	}, false)
 	if err != nil {
-		return models.ScoredEntryPrediction{}, domainErrorFromDBError(err)
+		return models.ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
 
 	return retrievedScoredEntryPredictions[0], nil
@@ -89,12 +89,12 @@ func (s ScoredEntryPredictionAgent) UpdateScoredEntryPrediction(ctx context.Cont
 		scoredEntryPrediction.EntryPredictionID.String(),
 		scoredEntryPrediction.StandingsID.String(),
 	); err != nil {
-		return models.ScoredEntryPrediction{}, domainErrorFromDBError(err)
+		return models.ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
 
 	// write to database
 	if err := scoredEntryPredictionRepo.Update(ctx, &scoredEntryPrediction); err != nil {
-		return models.ScoredEntryPrediction{}, domainErrorFromDBError(err)
+		return models.ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
 
 	return scoredEntryPrediction, nil
