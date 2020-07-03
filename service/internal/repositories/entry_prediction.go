@@ -3,6 +3,7 @@ package repositories
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
 	"golang.org/x/net/context"
 	"prediction-league/service/internal/models"
@@ -113,7 +114,7 @@ func (e EntryPredictionDatabaseRepository) ExistsByID(ctx context.Context, id st
 	}
 
 	if count == 0 {
-		return MissingDBRecordError{errors.New("entry prediction not found")}
+		return MissingDBRecordError{fmt.Errorf("entry prediction id %s: not found", id)}
 	}
 
 	return nil

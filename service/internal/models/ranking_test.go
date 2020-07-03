@@ -55,7 +55,7 @@ func TestRankingCollection_GetByID(t *testing.T) {
 
 	t.Run("get ranking by non-existent id must fail", func(t *testing.T) {
 		idToFind := "non_existent_id"
-		expectedError := fmt.Errorf("not found ranking with id: %s", idToFind)
+		expectedError := fmt.Errorf("ranking id %s: not found", idToFind)
 
 		_, err := rc.GetByID(idToFind)
 		if !cmp.Equal(expectedError.Error(), err.Error()) {

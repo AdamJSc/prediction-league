@@ -33,7 +33,7 @@ func (r *RankingCollection) GetByID(id string) (*Ranking, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("not found ranking with id: %s", id)
+	return nil, fmt.Errorf("ranking id %s: not found", id)
 }
 
 // MarshalJSON using custom structure

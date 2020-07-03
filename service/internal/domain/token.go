@@ -61,7 +61,7 @@ func (t TokenAgent) RetrieveTokenByID(ctx context.Context, id string) (*models.T
 	}
 
 	if len(tokens) != 1 {
-		return nil, NotFoundError{fmt.Errorf("token not found: %s", id)}
+		return nil, NotFoundError{fmt.Errorf("token id: %s not found", id)}
 	}
 
 	return &tokens[0], nil

@@ -3,6 +3,7 @@ package repositories
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"golang.org/x/net/context"
@@ -152,7 +153,7 @@ func (s StandingsDatabaseRepository) ExistsByID(ctx context.Context, id string) 
 	}
 
 	if count == 0 {
-		return MissingDBRecordError{errors.New("standings not found")}
+		return MissingDBRecordError{fmt.Errorf("standings id %s: not found", id)}
 	}
 
 	return nil

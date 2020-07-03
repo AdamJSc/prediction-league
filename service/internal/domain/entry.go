@@ -606,7 +606,7 @@ func GetEntryPredictionValidAtTimestamp(entryPredictions []models.EntryPredictio
 		}
 	}
 
-	return models.EntryPrediction{}, errors.New("not found")
+	return models.EntryPrediction{}, fmt.Errorf("entry prediction by timestamp %+v: not found", ts)
 }
 
 func isValidEmail(email string) bool {

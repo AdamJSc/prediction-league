@@ -24,7 +24,7 @@ func (t TeamCollection) GetByID(teamID string) (Team, error) {
 		}
 	}
 
-	return Team{}, fmt.Errorf("team id '%s': not found", teamID)
+	return Team{}, fmt.Errorf("team id %s: not found", teamID)
 }
 
 // GetByResourceID retrieves a matching Team from the collection by its ID
@@ -35,5 +35,5 @@ func (t TeamCollection) GetByResourceID(clientResourceID ResourceIdentifier) (Te
 		}
 	}
 
-	return Team{}, fmt.Errorf("team client resource id '%s': not found", clientResourceID.Value())
+	return Team{}, fmt.Errorf("team client resource id %s: not found", clientResourceID.Value())
 }
