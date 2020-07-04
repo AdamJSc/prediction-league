@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
-	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/repositories"
+	"sort"
 )
 
 // LeaderBoardAgentInjector defines the dependencies required by our LeaderBoardAgent
@@ -42,7 +42,7 @@ func (l LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context.
 			if roundNumber != 1 {
 				return nil, domainErrorFromRepositoryError(err)
 			}
-			lb, err := generateEmptyLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, roundNumber, l)
+			lb, err := generateEmptyLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, roundNumber, &EntryAgent{EntryAgentInjector: l})
 			if err != nil {
 				return nil, err
 			}
@@ -70,7 +70,7 @@ func (l LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context.
 			if roundNumber != 1 {
 				return nil, domainErrorFromRepositoryError(err)
 			}
-			lb, err := generateEmptyLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, roundNumber, l)
+			lb, err := generateEmptyLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, roundNumber, &EntryAgent{EntryAgentInjector: l})
 			if err != nil {
 				return nil, err
 			}
@@ -93,8 +93,7 @@ func (l LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context.
 
 // generateEmptyLeaderBoardBySeasonAndRoundNumber returns a leaderboard that comprises all entries belonging to
 // the provided season ID and realm name of the provided context, which are all scored with a 0
-func generateEmptyLeaderBoardBySeasonAndRoundNumber(ctx context.Context, seasonID string, roundNumber int, injector app.MySQLInjector) (*models.LeaderBoard, error) {
-	entryAgent := EntryAgent{EntryAgentInjector: injector}
+func generateEmptyLeaderBoardBySeasonAndRoundNumber(ctx context.Context, seasonID string, roundNumber int, entryAgent *EntryAgent) (*models.LeaderBoard, error) {
 	entries, err := entryAgent.RetrieveEntriesBySeasonID(ctx, seasonID)
 	if err != nil {
 		return nil, err
@@ -105,6 +104,11 @@ func generateEmptyLeaderBoardBySeasonAndRoundNumber(ctx context.Context, seasonI
 	}
 
 	realmName := RealmFromContext(ctx).Name
+
+	// sort entries by entrant nickname
+	sort.SliceStable(entries, func(i, j int) bool {
+		return entries[i].EntrantNickname < entries[j].EntrantNickname
+	})
 
 	count := 0
 	for _, entry := range entries {
