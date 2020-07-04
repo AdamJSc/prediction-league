@@ -3,12 +3,83 @@ package repositories
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"golang.org/x/net/context"
 	"prediction-league/service/internal/models"
 	"time"
 )
+
+// stmtSelectEntryWithTotalScore represents a partial nested statement for grouping entry IDs along with their
+// cumulative score at the point of the provided round number
+const stmtSelectEntryWithTotalScore = `
+	SELECT
+		entry_id,
+		SUM(score) AS total_score
+	FROM (
+		SELECT
+			ep.entry_id,
+			s.round_number,
+			sep.score
+		FROM (
+			SELECT *
+			FROM scored_entry_prediction
+			ORDER BY created_at DESC
+			LIMIT 100000000 -- arbitrary limit so that order by desc row order is retained for parent query
+		) sep
+		INNER JOIN standings s ON sep.standings_id = s.id
+		INNER JOIN entry_prediction ep ON sep.entry_prediction_id = ep.id
+		WHERE s.season_id = ? AND s.round_number <= ?
+		GROUP BY ep.entry_id, s.round_number
+		ORDER BY ep.entry_id ASC, s.round_number DESC
+	) AS sub
+	GROUP BY entry_id
+`
+
+// stmtSelectEntryWithScoreThisRound represents a partial nested statement for retrieving entry IDs along with their
+// score for the provided round number
+const stmtSelectEntryWithScoreThisRound = `
+	SELECT
+		ep.entry_id,
+		sep.score AS score_this_round
+	FROM (
+		SELECT *
+		FROM scored_entry_prediction
+		ORDER BY created_at DESC
+		LIMIT 100000000 -- arbitrary limit so that order by desc row order is retained for parent query
+	) sep
+	INNER JOIN standings s ON sep.standings_id = s.id
+	INNER JOIN entry_prediction ep ON sep.entry_prediction_id = ep.id
+	WHERE s.season_id = "201920_1" AND s.round_number = 33
+	GROUP BY ep.entry_id
+`
+
+// stmtSelectEntryWithMinScore represents a partial nested statement for grouping entry IDs along with their
+// minimum score at the point of the provided round number
+const stmtSelectEntryWithMinScore = `
+	SELECT
+		entry_id,
+		MIN(score) AS min_score
+	FROM (
+		SELECT
+			ep.entry_id,
+			s.round_number,
+			sep.score
+		FROM (
+			SELECT *
+			FROM scored_entry_prediction
+			ORDER BY created_at DESC
+			LIMIT 100000000 -- arbitrary limit so that order by desc row order is retained for parent query
+		) sep
+		INNER JOIN standings s ON sep.standings_id = s.id
+		INNER JOIN entry_prediction ep ON sep.entry_prediction_id = ep.id
+		WHERE s.season_id = "201920_1" AND s.round_number <= 33
+		GROUP BY ep.entry_id, s.round_number
+		ORDER BY ep.entry_id ASC, s.round_number DESC
+	) AS sub
+	GROUP BY entry_id
+`
 
 // scoredEntryPredictionDBFields defines the fields used regularly in ScoredEntryPredictions-related transactions
 var scoredEntryPredictionDBFields = []string{
@@ -22,6 +93,7 @@ type ScoredEntryPredictionRepository interface {
 	Update(ctx context.Context, scoredEntryPrediction *models.ScoredEntryPrediction) error
 	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]models.ScoredEntryPrediction, error)
 	Exists(ctx context.Context, entryPredictionID, standingsID string) error
+	SelectEntryCumulativeScores(ctx context.Context, seasonID string, roundNumber int) (models.RankingWithScoreCollection, error)
 }
 
 // ScoredEntryPredictionDatabaseRepository defines our DB-backed ScoredEntryPredictions data store
@@ -148,10 +220,91 @@ func (s ScoredEntryPredictionDatabaseRepository) Exists(ctx context.Context, ent
 	}
 
 	if count == 0 {
-		return MissingDBRecordError{errors.New("scored entry prediction not found")}
+		return MissingDBRecordError{fmt.Errorf("scored entry prediction with standings id %s and entry prediction id %s: not found", standingsID, entryPredictionID)}
 	}
 
 	return nil
+}
+
+// SelectEntryCumulativeScores retrieves the current score, total score and minimum score for each entry ID based on the provided season ID and round number
+func (s ScoredEntryPredictionDatabaseRepository) SelectEntryCumulativeScores(ctx context.Context, seasonID string, roundNumber int) ([]models.LeaderboardRanking, error) {
+	stmt := fmt.Sprintf(`
+		SELECT
+			entry_with_total_score.entry_id,
+			entry_with_score_this_round.score_this_round,
+			entry_with_min_score.min_score,
+			entry_with_total_score.total_score
+		FROM (%s) AS entry_with_total_score
+		INNER JOIN (%s) AS entry_with_score_this_round
+			ON entry_with_total_score.entry_id = entry_with_score_this_round.entry_id
+		INNER JOIN (%s) AS entry_with_min_score
+			ON entry_with_total_score.entry_id = entry_with_min_score.entry_id
+		ORDER BY
+			entry_with_total_score.total_score ASC,
+			entry_with_min_score.min_score ASC,
+			entry_with_score_this_round.score_this_round ASC
+		`,
+		stmtSelectEntryWithTotalScore,
+		stmtSelectEntryWithScoreThisRound,
+		stmtSelectEntryWithMinScore,
+	)
+
+	params := []interface{}{
+		// params for stmtSelectEntryWithTotalScore partial
+		seasonID,
+		roundNumber,
+		// params for stmtSelectEntryWithScoreThisRound partial
+		seasonID,
+		roundNumber,
+		// params for stmtSelectEntryWithMinScore partial
+		seasonID,
+		roundNumber,
+	}
+
+	rows, err := s.agent.QueryContext(ctx, stmt, params...)
+	if err != nil {
+		return nil, wrapDBError(err)
+	}
+	defer rows.Close()
+
+	var lbRankings []models.LeaderboardRanking
+
+	count := 0
+	for rows.Next() {
+		count++
+		var (
+			entryID      string
+			totalScore   int
+			currentScore int
+			minScore     int
+		)
+		if err := rows.Scan(
+			&entryID,
+			&totalScore,
+			&currentScore,
+			&minScore,
+		); err != nil {
+			return nil, wrapDBError(err)
+		}
+
+		lbRankings = append(lbRankings, models.LeaderboardRanking{
+			RankingWithScore: models.RankingWithScore{
+				Ranking: models.Ranking{
+					ID:       entryID,
+					Position: count,
+				},
+				Score: currentScore,
+			},
+			MinScore:   minScore,
+			TotalScore: totalScore,
+		})
+	}
+
+	if len(lbRankings) == 0 {
+		return nil, MissingDBRecordError{fmt.Errorf("no cumulative scores found for round %d in season %s", roundNumber, seasonID)}
+	}
+
+	return lbRankings, nil
 }
 
 // NewScoredEntryPredictionDatabaseRepository instantiates a new ScoredEntryPredictionDatabaseRepository with the provided DB agent

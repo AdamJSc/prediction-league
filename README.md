@@ -113,6 +113,16 @@ For details on the system's default season, see ["FakeSeason"](#fakeseason) (bel
 
 ### Scored Entry Prediction
 
+### Ranking
+
+### Ranking With Meta
+
+### Ranking With Score
+
+### Leaderboard
+
+### Leaderboard Ranking
+
 ### Token
 
 ## Other Domain Knowledge
