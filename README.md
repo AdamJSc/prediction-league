@@ -119,9 +119,9 @@ For details on the system's default season, see ["FakeSeason"](#fakeseason) (bel
 
 ### Ranking With Score
 
-### Leaderboard
+### LeaderBoard
 
-### Leaderboard Ranking
+### LeaderBoard Ranking
 
 ### Token
 

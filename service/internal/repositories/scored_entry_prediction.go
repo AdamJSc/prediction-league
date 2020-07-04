@@ -30,7 +30,8 @@ const stmtSelectEntryWithTotalScore = `
 		) sep
 		INNER JOIN standings s ON sep.standings_id = s.id
 		INNER JOIN entry_prediction ep ON sep.entry_prediction_id = ep.id
-		WHERE s.season_id = ? AND s.round_number <= ?
+		INNER JOIN entry e ON ep.entry_id = e.id
+		WHERE e.realm_name = ? s.season_id = ? AND s.round_number <= ?
 		GROUP BY ep.entry_id, s.round_number
 		ORDER BY ep.entry_id ASC, s.round_number DESC
 	) AS sub
@@ -51,7 +52,8 @@ const stmtSelectEntryWithScoreThisRound = `
 	) sep
 	INNER JOIN standings s ON sep.standings_id = s.id
 	INNER JOIN entry_prediction ep ON sep.entry_prediction_id = ep.id
-	WHERE s.season_id = "201920_1" AND s.round_number = 33
+	INNER JOIN entry e ON ep.entry_id = e.id
+	WHERE e.realm_name = ? s.season_id = ? AND s.round_number = ?
 	GROUP BY ep.entry_id
 `
 
@@ -74,7 +76,8 @@ const stmtSelectEntryWithMinScore = `
 		) sep
 		INNER JOIN standings s ON sep.standings_id = s.id
 		INNER JOIN entry_prediction ep ON sep.entry_prediction_id = ep.id
-		WHERE s.season_id = "201920_1" AND s.round_number <= 33
+		INNER JOIN entry e ON ep.entry_id = e.id
+		WHERE e.realm_name = ? s.season_id = ? AND s.round_number <= ?
 		GROUP BY ep.entry_id, s.round_number
 		ORDER BY ep.entry_id ASC, s.round_number DESC
 	) AS sub
@@ -226,8 +229,9 @@ func (s ScoredEntryPredictionDatabaseRepository) Exists(ctx context.Context, ent
 	return nil
 }
 
-// SelectEntryCumulativeScores retrieves the current score, total score and minimum score for each entry ID based on the provided season ID and round number
-func (s ScoredEntryPredictionDatabaseRepository) SelectEntryCumulativeScores(ctx context.Context, seasonID string, roundNumber int) ([]models.LeaderboardRanking, error) {
+// SelectEntryCumulativeScoresByRealm retrieves the current score, total score and minimum score for each entry ID
+// based on the provided realm name, season ID and round number
+func (s ScoredEntryPredictionDatabaseRepository) SelectEntryCumulativeScoresByRealm(ctx context.Context, realmName string, seasonID string, roundNumber int) ([]models.LeaderBoardRanking, error) {
 	stmt := fmt.Sprintf(`
 		SELECT
 			entry_with_total_score.entry_id,
@@ -251,12 +255,15 @@ func (s ScoredEntryPredictionDatabaseRepository) SelectEntryCumulativeScores(ctx
 
 	params := []interface{}{
 		// params for stmtSelectEntryWithTotalScore partial
+		realmName,
 		seasonID,
 		roundNumber,
 		// params for stmtSelectEntryWithScoreThisRound partial
+		realmName,
 		seasonID,
 		roundNumber,
 		// params for stmtSelectEntryWithMinScore partial
+		realmName,
 		seasonID,
 		roundNumber,
 	}
@@ -267,7 +274,7 @@ func (s ScoredEntryPredictionDatabaseRepository) SelectEntryCumulativeScores(ctx
 	}
 	defer rows.Close()
 
-	var lbRankings []models.LeaderboardRanking
+	var lbRankings []models.LeaderBoardRanking
 
 	count := 0
 	for rows.Next() {
@@ -287,7 +294,7 @@ func (s ScoredEntryPredictionDatabaseRepository) SelectEntryCumulativeScores(ctx
 			return nil, wrapDBError(err)
 		}
 
-		lbRankings = append(lbRankings, models.LeaderboardRanking{
+		lbRankings = append(lbRankings, models.LeaderBoardRanking{
 			RankingWithScore: models.RankingWithScore{
 				Ranking: models.Ranking{
 					ID:       entryID,
