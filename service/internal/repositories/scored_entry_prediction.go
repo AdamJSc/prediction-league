@@ -235,9 +235,9 @@ func (s ScoredEntryPredictionDatabaseRepository) SelectEntryCumulativeScoresByRe
 	stmt := fmt.Sprintf(`
 		SELECT
 			entry_with_total_score.entry_id,
+			entry_with_total_score.total_score,
 			entry_with_score_this_round.score_this_round,
-			entry_with_min_score.min_score,
-			entry_with_total_score.total_score
+			entry_with_min_score.min_score
 		FROM (%s) AS entry_with_total_score
 		INNER JOIN (%s) AS entry_with_score_this_round
 			ON entry_with_total_score.entry_id = entry_with_score_this_round.entry_id

@@ -1,11 +1,13 @@
 package domain_test
 
 import (
-	"github.com/google/go-cmp/cmp"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/models"
 	"testing"
 	"time"
+
+	gocmp "github.com/google/go-cmp/cmp"
+	"gotest.tools/assert/cmp"
 )
 
 func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T) {
@@ -18,7 +20,18 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 	for i := 2; i <= 4; i++ {
 		s := generateTestStandings(t)
 		s.RoundNumber = i
-		standingsRounds[i] = insertStandings(t, s)
+		s.CreatedAt = time.Now().Add(time.Duration(i) * 24 * time.Hour).Truncate(time.Second)
+		s = insertStandings(t, s)
+		switch {
+		case i > 2:
+			// later on, we can check that round 2's leaderboard has a last updated date that
+			// matches the created_at date of standings round 2
+			// otherwise, leaderboard should match the standings round's updated_at date instead
+			s.UpdatedAt.Valid = true
+			s.UpdatedAt.Time = s.CreatedAt.Add(time.Minute)
+			s = updateStandings(t, s)
+		}
+		standingsRounds[i] = s
 	}
 
 	// <-- seed entries that should appear within the leaderboard -->
@@ -60,7 +73,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		max: 125,
 	}
 	frankScores := tieredScores{
-		min: 123,
+		min: 119,
 		mid: 124,
 		max: 125,
 	}
@@ -171,8 +184,8 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 			t.Fatal(err)
 		}
 
-		if !cmp.Equal(actualLeaderboard, expectedLeaderBoard) {
-			t.Fatal(cmp.Diff(expectedLeaderBoard, actualLeaderboard))
+		if !gocmp.Equal(actualLeaderboard, expectedLeaderBoard) {
+			t.Fatal(gocmp.Diff(expectedLeaderBoard, actualLeaderboard))
 		}
 	})
 
@@ -180,12 +193,15 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		lastUpdated := standingsRounds[2].CreatedAt
+		lastUpdated := standingsRounds[2].CreatedAt // standingsRound[2].UpdatedAt is empty
 		expectedLeaderBoard := &models.LeaderBoard{
 			RoundNumber: 2,
 			Rankings: []models.LeaderBoardRanking{
+				// total 122, min 122, current 122
 				generateTestLeaderBoardRanking(1, harryEntry.ID.String(), harryScores.min, harryScores.min, harryScores.min),
+				// total 124, min 124, current 124
 				generateTestLeaderBoardRanking(2, frankEntry.ID.String(), frankScores.mid, frankScores.mid, frankScores.mid),
+				// total 125, min 125, current 125
 				generateTestLeaderBoardRanking(3, jamieEntry.ID.String(), jamieScores.max, jamieScores.max, jamieScores.max),
 			},
 			LastUpdated: &lastUpdated,
@@ -196,8 +212,84 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 			t.Fatal(err)
 		}
 
-		if !cmp.Equal(actualLeaderboard, expectedLeaderBoard) {
-			t.Fatal(cmp.Diff(expectedLeaderBoard, actualLeaderboard))
+		if !gocmp.Equal(actualLeaderboard, expectedLeaderBoard) {
+			t.Fatal(gocmp.Diff(expectedLeaderBoard, actualLeaderboard))
+		}
+	})
+
+	t.Run("retrieve leaderboard for second proper round number must return expected leaderboard", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		lastUpdated := standingsRounds[3].UpdatedAt.Time
+		expectedLeaderBoard := &models.LeaderBoard{
+			RoundNumber: 3,
+			Rankings: []models.LeaderBoardRanking{
+				// total 246, min 121, current 121
+				generateTestLeaderBoardRanking(1, jamieEntry.ID.String(), jamieScores.min, jamieScores.min, jamieScores.max+jamieScores.min),
+				// total 246, min 122, current 124
+				generateTestLeaderBoardRanking(2, harryEntry.ID.String(), harryScores.mid, harryScores.min, harryScores.min+harryScores.mid),
+				// total 249, min 124, current 125
+				generateTestLeaderBoardRanking(3, frankEntry.ID.String(), frankScores.max, frankScores.mid, frankScores.mid+frankScores.max),
+			},
+			LastUpdated: &lastUpdated,
+		}
+
+		actualLeaderboard, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 3)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !gocmp.Equal(actualLeaderboard, expectedLeaderBoard) {
+			t.Fatal(gocmp.Diff(expectedLeaderBoard, actualLeaderboard))
+		}
+	})
+
+	t.Run("retrieve leaderboard for third proper round number must return expected leaderboard", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		lastUpdated := standingsRounds[3].UpdatedAt.Time
+		expectedLeaderBoard := &models.LeaderBoard{
+			RoundNumber: 4,
+			Rankings: []models.LeaderBoardRanking{
+				// total 368, min 119, current 119
+				generateTestLeaderBoardRanking(1, frankEntry.ID.String(), frankScores.min, frankScores.min, frankScores.mid+frankScores.max+frankScores.min),
+				// total 369, min 121, current 123
+				generateTestLeaderBoardRanking(2, jamieEntry.ID.String(), jamieScores.mid, jamieScores.min, jamieScores.max+jamieScores.min+jamieScores.mid),
+				// total 372, min 122, current 126
+				generateTestLeaderBoardRanking(3, harryEntry.ID.String(), harryScores.max, harryScores.min, harryScores.min+harryScores.mid+harryScores.max),
+			},
+			LastUpdated: &lastUpdated,
+		}
+
+		actualLeaderboard, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 4)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !gocmp.Equal(actualLeaderboard, expectedLeaderBoard) {
+			t.Fatal(gocmp.Diff(expectedLeaderBoard, actualLeaderboard))
+		}
+	})
+
+	t.Run("retrieve leaderboard for non-existent round number must fail", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		_, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 5)
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		}
+	})
+
+	t.Run("retrieve leaderboard for non-existent season ID must fail", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		_, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, "not_a_real_season_id", 2)
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
 	})
 }

@@ -184,6 +184,20 @@ func insertStandings(t *testing.T, standings models.Standings) models.Standings 
 	return standings
 }
 
+// updateStandings updates a generated Standings entity in the DB for use within the testsuite
+func updateStandings(t *testing.T, standings models.Standings) models.Standings {
+	t.Helper()
+
+	ctx, cancel := testContextDefault(t)
+	defer cancel()
+
+	if err := repositories.NewStandingsDatabaseRepository(db).Update(ctx, &standings); err != nil {
+		t.Fatal(err)
+	}
+
+	return standings
+}
+
 // generateTestEntry generates a new Entry entity for use within the testsuite
 func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail string) models.Entry {
 	t.Helper()
