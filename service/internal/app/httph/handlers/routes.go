@@ -13,6 +13,7 @@ func RegisterRoutes(c *httph.HTTPAppContainer) {
 
 	api.HandleFunc("/season/{season_id}", retrieveSeasonHandler(c)).Methods(http.MethodGet)
 	api.HandleFunc("/season/{season_id}/entry", createEntryHandler(c)).Methods(http.MethodPost)
+	api.HandleFunc("/season/{season_id}/leaderboard/{round_number:[0-9]+}", retrieveLeaderBoardHandler(c)).Methods(http.MethodGet)
 
 	api.HandleFunc("/entry/{entry_id}/prediction", createEntryPredictionHandler(c)).Methods(http.MethodPost)
 	api.HandleFunc("/entry/{entry_id}/prediction", retrieveLatestEntryPredictionHandler(c)).Methods(http.MethodGet)

@@ -54,3 +54,49 @@ func retrieveSeasonHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter
 		}, nil).WriteTo(w)
 	}
 }
+
+func retrieveLeaderBoardHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// parse season ID from route
+		var seasonID string
+		if err := getRouteParam(r, "season_id", &seasonID); err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		// parse round number from route
+		var roundNumber int
+		if err := getRouteParam(r, "round_number", &roundNumber); err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		// get context from request
+		ctx, cancel, err := contextFromRequest(r, c)
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+		defer cancel()
+
+		if seasonID == "latest" {
+			// use the current realm's season ID instead
+			seasonID = domain.RealmFromContext(ctx).SeasonID
+		}
+
+		// retrieve leaderboard
+		agent := domain.LeaderBoardAgent{
+			LeaderBoardAgentInjector: c,
+		}
+		lb, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, roundNumber)
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		rest.OKResponse(&rest.Data{
+			Type:    "leaderboard",
+			Content: lb,
+		}, nil).WriteTo(w)
+	}
+}

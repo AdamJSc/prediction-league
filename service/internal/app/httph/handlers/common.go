@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/domain"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -22,12 +23,24 @@ func closeBody(r *http.Request) {
 	}
 }
 
-func getRouteParam(r *http.Request, name string, value *string) error {
+func getRouteParam(r *http.Request, name string, value interface{}) error {
 	val, ok := mux.Vars(r)[name]
 	if !ok {
 		return fmt.Errorf("invalid param: %s", name)
 	}
-	*value = val
+
+	switch value.(type) {
+	case *string:
+		typed := value.(*string)
+		*typed = val
+	case *int:
+		typed := value.(*int)
+		int, err := strconv.Atoi(val)
+		if err != nil {
+			return err
+		}
+		*typed = int
+	}
 	return nil
 }
 
