@@ -5,10 +5,8 @@ import (
 	"errors"
 	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
-	"github.com/LUSHDigital/core-sql/sqltypes"
 	"golang.org/x/net/context"
 	"prediction-league/service/internal/models"
-	"time"
 )
 
 // stmtSelectEntryWithTotalScore represents a partial nested statement for grouping entry IDs along with their
@@ -31,7 +29,7 @@ const stmtSelectEntryWithTotalScore = `
 		INNER JOIN standings s ON sep.standings_id = s.id
 		INNER JOIN entry_prediction ep ON sep.entry_prediction_id = ep.id
 		INNER JOIN entry e ON ep.entry_id = e.id
-		WHERE e.realm_name = ? s.season_id = ? AND s.round_number <= ?
+		WHERE e.realm_name = ? AND e.season_id = ? AND s.round_number <= ?
 		GROUP BY ep.entry_id, s.round_number
 		ORDER BY ep.entry_id ASC, s.round_number DESC
 	) AS sub
@@ -53,7 +51,7 @@ const stmtSelectEntryWithScoreThisRound = `
 	INNER JOIN standings s ON sep.standings_id = s.id
 	INNER JOIN entry_prediction ep ON sep.entry_prediction_id = ep.id
 	INNER JOIN entry e ON ep.entry_id = e.id
-	WHERE e.realm_name = ? s.season_id = ? AND s.round_number = ?
+	WHERE e.realm_name = ? AND e.season_id = ? AND s.round_number = ?
 	GROUP BY ep.entry_id
 `
 
@@ -77,7 +75,7 @@ const stmtSelectEntryWithMinScore = `
 		INNER JOIN standings s ON sep.standings_id = s.id
 		INNER JOIN entry_prediction ep ON sep.entry_prediction_id = ep.id
 		INNER JOIN entry e ON ep.entry_id = e.id
-		WHERE e.realm_name = ? s.season_id = ? AND s.round_number <= ?
+		WHERE e.realm_name = ? AND e.season_id = ? AND s.round_number <= ?
 		GROUP BY ep.entry_id, s.round_number
 		ORDER BY ep.entry_id ASC, s.round_number DESC
 	) AS sub
@@ -109,8 +107,6 @@ func (s ScoredEntryPredictionDatabaseRepository) Insert(ctx context.Context, sco
 	stmt := `INSERT INTO scored_entry_prediction (entry_prediction_id, standings_id,` + getDBFieldsStringFromFields(scoredEntryPredictionDBFields) + `, created_at)
 					VALUES (?, ?, ?, ?, ?)`
 
-	now := time.Now().Truncate(time.Second)
-
 	rawRankings, err := json.Marshal(&scoredEntryPrediction.Rankings)
 	if err != nil {
 		return err
@@ -123,14 +119,12 @@ func (s ScoredEntryPredictionDatabaseRepository) Insert(ctx context.Context, sco
 		scoredEntryPrediction.StandingsID,
 		rawRankings,
 		scoredEntryPrediction.Score,
-		now,
+		scoredEntryPrediction.CreatedAt,
 	)
 	if err != nil {
 		return wrapDBError(err)
 	}
 	defer rows.Close()
-
-	scoredEntryPrediction.CreatedAt = now
 
 	return nil
 }
@@ -141,8 +135,6 @@ func (s ScoredEntryPredictionDatabaseRepository) Update(ctx context.Context, sco
 				SET ` + getDBFieldsWithEqualsPlaceholdersStringFromFields(scoredEntryPredictionDBFields) + `, updated_at = ?
 				WHERE entry_prediction_id = ? AND standings_id = ?`
 
-	now := sqltypes.ToNullTime(time.Now().Truncate(time.Second))
-
 	rawRankings, err := json.Marshal(&scoredEntryPrediction.Rankings)
 	if err != nil {
 		return err
@@ -153,7 +145,7 @@ func (s ScoredEntryPredictionDatabaseRepository) Update(ctx context.Context, sco
 		stmt,
 		rawRankings,
 		scoredEntryPrediction.Score,
-		now,
+		scoredEntryPrediction.UpdatedAt,
 		scoredEntryPrediction.EntryPredictionID,
 		scoredEntryPrediction.StandingsID,
 	)
@@ -161,8 +153,6 @@ func (s ScoredEntryPredictionDatabaseRepository) Update(ctx context.Context, sco
 		return wrapDBError(err)
 	}
 	defer rows.Close()
-
-	scoredEntryPrediction.UpdatedAt = now
 
 	return nil
 }

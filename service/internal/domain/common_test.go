@@ -263,11 +263,14 @@ func insertEntryPrediction(t *testing.T, entryPrediction models.EntryPrediction)
 
 // generateTestScoredEntryPrediction generates a new ScoredEntryPrediction entity for use within the testsuite
 func generateTestScoredEntryPrediction(t *testing.T, entryPredictionID, standingsID uuid.UUID) models.ScoredEntryPrediction {
+	t.Helper()
+
 	return models.ScoredEntryPrediction{
 		EntryPredictionID: entryPredictionID,
 		StandingsID:       standingsID,
 		Rankings:          models.NewRankingWithScoreCollectionFromIDs(testSeason.TeamIDs),
 		Score:             123,
+		CreatedAt:         time.Now().Truncate(time.Second),
 	}
 }
 

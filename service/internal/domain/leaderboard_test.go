@@ -50,18 +50,18 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		max int
 	}
 	harryScores := tieredScores{
-		min: 123,
+		min: 122,
 		mid: 124,
-		max: 125,
+		max: 126,
 	}
 	jamieScores := tieredScores{
-		min: 122,
-		mid: 125,
-		max: 128,
-	}
-	frankScores := tieredScores{
 		min: 121,
 		mid: 123,
+		max: 125,
+	}
+	frankScores := tieredScores{
+		min: 123,
+		mid: 124,
 		max: 125,
 	}
 
@@ -73,8 +73,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		idx := i - 2
 		sep := generateTestScoredEntryPrediction(t, harryEntryPrediction.ID, standingsRounds[i].ID)
 		sep.Score = harryScoreSequence[idx]
-		sep.UpdatedAt.Valid = true
-		sep.UpdatedAt.Time = time.Now().Add(time.Duration(i) * 24 * time.Hour)
+		sep.CreatedAt = time.Now().Add(time.Duration(i) * 24 * time.Hour)
 		harryScoredEntryPredictions[i] = insertScoredEntryPrediction(t, sep)
 	}
 	var jamieScoredEntryPredictions = make(map[int]models.ScoredEntryPrediction)
@@ -83,8 +82,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		idx := i - 2
 		sep := generateTestScoredEntryPrediction(t, jamieEntryPrediction.ID, standingsRounds[i].ID)
 		sep.Score = jamieScoreSequence[idx]
-		sep.UpdatedAt.Valid = true
-		sep.UpdatedAt.Time = time.Now().Add(time.Duration(i) * 24 * time.Hour)
+		sep.CreatedAt = time.Now().Add(time.Duration(i) * 24 * time.Hour)
 		jamieScoredEntryPredictions[i] = insertScoredEntryPrediction(t, sep)
 	}
 	var frankScoredEntryPredictions = make(map[int]models.ScoredEntryPrediction)
@@ -93,8 +91,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		idx := i - 2
 		sep := generateTestScoredEntryPrediction(t, frankEntryPrediction.ID, standingsRounds[i].ID)
 		sep.Score = frankScoreSequence[idx]
-		sep.UpdatedAt.Valid = true
-		sep.UpdatedAt.Time = time.Now().Add(time.Duration(i) * 24 * time.Hour)
+		sep.CreatedAt = time.Now().Add(time.Duration(i) * 24 * time.Hour)
 		frankScoredEntryPredictions[i] = insertScoredEntryPrediction(t, sep)
 	}
 
@@ -105,23 +102,20 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 	// harry
 	ep := insertEntryPrediction(t, generateTestEntryPrediction(t, harryEntry.ID))
 	sep := generateTestScoredEntryPrediction(t, ep.ID, standingsRounds[2].ID)
-	sep.Score = 100000 // something ludicrous
-	sep.UpdatedAt.Valid = true
-	sep.UpdatedAt.Time = harryScoredEntryPredictions[2].UpdatedAt.Time.Add(-time.Hour) // occurs BEFORE harry's existing round 2 prediction
+	sep.Score = 100000                                                       // something ludicrous
+	sep.CreatedAt = harryScoredEntryPredictions[2].CreatedAt.Add(-time.Hour) // occurs BEFORE harry's existing round 2 prediction
 	insertScoredEntryPrediction(t, sep)
 	// jamie
 	ep = insertEntryPrediction(t, generateTestEntryPrediction(t, jamieEntry.ID))
 	sep = generateTestScoredEntryPrediction(t, ep.ID, standingsRounds[3].ID)
-	sep.Score = 123456789 // something ludicrous
-	sep.UpdatedAt.Valid = true
-	sep.UpdatedAt.Time = jamieScoredEntryPredictions[3].UpdatedAt.Time.Add(-time.Hour) // occurs BEFORE jamie's existing round 3 prediction
+	sep.Score = 123456789                                                    // something ludicrous
+	sep.CreatedAt = jamieScoredEntryPredictions[3].CreatedAt.Add(-time.Hour) // occurs BEFORE jamie's existing round 3 prediction
 	insertScoredEntryPrediction(t, sep)
 	// frank
 	ep = insertEntryPrediction(t, generateTestEntryPrediction(t, frankEntry.ID))
 	sep = generateTestScoredEntryPrediction(t, ep.ID, standingsRounds[4].ID)
-	sep.Score = 55378008 // something ludicrous
-	sep.UpdatedAt.Valid = true
-	sep.UpdatedAt.Time = frankScoredEntryPredictions[4].UpdatedAt.Time.Add(-time.Hour) // occurs BEFORE frank's existing round 4 prediction
+	sep.Score = 55378008                                                     // something ludicrous
+	sep.CreatedAt = frankScoredEntryPredictions[4].CreatedAt.Add(-time.Hour) // occurs BEFORE frank's existing round 4 prediction
 	insertScoredEntryPrediction(t, sep)
 
 	// <-- seed entries that definitely should never appear within the leaderboard -->
@@ -152,22 +146,24 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		LeaderBoardAgentInjector: injector{db: db},
 	}
 
+	t.Logf("harry's entry: %s", harryEntry.ID.String())
+	t.Logf("jamie's entry: %s", jamieEntry.ID.String())
+	t.Logf("frank's entry: %s", frankEntry.ID.String())
+	t.Logf("robbie's entry: %s", robbieEntry.ID.String())
+	t.Logf("joey's entry: %s", joeyEntry.ID.String())
+
 	t.Run("retrieve leaderboard for a round number that pre-dates the rounds we have must return empty leaderboard", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		// empty leaderboard should be sorted by entrants' nicknames
-		var harryRanking, jamieRanking, frankRanking models.LeaderBoardRanking
-		frankRanking.Position = 1
-		frankRanking.ID = frankEntry.ID.String()
-		harryRanking.Position = 2
-		harryRanking.ID = harryEntry.ID.String()
-		jamieRanking.Position = 3
-		jamieRanking.ID = jamieEntry.ID.String()
-
 		expectedLeaderBoard := &models.LeaderBoard{
 			RoundNumber: 1,
-			Rankings:    []models.LeaderBoardRanking{frankRanking, harryRanking, jamieRanking},
+			Rankings: []models.LeaderBoardRanking{
+				generateTestLeaderBoardRanking(1, frankEntry.ID.String(), 0, 0, 0),
+				generateTestLeaderBoardRanking(2, harryEntry.ID.String(), 0, 0, 0),
+				generateTestLeaderBoardRanking(3, jamieEntry.ID.String(), 0, 0, 0),
+			},
 		}
 
 		actualLeaderboard, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 1)
@@ -179,4 +175,44 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 			t.Fatal(cmp.Diff(expectedLeaderBoard, actualLeaderboard))
 		}
 	})
+
+	t.Run("retrieve leaderboard for first proper round number must return expected leaderboard", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		lastUpdated := standingsRounds[2].CreatedAt
+		expectedLeaderBoard := &models.LeaderBoard{
+			RoundNumber: 2,
+			Rankings: []models.LeaderBoardRanking{
+				generateTestLeaderBoardRanking(1, harryEntry.ID.String(), harryScores.min, harryScores.min, harryScores.min),
+				generateTestLeaderBoardRanking(2, frankEntry.ID.String(), frankScores.mid, frankScores.mid, frankScores.mid),
+				generateTestLeaderBoardRanking(3, jamieEntry.ID.String(), jamieScores.max, jamieScores.max, jamieScores.max),
+			},
+			LastUpdated: &lastUpdated,
+		}
+
+		actualLeaderboard, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !cmp.Equal(actualLeaderboard, expectedLeaderBoard) {
+			t.Fatal(cmp.Diff(expectedLeaderBoard, actualLeaderboard))
+		}
+	})
+}
+
+// generateTestLeaderBoardRanking provides a helper function for generating a leaderboard ranking based on the provided values
+func generateTestLeaderBoardRanking(position int, entryID string, score, minScore, totalScore int) models.LeaderBoardRanking {
+	return models.LeaderBoardRanking{
+		RankingWithScore: models.RankingWithScore{
+			Ranking: models.Ranking{
+				ID:       entryID,
+				Position: position,
+			},
+			Score: score,
+		},
+		MinScore:   minScore,
+		TotalScore: totalScore,
+	}
 }

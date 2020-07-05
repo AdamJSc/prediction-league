@@ -51,7 +51,7 @@ func (s ScoredEntryPredictionAgent) CreateScoredEntryPrediction(ctx context.Cont
 	}
 
 	// override these values
-	scoredEntryPrediction.CreatedAt = time.Time{}
+	scoredEntryPrediction.CreatedAt = time.Now().Truncate(time.Second)
 	scoredEntryPrediction.UpdatedAt = sqltypes.NullTime{}
 
 	scoredEntryPredictionRepo := repositories.NewScoredEntryPredictionDatabaseRepository(db)
@@ -70,7 +70,7 @@ func (s ScoredEntryPredictionAgent) RetrieveScoredEntryPredictionByIDs(ctx conte
 
 	retrievedScoredEntryPredictions, err := scoredEntryPredictionRepo.Select(ctx, map[string]interface{}{
 		"entry_prediction_id": entryPredictionID,
-		"standings_id":       standingsID,
+		"standings_id":        standingsID,
 	}, false)
 	if err != nil {
 		return models.ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
@@ -91,6 +91,9 @@ func (s ScoredEntryPredictionAgent) UpdateScoredEntryPrediction(ctx context.Cont
 	); err != nil {
 		return models.ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
+
+	// override these values
+	scoredEntryPrediction.UpdatedAt = sqltypes.ToNullTime(time.Now().Truncate(time.Second))
 
 	// write to database
 	if err := scoredEntryPredictionRepo.Update(ctx, &scoredEntryPrediction); err != nil {
