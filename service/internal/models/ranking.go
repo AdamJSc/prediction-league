@@ -8,8 +8,8 @@ import (
 
 // Ranking defines our base ranking structure
 type Ranking struct {
-	ID       string
-	Position int
+	ID       string `json:"id"`
+	Position int    `json:"position"`
 }
 
 // RankingCollection defines our collection of Rankings
@@ -69,7 +69,7 @@ func NewRankingWithMeta() RankingWithMeta {
 // RankingWithScore composes a Ranking with a corresponding Score value
 type RankingWithScore struct {
 	Ranking
-	Score int
+	Score int `json:"score"`
 }
 
 // RankingWithScoreCollection defines our collection of RankingWithScores
