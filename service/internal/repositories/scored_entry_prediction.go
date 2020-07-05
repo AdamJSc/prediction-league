@@ -222,6 +222,16 @@ func (s ScoredEntryPredictionDatabaseRepository) Exists(ctx context.Context, ent
 // SelectEntryCumulativeScoresByRealm retrieves the current score, total score and minimum score for each entry ID
 // based on the provided realm name, season ID and round number
 func (s ScoredEntryPredictionDatabaseRepository) SelectEntryCumulativeScoresByRealm(ctx context.Context, realmName string, seasonID string, roundNumber int) ([]models.LeaderBoardRanking, error) {
+	// compose main statement from provided partials
+	// note that partials are ordering their scored entry predictions subqueries
+	// by created_at date descending rather than updated_at date
+	// this is because we will always have a created_at date, whereas updated_at may be null if the
+	// scored entry prediction has been created without being updated yet
+	// once a scored entry prediction has been created for a superseding entry_prediction/round_number combination,
+	// none of the pre-existing scored entry predictions for this combination are operated on again
+	// therefore, the created_at date for a superseding scored entry prediction should *always* occur later than
+	// the updated_at date for any previous scored entry prediction for the same combination
+	// ergo, the created_at date is fine to trust as a reliable real-world sort order
 	stmt := fmt.Sprintf(`
 		SELECT
 			entry_with_total_score.entry_id,
