@@ -19,6 +19,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 	var standingsRounds = make(map[int]models.Standings)
 	for i := 2; i <= 4; i++ {
 		s := generateTestStandings(t)
+		s.SeasonID = testSeason.ID
 		s.RoundNumber = i
 		s.CreatedAt = time.Now().Add(time.Duration(i) * 24 * time.Hour).Truncate(time.Second)
 		s = insertStandings(t, s)

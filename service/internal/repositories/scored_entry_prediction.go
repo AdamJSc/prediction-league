@@ -94,7 +94,8 @@ type ScoredEntryPredictionRepository interface {
 	Update(ctx context.Context, scoredEntryPrediction *models.ScoredEntryPrediction) error
 	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]models.ScoredEntryPrediction, error)
 	Exists(ctx context.Context, entryPredictionID, standingsID string) error
-	SelectEntryCumulativeScores(ctx context.Context, seasonID string, roundNumber int) (models.RankingWithScoreCollection, error)
+	SelectEntryCumulativeScoresByRealm(ctx context.Context, realmName string, seasonID string, roundNumber int) ([]models.LeaderBoardRanking, error)
+	SelectByEntryIDAndRoundNumber(ctx context.Context, entryID string, roundNumber int) ([]models.ScoredEntryPrediction, error)
 }
 
 // ScoredEntryPredictionDatabaseRepository defines our DB-backed ScoredEntryPredictions data store
@@ -312,6 +313,55 @@ func (s ScoredEntryPredictionDatabaseRepository) SelectEntryCumulativeScoresByRe
 	}
 
 	return lbRankings, nil
+}
+
+// SelectByEntryIDAndRoundNumber retrieves ScoredEntryPredictions from our database based on the provided entry ID and round number
+// ordered by their created_at date descending
+func (s ScoredEntryPredictionDatabaseRepository) SelectByEntryIDAndRoundNumber(ctx context.Context, entryID string, roundNumber int) ([]models.ScoredEntryPrediction, error) {
+	stmt := `SELECT sep.entry_prediction_id, sep.standings_id, 
+			` + getDBFieldsStringFromFieldsWithTablePrefix(scoredEntryPredictionDBFields, "sep") + `,
+				sep.created_at, sep.updated_at
+			FROM scored_entry_prediction sep
+			INNER JOIN entry_prediction ep ON sep.entry_prediction_id = ep.id
+			INNER JOIN standings s ON sep.standings_id = s.id
+			WHERE ep.entry_id = ? AND s.round_number = ?
+			ORDER BY sep.created_at DESC`
+
+	rows, err := s.agent.QueryContext(ctx, stmt, entryID, roundNumber)
+	if err != nil {
+		return nil, wrapDBError(err)
+	}
+	defer rows.Close()
+
+	var scoredEntryPredictions []models.ScoredEntryPrediction
+	var rawRankings []byte
+
+	for rows.Next() {
+		scoredEntryPrediction := models.ScoredEntryPrediction{}
+
+		if err := rows.Scan(
+			&scoredEntryPrediction.EntryPredictionID,
+			&scoredEntryPrediction.StandingsID,
+			&rawRankings,
+			&scoredEntryPrediction.Score,
+			&scoredEntryPrediction.CreatedAt,
+			&scoredEntryPrediction.UpdatedAt,
+		); err != nil {
+			return nil, wrapDBError(err)
+		}
+
+		if err := json.Unmarshal(rawRankings, &scoredEntryPrediction.Rankings); err != nil {
+			return nil, err
+		}
+
+		scoredEntryPredictions = append(scoredEntryPredictions, scoredEntryPrediction)
+	}
+
+	if len(scoredEntryPredictions) == 0 {
+		return nil, MissingDBRecordError{fmt.Errorf("no scored entry predictions found: entry id %s, round number %d", entryID, roundNumber)}
+	}
+
+	return scoredEntryPredictions, nil
 }
 
 // NewScoredEntryPredictionDatabaseRepository instantiates a new ScoredEntryPredictionDatabaseRepository with the provided DB agent

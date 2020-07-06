@@ -79,6 +79,20 @@ func (s ScoredEntryPredictionAgent) RetrieveScoredEntryPredictionByIDs(ctx conte
 	return retrievedScoredEntryPredictions[0], nil
 }
 
+// RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber handles the retrieval of
+// the most recently created ScoredEntryPrediction by the provided entry ID and round number
+func (s ScoredEntryPredictionAgent) RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(ctx context.Context, entryID string, roundNumber int) (*models.ScoredEntryPrediction, error) {
+	scoredEntryPredictionRepo := repositories.NewScoredEntryPredictionDatabaseRepository(s.MySQL())
+
+	retrievedScoredEntryPredictions, err := scoredEntryPredictionRepo.SelectByEntryIDAndRoundNumber(ctx, entryID, roundNumber)
+	if err != nil {
+		return nil, domainErrorFromRepositoryError(err)
+	}
+
+	// results are already ordered by created date descending
+	return &retrievedScoredEntryPredictions[0], nil
+}
+
 // UpdateScoredEntryPrediction handles the updating of an existing ScoredEntryPrediction in the database
 func (s ScoredEntryPredictionAgent) UpdateScoredEntryPrediction(ctx context.Context, scoredEntryPrediction models.ScoredEntryPrediction) (models.ScoredEntryPrediction, error) {
 	scoredEntryPredictionRepo := repositories.NewScoredEntryPredictionDatabaseRepository(s.MySQL())
