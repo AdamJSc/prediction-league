@@ -56,7 +56,7 @@ func (r *RankingCollection) UnmarshalJSON(d []byte) error {
 // RankingWithMeta composes a Ranking with additional meta data
 type RankingWithMeta struct {
 	Ranking
-	MetaData map[string]int
+	MetaData map[string]int `json:"meta_data"`
 }
 
 // NewRankingWithMeta provides an empty RankingWithMeta object with an instantiated map

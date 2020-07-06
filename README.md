@@ -119,6 +119,8 @@ For details on the system's default season, see ["FakeSeason"](#fakeseason) (bel
 
 ### Ranking With Score
 
+### Ranking With Score And Meta Position
+
 ### LeaderBoard
 
 ### LeaderBoard Ranking
@@ -227,3 +229,5 @@ This struct must adhere to the validation rules found within `domain.ValidateSea
 Running the testsuite again will apply the rules to each `Season` in the map and fail if any aren't met.
 
 ## TO DO
+
+### Split out tests 

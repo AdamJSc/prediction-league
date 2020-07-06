@@ -17,6 +17,7 @@ func RegisterRoutes(c *httph.HTTPAppContainer) {
 
 	api.HandleFunc("/entry/{entry_id}/prediction", createEntryPredictionHandler(c)).Methods(http.MethodPost)
 	api.HandleFunc("/entry/{entry_id}/prediction", retrieveLatestEntryPredictionHandler(c)).Methods(http.MethodGet)
+	api.HandleFunc("/entry/{entry_id}/scored/{round_number:[0-9]+}", retrieveLatestScoredEntryPrediction(c)).Methods(http.MethodGet)
 	api.HandleFunc("/entry/{entry_id}/payment", updateEntryPaymentDetailsHandler(c)).Methods(http.MethodPatch)
 	api.HandleFunc("/entry/{entry_short_code}/approve", approveEntryByShortCodeHandler(c)).Methods(http.MethodPatch)
 
