@@ -167,6 +167,7 @@ func generateTestStandings(t *testing.T) models.Standings {
 		RoundNumber: 1,
 		Rankings:    rankings,
 		Finalised:   true,
+		CreatedAt:   time.Now().Truncate(time.Second),
 	}
 }
 

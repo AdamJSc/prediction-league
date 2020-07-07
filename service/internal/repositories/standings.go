@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
-	"github.com/LUSHDigital/core-sql/sqltypes"
 	"golang.org/x/net/context"
 	"prediction-league/service/internal/models"
 	"time"
@@ -25,6 +24,7 @@ type StandingsRepository interface {
 	Update(ctx context.Context, standings *models.Standings) error
 	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]models.Standings, error)
 	ExistsByID(ctx context.Context, id string) error
+	SelectLatestBySeasonIDAndTimestamp(ctx context.Context, seasonID string, ts time.Time) (models.Standings, error)
 }
 
 // StandingsDatabaseRepository defines our DB-backed Standings data store
@@ -37,8 +37,6 @@ func (s StandingsDatabaseRepository) Insert(ctx context.Context, standings *mode
 	stmt := `INSERT INTO standings (id, ` + getDBFieldsStringFromFields(standingsDBFields) + `, created_at)
 					VALUES (?, ?, ?, ?, ?, ?)`
 
-	now := time.Now().Truncate(time.Second)
-
 	rankings, err := json.Marshal(&standings.Rankings)
 	if err != nil {
 		return err
@@ -52,14 +50,12 @@ func (s StandingsDatabaseRepository) Insert(ctx context.Context, standings *mode
 		standings.RoundNumber,
 		rankings,
 		standings.Finalised,
-		now,
+		standings.CreatedAt,
 	)
 	if err != nil {
 		return wrapDBError(err)
 	}
 	defer rows.Close()
-
-	standings.CreatedAt = now
 
 	return nil
 }
@@ -70,8 +66,6 @@ func (s StandingsDatabaseRepository) Update(ctx context.Context, standings *mode
 				SET ` + getDBFieldsWithEqualsPlaceholdersStringFromFields(standingsDBFields) + `, updated_at = ?
 				WHERE id = ?`
 
-	now := sqltypes.ToNullTime(time.Now().Truncate(time.Second))
-
 	rankings, err := json.Marshal(&standings.Rankings)
 	if err != nil {
 		return err
@@ -84,15 +78,13 @@ func (s StandingsDatabaseRepository) Update(ctx context.Context, standings *mode
 		standings.RoundNumber,
 		rankings,
 		standings.Finalised,
-		now,
+		standings.UpdatedAt,
 		standings.ID,
 	)
 	if err != nil {
 		return wrapDBError(err)
 	}
 	defer rows.Close()
-
-	standings.UpdatedAt = now
 
 	return nil
 }
@@ -157,6 +149,39 @@ func (s StandingsDatabaseRepository) ExistsByID(ctx context.Context, id string) 
 	}
 
 	return nil
+}
+
+// Select retrieves Standings from our database based on the provided criteria
+func (s StandingsDatabaseRepository) SelectLatestBySeasonIDAndTimestamp(ctx context.Context, seasonID string, ts time.Time) (models.Standings, error) {
+	stmt := `SELECT id, ` + getDBFieldsStringFromFields(standingsDBFields) + `, created_at, updated_at
+			FROM standings
+			WHERE season_id = ?
+				AND created_at <= ?
+			ORDER BY created_at DESC
+			LIMIT 1`
+
+	row := s.agent.QueryRowContext(ctx, stmt, seasonID, ts)
+
+	var retrievedStandings models.Standings
+	var rankings []byte
+
+	if err := row.Scan(
+		&retrievedStandings.ID,
+		&retrievedStandings.SeasonID,
+		&retrievedStandings.RoundNumber,
+		&rankings,
+		&retrievedStandings.Finalised,
+		&retrievedStandings.CreatedAt,
+		&retrievedStandings.UpdatedAt,
+	); err != nil {
+		return models.Standings{}, wrapDBError(err)
+	}
+
+	if err := json.Unmarshal(rankings, &retrievedStandings.Rankings); err != nil {
+		return models.Standings{}, wrapDBError(err)
+	}
+
+	return retrievedStandings, nil
 }
 
 // NewStandingsDatabaseRepository instantiates a new StandingsDatabaseRepository with the provided DB agent

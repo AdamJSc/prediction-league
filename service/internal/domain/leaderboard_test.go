@@ -250,7 +250,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		lastUpdated := standingsRounds[3].UpdatedAt.Time
+		lastUpdated := standingsRounds[4].UpdatedAt.Time
 		expectedLeaderBoard := &models.LeaderBoard{
 			RoundNumber: 4,
 			Rankings: []models.LeaderBoardRanking{
