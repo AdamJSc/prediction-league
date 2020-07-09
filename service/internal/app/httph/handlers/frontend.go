@@ -23,15 +23,15 @@ func frontendIndexHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter,
 	}
 }
 
-func frontendResultsHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendLeaderboardHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var p = pages.Base{
-			Title:      "Results",
-			ActivePage: "results",
+			Title:      "Leaderboard",
+			ActivePage: "leaderboard",
 			IsLoggedIn: isLoggedIn(r),
 		}
 
-		if err := c.Template().ExecuteTemplate(w, "results", p); err != nil {
+		if err := c.Template().ExecuteTemplate(w, "leaderboard", p); err != nil {
 			rest.InternalError(err).WriteTo(w)
 			return
 		}
@@ -53,15 +53,15 @@ func frontendFAQHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 	}
 }
 
-func frontendEnterHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendJoinHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var p = pages.Base{
-			Title:      "Enter",
-			ActivePage: "enter",
+			Title:      "Join",
+			ActivePage: "join",
 			IsLoggedIn: isLoggedIn(r),
 		}
 
-		if err := c.Template().ExecuteTemplate(w, "enter", p); err != nil {
+		if err := c.Template().ExecuteTemplate(w, "join", p); err != nil {
 			rest.InternalError(err).WriteTo(w)
 			return
 		}
