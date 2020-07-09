@@ -180,13 +180,13 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 			},
 		}
 
-		actualLeaderboard, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 1)
+		actualLeaderBoard, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 1)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if !gocmp.Equal(actualLeaderboard, expectedLeaderBoard) {
-			t.Fatal(gocmp.Diff(expectedLeaderBoard, actualLeaderboard))
+		if !gocmp.Equal(actualLeaderBoard, expectedLeaderBoard) {
+			t.Fatal(gocmp.Diff(expectedLeaderBoard, actualLeaderBoard))
 		}
 	})
 
@@ -208,13 +208,13 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 			LastUpdated: &lastUpdated,
 		}
 
-		actualLeaderboard, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 2)
+		actualLeaderBoard, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 2)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if !gocmp.Equal(actualLeaderboard, expectedLeaderBoard) {
-			t.Fatal(gocmp.Diff(expectedLeaderBoard, actualLeaderboard))
+		if !gocmp.Equal(actualLeaderBoard, expectedLeaderBoard) {
+			t.Fatal(gocmp.Diff(expectedLeaderBoard, actualLeaderBoard))
 		}
 	})
 
@@ -236,13 +236,13 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 			LastUpdated: &lastUpdated,
 		}
 
-		actualLeaderboard, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 3)
+		actualLeaderBoard, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 3)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if !gocmp.Equal(actualLeaderboard, expectedLeaderBoard) {
-			t.Fatal(gocmp.Diff(expectedLeaderBoard, actualLeaderboard))
+		if !gocmp.Equal(actualLeaderBoard, expectedLeaderBoard) {
+			t.Fatal(gocmp.Diff(expectedLeaderBoard, actualLeaderBoard))
 		}
 	})
 
@@ -264,13 +264,13 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 			LastUpdated: &lastUpdated,
 		}
 
-		actualLeaderboard, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 4)
+		actualLeaderBoard, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 4)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if !gocmp.Equal(actualLeaderboard, expectedLeaderBoard) {
-			t.Fatal(gocmp.Diff(expectedLeaderBoard, actualLeaderboard))
+		if !gocmp.Equal(actualLeaderBoard, expectedLeaderBoard) {
+			t.Fatal(gocmp.Diff(expectedLeaderBoard, actualLeaderBoard))
 		}
 	})
 

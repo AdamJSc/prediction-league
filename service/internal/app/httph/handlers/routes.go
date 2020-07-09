@@ -27,7 +27,7 @@ func RegisterRoutes(c *httph.HTTPAppContainer) {
 
 	// frontend endpoints
 	c.Router().HandleFunc("/", frontendIndexHandler(c)).Methods(http.MethodGet)
-	c.Router().HandleFunc("/leaderboard", frontendLeaderboardHandler(c)).Methods(http.MethodGet)
+	c.Router().HandleFunc("/leaderboard", frontendLeaderBoardHandler(c)).Methods(http.MethodGet)
 	c.Router().HandleFunc("/faq", frontendFAQHandler(c)).Methods(http.MethodGet)
 	c.Router().HandleFunc("/join", frontendJoinHandler(c)).Methods(http.MethodGet)
 	c.Router().HandleFunc("/prediction", frontendPredictionHandler(c)).Methods(http.MethodGet)

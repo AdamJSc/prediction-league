@@ -14,7 +14,7 @@
     const axios = require('axios').default
 
     export default {
-        name: 'Leaderboard',
+        name: 'LeaderBoard',
         props: {
         },
         data: function() {

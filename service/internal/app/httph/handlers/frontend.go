@@ -96,7 +96,8 @@ func frontendPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWr
 			ctx,
 			getAuthCookieValue(r),
 			domain.EntryAgent{EntryAgentInjector: c},
-			domain.TokenAgent{TokenAgentInjector: c})
+			domain.TokenAgent{TokenAgentInjector: c},
+		)
 
 		writeResponse(data, loggedIn)
 	}
