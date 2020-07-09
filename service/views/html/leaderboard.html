@@ -1,14 +1,32 @@
 {{define "leaderboard"}}
     {{template "header" .}}
-    <div id="app" class="main-container container-fluid">
-        <div class="row">
-            <div class="col-md-8 offset-md-2">
-                <h1>Leaderboard</h1>
-            </div>
-            <div class="col-md-8 offset-md-2">
-                <leaderboard></leaderboard>
-            </div>
+    {{$parent := .}}
+    {{with .Data}}
+        <div id="app" class="main-container container-fluid">
+            {{if .Err}}
+                <div class="row">
+                    <div class="col-md-8 offset-md-2">
+                        <div class="alert alert-danger">
+                            <p>{{.Err}}</p>
+                        </div>
+                    </div>
+                </div>
+            {{else}}
+                <div class="row">
+                    <div class="col-md-8 offset-md-2">
+                        <h1>Leaderboard</h1>
+                    </div>
+                    <div class="col-md-8 offset-md-2">
+                        {{if .RawRankings}}
+                            <leaderboard round-number="{{.RoundNumber}}" unix="{{timestamp_as_unix .LastUpdated}}" raw-entries="{{.RawEntries}}" raw-rankings="{{.RawRankings}}"></leaderboard>
+                        {{else}}
+                            <p>No entries yet</p>
+                            <p><a href="/join">Be the first!</a></p>
+                        {{end}}
+                    </div>
+                </div>
+            {{end}}
         </div>
-    </div>
+    {{end}}
     {{template "footer"}}
 {{end}}

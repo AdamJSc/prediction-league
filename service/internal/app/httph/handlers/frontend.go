@@ -23,18 +23,38 @@ func frontendIndexHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter,
 	}
 }
 
-func frontendLeaderboardHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendLeaderBoardHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var p = pages.Base{
-			Title:      "Leaderboard",
-			ActivePage: "leaderboard",
-			IsLoggedIn: isLoggedIn(r),
+		loggedIn := isLoggedIn(r)
+
+		var writeResponse = func(data pages.LeaderBoardPageData, loggedIn bool) {
+			var p = pages.Base{
+				Title:      "Leaderboard",
+				ActivePage: "leaderboard",
+				IsLoggedIn: loggedIn,
+				Data:       data,
+			}
+
+			if err := c.Template().ExecuteTemplate(w, "leaderboard", p); err != nil {
+				rest.InternalError(err).WriteTo(w)
+			}
 		}
 
-		if err := c.Template().ExecuteTemplate(w, "leaderboard", p); err != nil {
-			rest.InternalError(err).WriteTo(w)
+		ctx, cancel, err := contextFromRequest(r, c)
+		if err != nil {
+			writeResponse(pages.LeaderBoardPageData{Err: err}, loggedIn)
 			return
 		}
+		defer cancel()
+
+		data := getLeaderBoardPageData(
+			ctx,
+			domain.EntryAgent{EntryAgentInjector: c},
+			domain.StandingsAgent{StandingsAgentInjector: c},
+			domain.LeaderBoardAgent{LeaderBoardAgentInjector: c},
+		)
+
+		writeResponse(data, loggedIn)
 	}
 }
 
