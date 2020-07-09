@@ -77,6 +77,12 @@ func predictionLoginHandler(c *httph.HTTPAppContainer) func(http.ResponseWriter,
 			return
 		}
 
+		// does realm name match our entry?
+		if domain.RealmFromContext(ctx).Name != entry.RealmName {
+			rest.UnauthorizedError().WriteTo(w)
+			return
+		}
+
 		// does short code match our entry?
 		if entry.ShortCode != input.ShortCode {
 			rest.UnauthorizedError().WriteTo(w)
