@@ -230,4 +230,19 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 
 ## TO DO
 
-### Split out tests 
+* TBC
+
+## Improvements
+
+### Guard
+
+### Short Codes / Passwords
+
+### Tokens
+
+### Vue integration
+
+* Pulling from CDN prevents debug mode in development
+* Webpack was warning against huge chunks otherwise
+
+### Split out tests
