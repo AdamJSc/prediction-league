@@ -1,38 +1,44 @@
 <template>
     <div class="leaderboard-container">
-        <p>Round {{roundNumber}}</p>
-        <p>Last updated on {{lastUpdatedVerbose}}</p>
-        <table class="leaderboard-render">
+        <table class="round">
+            <tr>
+                <td><i class="fa fa-chevron-left" aria-hidden="true"></i></td>
+                <td class="text-center">Round {{roundNumber}}</td>
+                <td class="text-right"><i class="fa fa-chevron-right" aria-hidden="true"></i></td>
+            </tr>
+        </table>
+        <div class="last-updated text-center">Last updated on {{lastUpdatedVerbose}}</div>
+        <table class="leaderboard-render rankings">
             <thead>
             <tr>
                 <td colspan="2"></td>
-                <td>
-                    <p>Score</p>
+                <td class="text-right">
+                    Pts
                 </td>
-                <td>
-                    <p>Min</p>
+                <td class="text-right">
+                    Min
                 </td>
-                <td>
-                    <p>Pts</p>
+                <td class="text-right">
+                    Rnd
                 </td>
             </tr>
             </thead>
             <tbody>
-            <tr v-for="ranking in rankings">
-                <td>
-                    <p>{{ranking.position}}</p>
+            <tr v-for="ranking in rankings" class="leaderboard-row rankings-row">
+                <td class="position">
+                    {{ranking.position}}
                 </td>
-                <td>
-                    <p>{{entries[ranking.id]}}</p>
+                <td class="name">
+                    {{entries[ranking.id]}}
                 </td>
-                <td>
-                    <p>{{ranking.score}}</p>
+                <td class="text-right">
+                    {{ranking.total_score}}
                 </td>
-                <td>
-                    <p>{{ranking.min_score}}</p>
+                <td class="text-right">
+                    {{ranking.min_score}}
                 </td>
-                <td>
-                    <p>{{ranking.total_score}}</p>
+                <td class="text-right">
+                    {{ranking.score}}
                 </td>
             </tr>
             </tbody>

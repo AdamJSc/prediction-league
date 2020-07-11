@@ -224,6 +224,10 @@ func MustInflate() {
 					From:  time.Date(2019, 7, 1, 0, 0, 0, 0, loc),
 					Until: time.Date(2019, 8, 9, 19, 0, 0, 0, loc),
 				},
+				{
+					From:  time.Date(2020, 7, 1, 0, 0, 0, 0, loc),
+					Until: time.Date(2020, 8, 31, 23, 59, 59, 0, loc),
+				},
 			},
 			TeamIDs: []string{
 				"AFC",

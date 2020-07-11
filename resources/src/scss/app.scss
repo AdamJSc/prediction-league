@@ -124,8 +124,8 @@ h1, h2, h3, h4 {
   }
 }
 
-.teams-reorder {
-  .team-row {
+.rankings {
+  .rankings-row {
     height: 75px;
     font-size: 1.3rem;
 
@@ -137,6 +137,22 @@ h1, h2, h3, h4 {
       cursor: pointer;
     }
 
+    .position {
+      width: 15px;
+      font-weight: bold;
+      padding: 0 1rem;
+      text-align: right;
+    }
+
+    .name {
+      font-weight: bold;
+      padding: 0 1rem;
+    }
+  }
+}
+
+.teams-reorder {
+  .team-row {
     &.selected {
       background: $active-highlight-light;
       border: 2px solid $active-highlight-dark;
@@ -145,13 +161,6 @@ h1, h2, h3, h4 {
     &.dirty {
       background: $dirty-highlight-light;
       border: 2px solid $dirty-highlight-dark;
-    }
-
-    .position {
-      width: 15px;
-      font-weight: bold;
-      padding: 0 1rem;
-      text-align: right;
     }
 
     .crest-outer {
@@ -169,21 +178,33 @@ h1, h2, h3, h4 {
         }
       }
     }
-
-    .name {
-      font-weight: bold;
-      padding: 0 1rem;
-    }
   }
 }
 
-.teams-reorder, .teams-reorder-admin {
+.last-updated {
+  padding-bottom: 2rem;
+}
+
+table.rankings, table.round, table.teams-reorder-admin {
   width: 100%;
   margin: 0 auto;
 }
 
+table.round {
+  color: $secondary-dark;
+  font-family: $heading-font-family;
+  font-size: 2rem;
+  margin: 2rem auto;
+}
+
 @media screen and (min-width: 768px) {
-  .teams-reorder, .teams-reorder-admin {
+  table.rankings, table.round, table.teams-reorder-admin {
     width: 75%;
+  }
+}
+
+@media screen and (min-width: 992px) {
+  table.rankings, table.round {
+    width: 50%;
   }
 }
