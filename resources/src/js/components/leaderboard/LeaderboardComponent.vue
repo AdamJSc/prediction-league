@@ -1,7 +1,7 @@
 <template>
     <div class="leaderboard-container">
         <div id="scoredEntryPredictionModal" class="modal fade" tabindex="-1" role="dialog">
-            <div class="modal-dialog" role="document">
+            <div class="modal-dialog modal-lg" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">{{focusedEntry.nickname}}: Round {{roundNumber}}</h5>
@@ -10,7 +10,7 @@
                         </button>
                     </div>
                     <div class="modal-body">
-                        <scored-entry-selection v-bind:entry-id="focusedEntry.id" v-bind:round-number="roundNumber"></scored-entry-selection>
+                        <scored-entry-prediction v-bind:entry-id="focusedEntry.id" v-bind:round-number="roundNumber"></scored-entry-prediction>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -68,8 +68,6 @@
 </template>
 
 <script>
-    const axios = require('axios').default
-
     export default {
         name: 'LeaderBoard',
         props: {

@@ -207,6 +207,17 @@ table.round {
   margin: 2rem auto;
 }
 
+.scored-entry-prediction-container {
+  .loader-container {
+    width: 90px;
+    margin: 0 auto;
+
+    img {
+      width: 100%;
+    }
+  }
+}
+
 @media screen and (min-width: 768px) {
   table.rankings, table.round, table.teams-reorder-admin {
     width: 75%;
