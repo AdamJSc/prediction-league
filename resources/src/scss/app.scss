@@ -181,6 +181,16 @@ h1, h2, h3, h4 {
   }
 }
 
+.leaderboard-render {
+  .popout {
+    color: $secondary-dark;
+    text-align: right;
+  }
+  .name {
+    color: $secondary-dark;
+  }
+}
+
 .last-updated {
   padding-bottom: 2rem;
 }

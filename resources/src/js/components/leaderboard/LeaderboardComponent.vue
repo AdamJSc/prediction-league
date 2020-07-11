@@ -1,5 +1,23 @@
 <template>
     <div class="leaderboard-container">
+        <div id="scoredEntryPredictionModal" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{focusedEntry.nickname}}: Round {{roundNumber}}</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <scored-entry-selection v-bind:entry-id="focusedEntry.id" v-bind:round-number="roundNumber"></scored-entry-selection>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <table class="round">
             <tr>
                 <td><i class="fa fa-chevron-left" aria-hidden="true"></i></td>
@@ -11,7 +29,7 @@
         <table class="leaderboard-render rankings">
             <thead>
             <tr>
-                <td colspan="2"></td>
+                <td colspan="3"></td>
                 <td class="text-right">
                     Pts
                 </td>
@@ -24,9 +42,12 @@
             </tr>
             </thead>
             <tbody>
-            <tr v-for="ranking in rankings" class="leaderboard-row rankings-row">
+            <tr v-for="ranking in rankings" v-on:click="showScoredEntryPrediction(ranking.id, entries[ranking.id])" class="leaderboard-row rankings-row">
                 <td class="position">
                     {{ranking.position}}
+                </td>
+                <td class="popout">
+                    <i class="fa fa-external-link" aria-hidden="true"></i>
                 </td>
                 <td class="name">
                     {{entries[ranking.id]}}
@@ -79,11 +100,20 @@
                 roundNumber: this.roundNumber,
                 entries: entries,
                 rankings: rankings,
+                focusedEntry: {
+                    id: "",
+                    nickname: "",
+                },
             }
         },
         mounted: function() {
         },
         methods: {
+            showScoredEntryPrediction: function(entryID, entryNickname) {
+                this.focusedEntry.id = entryID
+                this.focusedEntry.nickname = entryNickname
+                $('#scoredEntryPredictionModal').modal('toggle')
+            }
         },
         computed: {
             lastUpdatedVerbose: function() {
