@@ -32,6 +32,10 @@ h1, h2, h3, h4 {
     list-style-type: none;
     padding-left: 0;
   }
+
+  p:last-child {
+    margin-bottom: 0;
+  }
 }
 
 .main-container {
@@ -181,13 +185,17 @@ h1, h2, h3, h4 {
   }
 }
 
+.round-navigation {
+  min-width: 90px;
+
+  i:hover {
+    cursor: pointer
+  }
+}
+
 .leaderboard-render {
   .popout {
-    color: $secondary-dark;
     text-align: right;
-  }
-  .name {
-    color: $secondary-dark;
   }
 }
 
@@ -207,15 +215,17 @@ table.round {
   margin: 2rem auto;
 }
 
-.scored-entry-prediction-container {
-  .loader-container {
-    width: 90px;
-    margin: 0 auto;
+.loader-container {
+  width: 90px;
+  margin: 0 auto;
 
-    img {
-      width: 100%;
-    }
+  img {
+    width: 100%;
   }
+}
+
+.text-highlight {
+  color: $secondary-dark;
 }
 
 @media screen and (min-width: 768px) {

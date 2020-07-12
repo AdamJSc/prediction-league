@@ -14,6 +14,7 @@ func getLeaderBoardPageData(ctx context.Context, entryAgent domain.EntryAgent, s
 
 	// retrieve realm's current season ID
 	seasonID := ctxRealm.SeasonID
+	data.SeasonID = seasonID
 
 	// retrieve round number
 	roundNumber := 1

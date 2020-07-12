@@ -31,6 +31,7 @@ type PredictionPageData struct {
 type LeaderBoardPageData struct {
 	Err         error
 	RoundNumber int
+	SeasonID    string
 	RawEntries  string
 	RawRankings string
 	LastUpdated time.Time

@@ -53,6 +53,7 @@
             refreshScoredEntryPrediction: function(entryId) {
                 const vm = this
                 vm.working = true
+                vm.resetErrorMessages()
                 vm.roundScore = 0
                 vm.rankings = []
 
