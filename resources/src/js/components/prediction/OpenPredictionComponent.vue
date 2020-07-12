@@ -186,7 +186,8 @@
         },
         computed: {
             lastUpdatedVerbose: function() {
-                return this.lastUpdated.toISOString()
+                const helpers = require('../../helpers.js')
+                return helpers.formatVerboseDate(this.lastUpdated)
             },
         }
     }
