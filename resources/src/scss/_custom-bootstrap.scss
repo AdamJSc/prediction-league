@@ -110,6 +110,24 @@
   }
 }
 
+.modal-header {
+  background-color: $secondary-dark;
+  color: $primary-light;
+
+  .close {
+    color: $primary-light;
+    text-shadow: none;
+    opacity: 1;
+  }
+}
+
+.modal-footer {
+  .btn-secondary {
+    padding: 0.5rem;
+    min-height: 0;
+  }
+}
+
 @media screen and (min-width: 992px) {
   .navbar {
     padding-top: 3rem;

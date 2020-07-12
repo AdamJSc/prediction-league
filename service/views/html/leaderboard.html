@@ -17,8 +17,17 @@
                         <h1>Leaderboard</h1>
                     </div>
                     <div class="col-md-8 offset-md-2">
-                        {{if .RawRankings}}
-                            <leaderboard season-id="{{.SeasonID}}" initial-round-number="{{.RoundNumber}}" unix="{{timestamp_as_unix .LastUpdated}}" raw-entries="{{.RawEntries}}" raw-rankings="{{.RawRankings}}"></leaderboard>
+                        <p><i class="fa fa-info-circle" aria-hidden="true"></i> Select a name to view their score breakdown for each round</p>
+                    </div>
+                    <div class="col-md-8 offset-md-2">
+                        {{if .Entries.RawRankings}}
+                            <leaderboard
+                                    season-id="{{.Season.ID}}"
+                                    initial-round-number="{{.RoundNumber}}"
+                                    unix="{{timestamp_as_unix .LastUpdated}}"
+                                    raw-entries="{{.Entries.RawEntries}}"
+                                    raw-rankings="{{.Entries.RawRankings}}"
+                                    raw-teams="{{.Season.RawTeams}}"></leaderboard>
                         {{else}}
                             <p>No entries yet</p>
                             <p><a href="/join">Be the first!</a></p>

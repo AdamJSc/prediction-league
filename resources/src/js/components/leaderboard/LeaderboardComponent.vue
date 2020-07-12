@@ -1,16 +1,16 @@
 <template>
     <div class="leaderboard-container">
         <div id="scoredEntryPredictionModal" class="modal fade" tabindex="-1" role="dialog">
-            <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">{{focusedEntry.nickname}}: Round {{roundNumber}}</h5>
+                        <h5 class="modal-title">{{focusedEntry.nickname}} / Score: {{focusedEntry.score}} / Round: {{roundNumber}}</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
                     <div class="modal-body">
-                        <scored-entry-prediction v-bind:entry-id="focusedEntry.id" v-bind:round-number="roundNumber"></scored-entry-prediction>
+                        <scored-entry-prediction v-bind:entry-id="focusedEntry.id" v-bind:round-number="roundNumber" v-bind:teams="teams"></scored-entry-prediction>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -36,23 +36,23 @@
         </div>
         <div v-if="!working && rankings.length > 0" class="leaderboard-render-wrapper">
             <div class="last-updated text-center">Last updated on {{lastUpdatedVerbose}}</div>
-            <table class="leaderboard-render rankings">
+            <table class="leaderboard-render rankings clickable">
                 <thead>
                 <tr>
                     <td colspan="3"></td>
                     <td class="text-right text-highlight">
                         Pts
                     </td>
-                    <td class="text-right">
+                    <td class="text-right text-lolight">
                         Rnd
                     </td>
-                    <td class="text-right">
+                    <td class="text-right text-lolight">
                         Min
                     </td>
                 </tr>
                 </thead>
                 <tbody>
-                <tr v-for="ranking in rankings" v-on:click="showScoredEntryPrediction(ranking.id, entries[ranking.id])" class="leaderboard-row rankings-row">
+                <tr v-for="ranking in rankings" v-on:click="showScoredEntryPrediction(ranking.id, entries[ranking.id], ranking.score)" class="leaderboard-row rankings-row">
                     <td class="position">
                         {{ranking.position}}
                     </td>
@@ -65,10 +65,10 @@
                     <td class="text-right text-highlight">
                         {{ranking.total_score}}
                     </td>
-                    <td class="text-right">
+                    <td class="text-right text-lolight">
                         {{ranking.score}}
                     </td>
-                    <td class="text-right">
+                    <td class="text-right text-lolight">
                         {{ranking.min_score}}
                     </td>
                 </tr>
@@ -98,7 +98,10 @@
             },
             rawRankings: {
                 type: String
-            }
+            },
+            rawTeams: {
+                type: String
+            },
         },
         data: function() {
             let lastUpdated = null
@@ -108,6 +111,7 @@
 
             let entries = this.rawEntries === "" ? [] : JSON.parse(this.rawEntries)
             let rankings = this.rawRankings === "" ? [] : JSON.parse(this.rawRankings)
+            let teams = this.rawTeams === "" ? [] : JSON.parse(this.rawTeams)
 
             return {
                 working: false,
@@ -117,9 +121,11 @@
                 roundNumber: this.initialRoundNumber,
                 entries: entries,
                 rankings: rankings,
+                teams: teams,
                 focusedEntry: {
                     id: "",
                     nickname: "",
+                    score: 0
                 },
             }
         },
@@ -166,9 +172,10 @@
 
                 setTimeout(retrieveLeaderboard, 500)
             },
-            showScoredEntryPrediction: function(entryID, entryNickname) {
+            showScoredEntryPrediction: function(entryID, entryNickname, score) {
                 this.focusedEntry.id = entryID
                 this.focusedEntry.nickname = entryNickname
+                this.focusedEntry.score = score
                 $('#scoredEntryPredictionModal').modal('toggle')
             }
         },
@@ -179,11 +186,6 @@
                 }
                 return this.lastUpdated.toISOString()
             },
-        },
-        watch: {
-            roundNumber: function(newRoundNumber) {
-                this.working = true
-            }
         }
     }
 </script>

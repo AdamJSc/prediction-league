@@ -134,11 +134,7 @@ h1, h2, h3, h4 {
     font-size: 1.3rem;
 
     &:not(:last-child) {
-      border-bottom: solid 1px $primary-dark-tint-light;
-    }
-
-    &:hover {
-      cursor: pointer;
+      border-bottom: solid 1px $primary-light-tint-dark;
     }
 
     .position {
@@ -153,6 +149,14 @@ h1, h2, h3, h4 {
       padding: 0 1rem;
     }
   }
+
+  &.clickable {
+    .rankings-row {
+      &:hover {
+        cursor: pointer;
+      }
+    }
+  }
 }
 
 .teams-reorder {
@@ -165,22 +169,6 @@ h1, h2, h3, h4 {
     &.dirty {
       background: $dirty-highlight-light;
       border: 2px solid $dirty-highlight-dark;
-    }
-
-    .crest-outer {
-      width: 50px;
-      text-align: center;
-
-      .crest {
-        display: inline-block;
-        width: 40px;
-        padding: 0.25rem 0;
-        overflow: hidden;
-
-        img {
-          width: 100%;
-        }
-      }
     }
   }
 }
@@ -206,6 +194,22 @@ h1, h2, h3, h4 {
 table.rankings, table.round, table.teams-reorder-admin {
   width: 100%;
   margin: 0 auto;
+
+  .crest-outer {
+    width: 50px;
+    text-align: center;
+
+    .crest {
+      display: inline-block;
+      width: 40px;
+      padding: 0.25rem 0;
+      overflow: hidden;
+
+      img {
+        width: 100%;
+      }
+    }
+  }
 }
 
 table.round {
@@ -228,14 +232,18 @@ table.round {
   color: $secondary-dark;
 }
 
+.text-lolight {
+  color: $primary-light-tint-dark;
+}
+
 @media screen and (min-width: 768px) {
-  table.rankings, table.round, table.teams-reorder-admin {
+  table.rankings:not(.full-width), table.round, table.teams-reorder-admin {
     width: 75%;
   }
 }
 
 @media screen and (min-width: 992px) {
-  table.rankings, table.round {
+  table.rankings:not(.full-width), table.round {
     width: 50%;
   }
 }

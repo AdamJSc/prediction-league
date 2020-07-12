@@ -3,7 +3,9 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
+	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/pages"
 )
 
@@ -14,7 +16,7 @@ func getLeaderBoardPageData(ctx context.Context, entryAgent domain.EntryAgent, s
 
 	// retrieve realm's current season ID
 	seasonID := ctxRealm.SeasonID
-	data.SeasonID = seasonID
+	data.Season.ID = seasonID
 
 	// retrieve round number
 	roundNumber := 1
@@ -44,7 +46,7 @@ func getLeaderBoardPageData(ctx context.Context, entryAgent domain.EntryAgent, s
 			return data
 		}
 		data.RoundNumber = leaderBoard.RoundNumber
-		data.RawRankings = string(rawRankings)
+		data.Entries.RawRankings = string(rawRankings)
 		data.LastUpdated = *leaderBoard.LastUpdated
 	default:
 		// something else went wrong so display the error message
@@ -79,7 +81,30 @@ func getLeaderBoardPageData(ctx context.Context, entryAgent domain.EntryAgent, s
 		data.Err = err
 		return data
 	}
-	data.RawEntries = string(rawEntries)
+	data.Entries.RawEntries = string(rawEntries)
+
+	// finally, populate teams for season
+	season, err := datastore.Seasons.GetByID(seasonID)
+	if err != nil {
+		data.Err = err
+		return data
+	}
+	var teams []models.Team
+	for _, id := range season.TeamIDs {
+		team, err := datastore.Teams.GetByID(id)
+		if err != nil {
+			data.Err = err
+			return data
+		}
+
+		teams = append(teams, team)
+	}
+	rawTeams, err := json.Marshal(teams)
+	if err != nil {
+		data.Err = err
+		return data
+	}
+	data.Season.RawTeams = string(rawTeams)
 
 	return data
 }

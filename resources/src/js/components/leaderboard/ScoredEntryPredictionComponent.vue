@@ -10,16 +10,23 @@
             <img alt="loader" src="/assets/img/loader-light-bg.svg" />
         </div>
         <div v-else>
-            <table>
+            <table class="rankings full-width">
+                <thead>
                 <tr>
-                    <td colspan="4">Round Score = {{roundScore}}</td>
+                    <td colspan="3"></td>
+                    <td class="text-right text-highlight">Pts</td>
+                    <td class="text-right text-lolight">Pos</td>
                 </tr>
-                <tr v-for="ranking in rankings">
-                    <td>{{ranking.position}}</td>
-                    <td>{{ranking.id}}</td>
-                    <td>{{ranking.score}}</td>
-                    <td>{{ranking.meta_position}}</td>
+                </thead>
+                <tbody>
+                <tr v-for="ranking in rankings" class="rankings-row">
+                    <td class="position">{{ranking.position}}</td>
+                    <td class="crest-outer"><div class="crest"><img :alt="getTeamByID(ranking.id).name" :src="getTeamByID(ranking.id).crest_url" /></div></td>
+                    <td><span class="name">{{getTeamByID(ranking.id).short_name}}</span></td>
+                    <td class="score text-right text-highlight">{{ranking.score}}</td>
+                    <td class="meta_position text-right text-lolight">{{ranking.meta_position}}</td>
                 </tr>
+                </tbody>
             </table>
         </div>
     </div>
@@ -36,13 +43,15 @@
             },
             roundNumber: {
                 type: Number
+            },
+            teams: {
+                type: Object
             }
         },
         data: function() {
             return {
                 working: false,
                 errorMessages: [],
-                roundScore: 0,
                 rankings: []
             }
         },
@@ -54,7 +63,6 @@
                 const vm = this
                 vm.working = true
                 vm.resetErrorMessages()
-                vm.roundScore = 0
                 vm.rankings = []
 
                 let url = `/api/entry/${entryId}/scored/${vm.roundNumber}`
@@ -63,8 +71,17 @@
                     url: url
                 })
                     .then(function (response) {
-                        vm.roundScore = response.data.data.scored.round_score
-                        vm.rankings = response.data.data.scored.rankings
+                        let rankings = response.data.data.scored.rankings
+                        for (let i in rankings) {
+                            if (vm.getTeamByID(rankings[i].id) === null) {
+                                console.log(`team with id ${rankings[i].id} not found`)
+                                vm.errorMessages = ['Something went wrong :(<br />Please try again later']
+                                vm.working = false
+                                return
+                            }
+                        }
+
+                        vm.rankings = rankings
                         vm.working = false
                     })
                     .catch(function (error) {
@@ -72,6 +89,14 @@
                         vm.errorMessages = ['Something went wrong :(<br />Please try again later']
                         vm.working = false
                     })
+            },
+            getTeamByID: function(id) {
+                for (let i in this.teams) {
+                    if (this.teams[i].id === id) {
+                        return this.teams[i]
+                    }
+                }
+                return null
             }
         },
         watch: {

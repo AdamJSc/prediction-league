@@ -3,7 +3,7 @@
         <p v-if="dirtyTeamIDs.length > 0">Changed {{dirtyTeamIDs.length}} team(s).</p>
         <p v-if="!isSelected()">Select a team to change their position.</p>
         <p v-else>Who do you want to swap {{getTeamByID(selectedTeamID).short_name}} with?</p>
-        <table class="teams-reorder rankings">
+        <table class="teams-reorder rankings clickable">
             <tbody>
             <tr v-for="(id, index) in teamsIDSequence" v-on:click="teamOnClick" v-bind:team-id="id"
                 v-bind:class="['team-row', 'rankings-row', { 'selected': isSelected(id), 'dirty': isDirty(id) && !isSelected(id) }]">
