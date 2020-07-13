@@ -176,7 +176,7 @@
                 this.focusedEntry.id = entryID
                 this.focusedEntry.nickname = entryNickname
                 this.focusedEntry.score = score
-                $('#scoredEntryPredictionModal').modal('toggle')
+                $('#scoredEntryPredictionModal').modal('show')
             }
         },
         computed: {

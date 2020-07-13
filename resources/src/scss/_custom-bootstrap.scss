@@ -122,8 +122,12 @@
 }
 
 .modal-footer {
-  .btn-secondary {
-    padding: 0.5rem;
+  .btn-primary {
+    min-width: 0;
+  }
+  .btn {
+    font-size: 1.1rem;
+    padding: 0.5rem 1rem;
     min-height: 0;
   }
 }
