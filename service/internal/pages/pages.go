@@ -12,7 +12,7 @@ type Base struct {
 }
 
 type PredictionPageData struct {
-	Err        error
+	Err         error
 	Predictions struct {
 		BeingAccepted    bool
 		NextAcceptedFrom *time.Time
@@ -26,4 +26,18 @@ type PredictionPageData struct {
 		ID        string
 		ShortCode string
 	}
+}
+
+type LeaderBoardPageData struct {
+	Err         error
+	RoundNumber int
+	Season      struct {
+		ID       string
+		RawTeams string
+	}
+	Entries struct {
+		RawEntries  string
+		RawRankings string
+	}
+	LastUpdated time.Time
 }

@@ -9,6 +9,7 @@ import (
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
+	"prediction-league/service/internal/models"
 )
 
 func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
@@ -263,4 +264,104 @@ func approveEntryByShortCodeHandler(c *httph.HTTPAppContainer) func(w http.Respo
 		// success!
 		rest.OKResponse(nil, nil).WriteTo(w)
 	}
+}
+
+func retrieveLatestScoredEntryPrediction(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// parse entry ID from route
+		var entryID string
+		if err := getRouteParam(r, "entry_id", &entryID); err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		// parse round number from route
+		var roundNumber int
+		if err := getRouteParam(r, "round_number", &roundNumber); err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		// get context from request
+		ctx, cancel, err := contextFromRequest(r, c)
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+		defer cancel()
+
+		// get latest scored entry prediction by entry id and round number
+		scoredEntryPredictionAgent := domain.ScoredEntryPredictionAgent{
+			ScoredEntryPredictionAgentInjector: c,
+		}
+		scoredEntryPredictions, err := scoredEntryPredictionAgent.RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(ctx, entryID, roundNumber)
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		// get corresponding standings
+		standingsAgent := domain.StandingsAgent{
+			StandingsAgentInjector: c,
+		}
+		standings, err := standingsAgent.RetrieveStandingsByID(ctx, scoredEntryPredictions.StandingsID.String())
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		responseRankings, err := getResponseRankingsFromStandingsRankings(scoredEntryPredictions.Rankings, standings.Rankings)
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		lastUpdated := standings.CreatedAt
+		if standings.UpdatedAt.Valid {
+			lastUpdated = standings.UpdatedAt.Time
+		}
+		rest.OKResponse(&rest.Data{
+			Type: "scored",
+			Content: retrieveLatestScoredEntryPredictionResponse{
+				LastUpdated: lastUpdated,
+				RoundScore:  scoredEntryPredictions.Score,
+				Rankings:    responseRankings,
+			},
+		}, nil).WriteTo(w)
+	}
+}
+
+func getResponseRankingsFromStandingsRankings(
+	scoredRankings []models.RankingWithScore,
+	standingsRankings []models.RankingWithMeta,
+) ([]scoredEntryPredictionResponseRanking, error) {
+	var getStandingsPositionForTeamID = func(id string) (int, error) {
+		for _, r := range standingsRankings {
+			if r.ID == id {
+				return r.Position, nil
+			}
+		}
+
+		return 0, fmt.Errorf("no standings position found for team id: %s", id)
+	}
+
+	// find standings position for each scored entry prediction ranking
+	var rankingsWithStandingsPosition []scoredEntryPredictionResponseRanking
+	for _, r := range scoredRankings {
+		var respRanking scoredEntryPredictionResponseRanking
+
+		metaPos, err := getStandingsPositionForTeamID(r.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		respRanking.ID = r.ID
+		respRanking.Position = r.Position
+		respRanking.Score = r.Score
+		respRanking.MetaPosition = metaPos
+
+		rankingsWithStandingsPosition = append(rankingsWithStandingsPosition, respRanking)
+	}
+
+	return rankingsWithStandingsPosition, nil
 }

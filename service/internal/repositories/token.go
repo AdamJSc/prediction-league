@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
 	"golang.org/x/net/context"
 	"prediction-league/service/internal/models"
@@ -98,7 +99,7 @@ func (t TokenDatabaseRepository) ExistsByID(ctx context.Context, id string) erro
 	}
 
 	if count == 0 {
-		return MissingDBRecordError{errors.New("token not found")}
+		return MissingDBRecordError{fmt.Errorf("token id %s: not found", id)}
 	}
 
 	return nil

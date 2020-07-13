@@ -239,3 +239,88 @@ func TestScoredEntryPredictionAgent_RetrieveScoredEntryPredictionByIDs(t *testin
 		}
 	})
 }
+
+func TestScoredEntryPredictionAgent_RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(t *testing.T) {
+	defer truncate(t)
+
+	entry := insertEntry(t, generateTestEntry(t, "Harry Redknapp", "MrHarryR", "harry.redknapp@football.net"))
+	standings := insertStandings(t, generateTestStandings(t))
+	now := time.Now().Truncate(time.Second)
+
+	entryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID))
+	scoredEntryPrediction := generateTestScoredEntryPrediction(t, entryPrediction.ID, standings.ID)
+	scoredEntryPrediction.CreatedAt = now
+	scoredEntryPrediction = insertScoredEntryPrediction(t, scoredEntryPrediction)
+
+	differentEntryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID))
+	mostRecentScoredEntryPrediction := generateTestScoredEntryPrediction(t, differentEntryPrediction.ID, standings.ID)
+	mostRecentScoredEntryPrediction.CreatedAt = now.Add(time.Second) // created most recently
+	mostRecentScoredEntryPrediction = insertScoredEntryPrediction(t, mostRecentScoredEntryPrediction)
+
+	agent := domain.ScoredEntryPredictionAgent{
+		ScoredEntryPredictionAgentInjector: injector{db: db},
+	}
+
+	t.Run("retrieve latest scored entry prediction by existent entry id and round number must succeed", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		retrievedScoredEntryPrediction, err := agent.RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(
+			ctx,
+			entry.ID.String(),
+			standings.RoundNumber,
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if retrievedScoredEntryPrediction.EntryPredictionID != mostRecentScoredEntryPrediction.EntryPredictionID {
+			expectedGot(t, mostRecentScoredEntryPrediction.EntryPredictionID, retrievedScoredEntryPrediction.EntryPredictionID)
+		}
+		if retrievedScoredEntryPrediction.StandingsID != mostRecentScoredEntryPrediction.StandingsID {
+			expectedGot(t, mostRecentScoredEntryPrediction.StandingsID, retrievedScoredEntryPrediction.StandingsID)
+		}
+		if !gocmp.Equal(retrievedScoredEntryPrediction.Rankings, mostRecentScoredEntryPrediction.Rankings) {
+			t.Fatal(gocmp.Diff(mostRecentScoredEntryPrediction.Rankings, retrievedScoredEntryPrediction.Rankings))
+		}
+		if retrievedScoredEntryPrediction.Score != mostRecentScoredEntryPrediction.Score {
+			expectedGot(t, mostRecentScoredEntryPrediction.Score, retrievedScoredEntryPrediction.Score)
+		}
+		if !retrievedScoredEntryPrediction.CreatedAt.In(utc).Equal(mostRecentScoredEntryPrediction.CreatedAt.In(utc)) {
+			expectedGot(t, mostRecentScoredEntryPrediction.CreatedAt, retrievedScoredEntryPrediction.CreatedAt)
+		}
+		if retrievedScoredEntryPrediction.UpdatedAt.Valid {
+			expectedEmpty(t, "UpdatedAt", retrievedScoredEntryPrediction.UpdatedAt)
+		}
+	})
+
+	t.Run("retrieve latest scored entry prediction by non-existent entry id must fail", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		nonExistentID, err := uuid.NewV4()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		_, err = agent.RetrieveScoredEntryPredictionByIDs(ctx, nonExistentID.String(), standings.ID.String())
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		}
+	})
+
+	t.Run("retrieve latest scored entry prediction by non-existent entry id must fail", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		nonExistentID, err := uuid.NewV4()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		_, err = agent.RetrieveScoredEntryPredictionByIDs(ctx, entry.ID.String(), nonExistentID.String())
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		}
+	})
+}

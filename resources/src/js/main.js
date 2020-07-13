@@ -10,6 +10,9 @@ Vue.component("prediction-login", require("./components/prediction/PredictionLog
 
 Vue.component("action-button", require("./components/ActionButton.vue").default)
 
+Vue.component("leaderboard", require("./components/leaderboard/LeaderboardComponent.vue").default)
+Vue.component("scored-entry-prediction", require("./components/leaderboard/ScoredEntryPredictionComponent.vue").default)
+
 if (document.getElementById('app') !== null) {
     new Vue({
         el: '#app'

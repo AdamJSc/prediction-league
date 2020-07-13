@@ -1,6 +1,6 @@
 <template>
     <button v-on:click="buttonClick" class="btn btn-primary" v-bind:disabled="isDisabled">
-        <span v-if="isWorking"><img alt="loader" src="/assets/img/loader.svg" /></span>
+        <span v-if="isWorking"><img alt="loader" src="/assets/img/loader-dark-bg.svg" /></span>
         <span v-else>{{label}}</span>
     </button>
 </template>

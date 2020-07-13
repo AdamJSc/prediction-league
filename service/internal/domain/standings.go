@@ -30,14 +30,14 @@ func (s StandingsAgent) CreateStandings(ctx context.Context, standings models.St
 
 	// override these values
 	standings.ID = id
-	standings.CreatedAt = time.Time{}
+	standings.CreatedAt = time.Now().Truncate(time.Second)
 	standings.UpdatedAt = sqltypes.NullTime{}
 
 	standingsRepo := repositories.NewStandingsDatabaseRepository(db)
 
 	// write entry to database
 	if err := standingsRepo.Insert(ctx, &standings); err != nil {
-		return models.Standings{}, domainErrorFromDBError(err)
+		return models.Standings{}, domainErrorFromRepositoryError(err)
 	}
 
 	return standings, nil
@@ -51,7 +51,7 @@ func (s StandingsAgent) RetrieveStandingsByID(ctx context.Context, id string) (m
 		"id": id,
 	}, false)
 	if err != nil {
-		return models.Standings{}, domainErrorFromDBError(err)
+		return models.Standings{}, domainErrorFromRepositoryError(err)
 	}
 
 	return retrievedStandings[0], nil
@@ -66,10 +66,22 @@ func (s StandingsAgent) RetrieveStandingsBySeasonAndRoundNumber(ctx context.Cont
 		"round_number": roundNumber,
 	}, false)
 	if err != nil {
-		return models.Standings{}, domainErrorFromDBError(err)
+		return models.Standings{}, domainErrorFromRepositoryError(err)
 	}
 
 	return retrievedStandings[0], nil
+}
+
+// RetrieveLatestStandingsBySeasonIDAndTimestamp handles the retrieval of the latest Standings in the database by its ID
+func (s StandingsAgent) RetrieveLatestStandingsBySeasonIDAndTimestamp(ctx context.Context, seasonID string, ts time.Time) (models.Standings, error) {
+	standingsRepo := repositories.NewStandingsDatabaseRepository(s.MySQL())
+
+	retrievedStandings, err := standingsRepo.SelectLatestBySeasonIDAndTimestamp(ctx, seasonID, ts)
+	if err != nil {
+		return models.Standings{}, domainErrorFromRepositoryError(err)
+	}
+
+	return retrievedStandings, nil
 }
 
 // UpdateStandings handles the updating of an existing Standings in the database
@@ -78,12 +90,15 @@ func (s StandingsAgent) UpdateStandings(ctx context.Context, standings models.St
 
 	// ensure the entry exists
 	if err := standingsRepo.ExistsByID(ctx, standings.ID.String()); err != nil {
-		return models.Standings{}, domainErrorFromDBError(err)
+		return models.Standings{}, domainErrorFromRepositoryError(err)
 	}
+
+	// override these values
+	standings.UpdatedAt = sqltypes.ToNullTime(time.Now().Truncate(time.Second))
 
 	// write to database
 	if err := standingsRepo.Update(ctx, &standings); err != nil {
-		return models.Standings{}, domainErrorFromDBError(err)
+		return models.Standings{}, domainErrorFromRepositoryError(err)
 	}
 
 	return standings, nil

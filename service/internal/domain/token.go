@@ -43,7 +43,7 @@ func (t TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (*
 	}
 
 	if err := tokenRepo.Insert(ctx, &token); err != nil {
-		return nil, domainErrorFromDBError(err)
+		return nil, domainErrorFromRepositoryError(err)
 	}
 
 	return &token, nil
@@ -57,11 +57,11 @@ func (t TokenAgent) RetrieveTokenByID(ctx context.Context, id string) (*models.T
 		"id": id,
 	}, false)
 	if err != nil {
-		return nil, domainErrorFromDBError(err)
+		return nil, domainErrorFromRepositoryError(err)
 	}
 
 	if len(tokens) != 1 {
-		return nil, NotFoundError{fmt.Errorf("token not found: %s", id)}
+		return nil, NotFoundError{fmt.Errorf("token id: %s not found", id)}
 	}
 
 	return &tokens[0], nil
@@ -73,7 +73,7 @@ func (t TokenAgent) DeleteToken(ctx context.Context, token models.Token) error {
 
 	err := tokenRepo.DeleteByID(ctx, token.ID)
 	if err != nil {
-		return domainErrorFromDBError(err)
+		return domainErrorFromRepositoryError(err)
 	}
 
 	return nil
@@ -90,12 +90,12 @@ func (t TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp time
 		},
 	}, false)
 	if err != nil {
-		return domainErrorFromDBError(err)
+		return domainErrorFromRepositoryError(err)
 	}
 
 	for _, token := range tokens {
 		if err := tokenRepo.DeleteByID(ctx, token.ID); err != nil {
-			return domainErrorFromDBError(err)
+			return domainErrorFromRepositoryError(err)
 		}
 	}
 

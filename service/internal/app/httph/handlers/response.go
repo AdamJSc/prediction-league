@@ -25,6 +25,17 @@ type retrieveLatestEntryPredictionResponse struct {
 	LastUpdated time.Time     `json:"last_updated"`
 }
 
+type retrieveLatestScoredEntryPredictionResponse struct {
+	LastUpdated time.Time                              `json:"last_updated"`
+	RoundScore  int                                    `json:"round_score"`
+	Rankings    []scoredEntryPredictionResponseRanking `json:"rankings"`
+}
+
+type scoredEntryPredictionResponseRanking struct {
+	models.RankingWithScore
+	MetaPosition int `json:"meta_position"`
+}
+
 // responseFromError returns a rest package-level error from a domain-level error
 func responseFromError(err error) *rest.Response {
 	switch err.(type) {

@@ -32,6 +32,10 @@ h1, h2, h3, h4 {
     list-style-type: none;
     padding-left: 0;
   }
+
+  p:last-child {
+    margin-bottom: 0;
+  }
 }
 
 .main-container {
@@ -124,27 +128,13 @@ h1, h2, h3, h4 {
   }
 }
 
-.teams-reorder {
-  .team-row {
+.rankings {
+  .rankings-row {
     height: 75px;
     font-size: 1.3rem;
 
     &:not(:last-child) {
-      border-bottom: solid 1px $primary-dark-tint-light;
-    }
-
-    &:hover {
-      cursor: pointer;
-    }
-
-    &.selected {
-      background: $active-highlight-light;
-      border: 2px solid $active-highlight-dark;
-    }
-
-    &.dirty {
-      background: $dirty-highlight-light;
-      border: 2px solid $dirty-highlight-dark;
+      border-bottom: solid 1px $primary-light-tint-dark;
     }
 
     .position {
@@ -154,36 +144,106 @@ h1, h2, h3, h4 {
       text-align: right;
     }
 
-    .crest-outer {
-      width: 50px;
-      text-align: center;
-
-      .crest {
-        display: inline-block;
-        width: 40px;
-        padding: 0.25rem 0;
-        overflow: hidden;
-
-        img {
-          width: 100%;
-        }
-      }
-    }
-
     .name {
       font-weight: bold;
       padding: 0 1rem;
     }
   }
+
+  &.clickable {
+    .rankings-row {
+      &:hover {
+        cursor: pointer;
+      }
+    }
+  }
 }
 
-.teams-reorder, .teams-reorder-admin {
+.teams-reorder {
+  .team-row {
+    &.selected {
+      background: $active-highlight-light;
+      border: 2px solid $active-highlight-dark;
+    }
+
+    &.dirty {
+      background: $dirty-highlight-light;
+      border: 2px solid $dirty-highlight-dark;
+    }
+  }
+}
+
+.round-navigation {
+  min-width: 90px;
+
+  i:hover {
+    cursor: pointer
+  }
+}
+
+.leaderboard-render {
+  .popout {
+    text-align: right;
+  }
+}
+
+.last-updated {
+  padding-bottom: 2rem;
+}
+
+table.rankings, table.round, table.teams-reorder-admin {
   width: 100%;
   margin: 0 auto;
+
+  .crest-outer {
+    width: 50px;
+    text-align: center;
+
+    .crest {
+      display: inline-block;
+      width: 40px;
+      padding: 0.25rem 0;
+      overflow: hidden;
+
+      img {
+        width: 100%;
+      }
+    }
+  }
+}
+
+table.round {
+  color: $secondary-dark;
+  font-family: $heading-font-family;
+  font-size: 2rem;
+  margin: 2rem auto;
+}
+
+.loader-container {
+  width: 90px;
+  margin: 0 auto;
+
+  img {
+    width: 100%;
+  }
+}
+
+.text-highlight {
+  color: $secondary-dark;
+}
+
+.text-lolight {
+  color: $primary-light-tint-dark;
 }
 
 @media screen and (min-width: 768px) {
-  .teams-reorder, .teams-reorder-admin {
+  table.rankings:not(.full-width), table.round, table.teams-reorder-admin {
     width: 75%;
+  }
+}
+
+@media screen and (min-width: 992px) {
+  table.rankings:not(.full-width), table.round {
+    width: 50%;
   }
 }

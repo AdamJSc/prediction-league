@@ -23,18 +23,38 @@ func frontendIndexHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter,
 	}
 }
 
-func frontendResultsHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendLeaderBoardHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var p = pages.Base{
-			Title:      "Results",
-			ActivePage: "results",
-			IsLoggedIn: isLoggedIn(r),
+		loggedIn := isLoggedIn(r)
+
+		var writeResponse = func(data pages.LeaderBoardPageData, loggedIn bool) {
+			var p = pages.Base{
+				Title:      "Leaderboard",
+				ActivePage: "leaderboard",
+				IsLoggedIn: loggedIn,
+				Data:       data,
+			}
+
+			if err := c.Template().ExecuteTemplate(w, "leaderboard", p); err != nil {
+				rest.InternalError(err).WriteTo(w)
+			}
 		}
 
-		if err := c.Template().ExecuteTemplate(w, "results", p); err != nil {
-			rest.InternalError(err).WriteTo(w)
+		ctx, cancel, err := contextFromRequest(r, c)
+		if err != nil {
+			writeResponse(pages.LeaderBoardPageData{Err: err}, loggedIn)
 			return
 		}
+		defer cancel()
+
+		data := getLeaderBoardPageData(
+			ctx,
+			domain.EntryAgent{EntryAgentInjector: c},
+			domain.StandingsAgent{StandingsAgentInjector: c},
+			domain.LeaderBoardAgent{LeaderBoardAgentInjector: c},
+		)
+
+		writeResponse(data, loggedIn)
 	}
 }
 
@@ -53,15 +73,15 @@ func frontendFAQHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 	}
 }
 
-func frontendEnterHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendJoinHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var p = pages.Base{
-			Title:      "Enter",
-			ActivePage: "enter",
+			Title:      "Join",
+			ActivePage: "join",
 			IsLoggedIn: isLoggedIn(r),
 		}
 
-		if err := c.Template().ExecuteTemplate(w, "enter", p); err != nil {
+		if err := c.Template().ExecuteTemplate(w, "join", p); err != nil {
 			rest.InternalError(err).WriteTo(w)
 			return
 		}
@@ -96,7 +116,8 @@ func frontendPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWr
 			ctx,
 			getAuthCookieValue(r),
 			domain.EntryAgent{EntryAgentInjector: c},
-			domain.TokenAgent{TokenAgentInjector: c})
+			domain.TokenAgent{TokenAgentInjector: c},
+		)
 
 		writeResponse(data, loggedIn)
 	}

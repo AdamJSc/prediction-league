@@ -64,7 +64,7 @@ func (e EntryAgent) CreateEntry(ctx context.Context, entry models.Entry, s *mode
 	// generate a unique lookup ref
 	entry.ShortCode, err = GenerateUniqueShortCode(ctx, db)
 	if err != nil {
-		return models.Entry{}, domainErrorFromDBError(err)
+		return models.Entry{}, domainErrorFromRepositoryError(err)
 	}
 
 	// sanitise entry
@@ -86,7 +86,7 @@ func (e EntryAgent) CreateEntry(ctx context.Context, entry models.Entry, s *mode
 			// this is fine
 			break
 		default:
-			return models.Entry{}, domainErrorFromDBError(err)
+			return models.Entry{}, domainErrorFromRepositoryError(err)
 		}
 	}
 
@@ -102,7 +102,7 @@ func (e EntryAgent) CreateEntry(ctx context.Context, entry models.Entry, s *mode
 			// this is fine
 			break
 		default:
-			return models.Entry{}, domainErrorFromDBError(err)
+			return models.Entry{}, domainErrorFromRepositoryError(err)
 		}
 	}
 
@@ -113,7 +113,7 @@ func (e EntryAgent) CreateEntry(ctx context.Context, entry models.Entry, s *mode
 
 	// write entry to database
 	if err := entryRepo.Insert(ctx, &entry); err != nil {
-		return models.Entry{}, domainErrorFromDBError(err)
+		return models.Entry{}, domainErrorFromRepositoryError(err)
 	}
 
 	return entry, nil
@@ -128,7 +128,7 @@ func (e EntryAgent) RetrieveEntryByID(ctx context.Context, id string) (models.En
 		"id": id,
 	}, false)
 	if err != nil {
-		return models.Entry{}, domainErrorFromDBError(err)
+		return models.Entry{}, domainErrorFromRepositoryError(err)
 	}
 	entry := entries[0]
 
@@ -142,12 +142,12 @@ func (e EntryAgent) RetrieveEntryByID(ctx context.Context, id string) (models.En
 		"entry_id": entry.ID,
 	}, false)
 	if err != nil {
-		err = domainErrorFromDBError(err)
+		err = domainErrorFromRepositoryError(err)
 		switch err.(type) {
 		case NotFoundError:
 			// all good
 		default:
-			return models.Entry{}, domainErrorFromDBError(err)
+			return models.Entry{}, domainErrorFromRepositoryError(err)
 		}
 	}
 
@@ -163,7 +163,7 @@ func (e EntryAgent) RetrieveEntryByEntrantEmail(ctx context.Context, email strin
 		"entrant_email": email,
 	}, false)
 	if err != nil {
-		return models.Entry{}, domainErrorFromDBError(err)
+		return models.Entry{}, domainErrorFromRepositoryError(err)
 	}
 	entry := entries[0]
 
@@ -177,12 +177,12 @@ func (e EntryAgent) RetrieveEntryByEntrantEmail(ctx context.Context, email strin
 		"entry_id": entry.ID,
 	}, false)
 	if err != nil {
-		err = domainErrorFromDBError(err)
+		err = domainErrorFromRepositoryError(err)
 		switch err.(type) {
 		case NotFoundError:
 			// all good
 		default:
-			return models.Entry{}, domainErrorFromDBError(err)
+			return models.Entry{}, domainErrorFromRepositoryError(err)
 		}
 	}
 
@@ -198,7 +198,7 @@ func (e EntryAgent) RetrieveEntryByEntrantNickname(ctx context.Context, email st
 		"entrant_nickname": email,
 	}, false)
 	if err != nil {
-		return models.Entry{}, domainErrorFromDBError(err)
+		return models.Entry{}, domainErrorFromRepositoryError(err)
 	}
 	entry := entries[0]
 
@@ -212,12 +212,12 @@ func (e EntryAgent) RetrieveEntryByEntrantNickname(ctx context.Context, email st
 		"entry_id": entry.ID,
 	}, false)
 	if err != nil {
-		err = domainErrorFromDBError(err)
+		err = domainErrorFromRepositoryError(err)
 		switch err.(type) {
 		case NotFoundError:
 			// all good
 		default:
-			return models.Entry{}, domainErrorFromDBError(err)
+			return models.Entry{}, domainErrorFromRepositoryError(err)
 		}
 	}
 
@@ -233,7 +233,7 @@ func (e EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID stri
 		"season_id": seasonID,
 	}, false)
 	if err != nil {
-		return nil, domainErrorFromDBError(err)
+		return nil, domainErrorFromRepositoryError(err)
 	}
 
 	for idx := range entries {
@@ -244,12 +244,12 @@ func (e EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID stri
 			"entry_id": entry.ID,
 		}, false)
 		if err != nil {
-			err = domainErrorFromDBError(err)
+			err = domainErrorFromRepositoryError(err)
 			switch err.(type) {
 			case NotFoundError:
 				// all good
 			default:
-				return nil, domainErrorFromDBError(err)
+				return nil, domainErrorFromRepositoryError(err)
 			}
 		}
 	}
@@ -268,7 +268,7 @@ func (e EntryAgent) UpdateEntry(ctx context.Context, entry models.Entry) (models
 
 	// ensure the entry exists
 	if err := entryRepo.ExistsByID(ctx, entry.ID.String()); err != nil {
-		return models.Entry{}, domainErrorFromDBError(err)
+		return models.Entry{}, domainErrorFromRepositoryError(err)
 	}
 
 	// sanitise entry
@@ -282,7 +282,7 @@ func (e EntryAgent) UpdateEntry(ctx context.Context, entry models.Entry) (models
 
 	// write to database
 	if err := entryRepo.Update(ctx, &entry); err != nil {
-		return models.Entry{}, domainErrorFromDBError(err)
+		return models.Entry{}, domainErrorFromRepositoryError(err)
 	}
 
 	return entry, nil
@@ -305,7 +305,7 @@ func (e EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPredicti
 
 	// ensure the entry exists
 	if err := entryRepo.ExistsByID(ctx, entry.ID.String()); err != nil {
-		return models.Entry{}, domainErrorFromDBError(err)
+		return models.Entry{}, domainErrorFromRepositoryError(err)
 	}
 
 	// retrieve the entry's Season
@@ -376,7 +376,7 @@ func (e EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPredicti
 	entryPrediction.EntryID = entry.ID
 
 	if err := entryPredictionRepo.Insert(ctx, &entryPrediction); err != nil {
-		return models.Entry{}, domainErrorFromDBError(err)
+		return models.Entry{}, domainErrorFromRepositoryError(err)
 	}
 
 	entry.EntryPredictions = append(entry.EntryPredictions, entryPrediction)
@@ -407,7 +407,7 @@ func (e EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, paym
 		"id": entryID,
 	}, false)
 	if err != nil {
-		return models.Entry{}, domainErrorFromDBError(err)
+		return models.Entry{}, domainErrorFromRepositoryError(err)
 	}
 
 	if len(entries) != 1 {
@@ -439,7 +439,7 @@ func (e EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, paym
 
 	// write to database
 	if err := entryRepo.Update(ctx, &entry); err != nil {
-		return models.Entry{}, domainErrorFromDBError(err)
+		return models.Entry{}, domainErrorFromRepositoryError(err)
 	}
 
 	return entry, nil
@@ -459,7 +459,7 @@ func (e EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode strin
 		"short_code": shortCode,
 	}, false)
 	if err != nil {
-		return models.Entry{}, domainErrorFromDBError(err)
+		return models.Entry{}, domainErrorFromRepositoryError(err)
 	}
 
 	if len(entries) != 1 {
@@ -490,7 +490,7 @@ func (e EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode strin
 
 	// write to database
 	if err := entryRepo.Update(ctx, &entry); err != nil {
-		return models.Entry{}, domainErrorFromDBError(err)
+		return models.Entry{}, domainErrorFromRepositoryError(err)
 	}
 
 	return entry, nil
@@ -503,7 +503,7 @@ func (e EntryAgent) RetrieveEntryPredictionByTimestamp(ctx context.Context, entr
 	// retrieve entry prediction
 	entryPrediction, err := entryPredictionRepo.SelectByEntryIDAndTimestamp(ctx, entry.ID.String(), ts)
 	if err != nil {
-		return models.EntryPrediction{}, domainErrorFromDBError(err)
+		return models.EntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
 
 	return entryPrediction, nil
@@ -598,15 +598,15 @@ func GetEntryPredictionValidAtTimestamp(entryPredictions []models.EntryPredictio
 		return desc[j].CreatedAt.Before(desc[i].CreatedAt)
 	})
 
-	for _, es := range desc {
+	for _, ep := range desc {
 		// let's iterate until we get to the first element
 		// that was created prior to ts
-		if es.CreatedAt.Before(ts) {
-			return es, nil
+		if ep.CreatedAt.Before(ts) {
+			return ep, nil
 		}
 	}
 
-	return models.EntryPrediction{}, errors.New("not found")
+	return models.EntryPrediction{}, fmt.Errorf("entry prediction by timestamp %+v: not found", ts)
 }
 
 func isValidEmail(email string) bool {

@@ -2,7 +2,7 @@
     <div class="registration-form-container">
         <div class="row">
             <div class="col-md-8 offset-md-2">
-                <h1>Enter Now</h1>
+                <h1>Join Now</h1>
             </div>
         </div>
         <div class="row">
@@ -38,7 +38,7 @@
 
                     <div class="submit-wrapper">
                         <action-button
-                                label="Enter"
+                                label="Join"
                                 @clicked="enterOnClick"
                                 :is-disabled="working"
                                 :is-working="working"></action-button>

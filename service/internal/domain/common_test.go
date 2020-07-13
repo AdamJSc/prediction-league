@@ -167,6 +167,7 @@ func generateTestStandings(t *testing.T) models.Standings {
 		RoundNumber: 1,
 		Rankings:    rankings,
 		Finalised:   true,
+		CreatedAt:   time.Now().Truncate(time.Second),
 	}
 }
 
@@ -178,6 +179,20 @@ func insertStandings(t *testing.T, standings models.Standings) models.Standings 
 	defer cancel()
 
 	if err := repositories.NewStandingsDatabaseRepository(db).Insert(ctx, &standings); err != nil {
+		t.Fatal(err)
+	}
+
+	return standings
+}
+
+// updateStandings updates a generated Standings entity in the DB for use within the testsuite
+func updateStandings(t *testing.T, standings models.Standings) models.Standings {
+	t.Helper()
+
+	ctx, cancel := testContextDefault(t)
+	defer cancel()
+
+	if err := repositories.NewStandingsDatabaseRepository(db).Update(ctx, &standings); err != nil {
 		t.Fatal(err)
 	}
 
@@ -263,11 +278,14 @@ func insertEntryPrediction(t *testing.T, entryPrediction models.EntryPrediction)
 
 // generateTestScoredEntryPrediction generates a new ScoredEntryPrediction entity for use within the testsuite
 func generateTestScoredEntryPrediction(t *testing.T, entryPredictionID, standingsID uuid.UUID) models.ScoredEntryPrediction {
+	t.Helper()
+
 	return models.ScoredEntryPrediction{
 		EntryPredictionID: entryPredictionID,
 		StandingsID:       standingsID,
 		Rankings:          models.NewRankingWithScoreCollectionFromIDs(testSeason.TeamIDs),
 		Score:             123,
+		CreatedAt:         time.Now().Truncate(time.Second),
 	}
 }
 

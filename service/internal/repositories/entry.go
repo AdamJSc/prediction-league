@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"golang.org/x/net/context"
@@ -159,7 +160,7 @@ func (e EntryDatabaseRepository) ExistsByID(ctx context.Context, id string) erro
 	}
 
 	if count == 0 {
-		return MissingDBRecordError{errors.New("entry not found")}
+		return MissingDBRecordError{fmt.Errorf("entry id %s: not found", id)}
 	}
 
 	return nil

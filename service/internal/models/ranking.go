@@ -8,8 +8,8 @@ import (
 
 // Ranking defines our base ranking structure
 type Ranking struct {
-	ID       string
-	Position int
+	ID       string `json:"id"`
+	Position int    `json:"position"`
 }
 
 // RankingCollection defines our collection of Rankings
@@ -33,7 +33,7 @@ func (r *RankingCollection) GetByID(id string) (*Ranking, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("not found ranking with id: %s", id)
+	return nil, fmt.Errorf("ranking id %s: not found", id)
 }
 
 // MarshalJSON using custom structure
@@ -56,7 +56,7 @@ func (r *RankingCollection) UnmarshalJSON(d []byte) error {
 // RankingWithMeta composes a Ranking with additional meta data
 type RankingWithMeta struct {
 	Ranking
-	MetaData map[string]int
+	MetaData map[string]int `json:"meta_data"`
 }
 
 // NewRankingWithMeta provides an empty RankingWithMeta object with an instantiated map
@@ -69,7 +69,7 @@ func NewRankingWithMeta() RankingWithMeta {
 // RankingWithScore composes a Ranking with a corresponding Score value
 type RankingWithScore struct {
 	Ranking
-	Score int
+	Score int `json:"score"`
 }
 
 // RankingWithScoreCollection defines our collection of RankingWithScores

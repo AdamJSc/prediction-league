@@ -25,14 +25,14 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link{{if eq .ActivePage "results"}} active{{end}}" href="/results">
-                                Results {{if eq .ActivePage "results"}}<span class="sr-only">(current)</span>{{end}}
+                            <a class="nav-link{{if eq .ActivePage "leaderboard"}} active{{end}}" href="/leaderboard">
+                                Leaderboard {{if eq .ActivePage "leaderboard"}}<span class="sr-only">(current)</span>{{end}}
                             </a>
                         </li>
                         {{if not .IsLoggedIn}}
                             <li class="nav-item">
-                                <a class="nav-link{{if eq .ActivePage "enter"}} active{{end}}" href="/enter">
-                                    Enter {{if eq .ActivePage "enter"}}<span class="sr-only">(current)</span>{{end}}
+                                <a class="nav-link{{if eq .ActivePage "join"}} active{{end}}" href="/join">
+                                    Join {{if eq .ActivePage "join"}}<span class="sr-only">(current)</span>{{end}}
                                 </a>
                             </li>
                         {{end}}
