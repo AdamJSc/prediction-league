@@ -173,20 +173,21 @@ The `Target` is usually a "known" value that the `Attempt` must match in order t
 
 For example...
 
-Most route handlers will at some point invoke `ctx := contextFromRequest(r, c)` to inflate a standard `context.Context` object,
-which comprises an arbitrary `Guard` field, as well as a `Realm` field that has been populated with details of the request's
+Most route handlers will at some point invoke `ctx := contextFromRequest(r, c)`, where `r` is a HTTP Request object,
+and `c` is the container comprising all of our app's dependencies. This will return a new context with two values added:
+one is an empty `Guard` object, and the other is a `Realm` object that has been populated with details of the request's
 current Realm.
 
-The route handler might then invoke `ctx.Guard.SetAttempt(input.PIN)` to set the Guard's Attempt value - i.e. the value
-"attempting" to match the Target - using some data point that has been supplied in the user's request.
+The route handler might then invoke `domain.GuardFromContext(ctx).SetAttempt(input.PIN)` to set the Guard's Attempt value -
+i.e. the value "attempting" to match the Target - using some data point that has been supplied in the user's request.
 
 (In this case, our Guard Attempt is the "PIN" field of the incoming request body, so our agent method will want this to
 match the PIN of the request's current Realm in order that it can allow the operation to continue).
 
 The handler will pass this context to the main agent method it invokes (e.g. `domain.EntryAgent.CreateEntry(ctx ....)`).
 
-The agent method can then invoke `GuardFromContext(ctx).Guard.AttemptMatchesTarget(ctx.Realm.PIN)` which returns a `boolean`
-to determine whether or not the incoming request can be authorised.
+The agent method can then invoke `domain.GuardFromContext(ctx).Guard.AttemptMatchesTarget(ctx.Realm.PIN)` which returns
+a `boolean` to determine whether or not the incoming request can be authorised.
 
 ### "FakeSeason"
 
@@ -195,26 +196,26 @@ Realm. Functionality such as whether or not an Entry or Entry Prediction can be 
 is determined by the corresponding timeframes set on the Season itself.
 
 Usually these will be **absolute** timeframes that pertain to the dates relevant to a real-world Season
-(see `201920_1` in the `datastore.Seasons` as an example).
+(see `201920_1` in `datastore.Seasons` as an example).
 
 For this reason, the default Realm (`localhost`) is affiliated with a specific Season that has the ID `FakeSeason`.
 This Season's timeframes are **relative** to the point at which the system is run, so that core functionality can be
-immediately used.
+used immediately.
 
-The schedule take place as follows:
+The schedule takes place as follows:
 
 * 0 mins - 20 mins
     * Entries can be created or updated
-    * Entry Predictions can be created or updated
+    * Entry Predictions can be created
 * 20 mins - 40 mins
     * No Entries can be created or updated
-    * No Entry Predictions can be created or updated
+    * No Entry Predictions can be created
 * 40 mins - 60 mins
     * No Entries can be created or updated
-    * Entry Predictions can be created or updated
+    * Entry Predictions can be created
 * 60 mins+
     * No Entries can be created or updated
-    * No Entry Predictions can be created or updated
+    * No Entry Predictions can be created
 
 ## Cron Tasks
 
@@ -239,6 +240,8 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 ### Short Codes / Passwords
 
 ### Tokens
+
+### Cookie Management
 
 ### Vue integration
 
