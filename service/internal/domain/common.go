@@ -2,8 +2,10 @@ package domain
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/LUSHDigital/core-mage/env"
 	"github.com/kelseyhightower/envconfig"
+	"gopkg.in/yaml.v2"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -19,8 +21,8 @@ import (
 // Realm represents a realm in which the system has been configured to run
 type Realm struct {
 	Name     string
-	PIN      string
-	SeasonID string
+	PIN      string `yaml:"pin"`
+	SeasonID string `yaml:"season_id"`
 }
 
 // formatRealmNameFromRaw converts a raw realm name (as the prefix to an env key) to a formatted realm name
@@ -57,54 +59,35 @@ func MustLoadConfigFromEnvPaths(paths ...string) Config {
 		log.Fatal(err)
 	}
 
-	config.Realms = make(map[string]Realm)
-
-	// next, let's populate all realms that are configured for the system
-	for _, keyvalstring := range os.Environ() {
-		if !strings.Contains(keyvalstring, "=") {
-			// something's wrong, just skip to the next one...
-			continue
-		}
-
-		split := strings.Split(keyvalstring, "=")
-		key, val := split[0], split[1]
-
-		// parse required values from key and val and determine if they are realm-related
-		var rawRealmName, realmPIN, realmSeasonID string
-		switch {
-		case strings.HasSuffix(key, "_REALM_PIN"):
-			// represents a realm PIN
-			rawRealmName = strings.Split(key, "_REALM_PIN")[0]
-			realmPIN = val
-		case strings.HasSuffix(key, "_REALM_SEASON_ID"):
-			// represents a realm season ID
-			rawRealmName = strings.Split(key, "_REALM_SEASON_ID")[0]
-			realmSeasonID = val
-		}
-
-		// did our key represent a realm-related item of data?
-		if rawRealmName != "" {
-			formattedRealmName := formatRealmNameFromRaw(rawRealmName)
-
-			// retrieve realm in case we've already added some values previously
-			realm := config.Realms[formattedRealmName]
-			realm.Name = formattedRealmName
-
-			switch {
-			case realmPIN != "":
-				// we now have a PIN for this realm
-				realm.PIN = realmPIN
-			case realmSeasonID != "":
-				// we now have a season ID for this realm
-				realm.SeasonID = realmSeasonID
-			}
-
-			// add the realm back to our config
-			config.Realms[formattedRealmName] = realm
-		}
-	}
+	config.Realms = mustParseRealmsFromPath(fmt.Sprintf("./data/realms.yml"))
 
 	return config
+}
+
+// mustParseRealmsFromPath parses the realms from the contents of the YAML file at the provided path
+func mustParseRealmsFromPath(yamlPath string) map[string]Realm {
+	contents, err := ioutil.ReadFile(yamlPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var payload struct {
+		Realms map[string]Realm `yaml:"realms"`
+	}
+
+	// parse file contents
+	if err := yaml.Unmarshal(contents, &payload); err != nil {
+		log.Fatal(err)
+	}
+
+	// populate names of realms with map key
+	for key := range payload.Realms {
+		r := payload.Realms[key]
+		r.Name = key
+		payload.Realms[key] = r
+	}
+
+	return payload.Realms
 }
 
 // generateRandomAlphaNumericString returns a randomised string of given length

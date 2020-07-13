@@ -15,5 +15,6 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/robfig/cron/v3 v3.0.0
 	golang.org/x/net v0.0.0-20190930134127-c5a3c61f89f3
+	gopkg.in/yaml.v2 v2.2.7
 	gotest.tools v2.2.0+incompatible
 )

@@ -133,9 +133,9 @@ For details on the system's default season, see ["FakeSeason"](#fakeseason) (bel
 
 ### Realm
 
-This is effectively an arbitrary flag that represents a distinct instance of the "game".
+This is an arbitrary flag that represents a distinct instance of the "game".
 
-Each Entry pertains to a particular Realm which effectively acts as a sub-grouping of Entries. So two Entries that have
+Each Entry belongs to a particular Realm which effectively acts as a sub-grouping of Entries. So two Entries that have
 different Realm values belong to different "games" and are therefore not competing against each other.
 
 By default, and as a "quick-win", the Realm is determined by the domain/host name via which an Entry is created.
@@ -143,24 +143,22 @@ By default, and as a "quick-win", the Realm is determined by the domain/host nam
 This means that the program can run as a single process serving multiple domains/sub-domains, with each one operating as
 its own independent instance of the game.
 
-Each Realm should have a corresponding PIN, which must be supplied when creating an Entry. This is configured within
-the program's corresponding `.env` file, using the key name that is in the format `<RealmName>_REALM_PIN`.
+Realms must be configured in advance, within the `./data/realms.yml` file. This file's payload comprises the single
+root-level key named `realms`, and each key beneath this should match the lowercase realm name (domain) -
+e.g. `localhost` or `my.sub.domain.com`. See the file itself for an example.
 
-e.g. To set the PIN pertaining to `my.domain.com`, use the Env Key `MY_DOMAIN_COM_REALM_PIN`.
-To set the PIN pertaining to your local instance, use the Env Key `LOCALHOST_REALM_PIN`.
+Each Realm should have a corresponding PIN which must be supplied when creating an Entry, in order to prevent unwelcome sign-ups.
+
+This value is taken from the `pin` key of the realm config described above.
 
 Each Realm should also be associated with the ID of a Season that is currently active for that Realm. This enables multiple
 different Realms to be playing under multiple Seasons at the same time, so one Realm could be assigned `199293_1`
 ("Premier League 1992/93") whilst at the same time another Realm is assigned  `199293_2` ("Division One 1992/93").
 
-This is configured within the program's corresponding `.env` file, using the key name that is in the format
-`<RealmName>_REALM_SEASON_ID`.
+This value is taken from the `season_id` key of the realm config described above.
 
-e.g. To set the Season ID pertaining to `my.domain.com`, use the Env Key `MY_DOMAIN_COM_REALM_SEASON_ID`.
-To set the Season ID pertaining to your local instance, use the Env Key `LOCALHOST_REALM_SEASON_ID`.
-
-The values of each `*_REALM_PIN` and `*_REALM_SEASON_ID` key are consolidated as `Realm` objects and inflated on a `domain.Config`
-object within the main bootstrap, so that these can be passed around within the centralised object as required.
+The values of these payloads are parsed as `Realm` objects and inflated on a `domain.Config` object within the main
+bootstrap, so that these can be passed around within the centralised object as required.
 
 ### Guard
 
@@ -218,6 +216,8 @@ The schedule take place as follows:
     * No Entries can be created or updated
     * No Entry Predictions can be created or updated
 
+## Cron Tasks
+
 ## Maintenance
 
 ### To add a new Season...
@@ -228,7 +228,7 @@ This struct must adhere to the validation rules found within `domain.ValidateSea
 
 Running the testsuite again will apply the rules to each `Season` in the map and fail if any aren't met.
 
-## TO DO
+## Features To Build
 
 * TBC
 
