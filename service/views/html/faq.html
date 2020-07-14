@@ -9,12 +9,24 @@
         </div>
         <div class="row">
             <div class="col-md-8 offset-md-2">
-                <ul>
-                    {{range .FAQs}}
-                    <li>Q: {{.Question}}</li>
-                    <li>A: {{.Answer}}</li>
-                    {{end}}
-                </ul>
+                {{if .FAQs}}
+                    <div class="accordion" id="faqRender">
+                        {{range $idx, $faq := .FAQs}}
+                            <div class="card">
+                                <div class="card-header" id="q{{$idx}}-heading">
+                                    <h2 data-toggle="collapse" data-target="#q{{$idx}}-body" aria-expanded="false" aria-controls="q{{$idx}}-body">
+                                        Q: {{$faq.Question}}
+                                    </h2>
+                                </div>
+                                <div id="q{{$idx}}-body" class="collapse" aria-labelledby="q{{$idx}}-heading" data-parent="#faqRender">
+                                    <div class="card-body">
+                                        {{$faq.Answer}}
+                                    </div>
+                                </div>
+                            </div>
+                        {{end}}
+                    </div>
+                {{end}}
             </div>
         </div>
     </div>

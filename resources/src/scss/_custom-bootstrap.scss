@@ -132,6 +132,27 @@
   }
 }
 
+.card {
+  border: 0;
+
+  .card-header {
+    padding: 0;
+    background-color: $secondary-dark;
+    border: 2px solid $primary-light;
+
+    h2 {
+      margin-bottom: 0;
+      font-size: 1.4rem;
+      padding: 0.5rem;
+      color: $primary-light;
+
+      &:hover {
+        cursor: pointer;
+      }
+    }
+  }
+}
+
 @media screen and (min-width: 992px) {
   .navbar {
     padding-top: 3rem;
