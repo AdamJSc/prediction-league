@@ -60,16 +60,31 @@ func frontendLeaderBoardHandler(c *httph.HTTPAppContainer) func(w http.ResponseW
 
 func frontendFAQHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var p = pages.Base{
-			Title:      "FAQ",
-			ActivePage: "faq",
-			IsLoggedIn: isLoggedIn(r),
+		loggedIn := isLoggedIn(r)
+
+		var writeResponse = func(data pages.FAQPageData, loggedIn bool) {
+			var p = pages.Base{
+				Title:      "FAQ",
+				ActivePage: "faq",
+				IsLoggedIn: loggedIn,
+				Data:       data,
+			}
+
+			if err := c.Template().ExecuteTemplate(w, "faq", p); err != nil {
+				rest.InternalError(err).WriteTo(w)
+			}
 		}
 
-		if err := c.Template().ExecuteTemplate(w, "faq", p); err != nil {
-			rest.InternalError(err).WriteTo(w)
+		ctx, cancel, err := contextFromRequest(r, c)
+		if err != nil {
+			writeResponse(pages.FAQPageData{Err: err}, loggedIn)
 			return
 		}
+		defer cancel()
+
+		data := getFAQPageData(domain.RealmFromContext(ctx).Name)
+
+		writeResponse(data, loggedIn)
 	}
 }
 

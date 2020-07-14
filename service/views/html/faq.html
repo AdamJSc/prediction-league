@@ -1,11 +1,23 @@
 {{define "faq"}}
     {{template "header" .}}
+    {{with .Data}}
     <div class="main-container container-fluid">
         <div class="row">
             <div class="col-md-8 offset-md-2">
                 <h1>FAQ</h1>
             </div>
         </div>
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <ul>
+                    {{range .FAQs}}
+                    <li>Q: {{.Question}}</li>
+                    <li>A: {{.Answer}}</li>
+                    {{end}}
+                </ul>
+            </div>
+        </div>
     </div>
+    {{end}}
     {{template "footer" .}}
 {{end}}
