@@ -138,18 +138,22 @@
   .card-header {
     padding: 0;
     background-color: $secondary-dark;
-    border: 2px solid $primary-light;
+    border: 0;
 
     h2 {
       margin-bottom: 0;
       font-size: 1.4rem;
-      padding: 0.5rem;
+      padding: 1rem;
       color: $primary-light;
 
       &:hover {
         cursor: pointer;
       }
     }
+  }
+
+  .card-body {
+    border: 2px solid $secondary-dark;
   }
 }
 
