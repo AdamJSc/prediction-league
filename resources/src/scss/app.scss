@@ -64,6 +64,13 @@ h1, h2, h3, h4 {
 
     .running-version {
       display: inline-block;
+      padding-right: 1em;
+      font-size: 0.3em;
+    }
+
+    .version-timestamp {
+      display: inline-block;
+      padding-right: 1em;
       font-size: 0.3em;
     }
 
