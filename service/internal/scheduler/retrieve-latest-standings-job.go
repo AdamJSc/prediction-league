@@ -80,11 +80,11 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 			}
 		}
 
-		log.Println(wrapJobStatus(jobName, "done!"))
+		// job is complete!
 	}
 
 	return &job{
-		spec: "15 * * * *",
+		spec: "@every 0h15m",
 		task: task,
 	}
 }
