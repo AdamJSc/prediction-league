@@ -1,20 +1,18 @@
 package scheduler
 
 import (
+	"github.com/robfig/cron/v3"
 	"log"
 	"prediction-league/service/internal/app/httph"
 	footballdata "prediction-league/service/internal/clients/football-data-org"
 	"prediction-league/service/internal/datastore"
-	"prediction-league/service/internal/domain"
-
-	"github.com/robfig/cron/v3"
 )
 
 // LoadCron returns our populated cron
-func LoadCron(config domain.Config, container *httph.HTTPAppContainer) *cron.Cron {
+func LoadCron(container *httph.HTTPAppContainer) *cron.Cron {
 	c := cron.New()
 
-	for _, j := range mustGenerateRetrieveLatestStandingsJobs(config, container) {
+	for _, j := range mustGenerateRetrieveLatestStandingsJobs(container) {
 		c.AddFunc(j.spec, j.task)
 	}
 
@@ -28,7 +26,9 @@ type job struct {
 }
 
 // mustGenerateRetrieveLatestStandingsJobs generates the RetrieveLatestStandings jobs to be used by the cron
-func mustGenerateRetrieveLatestStandingsJobs(config domain.Config, container *httph.HTTPAppContainer) []*job {
+func mustGenerateRetrieveLatestStandingsJobs(container *httph.HTTPAppContainer) []*job {
+	config := container.Config()
+
 	// get the current season ID for all realms
 	var seasonIDs = make(map[string]struct{})
 	for _, realm := range config.Realms {
