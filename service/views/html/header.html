@@ -9,52 +9,54 @@
             <link rel="stylesheet" href="/assets/app.css" type="text/css" />
         </head>
         <body>
-            <nav class="navbar navbar-expand-lg navbar-light">
-                <div class="navbar-brand">
-                    Prediction League
-                </div>
-                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
-                    <i class="fa fa-bars" aria-hidden="true"></i>
-                </button>
+            <div class="main-wrapper">
+                <nav class="navbar navbar-expand-lg navbar-light">
+                    <div class="navbar-brand">
+                        Prediction League
+                    </div>
+                    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+                        <i class="fa fa-bars" aria-hidden="true"></i>
+                    </button>
 
-                <div class="collapse navbar-collapse" id="navbarContent">
-                    <ul class="navbar-nav">
-                        <li class="nav-item">
-                            <a class="nav-link{{if eq .ActivePage "home"}} active{{end}}" href="/">
-                                Home {{if eq .ActivePage "home"}}<span class="sr-only">(current)</span>{{end}}
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link{{if eq .ActivePage "leaderboard"}} active{{end}}" href="/leaderboard">
-                                Leaderboard {{if eq .ActivePage "leaderboard"}}<span class="sr-only">(current)</span>{{end}}
-                            </a>
-                        </li>
-                        {{if not .IsLoggedIn}}
+                    <div class="collapse navbar-collapse" id="navbarContent">
+                        <ul class="navbar-nav">
                             <li class="nav-item">
-                                <a class="nav-link{{if eq .ActivePage "join"}} active{{end}}" href="/join">
-                                    Join {{if eq .ActivePage "join"}}<span class="sr-only">(current)</span>{{end}}
+                                <a class="nav-link{{if eq .ActivePage "home"}} active{{end}}" href="/">
+                                    Home {{if eq .ActivePage "home"}}<span class="sr-only">(current)</span>{{end}}
                                 </a>
                             </li>
-                        {{end}}
-                        <li class="nav-item">
-                            <a class="nav-link{{if eq .ActivePage "faq"}} active{{end}}" href="/faq">
-                                FAQ {{if eq .ActivePage "faq"}}<span class="sr-only">(current)</span>{{end}}
-                            </a>
-                        </li>
-                        {{if not .IsLoggedIn}}
                             <li class="nav-item">
-                                <a class="nav-link{{if eq .ActivePage "prediction"}} active{{end}}" href="/prediction">
-                                    My Prediction
+                                <a class="nav-link{{if eq .ActivePage "leaderboard"}} active{{end}}" href="/leaderboard">
+                                    Leaderboard {{if eq .ActivePage "leaderboard"}}<span class="sr-only">(current)</span>{{end}}
                                 </a>
                             </li>
-                        {{else}}
+                            {{if not .IsLoggedIn}}
+                                <li class="nav-item">
+                                    <a class="nav-link{{if eq .ActivePage "join"}} active{{end}}" href="/join">
+                                        Join {{if eq .ActivePage "join"}}<span class="sr-only">(current)</span>{{end}}
+                                    </a>
+                                </li>
+                            {{end}}
                             <li class="nav-item">
-                                <a class="nav-link" id="logout" href="#">
-                                    Logout <i class="fa fa-sign-out" aria-hidden="true"></i>
+                                <a class="nav-link{{if eq .ActivePage "faq"}} active{{end}}" href="/faq">
+                                    FAQ {{if eq .ActivePage "faq"}}<span class="sr-only">(current)</span>{{end}}
                                 </a>
                             </li>
-                        {{end}}
-                    </ul>
-                </div>
-            </nav>
+                            {{if not .IsLoggedIn}}
+                                <li class="nav-item">
+                                    <a class="nav-link{{if eq .ActivePage "prediction"}} active{{end}}" href="/prediction">
+                                        My Prediction
+                                    </a>
+                                </li>
+                            {{else}}
+                                <li class="nav-item">
+                                    <a class="nav-link" id="logout" href="#">
+                                        Logout <i class="fa fa-sign-out" aria-hidden="true"></i>
+                                    </a>
+                                </li>
+                            {{end}}
+                        </ul>
+                    </div>
+                </nav>
+                <div class="content-wrapper">
 {{end}}

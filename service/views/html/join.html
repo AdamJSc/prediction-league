@@ -1,9 +1,8 @@
 {{define "join"}}
     {{template "header" .}}
-        <div id="app" class="main-container container-fluid">
-            <!-- TODO - display "no more entries" message if expired -->
-            <registration-workflow></registration-workflow>
-        </div>
+    <div id="app" class="container-fluid">
+        <!-- TODO - display "no more entries" message if expired -->
+        <registration-workflow></registration-workflow>
     </div>
     {{template "footer" .}}
 {{end}}

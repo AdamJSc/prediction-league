@@ -1,4 +1,14 @@
 {{define "footer"}}
+                </div> <!-- close .content-wrapper -->
+                <div class="footer text-right">
+                        <div class="running-version">{{.RunningVersion}}</div>
+                        <div class="repo-link">
+                                <a href="https://github.com/AdamJSc/prediction-league" target="_blank">
+                                        <i class="fa fa-github" aria-hidden="true"></i>
+                                </a>
+                        </div>
+                </div>
+        </div> <!-- close .main-wrapper -->
         {{if .IsLoggedIn}}
                 <div id="logoutModal" class="modal fade" tabindex="-1" role="dialog">
                         <div class="modal-dialog" role="document">
