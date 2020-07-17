@@ -243,6 +243,11 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 
 ### Cookie Management
 
+### Scheduled Tasks Concurrency
+
+* Make processing of Standings concurrent when retrieving Latest Standings + scoring Entry Predictions
+* Process runs once every 15 minutes and scale currently very small
+
 ### Vue integration
 
 * Pulling from CDN prevents debug mode in development
