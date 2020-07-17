@@ -10,11 +10,7 @@ import (
 
 func frontendIndexHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var p = pages.Base{
-			Title:      "Home",
-			ActivePage: "home",
-			IsLoggedIn: isLoggedIn(r),
-		}
+		p := newPage(r, c, "Home", "home", nil)
 
 		if err := c.Template().ExecuteTemplate(w, "index", p); err != nil {
 			rest.InternalError(err).WriteTo(w)
@@ -25,15 +21,8 @@ func frontendIndexHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter,
 
 func frontendLeaderBoardHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		loggedIn := isLoggedIn(r)
-
-		var writeResponse = func(data pages.LeaderBoardPageData, loggedIn bool) {
-			var p = pages.Base{
-				Title:      "Leaderboard",
-				ActivePage: "leaderboard",
-				IsLoggedIn: loggedIn,
-				Data:       data,
-			}
+		var writeResponse = func(data pages.LeaderBoardPageData) {
+			p := newPage(r, c, "Leaderboard", "leaderboard", data)
 
 			if err := c.Template().ExecuteTemplate(w, "leaderboard", p); err != nil {
 				rest.InternalError(err).WriteTo(w)
@@ -42,7 +31,7 @@ func frontendLeaderBoardHandler(c *httph.HTTPAppContainer) func(w http.ResponseW
 
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			writeResponse(pages.LeaderBoardPageData{Err: err}, loggedIn)
+			writeResponse(pages.LeaderBoardPageData{Err: err})
 			return
 		}
 		defer cancel()
@@ -54,21 +43,14 @@ func frontendLeaderBoardHandler(c *httph.HTTPAppContainer) func(w http.ResponseW
 			domain.LeaderBoardAgent{LeaderBoardAgentInjector: c},
 		)
 
-		writeResponse(data, loggedIn)
+		writeResponse(data)
 	}
 }
 
 func frontendFAQHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		loggedIn := isLoggedIn(r)
-
-		var writeResponse = func(data pages.FAQPageData, loggedIn bool) {
-			var p = pages.Base{
-				Title:      "FAQ",
-				ActivePage: "faq",
-				IsLoggedIn: loggedIn,
-				Data:       data,
-			}
+		var writeResponse = func(data pages.FAQPageData) {
+			p := newPage(r, c, "FAQ", "faq", data)
 
 			if err := c.Template().ExecuteTemplate(w, "faq", p); err != nil {
 				rest.InternalError(err).WriteTo(w)
@@ -77,24 +59,20 @@ func frontendFAQHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			writeResponse(pages.FAQPageData{Err: err}, loggedIn)
+			writeResponse(pages.FAQPageData{Err: err})
 			return
 		}
 		defer cancel()
 
 		data := getFAQPageData(domain.RealmFromContext(ctx).Name)
 
-		writeResponse(data, loggedIn)
+		writeResponse(data)
 	}
 }
 
 func frontendJoinHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var p = pages.Base{
-			Title:      "Join",
-			ActivePage: "join",
-			IsLoggedIn: isLoggedIn(r),
-		}
+		p := newPage(r, c, "Join", "join", nil)
 
 		if err := c.Template().ExecuteTemplate(w, "join", p); err != nil {
 			rest.InternalError(err).WriteTo(w)
@@ -105,15 +83,8 @@ func frontendJoinHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, 
 
 func frontendPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		loggedIn := isLoggedIn(r)
-
-		var writeResponse = func(data pages.PredictionPageData, loggedIn bool) {
-			var p = pages.Base{
-				Title:      "Update My Prediction",
-				ActivePage: "prediction",
-				IsLoggedIn: loggedIn,
-				Data:       data,
-			}
+		var writeResponse = func(data pages.PredictionPageData) {
+			p := newPage(r, c, "Update My Prediction", "prediction", data)
 
 			if err := c.Template().ExecuteTemplate(w, "prediction", p); err != nil {
 				rest.InternalError(err).WriteTo(w)
@@ -122,7 +93,7 @@ func frontendPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWr
 
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			writeResponse(pages.PredictionPageData{Err: err}, loggedIn)
+			writeResponse(pages.PredictionPageData{Err: err})
 			return
 		}
 		defer cancel()
@@ -134,6 +105,6 @@ func frontendPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWr
 			domain.TokenAgent{TokenAgentInjector: c},
 		)
 
-		writeResponse(data, loggedIn)
+		writeResponse(data)
 	}
 }

@@ -6,10 +6,11 @@ import (
 )
 
 type Base struct {
-	Title      string
-	ActivePage string
-	IsLoggedIn bool
-	Data       interface{}
+	Title          string
+	ActivePage     string
+	IsLoggedIn     bool
+	RunningVersion string
+	Data           interface{}
 }
 
 type PredictionPageData struct {
