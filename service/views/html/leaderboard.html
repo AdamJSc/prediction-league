@@ -2,7 +2,7 @@
     {{template "header" .}}
     {{$parent := .}}
     {{with .Data}}
-        <div id="app" class="main-container container-fluid">
+        <div id="app" class="container-fluid">
             {{if .Err}}
                 <div class="row">
                     <div class="col-md-8 offset-md-2">
@@ -37,5 +37,5 @@
             {{end}}
         </div>
     {{end}}
-    {{template "footer"}}
+    {{template "footer" .}}
 {{end}}

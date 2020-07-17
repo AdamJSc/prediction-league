@@ -133,9 +133,9 @@ For details on the system's default season, see ["FakeSeason"](#fakeseason) (bel
 
 ### Realm
 
-This is effectively an arbitrary flag that represents a distinct instance of the "game".
+This is an arbitrary flag that represents a distinct instance of the "game".
 
-Each Entry pertains to a particular Realm which effectively acts as a sub-grouping of Entries. So two Entries that have
+Each Entry belongs to a particular Realm which effectively acts as a sub-grouping of Entries. So two Entries that have
 different Realm values belong to different "games" and are therefore not competing against each other.
 
 By default, and as a "quick-win", the Realm is determined by the domain/host name via which an Entry is created.
@@ -143,24 +143,22 @@ By default, and as a "quick-win", the Realm is determined by the domain/host nam
 This means that the program can run as a single process serving multiple domains/sub-domains, with each one operating as
 its own independent instance of the game.
 
-Each Realm should have a corresponding PIN, which must be supplied when creating an Entry. This is configured within
-the program's corresponding `.env` file, using the key name that is in the format `<RealmName>_REALM_PIN`.
+Realms must be configured in advance, within the `./data/realms.yml` file. This file's payload comprises the single
+root-level key named `realms`, and each key beneath this should match the lowercase realm name (domain) -
+e.g. `localhost` or `my.sub.domain.com`. See the file itself for an example.
 
-e.g. To set the PIN pertaining to `my.domain.com`, use the Env Key `MY_DOMAIN_COM_REALM_PIN`.
-To set the PIN pertaining to your local instance, use the Env Key `LOCALHOST_REALM_PIN`.
+Each Realm should have a corresponding PIN which must be supplied when creating an Entry, in order to prevent unwelcome sign-ups.
+
+This value is taken from the `pin` key of the realm config described above.
 
 Each Realm should also be associated with the ID of a Season that is currently active for that Realm. This enables multiple
 different Realms to be playing under multiple Seasons at the same time, so one Realm could be assigned `199293_1`
 ("Premier League 1992/93") whilst at the same time another Realm is assigned  `199293_2` ("Division One 1992/93").
 
-This is configured within the program's corresponding `.env` file, using the key name that is in the format
-`<RealmName>_REALM_SEASON_ID`.
+This value is taken from the `season_id` key of the realm config described above.
 
-e.g. To set the Season ID pertaining to `my.domain.com`, use the Env Key `MY_DOMAIN_COM_REALM_SEASON_ID`.
-To set the Season ID pertaining to your local instance, use the Env Key `LOCALHOST_REALM_SEASON_ID`.
-
-The values of each `*_REALM_PIN` and `*_REALM_SEASON_ID` key are consolidated as `Realm` objects and inflated on a `domain.Config`
-object within the main bootstrap, so that these can be passed around within the centralised object as required.
+The values of these payloads are parsed as `Realm` objects and inflated on a `domain.Config` object within the main
+bootstrap, so that these can be passed around within the centralised object as required.
 
 ### Guard
 
@@ -175,20 +173,21 @@ The `Target` is usually a "known" value that the `Attempt` must match in order t
 
 For example...
 
-Most route handlers will at some point invoke `ctx := contextFromRequest(r, c)` to inflate a standard `context.Context` object,
-which comprises an arbitrary `Guard` field, as well as a `Realm` field that has been populated with details of the request's
+Most route handlers will at some point invoke `ctx := contextFromRequest(r, c)`, where `r` is a HTTP Request object,
+and `c` is the container comprising all of our app's dependencies. This will return a new context with two values added:
+one is an empty `Guard` object, and the other is a `Realm` object that has been populated with details of the request's
 current Realm.
 
-The route handler might then invoke `ctx.Guard.SetAttempt(input.PIN)` to set the Guard's Attempt value - i.e. the value
-"attempting" to match the Target - using some data point that has been supplied in the user's request.
+The route handler might then invoke `domain.GuardFromContext(ctx).SetAttempt(input.PIN)` to set the Guard's Attempt value -
+i.e. the value "attempting" to match the Target - using some data point that has been supplied in the user's request.
 
 (In this case, our Guard Attempt is the "PIN" field of the incoming request body, so our agent method will want this to
 match the PIN of the request's current Realm in order that it can allow the operation to continue).
 
 The handler will pass this context to the main agent method it invokes (e.g. `domain.EntryAgent.CreateEntry(ctx ....)`).
 
-The agent method can then invoke `GuardFromContext(ctx).Guard.AttemptMatchesTarget(ctx.Realm.PIN)` which returns a `boolean`
-to determine whether or not the incoming request can be authorised.
+The agent method can then invoke `domain.GuardFromContext(ctx).Guard.AttemptMatchesTarget(ctx.Realm.PIN)` which returns
+a `boolean` to determine whether or not the incoming request can be authorised.
 
 ### "FakeSeason"
 
@@ -197,26 +196,28 @@ Realm. Functionality such as whether or not an Entry or Entry Prediction can be 
 is determined by the corresponding timeframes set on the Season itself.
 
 Usually these will be **absolute** timeframes that pertain to the dates relevant to a real-world Season
-(see `201920_1` in the `datastore.Seasons` as an example).
+(see `201920_1` in `datastore.Seasons` as an example).
 
 For this reason, the default Realm (`localhost`) is affiliated with a specific Season that has the ID `FakeSeason`.
 This Season's timeframes are **relative** to the point at which the system is run, so that core functionality can be
-immediately used.
+used immediately.
 
-The schedule take place as follows:
+The schedule takes place as follows:
 
 * 0 mins - 20 mins
     * Entries can be created or updated
-    * Entry Predictions can be created or updated
+    * Entry Predictions can be created
 * 20 mins - 40 mins
     * No Entries can be created or updated
-    * No Entry Predictions can be created or updated
+    * No Entry Predictions can be created
 * 40 mins - 60 mins
     * No Entries can be created or updated
-    * Entry Predictions can be created or updated
+    * Entry Predictions can be created
 * 60 mins+
     * No Entries can be created or updated
-    * No Entry Predictions can be created or updated
+    * No Entry Predictions can be created
+
+## Cron Tasks
 
 ## Maintenance
 
@@ -228,7 +229,7 @@ This struct must adhere to the validation rules found within `domain.ValidateSea
 
 Running the testsuite again will apply the rules to each `Season` in the map and fail if any aren't met.
 
-## TO DO
+## Features To Build
 
 * TBC
 
@@ -239,6 +240,13 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 ### Short Codes / Passwords
 
 ### Tokens
+
+### Cookie Management
+
+### Scheduled Tasks Concurrency
+
+* Make processing of Standings concurrent when retrieving Latest Standings + scoring Entry Predictions
+* Process runs once every 15 minutes and scale currently very small
 
 ### Vue integration
 

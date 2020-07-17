@@ -1,0 +1,4 @@
+realms:
+    localhost:
+      pin: 1234
+      season_id: FakeSeason

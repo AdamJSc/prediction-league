@@ -38,8 +38,47 @@ h1, h2, h3, h4 {
   }
 }
 
-.main-container {
-  padding-top: 2rem;
+.main-wrapper {
+  position: relative;
+  min-height: 100vh;
+
+  .content-wrapper {
+    padding-top: 2rem;
+    padding-bottom: 40px;
+  }
+
+  .footer {
+    font-size: 40px;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 1em;
+    padding: 0 0.3em;
+    line-height: 0.75em;
+    background: $secondary-dark;
+    color: $primary-light;
+
+    a, a:hover {
+      color: $primary-light;
+    }
+
+    .running-version {
+      display: inline-block;
+      padding-right: 1em;
+      font-size: 0.3em;
+    }
+
+    .version-timestamp {
+      display: inline-block;
+      padding-right: 1em;
+      font-size: 0.3em;
+    }
+
+    .repo-link {
+      display: inline-block;
+      font-size: 0.7em;
+    }
+  }
 }
 
 .form-primary {

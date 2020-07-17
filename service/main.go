@@ -62,7 +62,7 @@ func main() {
 	})
 
 	// start cron
-	scheduler.LoadCron(config, httpAppContainer).Start()
+	scheduler.LoadCron(httpAppContainer).Start()
 
 	// run service
 	svc := &core.Service{

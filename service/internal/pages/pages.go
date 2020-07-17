@@ -1,14 +1,17 @@
 package pages
 
 import (
+	"html/template"
 	"time"
 )
 
 type Base struct {
-	Title      string
-	ActivePage string
-	IsLoggedIn bool
-	Data       interface{}
+	Title            string
+	ActivePage       string
+	IsLoggedIn       bool
+	RunningVersion   string
+	VersionTimestamp string
+	Data             interface{}
 }
 
 type PredictionPageData struct {
@@ -40,4 +43,14 @@ type LeaderBoardPageData struct {
 		RawRankings string
 	}
 	LastUpdated time.Time
+}
+
+type FAQPageData struct {
+	Err  error
+	FAQs []FAQItem
+}
+
+type FAQItem struct {
+	Question string
+	Answer   template.HTML
 }

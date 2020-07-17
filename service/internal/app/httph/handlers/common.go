@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/domain"
+	"prediction-league/service/internal/pages"
 	"strconv"
 	"strings"
 	"time"
@@ -86,6 +87,7 @@ func contextFromRequest(r *http.Request, c *httph.HTTPAppContainer) (context.Con
 	return ctx, cancel, nil
 }
 
+// stripPort removes the port suffix from the provided host string
 func stripPort(host string) string {
 	return strings.Trim(strings.Split(host, ":")[0], " ")
 }
@@ -119,4 +121,16 @@ func isLoggedIn(r *http.Request) bool {
 		return false
 	}
 	return true
+}
+
+// newPage creates a new base page from the provided arguments
+func newPage(r *http.Request, c *httph.HTTPAppContainer, title, activePage string, data interface{}) *pages.Base {
+	return &pages.Base{
+		Title:            title,
+		ActivePage:       activePage,
+		IsLoggedIn:       isLoggedIn(r),
+		RunningVersion:   c.Config().RunningVersion,
+		VersionTimestamp: c.Config().VersionTimestamp,
+		Data:             data,
+	}
 }
