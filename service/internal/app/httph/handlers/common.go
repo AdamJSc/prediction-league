@@ -123,18 +123,14 @@ func isLoggedIn(r *http.Request) bool {
 	return true
 }
 
-// getRunningVersion returns the value of RunningVersion from the provided container
-func getRunningVersion(c *httph.HTTPAppContainer) string {
-	return c.Config().RunningVersion
-}
-
 // newPage creates a new base page from the provided arguments
 func newPage(r *http.Request, c *httph.HTTPAppContainer, title, activePage string, data interface{}) *pages.Base {
 	return &pages.Base{
-		Title:          title,
-		ActivePage:     activePage,
-		IsLoggedIn:     isLoggedIn(r),
-		RunningVersion: getRunningVersion(c),
-		Data:           data,
+		Title:            title,
+		ActivePage:       activePage,
+		IsLoggedIn:       isLoggedIn(r),
+		RunningVersion:   c.Config().RunningVersion,
+		VersionTimestamp: c.Config().VersionTimestamp,
+		Data:             data,
 	}
 }

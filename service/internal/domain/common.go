@@ -43,6 +43,7 @@ type Config struct {
 	MigrationsURL        string `envconfig:"MIGRATIONS_URL" required:"true"`
 	AdminBasicAuth       string `envconfig:"ADMIN_BASIC_AUTH" required:"true"`
 	RunningVersion       string `envconfig:"RUNNING_VERSION" required:"true"`
+	VersionTimestamp     string `envconfig:"VERSION_TIMESTAMP" required:"true"`
 	FootballDataAPIToken string `envconfig:"FOOTBALLDATA_API_TOKEN" required:"true"`
 	Realms               map[string]Realm
 }
