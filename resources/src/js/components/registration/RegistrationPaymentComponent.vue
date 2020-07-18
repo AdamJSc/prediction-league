@@ -94,7 +94,11 @@
                     ]
                 }
 
-                // TODO - emit amount paid + bank statement descriptor and store on workflow component
+                this.$emit('refresh-payment-data', {
+                    paymentReference: paymentResult.paymentReference,
+                    bankStatementDescriptor: paymentResult.bankStatementDescriptor
+                })
+
                 this.updateEntryPayment(paymentResult.paymentReference)
             },
             getPaymentResultFromPayPalDetailsPayload: function(details) {

@@ -26,6 +26,15 @@
         props: {
             entryData: {
                 type: Object
+            },
+            paymentData: {
+                type: Object
+            }
+        },
+        watch: {
+            paymentData: function(newPaymentData) {
+                console.log('TODO - render new payment data')
+                console.log(newPaymentData)
             }
         }
     }

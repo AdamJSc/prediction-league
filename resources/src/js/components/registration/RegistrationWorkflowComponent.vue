@@ -13,6 +13,7 @@
                     <registration-payment
                             v-show="showRegistrationSteps.registrationPayment"
                             v-on:workflow-step-change="changeWorkflowStep"
+                            v-on:refresh-payment-data="refreshPaymentData"
                             v-bind:entry-data="entryData"
                             v-bind:payment-amount="entryFeeData.amount"
                             v-bind:support-email-formatted="supportEmailFormatted"
@@ -22,7 +23,8 @@
                 <div class="carousel-item">
                     <registration-confirmed
                             v-show="showRegistrationSteps.registrationConfirmed"
-                            v-bind:entry-data="entryData"></registration-confirmed>
+                            v-bind:entry-data="entryData"
+                            v-bind:payment-data="paymentData"></registration-confirmed>
                 </div>
             </div>
         </div>
@@ -65,7 +67,14 @@
                     label: this.entryFeeLabel,
                     breakdown: JSON.parse(this.rawEntryFeeBreakdown)
                 },
-                entryData: {entryID: "", entryShortCode: ""}
+                entryData: {
+                    entryID: "",
+                    entryShortCode: ""
+                },
+                paymentData: {
+                    paymentReference: "",
+                    bankStatementDescriptor: ""
+                }
             }
         },
         mounted: function() {
@@ -75,6 +84,9 @@
         methods: {
             refreshEntryData: function(newEntryData) {
                 this.entryData = newEntryData
+            },
+            refreshPaymentData: function(newPaymentData) {
+                this.paymentData = newPaymentData
             },
             changeWorkflowStep: function(newWorkflowStep) {
                 const vm = this
