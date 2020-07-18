@@ -3,10 +3,10 @@
         <div class="carousel slide">
             <div class="carousel-inner">
                 <div class="carousel-item active">
-                    <registration-entry v-show="showRegistrationSteps.registrationForm" v-on:workflow-step-change="changeWorkflowStep" v-on:refresh-entry-data="refreshEntryData"></registration-entry>
+                    <registration-entry v-show="showRegistrationSteps.registrationForm" v-on:workflow-step-change="changeWorkflowStep" v-on:refresh-entry-data="refreshEntryData" v-bind:entry-fee-data="entryFeeData"></registration-entry>
                 </div>
                 <div class="carousel-item">
-                    <registration-payment v-show="showRegistrationSteps.registrationPayment" v-on:workflow-step-change="changeWorkflowStep" v-bind:entry-data="entryData"></registration-payment>
+                    <registration-payment v-show="showRegistrationSteps.registrationPayment" v-on:workflow-step-change="changeWorkflowStep" v-bind:entry-data="entryData" v-bind:payment-amount="entryFeeData.amount"></registration-payment>
                 </div>
                 <div class="carousel-item">
                     <registration-confirmed v-show="showRegistrationSteps.registrationConfirmed" v-bind:entry-data="entryData"></registration-confirmed>
@@ -19,6 +19,17 @@
 <script>
     export default {
         name: 'RegistrationWorkflowComponent',
+        props: {
+            entryFeeAmount: {
+                type: Number
+            },
+            entryFeeLabel: {
+                type: String
+            },
+            rawEntryFeeBreakdown: {
+                type: Array
+            }
+        },
         data: function() {
             return {
                 carousel: {},
@@ -26,6 +37,11 @@
                     registrationForm: true,
                     registrationPayment: false,
                     registrationConfirmed: false
+                },
+                entryFeeData: {
+                    amount: this.entryFeeAmount,
+                    label: this.entryFeeLabel,
+                    breakdown: JSON.parse(this.rawEntryFeeBreakdown)
                 },
                 entryData: {entryID: "", entryShortCode: ""}
             }

@@ -13,6 +13,17 @@
                         <ul><li v-for="msg in errorMessages">{{msg}}</li></ul>
                     </div>
                 </transition>
+                <div class="payment-information">
+                    <ul>
+                        <li>Entry costs <strong>{{entryFeeData.label}}</strong></li>
+                        <li>This is to cover:</li>
+                        <ul>
+                            <li v-for="item in entryFeeData.breakdown">{{item}}</li>
+                        </ul>
+                        <li>Payments are processed via PayPal in the next step.</li>
+                        <li>You can pay securely using any debit/card card or PayPal account.</li>
+                    </ul>
+                </div>
                 <form id="registration-entry-form" class="form-primary">
                     <div class="form-label-group">
                         <input v-model="formData.entrant_name" type="text" id="inputName" name="name" class="form-control" placeholder="Name" required autofocus>
@@ -54,6 +65,11 @@
 
     export default {
         name: 'RegistrationForm',
+        props: {
+            entryFeeData: {
+                type: Object
+            }
+        },
         data: function() {
             return {
                 working: false,

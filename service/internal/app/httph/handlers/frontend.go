@@ -72,8 +72,16 @@ func frontendFAQHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 
 func frontendJoinHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel, err := contextFromRequest(r, c)
+		if err != nil {
+			rest.InternalError(err).WriteTo(w)
+			return
+		}
+		defer cancel()
+
 		data := pages.JoinPageData{
 			PayPalClientID: c.Config().PayPalClientID,
+			EntryFee:       domain.RealmFromContext(ctx).EntryFee,
 		}
 
 		p := newPage(r, c, "Join", "join", data)

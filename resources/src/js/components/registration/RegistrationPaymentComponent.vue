@@ -33,6 +33,9 @@
         props: {
             entryData: {
                 type: Object
+            },
+            paymentAmount: {
+                type: Number
             }
         },
         mounted: function() {
@@ -53,10 +56,11 @@
                 this.errorMessages = []
             },
             paypalOrderCreate: function(data, actions) {
+                const vm = this
                 return actions.order.create({
                     purchase_units: [{
                         amount: {
-                            value: '0.01' // TODO - pass this in as property
+                            value: vm.paymentAmount
                         }
                     }]
                 });
@@ -88,7 +92,7 @@
                     throw 'no purchase units'
                 }
 
-                const parsePurchaseUnit = function(purchaseUnit) {
+                const processPurchaseUnit = function(purchaseUnit) {
                     let bankStatementDescriptor = purchaseUnit.soft_descriptor
 
                     for (let i in purchaseUnit.payments.captures) {
@@ -110,7 +114,7 @@
 
                 for (let i in details.purchase_units) {
                     try {
-                        return parsePurchaseUnit(details.purchase_units[i])
+                        return processPurchaseUnit(details.purchase_units[i])
                     } catch (e) {
                         continue
                     }

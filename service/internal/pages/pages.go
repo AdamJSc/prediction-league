@@ -2,6 +2,7 @@ package pages
 
 import (
 	"html/template"
+	"prediction-league/service/internal/domain"
 	"time"
 )
 
@@ -47,6 +48,7 @@ type LeaderBoardPageData struct {
 
 type JoinPageData struct {
 	PayPalClientID string
+	EntryFee domain.RealmEntryFee
 }
 
 type FAQPageData struct {

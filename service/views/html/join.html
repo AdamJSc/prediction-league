@@ -2,7 +2,10 @@
     {{template "header" .}}
     <div id="app" class="container-fluid">
         <!-- TODO - display "no more entries" message if expired -->
-        <registration-workflow></registration-workflow>
+        <registration-workflow
+                entry-fee-amount="{{.Data.EntryFee.Amount}}"
+                entry-fee-label="{{.Data.EntryFee.Label}}"
+                raw-entry-fee-breakdown="{{jsonify_strings .Data.EntryFee.Breakdown}}"></registration-workflow>
     </div>
     {{template "footer" .}}
 {{end}}

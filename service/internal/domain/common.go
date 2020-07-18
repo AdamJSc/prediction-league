@@ -2,6 +2,7 @@ package domain
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/LUSHDigital/core-mage/env"
 	"github.com/kelseyhightower/envconfig"
@@ -21,8 +22,16 @@ import (
 // Realm represents a realm in which the system has been configured to run
 type Realm struct {
 	Name     string
-	PIN      string `yaml:"pin"`
-	SeasonID string `yaml:"season_id"`
+	PIN      string        `yaml:"pin"`
+	SeasonID string        `yaml:"season_id"`
+	EntryFee RealmEntryFee `yaml:"entry_fee"`
+}
+
+// RealmEntryFee represents the entry fee settings for a realm
+type RealmEntryFee struct {
+	Amount    float32  `yaml:"amount"`
+	Label     string   `yaml:"label"`
+	Breakdown []string `yaml:"breakdown"`
 }
 
 // formatRealmNameFromRaw converts a raw realm name (as the prefix to an env key) to a formatted realm name
@@ -114,6 +123,14 @@ var templateFunctions = template.FuncMap{
 			return 0
 		}
 		return ts.Unix()
+	},
+	"jsonify_strings": func(input []string) string {
+		bytes, err := json.Marshal(input)
+		if err != nil {
+			return ""
+		}
+
+		return string(bytes)
 	},
 }
 
