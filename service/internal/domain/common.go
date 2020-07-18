@@ -2,6 +2,7 @@ package domain
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/LUSHDigital/core-mage/env"
 	"github.com/kelseyhightower/envconfig"
@@ -20,9 +21,21 @@ import (
 
 // Realm represents a realm in which the system has been configured to run
 type Realm struct {
-	Name     string
-	PIN      string `yaml:"pin"`
-	SeasonID string `yaml:"season_id"`
+	Name         string
+	PIN          string `yaml:"pin"`
+	SeasonID     string `yaml:"season_id"`
+	SupportEmail struct {
+		Formatted string `yaml:"formatted"`
+		PlainText string `yaml:"plain_text"`
+	} `yaml:"support_email"`
+	EntryFee RealmEntryFee `yaml:"entry_fee"`
+}
+
+// RealmEntryFee represents the entry fee settings for a realm
+type RealmEntryFee struct {
+	Amount    float32  `yaml:"amount"`
+	Label     string   `yaml:"label"`
+	Breakdown []string `yaml:"breakdown"`
 }
 
 // formatRealmNameFromRaw converts a raw realm name (as the prefix to an env key) to a formatted realm name
@@ -45,6 +58,7 @@ type Config struct {
 	RunningVersion       string `envconfig:"RUNNING_VERSION" required:"true"`
 	VersionTimestamp     string `envconfig:"VERSION_TIMESTAMP" required:"true"`
 	FootballDataAPIToken string `envconfig:"FOOTBALLDATA_API_TOKEN" required:"true"`
+	PayPalClientID       string `envconfig:"PAYPAL_CLIENT_ID" required:"true"`
 	Realms               map[string]Realm
 }
 
@@ -113,6 +127,14 @@ var templateFunctions = template.FuncMap{
 			return 0
 		}
 		return ts.Unix()
+	},
+	"jsonify_strings": func(input []string) string {
+		bytes, err := json.Marshal(input)
+		if err != nil {
+			return ""
+		}
+
+		return string(bytes)
 	},
 }
 

@@ -72,7 +72,20 @@ func frontendFAQHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 
 func frontendJoinHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		p := newPage(r, c, "Join", "join", nil)
+		ctx, cancel, err := contextFromRequest(r, c)
+		if err != nil {
+			rest.InternalError(err).WriteTo(w)
+			return
+		}
+		defer cancel()
+
+		data := pages.JoinPageData{
+			SupportEmailFormatted: domain.RealmFromContext(ctx).SupportEmail.Formatted,
+			PayPalClientID:        c.Config().PayPalClientID,
+			EntryFee:              domain.RealmFromContext(ctx).EntryFee,
+		}
+
+		p := newPage(r, c, "Join", "join", data)
 
 		if err := c.Template().ExecuteTemplate(w, "join", p); err != nil {
 			rest.InternalError(err).WriteTo(w)

@@ -125,12 +125,21 @@ func isLoggedIn(r *http.Request) bool {
 
 // newPage creates a new base page from the provided arguments
 func newPage(r *http.Request, c *httph.HTTPAppContainer, title, activePage string, data interface{}) *pages.Base {
+	// ignore error because if the realm doesn't exist the other agent methods will prevent core functionality anyway
+	// we only need the realm for populating a couple of trivial attributes which will be the least of our worries if any issues...
+	ctx, cancel, _ := contextFromRequest(r, c)
+	defer cancel()
+
+	realm := domain.RealmFromContext(ctx)
+
 	return &pages.Base{
-		Title:            title,
-		ActivePage:       activePage,
-		IsLoggedIn:       isLoggedIn(r),
-		RunningVersion:   c.Config().RunningVersion,
-		VersionTimestamp: c.Config().VersionTimestamp,
-		Data:             data,
+		Title:                 title,
+		ActivePage:            activePage,
+		IsLoggedIn:            isLoggedIn(r),
+		SupportEmailPlainText: realm.SupportEmail.PlainText,
+		RealmName:             realm.Name,
+		RunningVersion:        c.Config().RunningVersion,
+		VersionTimestamp:      c.Config().VersionTimestamp,
+		Data:                  data,
 	}
 }

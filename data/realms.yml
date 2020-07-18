@@ -2,3 +2,12 @@ realms:
     localhost:
       pin: 1234
       season_id: FakeSeason
+      support_email:
+        formatted: wont_you_please_please_help_me@localhost
+        plain_text: wont_you_please_please_help_me (at) localhost
+      entry_fee:
+        amount: 1.23
+        label: £1.23
+        breakdown:
+          - £1.00 entry fee
+          - £0.23 coffee fund

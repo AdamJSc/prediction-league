@@ -2,16 +2,19 @@ package pages
 
 import (
 	"html/template"
+	"prediction-league/service/internal/domain"
 	"time"
 )
 
 type Base struct {
-	Title            string
-	ActivePage       string
-	IsLoggedIn       bool
-	RunningVersion   string
-	VersionTimestamp string
-	Data             interface{}
+	Title                 string
+	ActivePage            string
+	IsLoggedIn            bool
+	SupportEmailPlainText string
+	RealmName             string
+	RunningVersion        string
+	VersionTimestamp      string
+	Data                  interface{}
 }
 
 type PredictionPageData struct {
@@ -43,6 +46,12 @@ type LeaderBoardPageData struct {
 		RawRankings string
 	}
 	LastUpdated time.Time
+}
+
+type JoinPageData struct {
+	SupportEmailFormatted string
+	PayPalClientID        string
+	EntryFee              domain.RealmEntryFee
 }
 
 type FAQPageData struct {

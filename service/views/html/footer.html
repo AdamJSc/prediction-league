@@ -1,12 +1,17 @@
 {{define "footer"}}
                 </div> <!-- close .content-wrapper -->
                 <div class="footer text-right">
-                        <div class="running-version">current: {{.RunningVersion}}</div>
-                        <div class="version-timestamp">released: {{.VersionTimestamp}}</div>
-                        <div class="repo-link">
-                                <a href="https://github.com/AdamJSc/prediction-league" target="_blank">
-                                        <i class="fa fa-github" aria-hidden="true"></i>
-                                </a>
+                        <div class="left-section text-left">
+                                <div class="support-email status-information">support email: {{.SupportEmailPlainText}}</div>
+                        </div>
+                        <div class="right-section text-right">
+                                <div class="running-version status-information">current: {{.RunningVersion}}</div>
+                                <div class="version-timestamp status-information">released: {{.VersionTimestamp}}</div>
+                                <div class="repo-link">
+                                        <a href="https://github.com/AdamJSc/prediction-league" target="_blank">
+                                                <i class="fa fa-github" aria-hidden="true"></i>
+                                        </a>
+                                </div>
                         </div>
                 </div>
         </div> <!-- close .main-wrapper -->
@@ -32,6 +37,9 @@
                 </div>
         {{end}}
         </body>
+        {{if (eq .ActivePage "join")}}
+                <script src="https://www.paypal.com/sdk/js?client-id={{.Data.PayPalClientID}}&currency=GBP" data-sdk-integration-source="button-factory"></script>
+        {{end}}
         <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
