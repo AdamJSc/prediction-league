@@ -72,7 +72,11 @@ func frontendFAQHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 
 func frontendJoinHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		p := newPage(r, c, "Join", "join", nil)
+		data := pages.JoinPageData{
+			PayPalClientID: c.Config().PayPalClientID,
+		}
+
+		p := newPage(r, c, "Join", "join", data)
 
 		if err := c.Template().ExecuteTemplate(w, "join", p); err != nil {
 			rest.InternalError(err).WriteTo(w)

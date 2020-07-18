@@ -45,6 +45,7 @@ type Config struct {
 	RunningVersion       string `envconfig:"RUNNING_VERSION" required:"true"`
 	VersionTimestamp     string `envconfig:"VERSION_TIMESTAMP" required:"true"`
 	FootballDataAPIToken string `envconfig:"FOOTBALLDATA_API_TOKEN" required:"true"`
+	PayPalClientID       string `envconfig:"PAYPAL_CLIENT_ID" required:"true"`
 	Realms               map[string]Realm
 }
 

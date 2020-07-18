@@ -45,6 +45,10 @@ type LeaderBoardPageData struct {
 	LastUpdated time.Time
 }
 
+type JoinPageData struct {
+	PayPalClientID string
+}
+
 type FAQPageData struct {
 	Err  error
 	FAQs []FAQItem
