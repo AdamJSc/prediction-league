@@ -5,7 +5,10 @@
         <registration-workflow
                 entry-fee-amount="{{.Data.EntryFee.Amount}}"
                 entry-fee-label="{{.Data.EntryFee.Label}}"
-                raw-entry-fee-breakdown="{{jsonify_strings .Data.EntryFee.Breakdown}}"></registration-workflow>
+                raw-entry-fee-breakdown="{{jsonify_strings .Data.EntryFee.Breakdown}}"
+                support-email-formatted="{{.Data.SupportEmailFormatted}}"
+                support-email-plain-text="{{.SupportEmailPlainText}}"
+                realm-name="{{.RealmName}}"></registration-workflow>
     </div>
     {{template "footer" .}}
 {{end}}

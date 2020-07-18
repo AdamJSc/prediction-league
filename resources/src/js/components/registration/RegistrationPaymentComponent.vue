@@ -13,6 +13,9 @@
                         <ul><li v-for="msg in errorMessages">{{msg}}</li></ul>
                     </div>
                 </transition>
+                <div class="support-email">
+                    For technical payments support, email <a v-bind:href="mailToSupportEmail">{{supportEmailPlainText}}</a>
+                </div>
                 <div id="paypal-button-container"></div>
             </div>
         </div>
@@ -25,17 +28,27 @@
 
     export default {
         name: 'RegistrationPayment',
-        data: function() {
-            return {
-                errorMessages: []
-            }
-        },
         props: {
             entryData: {
                 type: Object
             },
             paymentAmount: {
                 type: Number
+            },
+            supportEmailFormatted: {
+                type: String
+            },
+            supportEmailPlainText: {
+                type: String
+            },
+            realmName: {
+                type: String
+            }
+        },
+        data: function() {
+            return {
+                errorMessages: [],
+                mailToSupportEmail: 'mailto:' + this.supportEmailFormatted + '?subject=Help%20me!%20Payment%20issues:%20' + this.realmName
             }
         },
         mounted: function() {

@@ -21,9 +21,13 @@ import (
 
 // Realm represents a realm in which the system has been configured to run
 type Realm struct {
-	Name     string
-	PIN      string        `yaml:"pin"`
-	SeasonID string        `yaml:"season_id"`
+	Name         string
+	PIN          string `yaml:"pin"`
+	SeasonID     string `yaml:"season_id"`
+	SupportEmail struct {
+		Formatted string `yaml:"formatted"`
+		PlainText string `yaml:"plain_text"`
+	} `yaml:"support_email"`
 	EntryFee RealmEntryFee `yaml:"entry_fee"`
 }
 

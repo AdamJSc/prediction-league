@@ -62,13 +62,15 @@ h1, h2, h3, h4 {
       color: $primary-light;
     }
 
-    .running-version {
-      display: inline-block;
-      padding-right: 1em;
-      font-size: 0.3em;
+    .left-section {
+      float: left;
     }
 
-    .version-timestamp {
+    .right {
+      float: right;
+    }
+
+    .status-information {
       display: inline-block;
       padding-right: 1em;
       font-size: 0.3em;

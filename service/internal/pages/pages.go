@@ -7,12 +7,14 @@ import (
 )
 
 type Base struct {
-	Title            string
-	ActivePage       string
-	IsLoggedIn       bool
-	RunningVersion   string
-	VersionTimestamp string
-	Data             interface{}
+	Title                 string
+	ActivePage            string
+	IsLoggedIn            bool
+	SupportEmailPlainText string
+	RealmName             string
+	RunningVersion        string
+	VersionTimestamp      string
+	Data                  interface{}
 }
 
 type PredictionPageData struct {
@@ -47,8 +49,9 @@ type LeaderBoardPageData struct {
 }
 
 type JoinPageData struct {
-	PayPalClientID string
-	EntryFee domain.RealmEntryFee
+	SupportEmailFormatted string
+	PayPalClientID        string
+	EntryFee              domain.RealmEntryFee
 }
 
 type FAQPageData struct {

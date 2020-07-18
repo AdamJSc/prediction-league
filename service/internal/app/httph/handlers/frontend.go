@@ -80,8 +80,9 @@ func frontendJoinHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, 
 		defer cancel()
 
 		data := pages.JoinPageData{
-			PayPalClientID: c.Config().PayPalClientID,
-			EntryFee:       domain.RealmFromContext(ctx).EntryFee,
+			SupportEmailFormatted: domain.RealmFromContext(ctx).SupportEmail.Formatted,
+			PayPalClientID:        c.Config().PayPalClientID,
+			EntryFee:              domain.RealmFromContext(ctx).EntryFee,
 		}
 
 		p := newPage(r, c, "Join", "join", data)
