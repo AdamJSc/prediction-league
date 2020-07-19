@@ -127,6 +127,10 @@ For details on the system's default season, see ["FakeSeason"](#fakeseason) (bel
 
 ### Token
 
+### Email Message
+
+### Message Identity
+
 ## Other Domain Knowledge
 
 ### Ingesting real-world standings

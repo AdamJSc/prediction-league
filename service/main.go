@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/app/httph/handlers"
+	"prediction-league/service/internal/clients"
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/scheduler"
@@ -78,16 +79,18 @@ func main() {
 type dependencies struct {
 	config         domain.Config
 	mysql          coresql.Agent
+	emailClient    clients.EmailClient
 	router         *mux.Router
 	templates      *views.Templates
 	debugTimestamp *time.Time
 }
 
-func (d dependencies) Config() domain.Config      { return d.config }
-func (d dependencies) MySQL() coresql.Agent       { return d.mysql }
-func (d dependencies) Router() *mux.Router        { return d.router }
-func (d dependencies) Template() *views.Templates { return d.templates }
-func (d dependencies) DebugTimestamp() *time.Time { return d.debugTimestamp }
+func (d dependencies) Config() domain.Config            { return d.config }
+func (d dependencies) MySQL() coresql.Agent             { return d.mysql }
+func (d dependencies) EmailClient() clients.EmailClient { return d.emailClient }
+func (d dependencies) Router() *mux.Router              { return d.router }
+func (d dependencies) Template() *views.Templates       { return d.templates }
+func (d dependencies) DebugTimestamp() *time.Time       { return d.debugTimestamp }
 
 func parseTimeString(t *string) *time.Time {
 	if t == nil {
