@@ -236,6 +236,7 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 ## Features To Build
 
 * TBC
+* Additional comms - HTML email + SMS
 
 ## Improvements
 

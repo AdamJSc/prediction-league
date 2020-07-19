@@ -127,19 +127,20 @@ var templateFunctions = template.FuncMap{
 	},
 }
 
-// ParseTemplates parses our HTML templates and returns them collectively for use
-func ParseTemplates() *views.Templates {
+// MustParseTemplates parses our HTML templates and returns them collectively for use
+func MustParseTemplates() *views.Templates {
 	// prepare the templates
 	tpl := template.New("prediction-league").Funcs(templateFunctions)
 
-	walkPathAndParseTemplates(tpl, "./service/views/html")
+	mustWalkPathAndParseTemplates(tpl, "./service/views/page")
+	mustWalkPathAndParseTemplates(tpl, "./service/views/email")
 
 	// return our wrapped template struct
 	return &views.Templates{Template: tpl}
 }
 
-// walkPathAndParseTemplates recursively parses templates within a given top-level directory
-func walkPathAndParseTemplates(tpl *template.Template, path string) {
+// mustWalkPathAndParseTemplates recursively parses templates within a given top-level directory
+func mustWalkPathAndParseTemplates(tpl *template.Template, path string) {
 	// walk through our views folder and parse each item to pack the assets
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		// we already have an error from a recursive call, so just return with that

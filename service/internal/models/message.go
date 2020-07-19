@@ -10,6 +10,5 @@ type EmailMessage struct {
 	To        MessageIdentity
 	ReplyTo   MessageIdentity
 	Subject   string
-	HTML      string
 	PlainText string
 }

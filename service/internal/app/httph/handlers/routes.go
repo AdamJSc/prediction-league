@@ -3,6 +3,9 @@ package handlers
 import (
 	"net/http"
 	"prediction-league/service/internal/app/httph"
+	"prediction-league/service/internal/emails"
+
+	"github.com/LUSHDigital/core/rest"
 )
 
 // RegisterRoutes attaches all routes to the router
@@ -31,4 +34,20 @@ func RegisterRoutes(c *httph.HTTPAppContainer) {
 	c.Router().HandleFunc("/faq", frontendFAQHandler(c)).Methods(http.MethodGet)
 	c.Router().HandleFunc("/join", frontendJoinHandler(c)).Methods(http.MethodGet)
 	c.Router().HandleFunc("/prediction", frontendPredictionHandler(c)).Methods(http.MethodGet)
+
+	// debug
+	c.Router().HandleFunc("/email_txt_new_entry", func(w http.ResponseWriter, r *http.Request) {
+		d := emails.NewEntryEmailData{
+			Name:           "JoeBloggs123",
+			SeasonName:     "Premier League 2019/20",
+			PredictionsURL: "http://localhost:3000/prediction",
+			ShortCode:      "A1B2C3",
+			SignOff:        "Harry R and the PL Team",
+			URL:            "http://localhost:3000",
+			SupportEmail:   "wont_you_please_please_help_me@localhost",
+		}
+		if err := c.Template().ExecuteTemplate(w, "email_txt_new_entry", d); err != nil {
+			rest.InternalError(err).WriteTo(w)
+		}
+	}).Methods(http.MethodGet)
 }

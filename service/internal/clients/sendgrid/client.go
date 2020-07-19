@@ -95,10 +95,7 @@ func transformEmailMessageToSendMailRequest(message models.EmailMessage) *sendMa
 				Type:  "text/plain",
 				Value: message.PlainText,
 			},
-			{
-				Type:  "text/html",
-				Value: message.HTML,
-			},
+			// TODO - implement HTML/rich message content
 		},
 	}
 }

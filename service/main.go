@@ -55,7 +55,7 @@ func main() {
 		mysql:          db,
 		emailClient:    sendgrid.NewClient(config.SendGridAPIKey),
 		router:         mux.NewRouter(),
-		templates:      domain.ParseTemplates(),
+		templates:      domain.MustParseTemplates(),
 		debugTimestamp: parseTimeString(ts),
 	})
 	handlers.RegisterRoutes(httpAppContainer)
