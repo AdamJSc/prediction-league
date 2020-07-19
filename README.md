@@ -262,3 +262,7 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 * Webpack was warning against huge chunks otherwise
 
 ### Split out tests
+
+### Cron
+
+* Move it to a runnable process?
