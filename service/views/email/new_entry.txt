@@ -6,7 +6,7 @@ Great news {{.Name}} - you're in! 🎉
 It's lovely to have you on-board for the {{.SeasonName}} season ⚽️
 
 To submit your first prediction, go to:
-{{.URL}}
+{{.PredictionsURL}}
 
 Your short code is:
 {{.ShortCode}}

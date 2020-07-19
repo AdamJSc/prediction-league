@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/app/httph/handlers"
 	"prediction-league/service/internal/clients"
 	"prediction-league/service/internal/clients/sendgrid"
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
+	"prediction-league/service/internal/messages"
 	"prediction-league/service/internal/scheduler"
 	"prediction-league/service/internal/seeder"
 	"prediction-league/service/internal/views"
@@ -54,6 +56,7 @@ func main() {
 		config:         config,
 		mysql:          db,
 		emailClient:    sendgrid.NewClient(config.SendGridAPIKey),
+		emailQueue:     make(chan messages.Email),
 		router:         mux.NewRouter(),
 		templates:      domain.MustParseTemplates(),
 		debugTimestamp: parseTimeString(ts),
@@ -69,6 +72,11 @@ func main() {
 		Handler: httpAppContainer.Router(),
 	})
 
+	// setup email queue runner
+	emailQueueRunner := app.EmailQueueRunner{
+		EmailQueueRunnerInjector: httpAppContainer,
+	}
+
 	// run service
 	svc := &core.Service{
 		Name: "prediction-league",
@@ -77,6 +85,7 @@ func main() {
 	svc.MustRun(
 		context.Background(),
 		httpServer,
+		emailQueueRunner,
 	)
 }
 
@@ -84,6 +93,7 @@ type dependencies struct {
 	config         domain.Config
 	mysql          coresql.Agent
 	emailClient    clients.EmailClient
+	emailQueue     chan messages.Email
 	router         *mux.Router
 	templates      *views.Templates
 	debugTimestamp *time.Time
@@ -92,6 +102,7 @@ type dependencies struct {
 func (d dependencies) Config() domain.Config            { return d.config }
 func (d dependencies) MySQL() coresql.Agent             { return d.mysql }
 func (d dependencies) EmailClient() clients.EmailClient { return d.emailClient }
+func (d dependencies) EmailQueue() chan messages.Email  { return d.emailQueue }
 func (d dependencies) Router() *mux.Router              { return d.router }
 func (d dependencies) Template() *views.Templates       { return d.templates }
 func (d dependencies) DebugTimestamp() *time.Time       { return d.debugTimestamp }

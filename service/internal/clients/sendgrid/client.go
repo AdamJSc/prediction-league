@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"prediction-league/service/internal/models"
+	"prediction-league/service/internal/messages"
 
 	"github.com/sendgrid/sendgrid-go"
 )
@@ -17,7 +17,7 @@ type Client struct {
 }
 
 // SendEmail implements this method on the clients.EmailClient interface
-func (c *Client) SendEmail(message models.EmailMessage) error {
+func (c *Client) SendEmail(message messages.Email) error {
 	requestBody := transformEmailMessageToSendMailRequest(message)
 	requestBodyString, err := json.Marshal(requestBody)
 	if err != nil {
@@ -69,7 +69,7 @@ type sendMailRequest struct {
 	Content          []sendMailContent                `json:"content"`
 }
 
-func transformEmailMessageToSendMailRequest(message models.EmailMessage) *sendMailRequest {
+func transformEmailMessageToSendMailRequest(message messages.Email) *sendMailRequest {
 	return &sendMailRequest{
 		Personalizations: []sendMailRequestPersonalization{
 			{
