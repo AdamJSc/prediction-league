@@ -8,20 +8,22 @@ import (
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core/workers/httpsrv"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/mysql"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/app/httph/handlers"
 	"prediction-league/service/internal/clients"
+	"prediction-league/service/internal/clients/sendgrid"
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/scheduler"
 	"prediction-league/service/internal/seeder"
 	"prediction-league/service/internal/views"
 	"time"
+
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/mysql"
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -51,6 +53,7 @@ func main() {
 	httpAppContainer := httph.NewHTTPAppContainer(dependencies{
 		config:         config,
 		mysql:          db,
+		emailClient:    sendgrid.NewClient(config.SendGridAPIKey),
 		router:         mux.NewRouter(),
 		templates:      domain.ParseTemplates(),
 		debugTimestamp: parseTimeString(ts),

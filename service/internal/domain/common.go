@@ -15,7 +15,6 @@ import (
 	"os"
 	"path/filepath"
 	"prediction-league/service/internal/views"
-	"strings"
 	"time"
 )
 
@@ -38,17 +37,6 @@ type RealmEntryFee struct {
 	Breakdown []string `yaml:"breakdown"`
 }
 
-// formatRealmNameFromRaw converts a raw realm name (as the prefix to an env key) to a formatted realm name
-func formatRealmNameFromRaw(rawRealmName string) string {
-	formattedName := rawRealmName
-
-	formattedName = strings.Trim(formattedName, " ")
-	formattedName = strings.Replace(formattedName, "_", ".", -1)
-	formattedName = strings.ToLower(formattedName)
-
-	return formattedName
-}
-
 // Config represents a struct of required config options
 type Config struct {
 	ServicePort          string `envconfig:"SERVICE_PORT" required:"true"`
@@ -59,6 +47,7 @@ type Config struct {
 	VersionTimestamp     string `envconfig:"VERSION_TIMESTAMP" required:"true"`
 	FootballDataAPIToken string `envconfig:"FOOTBALLDATA_API_TOKEN" required:"true"`
 	PayPalClientID       string `envconfig:"PAYPAL_CLIENT_ID" required:"true"`
+	SendGridAPIKey       string `envconfig:"SENDGRID_API_KEY" required:"true"`
 	Realms               map[string]Realm
 }
 

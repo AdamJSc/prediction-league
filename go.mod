@@ -15,6 +15,8 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/pkg/errors v0.8.1
 	github.com/robfig/cron/v3 v3.0.0
+	github.com/sendgrid/rest v2.6.0+incompatible // indirect
+	github.com/sendgrid/sendgrid-go v3.6.0+incompatible
 	golang.org/x/net v0.0.0-20190930134127-c5a3c61f89f3
 	gopkg.in/yaml.v2 v2.2.7
 	gotest.tools v2.2.0+incompatible

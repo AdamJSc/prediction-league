@@ -9,6 +9,7 @@ type EmailMessage struct {
 	From      MessageIdentity
 	To        MessageIdentity
 	ReplyTo   MessageIdentity
+	Subject   string
 	HTML      string
 	PlainText string
 }
