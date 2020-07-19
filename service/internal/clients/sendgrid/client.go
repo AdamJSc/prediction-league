@@ -19,14 +19,14 @@ type Client struct {
 // SendEmail implements this method on the clients.EmailClient interface
 func (c *Client) SendEmail(message models.EmailMessage) error {
 	requestBody := transformEmailMessageToSendMailRequest(message)
-	marshaledRequestBody, err := json.Marshal(requestBody)
+	requestBodyString, err := json.Marshal(requestBody)
 	if err != nil {
 		return err
 	}
 
 	request := sendgrid.GetRequest(c.apiKey, "/v3/mail/send", baseURL)
 	request.Method = http.MethodPost
-	request.Body = marshaledRequestBody
+	request.Body = requestBodyString
 
 	response, err := sendgrid.API(request)
 	if err != nil {
