@@ -23,13 +23,12 @@ const baseURL = "https://api.football-data.org"
 
 // Client defines our football-data.org API client
 type Client struct {
-	baseURL  string
 	apiToken string
 }
 
 // RetrieveLatestStandingsBySeason implements this method on the clients.FootballDataSource interface
 func (c *Client) RetrieveLatestStandingsBySeason(ctx context.Context, s *models.Season) (*models.Standings, error) {
-	var url = getClientFullURL(c, fmt.Sprintf("/v2/competitions/%s/standings?season=%d&standingType=TOTAL",
+	var url = getFullURL(fmt.Sprintf("/v2/competitions/%s/standings?season=%d&standingType=TOTAL",
 		s.ClientID.Value(),
 		s.Active.From.Year()),
 	)
@@ -72,13 +71,12 @@ func (c *Client) RetrieveLatestStandingsBySeason(ctx context.Context, s *models.
 func NewClient(apiToken string) *Client {
 	return &Client{
 		apiToken: apiToken,
-		baseURL:  baseURL,
 	}
 }
 
-// getClientFullURL appends the provided endpoint to the provided Client's base URL
-func getClientFullURL(c *Client, endpoint string) string {
-	return fmt.Sprintf("%s/%s", c.baseURL, strings.Trim(endpoint, "/"))
+// getFullURL appends the provided endpoint to the known base URL
+func getFullURL(endpoint string) string {
+	return fmt.Sprintf("%s/%s", baseURL, strings.Trim(endpoint, "/"))
 }
 
 // getResponse performs a GET request to the provided URL and returns a response object
