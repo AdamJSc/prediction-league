@@ -4,10 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/LUSHDigital/core"
-	coresql "github.com/LUSHDigital/core-sql"
-	"github.com/LUSHDigital/core/workers/httpsrv"
-	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"net/http"
 	"prediction-league/service/internal/app/httph"
@@ -21,6 +17,10 @@ import (
 	"prediction-league/service/internal/views"
 	"time"
 
+	"github.com/LUSHDigital/core"
+	coresql "github.com/LUSHDigital/core-sql"
+	"github.com/LUSHDigital/core/workers/httpsrv"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/gorilla/mux"
@@ -60,13 +60,14 @@ func main() {
 	})
 	handlers.RegisterRoutes(httpAppContainer)
 
+	// start cron
+	scheduler.LoadCron(httpAppContainer).Start()
+
+	// setup http server process
 	httpServer := httpsrv.New(&http.Server{
 		Addr:    fmt.Sprintf(":%s", config.ServicePort),
 		Handler: httpAppContainer.Router(),
 	})
-
-	// start cron
-	scheduler.LoadCron(httpAppContainer).Start()
 
 	// run service
 	svc := &core.Service{
