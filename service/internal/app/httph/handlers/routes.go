@@ -1,14 +1,8 @@
 package handlers
 
 import (
-	"bytes"
 	"net/http"
-	"os"
 	"prediction-league/service/internal/app/httph"
-	"prediction-league/service/internal/emails"
-	"prediction-league/service/internal/messages"
-
-	"github.com/LUSHDigital/core/rest"
 )
 
 // RegisterRoutes attaches all routes to the router
@@ -37,42 +31,4 @@ func RegisterRoutes(c *httph.HTTPAppContainer) {
 	c.Router().HandleFunc("/faq", frontendFAQHandler(c)).Methods(http.MethodGet)
 	c.Router().HandleFunc("/join", frontendJoinHandler(c)).Methods(http.MethodGet)
 	c.Router().HandleFunc("/prediction", frontendPredictionHandler(c)).Methods(http.MethodGet)
-
-	// debug
-	c.Router().HandleFunc("/email_txt_new_entry", func(w http.ResponseWriter, r *http.Request) {
-		d := emails.NewEntryEmailData{
-			Name:           "JoeBloggs123",
-			SeasonName:     "Premier League 2019/20",
-			PredictionsURL: "http://localhost:3000/prediction",
-			ShortCode:      "A1B2C3",
-			SignOff:        "Harry R and the PL Team",
-			URL:            "http://localhost:3000",
-			SupportEmail:   "wont_you_please_please_help_me@localhost",
-		}
-		var emailContent bytes.Buffer
-		if err := c.Template().ExecuteTemplate(&emailContent, "email_txt_new_entry", d); err != nil {
-			rest.InternalError(err).WriteTo(w)
-		}
-
-		email := messages.Email{
-			From: messages.Identity{
-				Name:    os.Getenv("DEBUG_FROM_NAME"),
-				Address: os.Getenv("DEBUG_FROM_ADDRESS"),
-			},
-			To: messages.Identity{
-				Name:    os.Getenv("DEBUG_TO_NAME"),
-				Address: os.Getenv("DEBUG_TO_ADDRESS"),
-			},
-			ReplyTo: messages.Identity{
-				Name:    os.Getenv("DEBUG_REPLYTO_NAME"),
-				Address: os.Getenv("DEBUG_REPLYTO_ADDRESS"),
-			},
-			Subject:   "You're in!",
-			PlainText: emailContent.String(),
-		}
-
-		c.EmailQueue() <- email
-
-		w.Write(emailContent.Bytes())
-	}).Methods(http.MethodGet)
 }

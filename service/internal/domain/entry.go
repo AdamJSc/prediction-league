@@ -463,7 +463,7 @@ func (e EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode strin
 	}
 
 	if len(entries) != 1 {
-		return models.Entry{}, InternalError{errors.New("entries count other than 1")}
+		return models.Entry{}, InternalError{fmt.Errorf("entries count other than 1: %d", len(entries))}
 	}
 
 	entry := entries[0]
@@ -478,7 +478,10 @@ func (e EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode strin
 	case models.EntryStatusPaid, models.EntryStatusReady:
 		// all good
 	default:
-		return models.Entry{}, ConflictError{errors.New("entry can only be approved if status is pending or ready")}
+		return models.Entry{}, ConflictError{fmt.Errorf(
+			"entry can only be approved if status is pending or ready: status is %s",
+			entry.Status,
+		)}
 	}
 
 	// check if Entry has already been approved

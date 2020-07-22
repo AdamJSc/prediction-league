@@ -83,7 +83,8 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 }
 
 func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	agent := domain.EntryAgent{EntryAgentInjector: c}
+	entryAgent := domain.EntryAgent{EntryAgentInjector: c}
+	commsAgent := domain.CommunicationsAgent{CommunicationsAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		var input updateEntryPaymentDetailsRequest
@@ -120,7 +121,14 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 		domain.GuardFromContext(ctx).SetAttempt(input.EntryID)
 
 		// update payment details for entry
-		if _, err := agent.UpdateEntryPaymentDetails(ctx, entryID, input.PaymentMethod, input.PaymentRef); err != nil {
+		entry, err := entryAgent.UpdateEntryPaymentDetails(ctx, entryID, input.PaymentMethod, input.PaymentRef)
+		if err != nil {
+			responseFromError(err).WriteTo(w)
+			return
+		}
+
+		// issue new entry email
+		if err := commsAgent.IssuesNewEntryEmail(&entry); err != nil {
 			responseFromError(err).WriteTo(w)
 			return
 		}

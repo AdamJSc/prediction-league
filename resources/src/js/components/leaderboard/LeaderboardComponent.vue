@@ -35,7 +35,7 @@
             <img alt="loader" src="/assets/img/loader-light-bg.svg" />
         </div>
         <div v-if="!working && rankings.length > 0" class="leaderboard-render-wrapper">
-            <div class="last-updated text-center">Last updated on {{lastUpdatedVerbose}}</div>
+            <div v-if="lastUpdated" class="last-updated text-center">Last updated on {{lastUpdatedVerbose}}</div>
             <table class="leaderboard-render rankings clickable">
                 <thead>
                 <tr>
@@ -182,6 +182,9 @@
         computed: {
             lastUpdatedVerbose: function() {
                 const helpers = require('../../helpers.js')
+                if (this.lastUpdated === null) {
+                    return ""
+                }
                 return helpers.formatVerboseDate(this.lastUpdated)
             },
         }

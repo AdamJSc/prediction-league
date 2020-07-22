@@ -9,7 +9,7 @@
         <div v-if="working" class="loader-container">
             <img alt="loader" src="/assets/img/loader-light-bg.svg" />
         </div>
-        <div v-else>
+        <div v-if="!working && errorMessages.length == 0">
             <table class="rankings full-width">
                 <thead>
                 <tr>
@@ -86,7 +86,14 @@
                     })
                     .catch(function (error) {
                         console.log(error)
-                        vm.errorMessages = ['Something went wrong :(<br />Please try again later']
+                        switch (error.request.status) {
+                            case 404:
+                                vm.errorMessages = ["We don't have any data for this round yet!<br />Please try again later"]
+                                break
+                            default:
+                                vm.errorMessages = ['Something went wrong :(<br />Please try again later']
+                                break
+                        }
                         vm.working = false
                     })
             },
