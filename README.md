@@ -256,6 +256,10 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 * Make processing of Standings concurrent when retrieving Latest Standings + scoring Entry Predictions
 * Process runs once every 15 minutes and scale currently very small
 
+### Queue retries
+
+* If sending of email fails, retry it X times with a cool-off in between each
+
 ### Vue integration
 
 * Pulling from CDN prevents debug mode in development

@@ -58,7 +58,7 @@ func main() {
 		emailClient:    sendgrid.NewClient(config.SendGridAPIKey),
 		emailQueue:     make(chan messages.Email),
 		router:         mux.NewRouter(),
-		templates:      domain.MustParseTemplates(),
+		templates:      domain.MustParseTemplates("./service/views"),
 		debugTimestamp: parseTimeString(ts),
 	})
 	handlers.RegisterRoutes(httpAppContainer)

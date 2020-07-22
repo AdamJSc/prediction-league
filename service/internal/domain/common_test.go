@@ -18,7 +18,9 @@ import (
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/repositories"
+	"prediction-league/service/internal/views"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -27,6 +29,7 @@ var (
 	db         *coresql.DB
 	truncator  sqltest.Truncator
 	utc        *time.Location
+	templates  *views.Templates
 	testSeason models.Season
 )
 
@@ -44,19 +47,26 @@ func (i injector) MySQL() coresql.Agent { return i.db }
 
 // TestMain provides a testing bootstrap
 func TestMain(m *testing.M) {
+	var err error
+
+	// get working directory
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// setup env
 	env.LoadTest(m, "infra/test.env")
 
 	// load config
-	config := struct {
+	var config struct {
 		MySQLURL      string `envconfig:"MYSQL_URL" required:"true"`
 		MigrationsURL string `envconfig:"MIGRATIONS_URL" required:"true"`
-	}{}
+	}
 	if err := envconfig.Process("", &config); err != nil {
 		log.Fatal(err)
 	}
 
-	var err error
 	utc, err = time.LoadLocation("UTC")
 	if err != nil {
 		log.Fatal(err)
@@ -73,6 +83,11 @@ func TestMain(m *testing.M) {
 	coresql.MustMigrateUp(mig)
 
 	datastore.MustInflate()
+
+	// find service path and load templates
+	// everything before the last occurrence of "service" within the current working directory path
+	dirOfServicePath := wd[:strings.LastIndex(wd, "service")]
+	templates = domain.MustParseTemplates(fmt.Sprintf("%s/service/views", dirOfServicePath))
 
 	// set testSeason to the first entry within our datastore.Seasons slice
 	keys := reflect.ValueOf(datastore.Seasons).MapKeys()
@@ -140,6 +155,33 @@ func testContextWithGuardAttempt(t *testing.T, attempt string) (context.Context,
 	domain.GuardFromContext(ctx).SetAttempt(attempt)
 
 	return ctx, cancel
+}
+
+// testRealm provides a realm to use for testing
+func testRealm(t *testing.T) domain.Realm {
+	t.Helper()
+
+	realm := domain.Realm{
+		Name:     "TEST_REALM",
+		Origin:   "http://test_realm.org",
+		PIN:      "12345",
+		SeasonID: testSeason.ID,
+		EntryFee: domain.RealmEntryFee{
+			Amount: 12.34,
+			Label:  "£12.34",
+			Breakdown: []string{
+				"£12.33 charge",
+				"£0.01 processing fee",
+			},
+		},
+	}
+
+	realm.Contact.Name = "Harry R and the PL Team"
+	realm.Contact.EmailProper = "hello@world.net"
+	realm.Contact.EmailSanitised = "hello (at) world (dot) net"
+	realm.Contact.EmailDoNotReply = "do_not_reply@world.net"
+
+	return realm
 }
 
 // generateTestStandings generates a new Standings entity for use within the testsuite

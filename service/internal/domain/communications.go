@@ -10,6 +10,10 @@ import (
 	"prediction-league/service/internal/views"
 )
 
+const (
+	EmailSubjectNewEntry = "You're In!"
+)
+
 // CommunicationsAgentInjector defines the dependencies required by our CommunicationsAgent
 type CommunicationsAgentInjector interface {
 	Config() Config
@@ -24,12 +28,12 @@ type CommunicationsAgent struct{ CommunicationsAgentInjector }
 func (c CommunicationsAgent) IssuesNewEntryEmail(entry *models.Entry) error {
 	realm, ok := c.Config().Realms[entry.RealmName]
 	if !ok {
-		return fmt.Errorf("realm does not exist: %s", entry.RealmName)
+		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
 
 	season, err := datastore.Seasons.GetByID(entry.SeasonID)
 	if err != nil {
-		return err
+		return NotFoundError{err}
 	}
 
 	d := emails.NewEntryEmailData{
@@ -48,18 +52,18 @@ func (c CommunicationsAgent) IssuesNewEntryEmail(entry *models.Entry) error {
 
 	email := messages.Email{
 		From: messages.Identity{
-			Name:    "", // TODO - add to realm
-			Address: "", // TODO - add to realm
+			Name:    realm.Contact.Name,
+			Address: realm.Contact.EmailDoNotReply,
 		},
 		To: messages.Identity{
 			Name:    entry.EntrantName,
 			Address: entry.EntrantEmail,
 		},
 		ReplyTo: messages.Identity{
-			Name:    "", // TODO - add to realm
+			Name:    realm.Contact.Name,
 			Address: realm.Contact.EmailProper,
 		},
-		Subject:   "You're in!",
+		Subject:   EmailSubjectNewEntry,
 		PlainText: emailContent.String(),
 	}
 

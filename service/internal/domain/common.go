@@ -23,9 +23,10 @@ type Realm struct {
 	Name    string
 	Origin  string `yaml:"origin"`
 	Contact struct {
-		Name           string `yaml:"name"`
-		EmailProper    string `yaml:"email_proper"`
-		EmailSanitised string `yaml:"email_sanitised"`
+		Name            string `yaml:"name"`
+		EmailProper     string `yaml:"email_proper"`
+		EmailSanitised  string `yaml:"email_sanitised"`
+		EmailDoNotReply string `yaml:"email_do_not_reply"`
 	} `yaml:"contact"`
 	PIN      string        `yaml:"pin"`
 	SeasonID string        `yaml:"season_id"`
@@ -130,12 +131,12 @@ var templateFunctions = template.FuncMap{
 }
 
 // MustParseTemplates parses our HTML templates and returns them collectively for use
-func MustParseTemplates() *views.Templates {
+func MustParseTemplates(viewsPath string) *views.Templates {
 	// prepare the templates
 	tpl := template.New("prediction-league").Funcs(templateFunctions)
 
-	mustWalkPathAndParseTemplates(tpl, "./service/views/page")
-	mustWalkPathAndParseTemplates(tpl, "./service/views/email")
+	mustWalkPathAndParseTemplates(tpl, fmt.Sprintf("%s/page", viewsPath))
+	mustWalkPathAndParseTemplates(tpl, fmt.Sprintf("%s/email", viewsPath))
 
 	// return our wrapped template struct
 	return &views.Templates{Template: tpl}
