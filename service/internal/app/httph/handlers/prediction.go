@@ -133,7 +133,7 @@ func getPredictionPageData(ctx context.Context, authToken string, entryAgent dom
 		if err != nil {
 			switch err.(type) {
 			case domain.NotFoundError:
-				data.Err = errors.New("Invalid auth token")
+				data.Err = errors.New("invalid auth token")
 			default:
 				data.Err = err
 			}

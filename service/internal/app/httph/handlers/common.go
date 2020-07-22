@@ -136,7 +136,7 @@ func newPage(r *http.Request, c *httph.HTTPAppContainer, title, activePage strin
 		Title:                 title,
 		ActivePage:            activePage,
 		IsLoggedIn:            isLoggedIn(r),
-		SupportEmailPlainText: realm.SupportEmail.PlainText,
+		SupportEmailPlainText: realm.Contact.EmailSanitised,
 		RealmName:             realm.Name,
 		RunningVersion:        c.Config().RunningVersion,
 		VersionTimestamp:      c.Config().VersionTimestamp,
