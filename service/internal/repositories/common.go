@@ -41,7 +41,12 @@ func dbWhereStmt(criteria map[string]interface{}, matchAny bool) (stmt string, p
 			condition.Operand = value
 		}
 
-		conditions = append(conditions, fmt.Sprintf("(%s %s ?)", field, condition.Operator))
+		if condition.Operand == nil {
+			conditions = append(conditions, fmt.Sprintf("%s %s", field, condition.Operator))
+			continue
+		}
+
+		conditions = append(conditions, fmt.Sprintf("%s %s ?", field, condition.Operator))
 		params = append(params, condition.Operand)
 	}
 

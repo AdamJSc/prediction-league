@@ -106,7 +106,7 @@ func retrieveCurrentEntryPredictionsForSeason(
 	entriesAgent := domain.EntryAgent{
 		EntryAgentInjector: injector,
 	}
-	seasonEntries, err := entriesAgent.RetrieveEntriesBySeasonID(ctx, season.ID)
+	seasonEntries, err := entriesAgent.RetrieveEntriesBySeasonID(ctx, season.ID, false)
 	if err != nil {
 		switch err.(type) {
 		case domain.NotFoundError:

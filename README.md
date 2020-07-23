@@ -244,6 +244,9 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 
 ### Short Codes / Passwords
 
+* Lines blurred as development has gone on
+* Also, expired short codes aren't retained, so could **theoretically** be generated again in the future
+
 ### Tokens
 
 * Robustness

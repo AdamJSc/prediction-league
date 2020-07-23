@@ -225,13 +225,21 @@ func (e EntryAgent) RetrieveEntryByEntrantNickname(ctx context.Context, email st
 }
 
 // RetrieveEntriesBySeasonID handles the retrieval of existing Entries in the database by their Season ID
-func (e EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID string) ([]models.Entry, error) {
+func (e EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID string, onlyApproved bool) ([]models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 	entryPredictionRepo := repositories.NewEntryPredictionDatabaseRepository(e.MySQL())
 
-	entries, err := entryRepo.Select(ctx, map[string]interface{}{
+	criteria := map[string]interface{}{
 		"season_id": seasonID,
-	}, false)
+	}
+
+	if onlyApproved {
+		criteria["approved_at"] = repositories.Condition{
+			Operator: "IS NOT NULL",
+		}
+	}
+
+	entries, err := entryRepo.Select(ctx, criteria, false)
 	if err != nil {
 		return nil, domainErrorFromRepositoryError(err)
 	}
@@ -584,7 +592,7 @@ func GenerateUniqueShortCode(ctx context.Context, db coresql.Agent) (string, err
 	}, false)
 	switch err.(type) {
 	case nil:
-		// the lookup ref already exists, so we need to generate a new one
+		// the short code already exists, so we need to generate a new one
 		return GenerateUniqueShortCode(ctx, db)
 	case repositories.MissingDBRecordError:
 		// the lookup ref we have generated is unique, we can return it

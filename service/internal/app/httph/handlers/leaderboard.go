@@ -56,7 +56,7 @@ func getLeaderBoardPageData(ctx context.Context, entryAgent domain.EntryAgent, s
 	}
 
 	// retrieve entries
-	entries, err := entryAgent.RetrieveEntriesBySeasonID(ctx, seasonID)
+	entries, err := entryAgent.RetrieveEntriesBySeasonID(ctx, seasonID, true)
 	if err != nil {
 		switch err.(type) {
 		case domain.NotFoundError:

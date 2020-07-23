@@ -764,6 +764,10 @@ func TestEntryAgent_RetrieveEntriesBySeasonID(t *testing.T) {
 	// set our second entry to an invalid season ID, so that it won't be retrieved by our agent method
 	generatedEntries[1].SeasonID = "nnnnnn"
 
+	// set an approved date on our third entry so that we can verify retrieval of approved entires only
+	generatedEntries[2].ApprovedAt.Valid = true
+	generatedEntries[2].ApprovedAt.Time = time.Now()
+
 	// insert entries
 	var entries []models.Entry
 	for _, entry := range generatedEntries {
@@ -777,7 +781,7 @@ func TestEntryAgent_RetrieveEntriesBySeasonID(t *testing.T) {
 		defer cancel()
 
 		// should succeed
-		retrievedEntries, err := agent.RetrieveEntriesBySeasonID(ctx, testSeason.ID)
+		retrievedEntries, err := agent.RetrieveEntriesBySeasonID(ctx, testSeason.ID, false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -799,11 +803,30 @@ func TestEntryAgent_RetrieveEntriesBySeasonID(t *testing.T) {
 		}
 	})
 
+	t.Run("retrieve only those existing entries that have been approved, with valid credentials must succeed", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		// should succeed
+		retrievedEntries, err := agent.RetrieveEntriesBySeasonID(ctx, testSeason.ID, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(retrievedEntries) != 1 {
+			t.Fatalf("expected length of 1, got %d", len(retrievedEntries))
+		}
+
+		if retrievedEntries[0].EntrantNickname != "FrankieLamps" {
+			expectedGot(t, "FrankieLamps", retrievedEntries[0].EntrantNickname)
+		}
+	})
+
 	t.Run("retrieve non-existent entries must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		_, err := agent.RetrieveEntriesBySeasonID(ctx, "not_a_valid_season_id")
+		_, err := agent.RetrieveEntriesBySeasonID(ctx, "not_a_valid_season_id", false)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
