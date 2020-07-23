@@ -43,6 +43,7 @@ type RealmEntryFee struct {
 // Config represents a struct of required config options
 type Config struct {
 	ServicePort          string `envconfig:"SERVICE_PORT" required:"true"`
+	InProduction         bool   `envconfig:"IN_PRODUCTION" required:"true"`
 	MySQLURL             string `envconfig:"MYSQL_URL" required:"true"`
 	MigrationsURL        string `envconfig:"MIGRATIONS_URL" required:"true"`
 	AdminBasicAuth       string `envconfig:"ADMIN_BASIC_AUTH" required:"true"`

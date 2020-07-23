@@ -7,6 +7,7 @@ import (
 
 // EmailQueueRunnerInjector defines the dependencies required by our EmailQueueRunner
 type EmailQueueRunnerInjector interface {
+	ConfigInjector
 	EmailClientInjector
 	EmailQueueInjector
 }
@@ -21,6 +22,13 @@ func (e EmailQueueRunner) Run(_ context.Context) error {
 	log.Println("starting email queue runner")
 
 	for message := range e.EmailQueue() {
+		if !e.Config().InProduction {
+			// if we're not in production mode, don't send via the client
+			// just print to the logs instead
+			log.Printf("email on queue: %+v", message)
+			continue
+		}
+
 		// TODO - add retry mechanism
 		if err := e.EmailClient().SendEmail(message); err != nil {
 			log.Printf("failed to send email: %+v", err)
