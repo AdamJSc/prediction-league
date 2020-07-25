@@ -47,6 +47,11 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 			return
 		}
 
+		if standings.RoundNumber == season.MaxRounds && standings.Finalised {
+			// we've already finalised the last round of our season so just exit early
+			return
+		}
+
 		var scoredEntryPredictions []models.ScoredEntryPrediction
 
 		// calculate and save ranking scores for each entry prediction based on the retrieved standings
