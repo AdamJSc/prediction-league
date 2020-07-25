@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	EmailSubjectNewEntry = "You're In!"
+	EmailSubjectNewEntry      = "You're In!"
 	EmailSubjectRoundComplete = "End of Round %d"
 )
 
@@ -83,7 +83,7 @@ func (c CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *m
 		return NotFoundError{err}
 	}
 
-	rankingsAsStrings, err := TeamRankingsAsStrings(sep.Rankings)
+	rankingsAsStrings, err := TeamRankingsAsStrings(sep.Rankings, standings)
 	if err != nil {
 		return err
 	}

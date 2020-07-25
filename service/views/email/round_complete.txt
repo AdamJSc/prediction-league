@@ -8,12 +8,12 @@ A new round has begun!
 Here's how you did in round {{.RoundNumber}}:
 
 {{range $rankingString := .RankingsAsStrings}}
-    {{$rankingString}}
+    {{- $rankingString}}
 {{end}}
 
 To find out where you are in the leaderboard, go to:
 {{.LeaderBoardURL}}
 
 In the meantime, Happy Predicting! 🧙🔮
-{{template "email_txt_footer" .}}
+{{- template "email_txt_footer" .}}
 {{end}}
