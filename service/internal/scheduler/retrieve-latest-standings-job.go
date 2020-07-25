@@ -13,11 +13,12 @@ import (
 	"prediction-league/service/internal/models"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
 // newRetrieveLatestStandingsJob returns a new job that retrieves the latest standings, pertaining to the provided season
-func newRetrieveLatestStandingsJob(season models.Season, client clients.FootballDataSource, injector app.MySQLInjector) *job {
+func newRetrieveLatestStandingsJob(season models.Season, client clients.FootballDataSource, injector app.DependencyInjector) *job {
 	jobName := strings.ToLower(fmt.Sprintf("retrieve-latest-standings-%s", season.ID))
 
 	var task = func() {
@@ -31,7 +32,7 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 			return
 		}
 		if currentEntryPredictions == nil {
-			// silent fail
+			// no further processing so exit early
 			return
 		}
 
@@ -42,42 +43,51 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 			return
 		}
 		if standings == nil {
-			// silent fail
+			// no further processing so exit early
 			return
 		}
 
+		if standings.RoundNumber == season.MaxRounds && standings.Finalised {
+			// we've already finalised the last round of our season so just exit early
+			return
+		}
+
+		var scoredEntryPredictions []models.ScoredEntryPrediction
+
 		// calculate and save ranking scores for each entry prediction based on the retrieved standings
 		for _, entryPrediction := range currentEntryPredictions {
-			if err := processEntryPredictionWithStandings(ctx, &entryPrediction, standings, injector); err != nil {
+			sep, err := processEntryPredictionWithStandings(ctx, &entryPrediction, standings, injector)
+			if err != nil {
 				log.Println(wrapJobError(jobName, err))
 				return
 			}
+
+			scoredEntryPredictions = append(scoredEntryPredictions, *sep)
 		}
 
 		switch {
-		case standings.Finalised:
-			// TODO - send notifications to all entries that the previous game round has been finalised
 		case standings.RoundNumber == season.MaxRounds:
-			for _, r := range standings.Rankings {
-				// determine whether all teams have played the maximum number of games
-				if played, ok := r.MetaData[footballdata.MetaKeyPlayedGames]; !ok || played != season.MaxRounds {
-					// no they haven't...
-					break
-				}
-
-				// yes they have!
-				// let's finalise the current (final) standings round
-				standingsAgent := domain.StandingsAgent{
-					StandingsAgentInjector: injector,
-				}
-				standings.Finalised = true
-				if _, err := standingsAgent.UpdateStandings(ctx, *standings); err != nil {
-					log.Println(wrapJobError(jobName, err))
-					return
-				}
-
-				// TODO - send notifications to all entries that the final game round has been finalised
+			if !seasonIsComplete(season.MaxRounds, standings.Rankings) {
+				break
 			}
+
+			// season is complete!
+			// let's finalise the current (final) standings round
+			standingsAgent := domain.StandingsAgent{
+				StandingsAgentInjector: injector,
+			}
+			standings.Finalised = true
+			if _, err := standingsAgent.UpdateStandings(ctx, *standings); err != nil {
+				log.Println(wrapJobError(jobName, err))
+				return
+			}
+
+			// issue final round complete emails
+			issueRoundCompleteEmails(ctx, injector, true, scoredEntryPredictions, jobName)
+
+		case standings.Finalised:
+			// issue round complete emails
+			issueRoundCompleteEmails(ctx, injector, false, scoredEntryPredictions, jobName)
 		}
 
 		// job is complete!
@@ -93,7 +103,7 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 func retrieveCurrentEntryPredictionsForSeason(
 	ctx context.Context,
 	season *models.Season,
-	injector app.MySQLInjector,
+	injector domain.EntryAgentInjector,
 ) ([]models.EntryPrediction, error) {
 	// ensure that season is currently active
 	now := time.Now()
@@ -106,7 +116,7 @@ func retrieveCurrentEntryPredictionsForSeason(
 	entriesAgent := domain.EntryAgent{
 		EntryAgentInjector: injector,
 	}
-	seasonEntries, err := entriesAgent.RetrieveEntriesBySeasonID(ctx, season.ID)
+	seasonEntries, err := entriesAgent.RetrieveEntriesBySeasonID(ctx, season.ID, false)
 	if err != nil {
 		switch err.(type) {
 		case domain.NotFoundError:
@@ -136,7 +146,7 @@ func retrieveAndSaveStandingsForSeason(
 	ctx context.Context,
 	season *models.Season,
 	client clients.FootballDataSource,
-	injector app.MySQLInjector,
+	injector domain.StandingsAgentInjector,
 ) (*models.Standings, error) {
 	// get latest standings from client
 	standings, err := client.RetrieveLatestStandingsBySeason(ctx, season)
@@ -167,13 +177,13 @@ func processEntryPredictionWithStandings(
 	ctx context.Context,
 	entryPrediction *models.EntryPrediction,
 	standings *models.Standings,
-	injector app.MySQLInjector,
-) error {
+	injector domain.ScoredEntryPredictionAgentInjector,
+) (*models.ScoredEntryPrediction, error) {
 	standingsRankingCollection := models.NewRankingCollectionFromRankingWithMetas(standings.Rankings)
 
 	rws, err := domain.CalculateRankingsScores(entryPrediction.Rankings, standingsRankingCollection)
 	if err != nil {
-		return errors.Wrapf(err, "calculate rankings scores for entry prediction with id %s", entryPrediction.ID)
+		return nil, errors.Wrapf(err, "calculate rankings scores for entry prediction with id %s", entryPrediction.ID)
 	}
 
 	sep := models.ScoredEntryPrediction{
@@ -185,16 +195,16 @@ func processEntryPredictionWithStandings(
 
 	// save scored entry prediction
 	if err := saveScoredEntryPrediction(ctx, injector, &sep); err != nil {
-		return errors.Wrapf(err, "save scored entry prediction with standings id %s and entry prediction id %s", sep.StandingsID, sep.EntryPredictionID)
+		return nil, errors.Wrapf(err, "save scored entry prediction with standings id %s and entry prediction id %s", sep.StandingsID, sep.EntryPredictionID)
 	}
 
-	return nil
+	return &sep, nil
 }
 
 // saveStandings upserts the provided Standings depending on whether or not it already exists.
 // This method will also re-point the provided Standings pointer to the previous Standings, if these have not been finalised
 // at the point of invocation, so that the rest of the sequence chain will act on the previous Standings instead
-func saveStandings(ctx context.Context, injector app.MySQLInjector, s *models.Standings, seasonID string) error {
+func saveStandings(ctx context.Context, injector domain.StandingsAgentInjector, s *models.Standings, seasonID string) error {
 	agent := domain.StandingsAgent{
 		StandingsAgentInjector: injector,
 	}
@@ -252,7 +262,7 @@ func saveStandings(ctx context.Context, injector app.MySQLInjector, s *models.St
 }
 
 // updateExistingStandings provides a helper method for updating the provided standings
-func updateExistingStandings(ctx context.Context, injector app.MySQLInjector, standings *models.Standings) error {
+func updateExistingStandings(ctx context.Context, injector domain.StandingsAgentInjector, standings *models.Standings) error {
 	agent := domain.StandingsAgent{
 		StandingsAgentInjector: injector,
 	}
@@ -267,7 +277,7 @@ func updateExistingStandings(ctx context.Context, injector app.MySQLInjector, st
 }
 
 // saveScoredEntryPrediction upserts the provided ScoredEntryPrediction depending on whether or not it already exists
-func saveScoredEntryPrediction(ctx context.Context, injector app.MySQLInjector, ses *models.ScoredEntryPrediction) error {
+func saveScoredEntryPrediction(ctx context.Context, injector domain.ScoredEntryPredictionAgentInjector, ses *models.ScoredEntryPrediction) error {
 	agent := domain.ScoredEntryPredictionAgent{
 		ScoredEntryPredictionAgentInjector: injector,
 	}
@@ -307,4 +317,62 @@ func saveScoredEntryPrediction(ctx context.Context, injector app.MySQLInjector, 
 
 	*ses = updatedScoredEntryPrediction
 	return nil
+}
+
+// issueRoundCompleteEmails issues a series of round complete emails to the provided scored entry predictions
+func issueRoundCompleteEmails(
+	ctx context.Context,
+	injector domain.CommunicationsAgentInjector,
+	finalRound bool,
+	scoredEntryPredictions []models.ScoredEntryPrediction,
+	jobName string,
+) bool {
+	commsAgent := domain.CommunicationsAgent{
+		CommunicationsAgentInjector: injector,
+	}
+
+	var wg sync.WaitGroup
+	var sem = make(chan struct{}, 10)
+	var chErrs = make(chan error, len(scoredEntryPredictions))
+
+	for _, sep := range scoredEntryPredictions {
+		wg.Add(1)
+		sem <- struct{}{}
+
+		go func(pred models.ScoredEntryPrediction) {
+			defer wg.Done()
+			defer func() { <-sem }()
+
+			err := commsAgent.IssueRoundCompleteEmail(ctx, &pred, finalRound)
+			if err != nil {
+				chErrs <- err
+			}
+		}(sep)
+	}
+
+	wg.Wait()
+	close(chErrs)
+
+	if len(chErrs) == 0 {
+		return true
+	}
+
+	for err := range chErrs {
+		log.Println(wrapJobError(jobName, err))
+	}
+	return false
+}
+
+// seasonIsComplete returns true if all of the provided rankings have a games played value that matches the maximum rounds for the season
+func seasonIsComplete(maxRounds int, rwm []models.RankingWithMeta) bool {
+	for _, r := range rwm {
+		// determine whether all teams have played the maximum number of games
+		if played, ok := r.MetaData[footballdata.MetaKeyPlayedGames]; !ok || played != maxRounds {
+			// no they haven't...
+			return false
+		}
+	}
+
+	// yes they have!
+	return true
 }

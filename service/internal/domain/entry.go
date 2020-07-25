@@ -225,13 +225,21 @@ func (e EntryAgent) RetrieveEntryByEntrantNickname(ctx context.Context, email st
 }
 
 // RetrieveEntriesBySeasonID handles the retrieval of existing Entries in the database by their Season ID
-func (e EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID string) ([]models.Entry, error) {
+func (e EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID string, onlyApproved bool) ([]models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 	entryPredictionRepo := repositories.NewEntryPredictionDatabaseRepository(e.MySQL())
 
-	entries, err := entryRepo.Select(ctx, map[string]interface{}{
+	criteria := map[string]interface{}{
 		"season_id": seasonID,
-	}, false)
+	}
+
+	if onlyApproved {
+		criteria["approved_at"] = repositories.Condition{
+			Operator: "IS NOT NULL",
+		}
+	}
+
+	entries, err := entryRepo.Select(ctx, criteria, false)
 	if err != nil {
 		return nil, domainErrorFromRepositoryError(err)
 	}
@@ -463,7 +471,7 @@ func (e EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode strin
 	}
 
 	if len(entries) != 1 {
-		return models.Entry{}, InternalError{errors.New("entries count other than 1")}
+		return models.Entry{}, InternalError{fmt.Errorf("entries count other than 1: %d", len(entries))}
 	}
 
 	entry := entries[0]
@@ -478,7 +486,10 @@ func (e EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode strin
 	case models.EntryStatusPaid, models.EntryStatusReady:
 		// all good
 	default:
-		return models.Entry{}, ConflictError{errors.New("entry can only be approved if status is pending or ready")}
+		return models.Entry{}, ConflictError{fmt.Errorf(
+			"entry can only be approved if status is pending or ready: status is %s",
+			entry.Status,
+		)}
 	}
 
 	// check if Entry has already been approved
@@ -581,7 +592,7 @@ func GenerateUniqueShortCode(ctx context.Context, db coresql.Agent) (string, err
 	}, false)
 	switch err.(type) {
 	case nil:
-		// the lookup ref already exists, so we need to generate a new one
+		// the short code already exists, so we need to generate a new one
 		return GenerateUniqueShortCode(ctx, db)
 	case repositories.MissingDBRecordError:
 		// the lookup ref we have generated is unique, we can return it

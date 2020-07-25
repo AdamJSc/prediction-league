@@ -127,6 +127,10 @@ For details on the system's default season, see ["FakeSeason"](#fakeseason) (bel
 
 ### Token
 
+### Email Message
+
+### Message Identity
+
 ## Other Domain Knowledge
 
 ### Ingesting real-world standings
@@ -232,12 +236,17 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 ## Features To Build
 
 * TBC
+* Additional comms methods - HTML email + SMS
+* Additional comms events - prediction window opens, prediction window pre-close reminder
 
 ## Improvements
 
 ### Guard
 
 ### Short Codes / Passwords
+
+* Lines blurred as development has gone on
+* Also, expired short codes aren't retained, so could **theoretically** be generated again in the future
 
 ### Tokens
 
@@ -251,9 +260,22 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 * Make processing of Standings concurrent when retrieving Latest Standings + scoring Entry Predictions
 * Process runs once every 15 minutes and scale currently very small
 
+### Queue retries
+
+* If sending of email fails, retry it X times with a cool-off in between each
+
+### Datastore
+
+* Hard-coded seasons and teams data
+* Replace with a "seasons data provider" and "teams data provider" that can be injected via container
+
 ### Vue integration
 
 * Pulling from CDN prevents debug mode in development
 * Webpack was warning against huge chunks otherwise
 
 ### Split out tests
+
+### Cron
+
+* Move it to a runnable process?

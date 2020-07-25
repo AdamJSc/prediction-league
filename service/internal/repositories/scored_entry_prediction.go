@@ -29,7 +29,10 @@ const stmtSelectEntryWithTotalScore = `
 		INNER JOIN standings s ON sep.standings_id = s.id
 		INNER JOIN entry_prediction ep ON sep.entry_prediction_id = ep.id
 		INNER JOIN entry e ON ep.entry_id = e.id
-		WHERE e.realm_name = ? AND e.season_id = ? AND s.round_number <= ?
+		WHERE e.realm_name = ?
+			AND e.season_id = ?
+			AND s.round_number <= ?
+			AND e.approved_at IS NOT NULL
 		GROUP BY ep.entry_id, s.round_number
 		ORDER BY ep.entry_id ASC, s.round_number DESC
 	) AS sub

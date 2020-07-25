@@ -4,6 +4,21 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
+	"net/http"
+	"prediction-league/service/internal/app"
+	"prediction-league/service/internal/app/httph"
+	"prediction-league/service/internal/app/httph/handlers"
+	"prediction-league/service/internal/clients"
+	"prediction-league/service/internal/clients/sendgrid"
+	"prediction-league/service/internal/datastore"
+	"prediction-league/service/internal/domain"
+	"prediction-league/service/internal/messages"
+	"prediction-league/service/internal/scheduler"
+	"prediction-league/service/internal/seeder"
+	"prediction-league/service/internal/views"
+	"time"
+
 	"github.com/LUSHDigital/core"
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core/workers/httpsrv"
@@ -11,16 +26,6 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/gorilla/mux"
-	"log"
-	"net/http"
-	"prediction-league/service/internal/app/httph"
-	"prediction-league/service/internal/app/httph/handlers"
-	"prediction-league/service/internal/datastore"
-	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/scheduler"
-	"prediction-league/service/internal/seeder"
-	"prediction-league/service/internal/views"
-	"time"
 )
 
 func main() {
@@ -50,19 +55,27 @@ func main() {
 	httpAppContainer := httph.NewHTTPAppContainer(dependencies{
 		config:         config,
 		mysql:          db,
+		emailClient:    sendgrid.NewClient(config.SendGridAPIKey),
+		emailQueue:     make(chan messages.Email),
 		router:         mux.NewRouter(),
-		templates:      domain.ParseTemplates(),
+		templates:      domain.MustParseTemplates("./service/views"),
 		debugTimestamp: parseTimeString(ts),
 	})
 	handlers.RegisterRoutes(httpAppContainer)
 
+	// start cron
+	scheduler.LoadCron(httpAppContainer).Start()
+
+	// setup http server process
 	httpServer := httpsrv.New(&http.Server{
 		Addr:    fmt.Sprintf(":%s", config.ServicePort),
 		Handler: httpAppContainer.Router(),
 	})
 
-	// start cron
-	scheduler.LoadCron(httpAppContainer).Start()
+	// setup email queue runner
+	emailQueueRunner := app.EmailQueueRunner{
+		EmailQueueRunnerInjector: httpAppContainer,
+	}
 
 	// run service
 	svc := &core.Service{
@@ -72,22 +85,27 @@ func main() {
 	svc.MustRun(
 		context.Background(),
 		httpServer,
+		emailQueueRunner,
 	)
 }
 
 type dependencies struct {
 	config         domain.Config
 	mysql          coresql.Agent
+	emailClient    clients.EmailClient
+	emailQueue     chan messages.Email
 	router         *mux.Router
 	templates      *views.Templates
 	debugTimestamp *time.Time
 }
 
-func (d dependencies) Config() domain.Config      { return d.config }
-func (d dependencies) MySQL() coresql.Agent       { return d.mysql }
-func (d dependencies) Router() *mux.Router        { return d.router }
-func (d dependencies) Template() *views.Templates { return d.templates }
-func (d dependencies) DebugTimestamp() *time.Time { return d.debugTimestamp }
+func (d dependencies) Config() domain.Config            { return d.config }
+func (d dependencies) MySQL() coresql.Agent             { return d.mysql }
+func (d dependencies) EmailClient() clients.EmailClient { return d.emailClient }
+func (d dependencies) EmailQueue() chan messages.Email  { return d.emailQueue }
+func (d dependencies) Router() *mux.Router              { return d.router }
+func (d dependencies) Template() *views.Templates       { return d.templates }
+func (d dependencies) DebugTimestamp() *time.Time       { return d.debugTimestamp }
 
 func parseTimeString(t *string) *time.Time {
 	if t == nil {

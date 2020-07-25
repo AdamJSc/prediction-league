@@ -80,7 +80,7 @@ func frontendJoinHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, 
 		defer cancel()
 
 		data := pages.JoinPageData{
-			SupportEmailFormatted: domain.RealmFromContext(ctx).SupportEmail.Formatted,
+			SupportEmailFormatted: domain.RealmFromContext(ctx).Contact.EmailProper,
 			PayPalClientID:        c.Config().PayPalClientID,
 			EntryFee:              domain.RealmFromContext(ctx).EntryFee,
 		}

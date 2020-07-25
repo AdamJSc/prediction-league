@@ -37,7 +37,7 @@ func getLeaderBoardPageData(ctx context.Context, entryAgent domain.EntryAgent, s
 	leaderBoard, err := leaderBoardAgent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, roundNumber)
 	switch err.(type) {
 	case domain.NotFoundError:
-		// leaderboard can't be generated, a blank one will be returned
+		// leaderboard can't be generated, an empty one will be returned
 	case nil:
 		// we've got a valid leaderboard
 		rawRankings, err := json.Marshal(leaderBoard.Rankings)
@@ -47,14 +47,16 @@ func getLeaderBoardPageData(ctx context.Context, entryAgent domain.EntryAgent, s
 		}
 		data.RoundNumber = leaderBoard.RoundNumber
 		data.Entries.RawRankings = string(rawRankings)
-		data.LastUpdated = *leaderBoard.LastUpdated
+		if leaderBoard.LastUpdated != nil {
+			data.LastUpdated = *leaderBoard.LastUpdated
+		}
 	default:
 		// something else went wrong so display the error message
 		data.Err = err
 	}
 
 	// retrieve entries
-	entries, err := entryAgent.RetrieveEntriesBySeasonID(ctx, seasonID)
+	entries, err := entryAgent.RetrieveEntriesBySeasonID(ctx, seasonID, true)
 	if err != nil {
 		switch err.(type) {
 		case domain.NotFoundError:

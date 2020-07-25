@@ -1,0 +1,20 @@
+{{define "email_txt_new_entry"}}Welcome to Prediction League
+============================
+
+Great news {{.Name}} - you're in! 🎉
+
+It's lovely to have you on-board for the {{.SeasonName}} season ⚽️
+
+To submit your first prediction, go to:
+{{.PredictionsURL}}
+
+Your short code is:
+{{.ShortCode}}
+
+Keep this in a safe place - you'll need it in order to change your prediction throughout the season.
+
+Let us know using the details below if you have any issues.
+
+In the meantime, Happy Predicting! 🧙🔮
+{{- template "email_txt_footer" .}}
+{{end}}

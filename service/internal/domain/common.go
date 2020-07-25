@@ -15,19 +15,21 @@ import (
 	"os"
 	"path/filepath"
 	"prediction-league/service/internal/views"
-	"strings"
 	"time"
 )
 
 // Realm represents a realm in which the system has been configured to run
 type Realm struct {
-	Name         string
-	PIN          string `yaml:"pin"`
-	SeasonID     string `yaml:"season_id"`
-	SupportEmail struct {
-		Formatted string `yaml:"formatted"`
-		PlainText string `yaml:"plain_text"`
-	} `yaml:"support_email"`
+	Name    string
+	Origin  string `yaml:"origin"`
+	Contact struct {
+		Name            string `yaml:"name"`
+		EmailProper     string `yaml:"email_proper"`
+		EmailSanitised  string `yaml:"email_sanitised"`
+		EmailDoNotReply string `yaml:"email_do_not_reply"`
+	} `yaml:"contact"`
+	PIN      string        `yaml:"pin"`
+	SeasonID string        `yaml:"season_id"`
 	EntryFee RealmEntryFee `yaml:"entry_fee"`
 }
 
@@ -38,20 +40,10 @@ type RealmEntryFee struct {
 	Breakdown []string `yaml:"breakdown"`
 }
 
-// formatRealmNameFromRaw converts a raw realm name (as the prefix to an env key) to a formatted realm name
-func formatRealmNameFromRaw(rawRealmName string) string {
-	formattedName := rawRealmName
-
-	formattedName = strings.Trim(formattedName, " ")
-	formattedName = strings.Replace(formattedName, "_", ".", -1)
-	formattedName = strings.ToLower(formattedName)
-
-	return formattedName
-}
-
 // Config represents a struct of required config options
 type Config struct {
 	ServicePort          string `envconfig:"SERVICE_PORT" required:"true"`
+	InProduction         bool   `envconfig:"IN_PRODUCTION" required:"true"`
 	MySQLURL             string `envconfig:"MYSQL_URL" required:"true"`
 	MigrationsURL        string `envconfig:"MIGRATIONS_URL" required:"true"`
 	AdminBasicAuth       string `envconfig:"ADMIN_BASIC_AUTH" required:"true"`
@@ -59,6 +51,7 @@ type Config struct {
 	VersionTimestamp     string `envconfig:"VERSION_TIMESTAMP" required:"true"`
 	FootballDataAPIToken string `envconfig:"FOOTBALLDATA_API_TOKEN" required:"true"`
 	PayPalClientID       string `envconfig:"PAYPAL_CLIENT_ID" required:"true"`
+	SendGridAPIKey       string `envconfig:"SENDGRID_API_KEY" required:"true"`
 	Realms               map[string]Realm
 }
 
@@ -138,19 +131,20 @@ var templateFunctions = template.FuncMap{
 	},
 }
 
-// ParseTemplates parses our HTML templates and returns them collectively for use
-func ParseTemplates() *views.Templates {
+// MustParseTemplates parses our HTML templates and returns them collectively for use
+func MustParseTemplates(viewsPath string) *views.Templates {
 	// prepare the templates
 	tpl := template.New("prediction-league").Funcs(templateFunctions)
 
-	walkPathAndParseTemplates(tpl, "./service/views/html")
+	mustWalkPathAndParseTemplates(tpl, fmt.Sprintf("%s/page", viewsPath))
+	mustWalkPathAndParseTemplates(tpl, fmt.Sprintf("%s/email", viewsPath))
 
 	// return our wrapped template struct
 	return &views.Templates{Template: tpl}
 }
 
-// walkPathAndParseTemplates recursively parses templates within a given top-level directory
-func walkPathAndParseTemplates(tpl *template.Template, path string) {
+// mustWalkPathAndParseTemplates recursively parses templates within a given top-level directory
+func mustWalkPathAndParseTemplates(tpl *template.Template, path string) {
 	// walk through our views folder and parse each item to pack the assets
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		// we already have an error from a recursive call, so just return with that

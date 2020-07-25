@@ -94,7 +94,7 @@ func (l LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context.
 // generateEmptyLeaderBoardBySeasonAndRoundNumber returns a leaderboard that comprises all entries belonging to
 // the provided season ID and realm name of the provided context, which are all scored with a 0
 func generateEmptyLeaderBoardBySeasonAndRoundNumber(ctx context.Context, seasonID string, roundNumber int, entryAgent *EntryAgent) (*models.LeaderBoard, error) {
-	entries, err := entryAgent.RetrieveEntriesBySeasonID(ctx, seasonID)
+	entries, err := entryAgent.RetrieveEntriesBySeasonID(ctx, seasonID, true)
 	if err != nil {
 		return nil, err
 	}
