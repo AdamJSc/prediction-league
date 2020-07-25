@@ -197,11 +197,12 @@ func generateTestStandings(t *testing.T) models.Standings {
 		t.Fatal(err)
 	}
 
-	var rankings = []models.RankingWithMeta{{
-		Ranking: models.Ranking{ID: "hello"},
-	}, {
-		Ranking: models.Ranking{ID: "world"},
-	}}
+	var rankings []models.RankingWithMeta
+	for _, id := range season.TeamIDs {
+		rwm := models.NewRankingWithMeta()
+		rwm.Ranking = models.Ranking{ID: id}
+		rankings = append(rankings, rwm)
+	}
 
 	return models.Standings{
 		ID:          id,

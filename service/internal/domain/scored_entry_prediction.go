@@ -123,13 +123,13 @@ func (s ScoredEntryPredictionAgent) UpdateScoredEntryPrediction(ctx context.Cont
 }
 
 // TeamRankingsAsStrings returns the provided rankings as a slice of strings formatted with padding
-func TeamRankingsAsStrings(rankings []models.RankingWithScore, standings *models.Standings) ([]string, error) {
-	if len(rankings) == 0 {
-		return nil, NotFoundError{errors.New("provided rankings are empty")}
+func TeamRankingsAsStrings(sepRankings []models.RankingWithScore, standingsRankings []models.RankingWithMeta) ([]string, error) {
+	if len(sepRankings) == 0 {
+		return nil, NotFoundError{errors.New("provided scored entry predictions are empty")}
 	}
 
-	if standings == nil {
-		return nil, NotFoundError{errors.New("no standings provided")}
+	if len(standingsRankings) == 0 {
+		return nil, NotFoundError{errors.New("provided standings rankings are empty")}
 	}
 
 	// set the maximum length that our ranking ints are allowed to be when converted to strings
@@ -149,21 +149,21 @@ func TeamRankingsAsStrings(rankings []models.RankingWithScore, standings *models
 	teams := datastore.Teams
 
 	var getStandingsPosByTeamID = func(teamID string) (int, error) {
-		for _, r := range standings.Rankings {
+		for _, r := range standingsRankings {
 			if r.ID == teamID {
 				return r.Position, nil
 			}
 		}
 
-		return 0, fmt.Errorf("no standings entry found for team ID: %s", teamID)
+		return 0, fmt.Errorf("no standings rankings entry found for team ID: %s", teamID)
 	}
 
-	totalScoreStr := strconv.Itoa(models.RankingWithScoreCollection(rankings).GetTotal())
+	totalScoreStr := strconv.Itoa(models.RankingWithScoreCollection(sepRankings).GetTotal())
 	if len(totalScoreStr) > maxRankingScoreLength {
 		return nil, fmt.Errorf("total score character length cannot exceed %d: actual length %d", maxRankingScoreLength, len(totalScoreStr))
 	}
 
-	for _, rws := range rankings {
+	for _, rws := range sepRankings {
 		standingsPosVal, err := getStandingsPosByTeamID(rws.ID)
 		if err != nil {
 			return nil, err
@@ -180,7 +180,7 @@ func TeamRankingsAsStrings(rankings []models.RankingWithScore, standings *models
 			return nil, fmt.Errorf("ranking score character length cannot exceed %d: actual length %d", maxRankingScoreLength, len(scoreStr))
 		}
 		if len(standingsPosStr) > maxStandingsPosLength {
-			return nil, fmt.Errorf("standings position character length cannot exceed %d: actual length %d", maxStandingsPosLength, len(standingsPosStr))
+			return nil, fmt.Errorf("standingsRankings position character length cannot exceed %d: actual length %d", maxStandingsPosLength, len(standingsPosStr))
 		}
 		// retrieve the team so we get its name
 		team, err := teams.GetByID(rws.ID)
@@ -202,7 +202,7 @@ func TeamRankingsAsStrings(rankings []models.RankingWithScore, standings *models
 
 	var fullStrings []string
 
-	for i := 0; i < len(rankings); i++ {
+	for i := 0; i < len(sepRankings); i++ {
 		predictionPosStr := sequentialPredictionPos[i]
 		teamNameStr := sequentialTeamNames[i]
 		scoreStr := sequentialRankingScores[i]
@@ -258,7 +258,6 @@ func TeamRankingsAsStrings(rankings []models.RankingWithScore, standings *models
 		strings.Repeat(" ", maxStandingsPosLength),
 	)
 
-	// TODO - fix this, then re-run standings scrape and preview emails, then fix tests
 	fullStrings = append([]string{header, divider}, append(fullStrings, divider, totalScoreRow)...)
 
 	return fullStrings, nil

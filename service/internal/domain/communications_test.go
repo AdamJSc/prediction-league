@@ -181,20 +181,7 @@ func TestCommunicationsAgent_IssuesRoundCompleteEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		if err := agent.IssueRoundCompleteEmail(ctx, &scoredEntryPrediction); err != nil {
-			t.Fatal(err)
-		}
-
-		queue := agent.EmailQueue()
-		close(queue)
-
-		if len(queue) != 1 {
-			expectedGot(t, 1, queue)
-		}
-
-		email := <-queue
-
-		rankingStrings, err := domain.TeamRankingsAsStrings(scoredEntryPrediction.Rankings)
+		expectedRankingStrings, err := domain.TeamRankingsAsStrings(scoredEntryPrediction.Rankings, standings.Rankings)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -210,9 +197,22 @@ func TestCommunicationsAgent_IssuesRoundCompleteEmail(t *testing.T) {
 				SupportEmail: testRealm.Contact.EmailProper,
 			},
 			RoundNumber:       standings.RoundNumber,
-			RankingsAsStrings: rankingStrings,
+			RankingsAsStrings: expectedRankingStrings,
 			LeaderBoardURL:    fmt.Sprintf("%s/leaderboard", testRealm.Origin),
 		})
+
+		if err := agent.IssueRoundCompleteEmail(ctx, &scoredEntryPrediction); err != nil {
+			t.Fatal(err)
+		}
+
+		queue := agent.EmailQueue()
+		close(queue)
+
+		if len(queue) != 1 {
+			expectedGot(t, 1, queue)
+		}
+
+		email := <-queue
 
 		if email.From.Name != testRealm.Contact.Name {
 			expectedGot(t, testRealm.Contact.Name, email.From.Name)

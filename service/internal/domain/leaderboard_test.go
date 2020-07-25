@@ -13,6 +13,8 @@ import (
 func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T) {
 	defer truncate(t)
 
+	now := time.Now().Truncate(time.Second)
+
 	// <-- seed standings rounds -->
 
 	// start at round 2, so that we can check round 1 produces an empty leaderboard
@@ -21,7 +23,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		s := generateTestStandings(t)
 		s.SeasonID = testSeason.ID
 		s.RoundNumber = i
-		s.CreatedAt = time.Now().Add(time.Duration(i) * 24 * time.Hour).Truncate(time.Second)
+		s.CreatedAt = now.Add(time.Duration(i) * 24 * time.Hour)
 		s = insertStandings(t, s)
 		switch {
 		case i > 2:
@@ -37,21 +39,33 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 
 	// <-- seed entries that should appear within the leaderboard -->
 
-	harryEntry := insertEntry(t, generateTestEntry(t,
+	harryEntry := generateTestEntry(t,
 		"Harry Redknapp",
 		"MrHarryR",
 		"harry.redknapp@football.net",
-	))
-	jamieEntry := insertEntry(t, generateTestEntry(t,
+	)
+	harryEntry.ApprovedAt.Valid = true
+	harryEntry.ApprovedAt.Time = now
+	harryEntry = insertEntry(t, harryEntry)
+
+	jamieEntry := generateTestEntry(t,
 		"Jamie Redknapp",
 		"MrJamieR",
 		"jamie.redknapp@football.net",
-	))
-	frankEntry := insertEntry(t, generateTestEntry(t,
+	)
+	jamieEntry.ApprovedAt.Valid = true
+	jamieEntry.ApprovedAt.Time = now
+	jamieEntry = insertEntry(t, jamieEntry)
+
+	frankEntry := generateTestEntry(t,
 		"Frank Lampard",
 		"FrankieLamps",
 		"frank.lampard@football.net",
-	))
+	)
+	frankEntry.ApprovedAt.Valid = true
+	frankEntry.ApprovedAt.Time = now
+	frankEntry = insertEntry(t, frankEntry)
+
 	harryEntryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, harryEntry.ID))
 	jamieEntryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, jamieEntry.ID))
 	frankEntryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, frankEntry.ID))
@@ -139,21 +153,36 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		"MrRobbieS",
 		"robbie.savage@football.net",
 	)
+	robbieEntry.ApprovedAt.Valid = true
+	robbieEntry.ApprovedAt.Time = now
 	robbieEntry.SeasonID = "NotSameID" // different season ID to the others
 	robbieEntry = insertEntry(t, robbieEntry)
 	robbieEntryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, robbieEntry.ID))
 	insertScoredEntryPrediction(t, generateTestScoredEntryPrediction(t, robbieEntryPrediction.ID, standingsRounds[2].ID))
+
 	joeyEntry := generateTestEntry(t,
 		"Joey Barton",
 		"MrJoeyB",
 		"joey.barton@football.net",
 	)
+	joeyEntry.ApprovedAt.Valid = true
+	joeyEntry.ApprovedAt.Time = now
 	joeyEntry.RealmName = "NotSameRealm" // different realm name to the others
 	joeyEntry = insertEntry(t, joeyEntry)
 	joeyEntryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, joeyEntry.ID))
 	insertScoredEntryPrediction(t, generateTestScoredEntryPrediction(t, joeyEntryPrediction.ID, standingsRounds[2].ID))
 
-	// store season ID arbitrarily from one of the valid entries
+	ericEntry := generateTestEntry(t,
+		"Eric Cantona",
+		"MonsieurEric",
+		"eric.cantona@football.net",
+	)
+	// no changes to eric, he doesn't have an approved at date, so shouldn't appear in the leaderboard
+	ericEntry = insertEntry(t, ericEntry)
+	ericEntryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, ericEntry.ID))
+	insertScoredEntryPrediction(t, generateTestScoredEntryPrediction(t, ericEntryPrediction.ID, standingsRounds[2].ID))
+
+	// store season ID arbitrarily from one of the valid entries (they should all belong to the same one, apart from robbie)
 	seasonID := harryEntry.SeasonID
 
 	agent := domain.LeaderBoardAgent{
@@ -165,6 +194,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 	t.Logf("frank's entry: %s", frankEntry.ID.String())
 	t.Logf("robbie's entry: %s", robbieEntry.ID.String())
 	t.Logf("joey's entry: %s", joeyEntry.ID.String())
+	t.Logf("eric's entry: %s", ericEntry.ID.String())
 
 	t.Run("retrieve leaderboard for a round number that pre-dates the rounds we have must return empty leaderboard", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)

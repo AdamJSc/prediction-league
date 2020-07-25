@@ -36,7 +36,7 @@ func (c CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *models
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
 
-	season, err := datastore.Seasons.GetByID(realm.SeasonID)
+	season, err := datastore.Seasons.GetByID(entry.SeasonID)
 	if err != nil {
 		return NotFoundError{err}
 	}
@@ -83,7 +83,7 @@ func (c CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *m
 		return NotFoundError{err}
 	}
 
-	rankingsAsStrings, err := TeamRankingsAsStrings(sep.Rankings, standings)
+	rankingsAsStrings, err := TeamRankingsAsStrings(sep.Rankings, standings.Rankings)
 	if err != nil {
 		return err
 	}
