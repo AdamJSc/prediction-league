@@ -148,8 +148,6 @@ func TestCommunicationsAgent_IssuesNewEntryEmail(t *testing.T) {
 	})
 }
 
-// TODO - tests for IssueRoundCompleteEmail
-
 func TestCommunicationsAgent_IssuesRoundCompleteEmail(t *testing.T) {
 	defer truncate(t)
 
