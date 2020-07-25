@@ -236,7 +236,8 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 ## Features To Build
 
 * TBC
-* Additional comms - HTML email + SMS
+* Additional comms methods - HTML email + SMS
+* Additional comms events - prediction window opens, prediction window pre-close reminder
 
 ## Improvements
 
@@ -262,6 +263,11 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 ### Queue retries
 
 * If sending of email fails, retry it X times with a cool-off in between each
+
+### Datastore
+
+* Hard-coded seasons and teams data
+* Replace with a "seasons data provider" and "teams data provider" that can be injected via container
 
 ### Vue integration
 

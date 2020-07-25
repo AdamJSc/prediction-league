@@ -128,7 +128,7 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 		}
 
 		// issue new entry email
-		if err := commsAgent.IssuesNewEntryEmail(&entry); err != nil {
+		if err := commsAgent.IssueNewEntryEmail(ctx, &entry); err != nil {
 			responseFromError(err).WriteTo(w)
 			return
 		}

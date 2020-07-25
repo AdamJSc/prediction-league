@@ -16,11 +16,5 @@ Keep this in a safe place - you'll need it in order to change your prediction th
 Let us know using the details below if you have any issues.
 
 In the meantime, Happy Predicting! 🧙🔮
-- {{.SignOff}}
-
----------------------------------------------
-
-You have received this email because you have entered the Prediction League for the {{.SeasonName}} season ({{.URL}})
-
-If you have any questions, issues or concerns, please email {{.SupportEmail}}
+{{template "email_txt_footer" .}}
 {{end}}

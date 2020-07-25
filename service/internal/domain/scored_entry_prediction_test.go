@@ -6,6 +6,7 @@ import (
 	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/models"
+	"strings"
 	"testing"
 	"time"
 )
@@ -319,6 +320,109 @@ func TestScoredEntryPredictionAgent_RetrieveLatestScoredEntryPredictionByEntryID
 		}
 
 		_, err = agent.RetrieveScoredEntryPredictionByIDs(ctx, entry.ID.String(), nonExistentID.String())
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		}
+	})
+}
+
+func TestTeamRankingsAsStrings(t *testing.T) {
+	t.Run("generating strings from valid team rankings must succeed", func(t *testing.T) {
+		rws := []models.RankingWithScore{
+			{
+				Ranking: models.Ranking{
+					ID:       "AFC",
+					Position: 123,
+				},
+				Score: 456,
+			},
+			{
+				Ranking: models.Ranking{
+					ID:       "AVFC",
+					Position: 1,
+				},
+				Score: 9999,
+			},
+			{
+				Ranking: models.Ranking{
+					ID:       "AFCB",
+					Position: 11,
+				},
+				Score: 22,
+			},
+		}
+
+		actualStrings, err := domain.TeamRankingsAsStrings(rws)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expectedStrings := []string{
+			"                pts     pos",
+			"---------------------------",
+			"Arsenal         456     123",
+			"Aston Villa    9999       1",
+			"Bournemouth      22      11",
+		}
+
+		if strings.Join(actualStrings, ",") != strings.Join(expectedStrings, ",") {
+			t.Fatal(gocmp.Diff(expectedStrings, actualStrings))
+		}
+	})
+
+	t.Run("generating strings from empty team rankings must fail", func(t *testing.T) {
+		_, err := domain.TeamRankingsAsStrings(nil)
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		}
+		_, err = domain.TeamRankingsAsStrings([]models.RankingWithScore{})
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		}
+	})
+
+	t.Run("generating strings from team rankings with a score character length exceeding max must fail", func(t *testing.T) {
+		rws := []models.RankingWithScore{
+			{
+				Score: 10000, // max length is 4
+			},
+		}
+
+		expectedErrorMessage := "ranking score character length cannot exceed 4: actual length 5"
+
+		_, err := domain.TeamRankingsAsStrings(rws)
+		if !cmp.Error(err, expectedErrorMessage)().Success() {
+			expectedGot(t, expectedErrorMessage, err)
+		}
+	})
+
+	t.Run("generating strings from team rankings with a position character length exceeding max must fail", func(t *testing.T) {
+		rws := []models.RankingWithScore{
+			{
+				Ranking: models.Ranking{
+					Position: 10000, // max length is 4
+				},
+			},
+		}
+
+		expectedErrorMessage := "ranking position character length cannot exceed 4: actual length 5"
+
+		_, err := domain.TeamRankingsAsStrings(rws)
+		if !cmp.Error(err, expectedErrorMessage)().Success() {
+			expectedGot(t, expectedErrorMessage, err)
+		}
+	})
+
+	t.Run("generating strings from team rankings with a non-existent ID must fail", func(t *testing.T) {
+		rws := []models.RankingWithScore{
+			{
+				Ranking: models.Ranking{
+					ID: "non_existent_team",
+				},
+			},
+		}
+
+		_, err := domain.TeamRankingsAsStrings(rws)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
