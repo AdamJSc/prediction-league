@@ -61,9 +61,6 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 		}
 
 		switch {
-		case standings.Finalised:
-			issueRoundCompleteEmails(ctx, injector, scoredEntryPredictions, jobName)
-
 		case standings.RoundNumber == season.MaxRounds:
 			if !seasonIsComplete(season.MaxRounds, standings.Rankings) {
 				break
@@ -80,7 +77,12 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 				return
 			}
 
-			// TODO - send notifications to all entries that the final game round has been finalised
+			// issue final round complete emails
+			issueRoundCompleteEmails(ctx, injector, true, scoredEntryPredictions, jobName)
+
+		case standings.Finalised:
+			// issue round complete emails
+			issueRoundCompleteEmails(ctx, injector, false, scoredEntryPredictions, jobName)
 		}
 
 		// job is complete!
@@ -316,6 +318,7 @@ func saveScoredEntryPrediction(ctx context.Context, injector domain.ScoredEntryP
 func issueRoundCompleteEmails(
 	ctx context.Context,
 	injector domain.CommunicationsAgentInjector,
+	finalRound bool,
 	scoredEntryPredictions []models.ScoredEntryPrediction,
 	jobName string,
 ) bool {
@@ -335,7 +338,7 @@ func issueRoundCompleteEmails(
 			defer wg.Done()
 			defer func() { <-sem }()
 
-			err := commsAgent.IssueRoundCompleteEmail(ctx, &pred)
+			err := commsAgent.IssueRoundCompleteEmail(ctx, &pred, finalRound)
 			if err != nil {
 				chErrs <- err
 			}

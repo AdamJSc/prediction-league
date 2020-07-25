@@ -62,7 +62,7 @@ func (c CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *models
 }
 
 // IssueRoundCompleteEmail generates a "round complete" email for the provided Scored Entry Prediction and pushes it to the send queue
-func (c CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *models.ScoredEntryPrediction) error {
+func (c CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *models.ScoredEntryPrediction, finalRound bool) error {
 	entry, err := getEntryFromScoredEntryPrediction(ctx, sep, c.MySQL())
 	if err != nil {
 		return err
@@ -94,8 +94,14 @@ func (c CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *m
 		RankingsAsStrings: rankingsAsStrings,
 		LeaderBoardURL:    fmt.Sprintf("%s/leaderboard", realm.Origin),
 	}
+
+	templateName := "email_txt_round_complete"
+	if finalRound {
+		templateName = "email_txt_final_round_complete"
+	}
+
 	var emailContent bytes.Buffer
-	if err := c.Template().ExecuteTemplate(&emailContent, "email_txt_round_complete", d); err != nil {
+	if err := c.Template().ExecuteTemplate(&emailContent, templateName, d); err != nil {
 		return err
 	}
 

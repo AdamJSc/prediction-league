@@ -173,6 +173,8 @@ func TestCommunicationsAgent_IssuesRoundCompleteEmail(t *testing.T) {
 		templates: templates,
 	}
 
+	defer close(injector.queue)
+
 	agent := domain.CommunicationsAgent{
 		CommunicationsAgentInjector: injector,
 	}
@@ -201,12 +203,73 @@ func TestCommunicationsAgent_IssuesRoundCompleteEmail(t *testing.T) {
 			LeaderBoardURL:    fmt.Sprintf("%s/leaderboard", testRealm.Origin),
 		})
 
-		if err := agent.IssueRoundCompleteEmail(ctx, &scoredEntryPrediction); err != nil {
+		if err := agent.IssueRoundCompleteEmail(ctx, &scoredEntryPrediction, false); err != nil {
 			t.Fatal(err)
 		}
 
 		queue := agent.EmailQueue()
-		close(queue)
+
+		if len(queue) != 1 {
+			expectedGot(t, 1, queue)
+		}
+
+		email := <-queue
+
+		if email.From.Name != testRealm.Contact.Name {
+			expectedGot(t, testRealm.Contact.Name, email.From.Name)
+		}
+		if email.From.Address != testRealm.Contact.EmailDoNotReply {
+			expectedGot(t, testRealm.Contact.EmailDoNotReply, email.From.Address)
+		}
+		if email.To.Name != entry.EntrantName {
+			expectedGot(t, entry.EntrantName, email.To.Name)
+		}
+		if email.To.Address != entry.EntrantEmail {
+			expectedGot(t, entry.EntrantEmail, email.To.Address)
+		}
+		if email.ReplyTo.Name != testRealm.Contact.Name {
+			expectedGot(t, testRealm.Contact.Name, email.ReplyTo.Name)
+		}
+		if email.ReplyTo.Address != testRealm.Contact.EmailProper {
+			expectedGot(t, testRealm.Contact.EmailProper, email.ReplyTo.Address)
+		}
+		if email.Subject != expectedSubject {
+			expectedGot(t, expectedSubject, email.Subject)
+		}
+		if email.PlainText != expectedPlainText {
+			t.Fatal(gocmp.Diff(expectedPlainText, email.PlainText))
+		}
+	})
+
+	t.Run("issue final round complete email with a valid scored entry prediction must succeed", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		expectedRankingStrings, err := domain.TeamRankingsAsStrings(scoredEntryPrediction.Rankings, standings.Rankings)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expectedSubject := fmt.Sprintf(domain.EmailSubjectRoundComplete, standings.RoundNumber)
+
+		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_final_round_complete", emails.RoundCompleteEmailData{
+			EmailData: emails.EmailData{
+				Name:         entry.EntrantName,
+				SeasonName:   testSeason.Name,
+				SignOff:      testRealm.Contact.Name,
+				URL:          testRealm.Origin,
+				SupportEmail: testRealm.Contact.EmailProper,
+			},
+			RoundNumber:       standings.RoundNumber,
+			RankingsAsStrings: expectedRankingStrings,
+			LeaderBoardURL:    fmt.Sprintf("%s/leaderboard", testRealm.Origin),
+		})
+
+		if err := agent.IssueRoundCompleteEmail(ctx, &scoredEntryPrediction, true); err != nil {
+			t.Fatal(err)
+		}
+
+		queue := agent.EmailQueue()
 
 		if len(queue) != 1 {
 			expectedGot(t, 1, queue)
@@ -252,7 +315,7 @@ func TestCommunicationsAgent_IssuesRoundCompleteEmail(t *testing.T) {
 		sep := scoredEntryPrediction
 		sep.EntryPredictionID = invalidUUID
 
-		err = agent.IssueRoundCompleteEmail(ctx, &sep)
+		err = agent.IssueRoundCompleteEmail(ctx, &sep, false)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -270,7 +333,7 @@ func TestCommunicationsAgent_IssuesRoundCompleteEmail(t *testing.T) {
 		sep := scoredEntryPrediction
 		sep.StandingsID = invalidUUID
 
-		err = agent.IssueRoundCompleteEmail(ctx, &sep)
+		err = agent.IssueRoundCompleteEmail(ctx, &sep, false)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -291,7 +354,7 @@ func TestCommunicationsAgent_IssuesRoundCompleteEmail(t *testing.T) {
 		invalidEntryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, entryWithInvalidRealm.ID))
 		invalidScoredEntryPrediction := insertScoredEntryPrediction(t, generateTestScoredEntryPrediction(t, invalidEntryPrediction.ID, standings.ID))
 
-		err := agent.IssueRoundCompleteEmail(ctx, &invalidScoredEntryPrediction)
+		err := agent.IssueRoundCompleteEmail(ctx, &invalidScoredEntryPrediction, false)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -312,7 +375,7 @@ func TestCommunicationsAgent_IssuesRoundCompleteEmail(t *testing.T) {
 		invalidEntryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, entryWithInvalidSeason.ID))
 		invalidScoredEntryPrediction := insertScoredEntryPrediction(t, generateTestScoredEntryPrediction(t, invalidEntryPrediction.ID, standings.ID))
 
-		err := agent.IssueRoundCompleteEmail(ctx, &invalidScoredEntryPrediction)
+		err := agent.IssueRoundCompleteEmail(ctx, &invalidScoredEntryPrediction, false)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -325,7 +388,7 @@ func TestCommunicationsAgent_IssuesRoundCompleteEmail(t *testing.T) {
 		sep := scoredEntryPrediction
 		sep.Rankings = nil
 
-		err := agent.IssueRoundCompleteEmail(ctx, &sep)
+		err := agent.IssueRoundCompleteEmail(ctx, &sep, false)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
