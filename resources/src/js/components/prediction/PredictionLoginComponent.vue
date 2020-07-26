@@ -8,7 +8,7 @@
         </transition>
         <form id="prediction-login-form" class="form-primary">
             <div class="form-label-group">
-                <input v-model="formData.email_nickname" type="email" id="inputEmailNickname" name="email_nickname" class="form-control" placeholder="Email or Nickname" required autofocus>
+                <input v-model="formData.email_nickname" type="email" id="inputEmailNickname" name="email_nickname" class="form-control" placeholder="Email or Nickname" required>
                 <label for="inputEmailNickname">Email or Nickname</label>
             </div>
 

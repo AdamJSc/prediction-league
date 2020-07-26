@@ -58,5 +58,8 @@
                         </ul>
                     </div>
                 </nav>
+                {{if .BannerTitle}}
+                    {{template "banner" .}}
+                {{end}}
                 <div class="content-wrapper">
 {{end}}

@@ -26,7 +26,7 @@
                 </div>
                 <form id="registration-entry-form" class="form-primary">
                     <div class="form-label-group">
-                        <input v-model="formData.entrant_name" type="text" id="inputName" name="name" class="form-control" placeholder="Name" required autofocus>
+                        <input v-model="formData.entrant_name" type="text" id="inputName" name="name" class="form-control" placeholder="Name" required>
                         <label for="inputName">Name</label>
                     </div>
 

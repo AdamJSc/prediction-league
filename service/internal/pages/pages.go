@@ -8,6 +8,7 @@ import (
 
 type Base struct {
 	Title                 string
+	BannerTitle           template.HTML
 	ActivePage            string
 	IsLoggedIn            bool
 	SupportEmailPlainText string

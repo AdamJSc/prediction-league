@@ -22,6 +22,10 @@ hr {
   border-top: 1px solid $primary-dark;
 }
 
+h1 {
+  font-size: 2rem;
+}
+
 h1, h2, h3, h4 {
   font-family: $heading-font-family;
   color: $secondary-dark;
@@ -79,6 +83,32 @@ h1, h2, h3, h4 {
     .repo-link {
       display: inline-block;
       font-size: 0.7em;
+    }
+  }
+}
+
+.banner-container {
+  height: 130px;
+
+  .banner {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background-color: $secondary-dark;
+    background-image: url('/assets/img/banner-bg.png');
+    background-size: contain;
+    background-repeat: repeat-x;
+    padding: 2rem 0.5rem;
+    text-align: center;
+
+    h1.banner-title {
+      display: inline-block;
+      margin: 0;
+      line-height: inherit;
+      padding: 0 0.5rem;
+      color: $primary-light;
     }
   }
 }
@@ -284,6 +314,14 @@ table.round {
 }
 
 @media screen and (min-width: 992px) {
+  .banner-container {
+    height: 160px;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+  }
+
   table.rankings:not(.full-width), table.round {
     width: 50%;
   }
