@@ -3,6 +3,7 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"log"
 	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/clients"
@@ -29,6 +30,10 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 		ScoredEntryPredictionAgentInjector: injector,
 	}
 
+	commsAgent := domain.CommunicationsAgent{
+		CommunicationsAgentInjector: injector,
+	}
+
 	var task = func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
@@ -49,7 +54,10 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 				return
 			default:
 				// something else went wrong, so exit early
-				log.Println(wrapJobError(jobName, err))
+				log.Println(wrapJobError(
+					jobName,
+					errors.Wrapf(err, "retrieve entry predictions for active season id: %s", season.ID),
+				))
 				return
 			}
 		}
@@ -57,12 +65,18 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 		// get latest standings from client
 		clientStandings, err := client.RetrieveLatestStandingsBySeason(ctx, &season)
 		if err != nil {
-			log.Println(wrapJobError(jobName, err))
+			log.Println(wrapJobError(
+				jobName,
+				errors.Wrapf(err, "retrieve latest standings from client for season id: %s", season.ID),
+			))
 			return
 		}
 		// validate and sort
 		if err := domain.ValidateAndSortStandings(clientStandings); err != nil {
-			log.Println(wrapJobError(jobName, err))
+			log.Println(wrapJobError(
+				jobName,
+				errors.Wrapf(err, "validate and sort client standings for season id: %s", season.ID),
+			))
 			return
 		}
 
@@ -74,23 +88,32 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 			// we have existing standings
 			standings, err = processExistingStandings(ctx, existingStandings, *clientStandings, standingsAgent)
 			if err != nil {
-				log.Println(wrapJobError(jobName, err))
+				log.Println(wrapJobError(
+					jobName,
+					errors.Wrapf(err, "process existing standings by id: %s", existingStandings.ID.String()),
+				))
 				return
 			}
 		case domain.NotFoundError:
 			// we have new standings
 			standings, err = processNewStandings(ctx, *clientStandings, season, standingsAgent)
 			if err != nil {
-				log.Println(wrapJobError(jobName, err))
+				log.Println(wrapJobError(
+					jobName,
+					errors.Wrapf(err, "process new client standings by season id: %s", season.ID),
+				))
 				return
 			}
 		default:
 			// something went wrong...
-			log.Println(wrapJobError(jobName, err))
+			log.Println(wrapJobError(
+				jobName,
+				errors.Wrapf(err, "retrieve standings: season id %s: round number: %d", season.ID, clientStandings.RoundNumber),
+			))
 			return
 		}
 
-		if season.IsComplete(standings) && standings.Finalised {
+		if season.IsCompletedByStandings(standings) && standings.Finalised {
 			// we've already finalised the last round of our season so just exit early
 			return
 		}
@@ -101,31 +124,59 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 		for _, entryPrediction := range latestEntryPredictions {
 			sep, err := domain.ScoreEntryPredictionBasedOnStandings(entryPrediction, standings)
 			if err != nil {
-				log.Println(wrapJobError(jobName, err))
+				log.Println(wrapJobError(
+					jobName,
+					errors.Wrapf(
+						err,
+						"score entry prediction id %s based on standings id %s",
+						entryPrediction.ID.String(),
+						standings.RoundNumber,
+					),
+				))
 				return
 			}
 			if err := upsertScoredEntryPrediction(ctx, sep, sepAgent); err != nil {
-				log.Println(wrapJobError(jobName, err))
+				log.Println(wrapJobError(
+					jobName,
+					errors.Wrapf(
+						err,
+						"upsert scored entry prediction: entry prediction id %s: standings id: %s",
+						sep.EntryPredictionID.String(),
+						sep.StandingsID.String(),
+					),
+				))
 				return
 			}
 			scoredEntryPredictions = append(scoredEntryPredictions, *sep)
 		}
 
+		var errChan chan error
+
 		switch {
-		case season.IsComplete(standings):
+		case season.IsCompletedByStandings(standings):
 			// finalise final round
 			standings.Finalised = true
 			if _, err := standingsAgent.UpdateStandings(ctx, standings); err != nil {
-				log.Println(wrapJobError(jobName, err))
+				log.Println(wrapJobError(
+					jobName,
+					errors.Wrapf(err, "update standings id %s", standings.ID.String()),
+				))
 				return
 			}
 
 			// issue final round complete emails
-			issueRoundCompleteEmails(ctx, injector, true, scoredEntryPredictions, jobName)
+			issueRoundCompleteEmails(ctx, scoredEntryPredictions, true, errChan, commsAgent)
 
 		case standings.Finalised:
 			// issue round complete emails
-			issueRoundCompleteEmails(ctx, injector, false, scoredEntryPredictions, jobName)
+			issueRoundCompleteEmails(ctx, scoredEntryPredictions, false, errChan, commsAgent)
+		}
+
+		for err := range errChan {
+			log.Println(wrapJobError(
+				jobName,
+				errors.Wrapf(err, "issue round complete email", err),
+			))
 		}
 
 		// job is complete!
@@ -219,18 +270,15 @@ func upsertScoredEntryPrediction(ctx context.Context, sep *models.ScoredEntryPre
 // issueRoundCompleteEmails issues a series of round complete emails to the provided scored entry predictions
 func issueRoundCompleteEmails(
 	ctx context.Context,
-	injector domain.CommunicationsAgentInjector,
-	finalRound bool,
 	scoredEntryPredictions []models.ScoredEntryPrediction,
-	jobName string,
-) bool {
-	commsAgent := domain.CommunicationsAgent{
-		CommunicationsAgentInjector: injector,
-	}
-
+	finalRound bool,
+	errChan chan error,
+	commsAgent domain.CommunicationsAgent,
+) {
 	var wg sync.WaitGroup
 	var sem = make(chan struct{}, 10)
-	var chErrs = make(chan error, len(scoredEntryPredictions))
+
+	errChan = make(chan error, len(scoredEntryPredictions))
 
 	for _, sep := range scoredEntryPredictions {
 		wg.Add(1)
@@ -242,20 +290,11 @@ func issueRoundCompleteEmails(
 
 			err := commsAgent.IssueRoundCompleteEmail(ctx, &pred, finalRound)
 			if err != nil {
-				chErrs <- err
+				errChan <- err
 			}
 		}(sep)
 	}
 
 	wg.Wait()
-	close(chErrs)
-
-	if len(chErrs) == 0 {
-		return true
-	}
-
-	for err := range chErrs {
-		log.Println(wrapJobError(jobName, err))
-	}
-	return false
+	close(errChan)
 }

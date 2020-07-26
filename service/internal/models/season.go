@@ -63,8 +63,13 @@ func (s Season) GetState(ts time.Time) SeasonState {
 	return state
 }
 
-// IsComplete returns true if the provided standings represents a completed final round, otherwise false
-func (s Season) IsComplete(standings Standings) bool {
+// IsCompletedByStandings returns true if the provided standings represents a completed final round, otherwise false
+func (s Season) IsCompletedByStandings(standings Standings) bool {
+	if standings.SeasonID != s.ID {
+		// standings pertain to a different season
+		return false
+	}
+
 	if standings.RoundNumber != s.MaxRounds {
 		// standings does not represents final round, so season is not complete
 		return false

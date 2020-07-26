@@ -7,7 +7,7 @@ import (
 
 // TODO - tests for Season.GetState
 
-// TODO - tests for Season.IsComplete
+// TODO - tests for Season.IsCompletedByStandings
 
 func TestSeasonCollection_GetByID(t *testing.T) {
 	collection := models.SeasonCollection{
