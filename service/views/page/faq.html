@@ -1,46 +1,36 @@
 {{define "faq"}}
     {{template "header" .}}
     {{with .Data}}
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-8 offset-md-2">
-                <h1>FAQ</h1>
-            </div>
-        </div>
         {{if .Err}}
             <div class="row">
-                <div class="col-md-8 offset-md-2">
+                <div class="col">
                     <div class="alert alert-danger">
                         <p>{{.Err}}</p>
                     </div>
                 </div>
             </div>
         {{else}}
-            <div class="row">
-                <div class="col-md-8 offset-md-2">
-                    {{if .FAQs}}
-                        <p><i class="fa fa-info-circle" aria-hidden="true"></i> Select a question to expand</p>
-                        <div class="accordion" id="faqRender">
-                            {{range $idx, $faq := .FAQs}}
-                                <div class="card">
-                                    <div class="card-header" id="q{{$idx}}-heading">
-                                        <h2 data-toggle="collapse" data-target="#q{{$idx}}-body" aria-expanded="false" aria-controls="q{{$idx}}-body">
-                                            Q: {{$faq.Question}}
-                                        </h2>
-                                    </div>
-                                    <div id="q{{$idx}}-body" class="collapse" aria-labelledby="q{{$idx}}-heading" data-parent="#faqRender">
-                                        <div class="card-body">
-                                            {{$faq.Answer}}
-                                        </div>
+            <div class="col">
+                {{if .FAQs}}
+                    <div class="accordion" id="faqRender">
+                        {{range $idx, $faq := .FAQs}}
+                            <div class="card">
+                                <div class="card-header" id="q{{$idx}}-heading">
+                                    <h2 data-toggle="collapse" data-target="#q{{$idx}}-body" aria-expanded="false" aria-controls="q{{$idx}}-body">
+                                        Q: {{$faq.Question}}
+                                    </h2>
+                                </div>
+                                <div id="q{{$idx}}-body" class="collapse" aria-labelledby="q{{$idx}}-heading" data-parent="#faqRender">
+                                    <div class="card-body">
+                                        {{$faq.Answer}}
                                     </div>
                                 </div>
-                            {{end}}
-                        </div>
-                    {{end}}
-                </div>
+                            </div>
+                        {{end}}
+                    </div>
+                {{end}}
             </div>
         {{end}}
-    </div>
     {{end}}
     {{template "footer" .}}
 {{end}}

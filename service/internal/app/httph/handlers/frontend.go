@@ -77,7 +77,7 @@ func frontendFAQHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			writeResponse(pages.FAQPageData{Err: err})
+			rest.InternalError(err).WriteTo(w)
 			return
 		}
 		defer cancel()

@@ -1,0 +1,49 @@
+{{define "prediction"}}
+    {{template "header" .}}
+    {{$parent := .}}
+    {{with .Data}}
+        {{if .Err}}
+            <div class="row">
+                <div class="col">
+                    <div class="alert alert-danger">
+                        <p>{{.Err}}</p>
+                    </div>
+                </div>
+            </div>
+        {{else}}
+            {{if .Predictions.BeingAccepted}}
+                <div class="row">
+                    <div class="col">
+                        <prediction-countdown subject="prediction-close" unix="{{timestamp_as_unix .Predictions.AcceptedUntil}}"></prediction-countdown>
+                    </div>
+                </div>
+                {{if $parent.IsLoggedIn}}
+                    <div class="row">
+                        <div class="col">
+                            <open-prediction v-bind:entry="{id: '{{.Entry.ID}}', shortCode: '{{.Entry.ShortCode}}'}" raw-teams="{{.Teams.Raw}}" unix="{{timestamp_as_unix .Teams.LastUpdated}}"></open-prediction>
+                        </div>
+                    </div>
+                {{else}}
+                    <div class="row">
+                        <div class="col">
+                            <prediction-login></prediction-login>
+                        </div>
+                    </div>
+                {{end}}
+            {{else if .Predictions.NextAcceptedFrom}}
+                <div class="row">
+                    <div class="col">
+                        <prediction-countdown subject="prediction-open" unix="{{timestamp_as_unix .Predictions.NextAcceptedFrom}}"></prediction-countdown>
+                    </div>
+                </div>
+            {{else}}
+                <div class="row">
+                    <div class="col">
+                        <p>That's it for the current season... Good luck!</p>
+                    </div>
+                </div>
+            {{end}}
+        {{end}}
+    {{end}}
+    {{template "footer" .}}
+{{end}}

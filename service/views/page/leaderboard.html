@@ -2,10 +2,10 @@
     {{template "header" .}}
     {{$parent := .}}
     {{with .Data}}
-        <div id="app" class="container-fluid">
+        <div id="app">
             {{if .Err}}
                 <div class="row">
-                    <div class="col-md-8 offset-md-2">
+                    <div class="col">
                         <div class="alert alert-danger">
                             <p>{{.Err}}</p>
                         </div>
@@ -13,13 +13,12 @@
                 </div>
             {{else}}
                 <div class="row">
-                    <div class="col-md-8 offset-md-2">
-                        <h1>Leaderboard</h1>
-                    </div>
-                    <div class="col-md-8 offset-md-2">
+                    <div class="col">
                         <p><i class="fa fa-info-circle" aria-hidden="true"></i> Select a name to view their score breakdown for each round</p>
                     </div>
-                    <div class="col-md-8 offset-md-2">
+                </div>
+                <div class="row">
+                    <div class="col">
                         {{if .Entries.RawRankings}}
                             <leaderboard
                                     season-id="{{.Season.ID}}"
