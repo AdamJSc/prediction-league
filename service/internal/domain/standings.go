@@ -2,11 +2,14 @@ package domain
 
 import (
 	"context"
+	"errors"
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
+	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/repositories"
+	"sort"
 	"time"
 )
 
@@ -102,4 +105,57 @@ func (s StandingsAgent) UpdateStandings(ctx context.Context, standings models.St
 	}
 
 	return standings, nil
+}
+
+// RetrieveStandingsIfNotFinalised provides a helpful wrapper method to return the standings represented by the provided
+// season ID and round number if not finalised, otherwise returns the provided default standings
+func (s StandingsAgent) RetrieveStandingsIfNotFinalised(
+	ctx context.Context,
+	seasonID string,
+	roundNumber int,
+	defaultStandings models.Standings,
+) (models.Standings, error) {
+	standings, err := s.RetrieveStandingsBySeasonAndRoundNumber(
+		ctx,
+		seasonID,
+		roundNumber,
+	)
+	if err != nil {
+		switch err.(type) {
+		case NotFoundError:
+			// unable to find standings for provided season ID and round number
+			// fallback to default standings
+			return defaultStandings, nil
+		default:
+			// something went wrong whilst retrieving our previous standings...
+			return models.Standings{}, err
+		}
+	}
+
+	if !standings.Finalised {
+		// return standings that have not yet been finalised
+		return standings, nil
+	}
+
+	// fallback to default standings
+	return defaultStandings, nil
+}
+
+// ValidateAndSortStandings sorts and validates the provided standings
+func ValidateAndSortStandings(standings *models.Standings) error {
+	if standings == nil {
+		return InternalError{errors.New("standings not provided")}
+	}
+
+	// ensure that all team IDs are valid
+	for _, ranking := range standings.Rankings {
+		if _, err := datastore.Teams.GetByID(ranking.ID); err != nil {
+			return NotFoundError{err}
+		}
+	}
+
+	// default standings sort (ascending by Rankings[].Position)
+	sort.Sort(standings)
+
+	return nil
 }

@@ -176,6 +176,8 @@ func TestScoredEntryPredictionAgent_UpdateScoredEntryPrediction(t *testing.T) {
 	})
 }
 
+// TODO - tests for ScoreEntryPredictionBasedOnStandings
+
 func TestScoredEntryPredictionAgent_RetrieveScoredEntryPredictionByIDs(t *testing.T) {
 	defer truncate(t)
 

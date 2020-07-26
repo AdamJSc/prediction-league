@@ -6,6 +6,14 @@ import (
 	"strings"
 )
 
+const (
+	MetaKeyPlayedGames    = "playedGames"
+	MetaKeyPoints         = "points"
+	MetaKeyGoalsFor       = "goalsFor"
+	MetaKeyGoalsAgainst   = "goalsAgainst"
+	MetaKeyGoalDifference = "goalDifference"
+)
+
 // Ranking defines our base ranking structure
 type Ranking struct {
 	ID       string `json:"id"`

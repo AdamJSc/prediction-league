@@ -11,14 +11,6 @@ import (
 	"strings"
 )
 
-const (
-	MetaKeyPlayedGames    = "playedGames"
-	MetaKeyPoints         = "points"
-	MetaKeyGoalsFor       = "goalsFor"
-	MetaKeyGoalsAgainst   = "goalsAgainst"
-	MetaKeyGoalDifference = "goalDifference"
-)
-
 const baseURL = "https://api.football-data.org"
 
 // Client defines our football-data.org API client
@@ -131,11 +123,11 @@ func (t *tableElem) toRankingWithMeta() (models.RankingWithMeta, error) {
 
 	r.ID = team.ID
 	r.Position = t.Position
-	r.MetaData[MetaKeyPlayedGames] = t.PlayedGames
-	r.MetaData[MetaKeyPoints] = t.Points
-	r.MetaData[MetaKeyGoalsFor] = t.GoalsFor
-	r.MetaData[MetaKeyGoalsAgainst] = t.GoalsAgainst
-	r.MetaData[MetaKeyGoalDifference] = t.GoalDifference
+	r.MetaData[models.MetaKeyPlayedGames] = t.PlayedGames
+	r.MetaData[models.MetaKeyPoints] = t.Points
+	r.MetaData[models.MetaKeyGoalsFor] = t.GoalsFor
+	r.MetaData[models.MetaKeyGoalsAgainst] = t.GoalsAgainst
+	r.MetaData[models.MetaKeyGoalDifference] = t.GoalDifference
 
 	return r, nil
 }

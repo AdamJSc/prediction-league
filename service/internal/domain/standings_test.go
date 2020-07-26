@@ -129,6 +129,10 @@ func TestStandingsAgent_UpdateStandings(t *testing.T) {
 	})
 }
 
+// TODO - tests for StandingsAgent.RetrieveStandingsIfNotFinalised (copy RetrieveStandingsBySeasonAndRoundNumber)
+
+// TODO - tests for ValidateAndSortStandings
+
 func TestStandingsAgent_RetrieveStandingsByID(t *testing.T) {
 	defer truncate(t)
 
@@ -424,7 +428,7 @@ func TestStandingsAgent_RetrieveLatestStandingsBySeasonIDAndTimestamp(t *testing
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		retrievedStandings, err := agent.RetrieveLatestStandingsBySeasonIDAndTimestamp(ctx, seasonID, standings3.CreatedAt.Add(10000 * time.Hour))
+		retrievedStandings, err := agent.RetrieveLatestStandingsBySeasonIDAndTimestamp(ctx, seasonID, standings3.CreatedAt.Add(10000*time.Hour))
 		if err != nil {
 			t.Fatal(err)
 		}
