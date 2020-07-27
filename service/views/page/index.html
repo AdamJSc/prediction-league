@@ -1,9 +1,93 @@
 {{define "index"}}
     {{template "header" .}}
     <div class="row">
-        <div class="col-md">Hello World</div>
-        <div class="col-md">Hello World</div>
-        <div class="col-md">Hello World</div>
+        <div class="intro-cta homepage-section col">
+            <h2>Think you know where they'll finish?</h2>
+            <p>Predict the league table and score the fewest points to win!</p>
+            <a class="btn btn-primary btn-lg" href="/join" role="button">Enter Now</a>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+
+        </div>
+    </div>
+    <div class="how-it-works homepage-section row">
+        <div class="heading col-md-12">
+            <h2>How it works</h2>
+        </div>
+        <div class="col-lg-4">
+            <div class="stage accented-component">
+                <div class="icon">
+                    <i class="fa fa-laptop" aria-hidden="true"></i>
+                </div>
+                <div class="stage-title">
+                    <div class="num">1</div>
+                    <div class="label">Enter</div>
+                </div>
+                <div class="stage-description">
+                    <p>Sign up via the <a href="/join">Join</a> page.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="stage accented-component">
+                <div class="icon">
+                    <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+                </div>
+                <div class="stage-title">
+                    <div class="num">2</div>
+                    <div class="label">Predict</div>
+                </div>
+                <div class="stage-description">
+                    <p>Tell us where you think each team will appear in the league table.
+                        You'll be able to <a href="/prediction">make changes</a> at certain points throughout the season.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="stage accented-component">
+                <div class="icon">
+                    <i class="fa fa-table" aria-hidden="true"></i>
+                </div>
+                <div class="stage-title">
+                    <div class="num">3</div>
+                    <div class="label">Score Points</div>
+                </div>
+                <div class="stage-description">
+                    <p>Accrue points for each Game Week, which add up throughout the season.
+                        Check the <a href="/leaderboard">Leaderboard</a> each week to see how you're doing.
+                        Fewest points at the end of the season wins!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="cta-group homepage-section row">
+        <div class="heading col-md-12">
+            <h3>Already signed up?</h3>
+        </div>
+        <div class="cta left-side col-lg-6">
+            <p><a class="btn btn-primary btn-lg" href="/leaderboard" role="button">See how I'm doing</a></p>
+        </div>
+        <div class="cta right-side col-lg-6">
+            <p><a class="btn btn-primary btn-lg" href="/prediction" role="button">Change my prediction</a></p>
+        </div>
+    </div>
+    <div class="cta-group homepage-section row">
+        <div class="cta col-lg-6">
+            <h3>Got Questions?</h3>
+            <div class="icon">
+                <i class="fa fa-question-circle-o" aria-hidden="true"></i>
+            </div>
+            <p>Visit our <a href="/faqs">FAQs</a> page</p>
+        </div>
+        <div class="cta col-lg-6">
+            <h3>I need something else!</h3>
+            <div class="icon">
+                <i class="fa fa-envelope" aria-hidden="true"></i>
+            </div>
+            <p>Drop us a line!<br />{{.SupportEmailPlainText}}</p>
+        </div>
     </div>
     {{template "footer" .}}
 {{end}}
