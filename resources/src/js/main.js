@@ -12,6 +12,7 @@ Vue.component("prediction-countdown", require("./components/prediction/Predictio
 Vue.component("prediction-login", require("./components/prediction/PredictionLoginComponent.vue").default)
 
 Vue.component("action-button", require("./components/ActionButton.vue").default)
+Vue.component("countdown", require("./components/CountdownComponent.vue").default)
 
 if (document.getElementById('app') !== null) {
     new Vue({

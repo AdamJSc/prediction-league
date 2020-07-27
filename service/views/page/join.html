@@ -2,13 +2,34 @@
     {{template "header" .}}
     <div id="app">
         <!-- TODO - display "no more entries" message if expired -->
-        <registration-workflow
-                entry-fee-amount="{{.Data.EntryFee.Amount}}"
-                entry-fee-label="{{.Data.EntryFee.Label}}"
-                raw-entry-fee-breakdown="{{jsonify_strings .Data.EntryFee.Breakdown}}"
-                support-email-formatted="{{.Data.SupportEmailFormatted}}"
-                support-email-plain-text="{{.SupportEmailPlainText}}"
-                realm-name="{{.RealmName}}"></registration-workflow>
+        {{if .Data.EntriesAccepted}}
+            <registration-workflow
+                    unix="{{timestamp_as_unix .Data.EntriesUntil}}"
+                    entry-fee-amount="{{.Data.EntryFee.Amount}}"
+                    entry-fee-label="{{.Data.EntryFee.Label}}"
+                    raw-entry-fee-breakdown="{{jsonify_strings .Data.EntryFee.Breakdown}}"
+                    support-email-formatted="{{.Data.SupportEmailFormatted}}"
+                    support-email-plain-text="{{.SupportEmailPlainText}}"
+                    realm-name="{{.RealmName}}"></registration-workflow>
+        {{else}}
+            <div class="row">
+                <div class="col">
+                    <h3>Entries are now closed for the {{.Data.SeasonName}} season</h3>
+                    <p>Make sure you check back again and join us for next season!</p>
+                </div>
+            </div>
+            <div class="cta-group page-section row">
+                <div class="heading col-md-12">
+                    <h3>Already signed up?</h3>
+                </div>
+                <div class="cta left-side col-md-6">
+                    <p><a class="btn btn-primary btn-lg" href="/leaderboard" role="button">See how I'm doing</a></p>
+                </div>
+                <div class="cta right-side col-md-6">
+                    <p><a class="btn btn-primary btn-lg" href="/prediction" role="button">Change my prediction</a></p>
+                </div>
+            </div>
+        {{end}}
     </div>
     {{template "footer" .}}
 {{end}}

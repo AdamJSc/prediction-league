@@ -8,6 +8,7 @@ import (
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/pages"
+	"time"
 )
 
 func frontendIndexHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
@@ -97,7 +98,19 @@ func frontendJoinHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, 
 		}
 		defer cancel()
 
+		season, err := datastore.Seasons.GetByID(domain.RealmFromContext(ctx).SeasonID)
+		if err != nil {
+			rest.InternalError(err).WriteTo(w)
+			return
+		}
+
+		now := time.Now()
+		entriesAccepted := season.EntriesAccepted.HasBegunBy(now) && !season.EntriesAccepted.HasElapsedBy(now)
+
 		data := pages.JoinPageData{
+			EntriesAccepted:       entriesAccepted,
+			EntriesUntil:          season.EntriesAccepted.Until,
+			SeasonName:            season.Name,
 			SupportEmailFormatted: domain.RealmFromContext(ctx).Contact.EmailProper,
 			PayPalClientID:        c.Config().PayPalClientID,
 			EntryFee:              domain.RealmFromContext(ctx).EntryFee,

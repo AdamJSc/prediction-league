@@ -91,7 +91,7 @@
                 type: Number
             },
             unix: {
-                type: Number
+                type: String
             },
             rawEntries: {
                 type: String

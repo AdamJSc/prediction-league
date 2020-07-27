@@ -1,5 +1,6 @@
 <template>
     <div class="registration-workflow-container">
+        <countdown label="Entries close in..." v-bind:unix="unix"></countdown>
         <div class="carousel slide">
             <div class="carousel-inner">
                 <div class="carousel-item active">
@@ -35,6 +36,9 @@
     export default {
         name: 'RegistrationWorkflowComponent',
         props: {
+            unix: {
+                type: String
+            },
             entryFeeAmount: {
                 type: Number
             },

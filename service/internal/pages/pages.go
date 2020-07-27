@@ -50,6 +50,9 @@ type LeaderBoardPageData struct {
 }
 
 type JoinPageData struct {
+	EntriesAccepted       bool
+	EntriesUntil          time.Time
+	SeasonName            string
 	SupportEmailFormatted string
 	PayPalClientID        string
 	EntryFee              domain.RealmEntryFee

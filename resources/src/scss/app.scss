@@ -121,7 +121,7 @@ h1, h2, h3, h4 {
   padding: 0.5rem;
 }
 
-.homepage-section {
+.page-section {
   padding: 1.5rem;
 
   .icon {
@@ -182,6 +182,46 @@ h1, h2, h3, h4 {
 
   .cta {
     margin-top: 1rem;
+  }
+}
+
+.countdown-container {
+  .countdown {
+    margin-bottom: 2rem;
+    background: $secondary-dark;
+    color: $primary-light;
+    text-align: center;
+    border-radius: 5px;
+    padding: 0.5rem 0;
+    font-family: $heading-font-family;
+
+    p {
+      margin-bottom: 0;
+    }
+
+    .remaining-time {
+      font-size: 1.2rem;
+    }
+  }
+}
+
+.payment-info {
+  margin-bottom: 2rem;
+
+  ul {
+    margin-bottom: 1rem;
+  }
+}
+
+.form-label-definition {
+  .form-label-definition-name {
+    margin-bottom: 0;
+    font-weight: bold;
+  }
+
+  .form-label-definition-description {
+    padding-left: 0.75rem;
+    font-style: italic;
   }
 }
 
@@ -383,12 +423,6 @@ table.round {
   table.rankings:not(.full-width), table.round, table.teams-reorder-admin {
     width: 75%;
   }
-}
-
-@media screen and (min-width: 992px) {
-  .homepage-section {
-    padding: 3rem;
-  }
 
   .cta {
     &.left-side {
@@ -398,6 +432,22 @@ table.round {
     &.right-side {
       text-align: left;
     }
+  }
+
+  .countdown-container {
+    .countdown {
+      font-size: 1.2rem;
+
+      .remaining-time {
+        font-size: 1.5rem;
+      }
+    }
+  }
+}
+
+@media screen and (min-width: 992px) {
+  .page-section {
+    padding: 3rem;
   }
 
   .accented-component {
