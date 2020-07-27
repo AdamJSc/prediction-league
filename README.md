@@ -1,6 +1,18 @@
-# prediction-league
+# Prediction League
 
-## Requirements
+* Summary
+
+## Background
+
+### About
+
+### Workflows
+
+### Dependencies
+
+## Running Locally
+
+### Requirements
 
 Either...
 
@@ -18,9 +30,7 @@ Or...
 * Docker Compose
 * Make
 
-## Getting Started
-
-### Local Environment
+### Environment
 
 This project can be run either fully-Dockerised (runs exclusively within containers) or
 partly-Dockerised (dependencies and build tools are in containers, but the service runs
@@ -264,7 +274,7 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 
 * If sending of email fails, retry it X times with a cool-off in between each
 
-### Datastore
+### Global Data Store
 
 * Hard-coded seasons and teams data
 * Replace with a "seasons data provider" and "teams data provider" that can be injected via container
