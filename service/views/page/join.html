@@ -1,14 +1,13 @@
 {{define "join"}}
     {{template "header" .}}
     <div id="app">
-        <!-- TODO - display "no more entries" message if expired -->
         {{if .Data.EntriesAccepted}}
             <registration-workflow
                     unix="{{timestamp_as_unix .Data.EntriesUntil}}"
-                    entry-fee-amount="{{.Data.EntryFee.Amount}}"
+                    v-bind:entry-fee-amount="{{.Data.EntryFee.Amount}}"
                     entry-fee-label="{{.Data.EntryFee.Label}}"
                     raw-entry-fee-breakdown="{{jsonify_strings .Data.EntryFee.Breakdown}}"
-                    support-email-formatted="{{.Data.SupportEmailFormatted}}"
+                    support-email-formatted="{{.SupportEmailFormatted}}"
                     support-email-plain-text="{{.SupportEmailPlainText}}"
                     realm-name="{{.RealmName}}"></registration-workflow>
         {{else}}

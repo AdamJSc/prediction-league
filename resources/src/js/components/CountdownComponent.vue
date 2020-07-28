@@ -1,6 +1,6 @@
 <template>
     <div class="countdown-container">
-        <div class="countdown">
+        <div class="countdown highlight-container">
             <p>{{label}}</p>
             <p class="remaining-time">{{remainingVerbose}}</p>
         </div>

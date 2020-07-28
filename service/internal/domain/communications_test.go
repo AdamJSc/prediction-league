@@ -35,6 +35,12 @@ func TestCommunicationsAgent_IssuesNewEntryEmail(t *testing.T) {
 	testRealm := testRealm(t)
 	testConfig.Realms[testRealm.Name] = testRealm
 
+	testPaymentDetails := emails.PaymentDetails{
+		Amount:       "£12.34",
+		Reference:    "PAYMENT_REFERENCE",
+		MerchantName: "MERCHANT_NAME",
+	}
+
 	injector := testCommsAgentInjector{
 		config:    testConfig,
 		queue:     make(chan messages.Email, 10), // only add 1 email at a time to channel in actual tests
@@ -56,7 +62,7 @@ func TestCommunicationsAgent_IssuesNewEntryEmail(t *testing.T) {
 			"harry.redknapp@football.net",
 		)
 
-		if err := agent.IssueNewEntryEmail(ctx, &entry); err != nil {
+		if err := agent.IssueNewEntryEmail(ctx, &entry, &testPaymentDetails); err != nil {
 			t.Fatal(err)
 		}
 
@@ -79,6 +85,7 @@ func TestCommunicationsAgent_IssuesNewEntryEmail(t *testing.T) {
 				URL:          testRealm.Origin,
 				SupportEmail: testRealm.Contact.EmailProper,
 			},
+			PaymentDetails: testPaymentDetails,
 			PredictionsURL: fmt.Sprintf("%s/prediction", testRealm.Origin),
 			ShortCode:      entry.ShortCode,
 		})
@@ -109,6 +116,66 @@ func TestCommunicationsAgent_IssuesNewEntryEmail(t *testing.T) {
 		}
 	})
 
+	t.Run("issue new entry email with no entry must fail", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		err := agent.IssueNewEntryEmail(ctx, nil, &testPaymentDetails)
+		if !cmp.ErrorType(err, domain.InternalError{})().Success() {
+			expectedTypeOfGot(t, domain.InternalError{}, err)
+		}
+	})
+
+	t.Run("issue new entry email with no payment details must fail", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		entry := generateTestEntry(
+			t,
+			"Harry Redknapp",
+			"Mr Harry R",
+			"harry.redknapp@football.net",
+		)
+
+		err := agent.IssueNewEntryEmail(ctx, &entry, nil)
+		if !cmp.ErrorType(err, domain.InternalError{})().Success() {
+			expectedTypeOfGot(t, domain.InternalError{}, err)
+		}
+	})
+
+	t.Run("issue new entry email with empty payment details must fail", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		entry := generateTestEntry(
+			t,
+			"Harry Redknapp",
+			"Mr Harry R",
+			"harry.redknapp@football.net",
+		)
+
+		missingAmount := testPaymentDetails
+		missingAmount.Amount = ""
+		err := agent.IssueNewEntryEmail(ctx, &entry, &missingAmount)
+		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+
+		missingReference := testPaymentDetails
+		missingReference.Reference = ""
+		err = agent.IssueNewEntryEmail(ctx, &entry, &missingReference)
+		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+
+		missingMerchantName := testPaymentDetails
+		missingMerchantName.MerchantName = ""
+		err = agent.IssueNewEntryEmail(ctx, &entry, &missingMerchantName)
+		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
+			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+	})
+
 	t.Run("issue new entry email with an entry whose realm does not exist must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
@@ -122,7 +189,7 @@ func TestCommunicationsAgent_IssuesNewEntryEmail(t *testing.T) {
 
 		entry.RealmName = "not_a_valid_realm"
 
-		err := agent.IssueNewEntryEmail(ctx, &entry)
+		err := agent.IssueNewEntryEmail(ctx, &entry, &testPaymentDetails)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -141,7 +208,7 @@ func TestCommunicationsAgent_IssuesNewEntryEmail(t *testing.T) {
 
 		entry.SeasonID = "not_a_valid_season"
 
-		err := agent.IssueNewEntryEmail(ctx, &entry)
+		err := agent.IssueNewEntryEmail(ctx, &entry, &testPaymentDetails)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}

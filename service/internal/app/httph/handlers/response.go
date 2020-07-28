@@ -10,9 +10,10 @@ import (
 )
 
 type createEntryResponse struct {
-	ID        string `json:"id"`
-	Nickname  string `json:"nickname"`
-	ShortCode string `json:"short_code"`
+	ID           string `json:"id"`
+	Nickname     string `json:"nickname"`
+	ShortCode    string `json:"short_code"`
+	NeedsPayment bool   `json:"needs_payment"`
 }
 
 type retrieveSeasonResponse struct {

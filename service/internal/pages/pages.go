@@ -12,6 +12,7 @@ type Base struct {
 	ActivePage            string
 	IsLoggedIn            bool
 	SupportEmailPlainText string
+	SupportEmailFormatted string
 	RealmName             string
 	RunningVersion        string
 	VersionTimestamp      string
@@ -53,7 +54,6 @@ type JoinPageData struct {
 	EntriesAccepted       bool
 	EntriesUntil          time.Time
 	SeasonName            string
-	SupportEmailFormatted string
 	PayPalClientID        string
 	EntryFee              domain.RealmEntryFee
 }

@@ -81,7 +81,7 @@
             <div class="icon">
                 <i class="fa fa-envelope" aria-hidden="true"></i>
             </div>
-            <p>Drop us a line!<br />{{.SupportEmailPlainText}}</p>
+            <p>Drop us a line!<br /><a href="mailto:{{.SupportEmailFormatted}}?subject=Greetings%20from%20{{.RealmName}}!">{{.SupportEmailPlainText}}</a></p>
         </div>
     </div>
     {{template "footer" .}}

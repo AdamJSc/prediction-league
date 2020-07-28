@@ -13,7 +13,7 @@
                     <li v-for="item in entryFeeData.breakdown">{{item}}</li>
                 </ul>
                 <p>On the next screen, you'll be taken to a secure <strong>PayPal</strong> integration in order to make payment.</p>
-                <p>If you don't have a PayPal account, you can <strong>pay by credit or debit card instead</strong>.</p>
+                <p>If you don't have a PayPal account, you can <strong>pay by Debit or Credit card instead</strong>.</p>
             </div>
         </div>
         <div class="row">
@@ -139,10 +139,11 @@
                     data: this.formData
                 })
                     .then(function (response) {
-                        vm.$emit('refresh-entry-data', {
-                            entryID: response.data.data.entry.id,
-                            entryShortCode: response.data.data.entry.short_code,
-                            entryNickname: response.data.data.entry.nickname,
+                        vm.$emit('update-entry-data', {
+                            id: response.data.data.entry.id,
+                            email: vm.formData.entrant_email,
+                            shortCode: response.data.data.entry.short_code,
+                            needsPayment: response.data.data.entry.needs_payment
                         })
                         vm.$el.querySelector('#registration-entry-form').reset()
                         vm.$emit('workflow-step-change', 'registrationPayment')

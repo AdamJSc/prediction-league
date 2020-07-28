@@ -22,7 +22,9 @@ func (r createEntryRequest) ToEntryModel() models.Entry {
 type updateEntryPaymentDetailsRequest struct {
 	PaymentMethod string `json:"payment_method"`
 	PaymentRef    string `json:"payment_ref"`
-	EntryID       string `json:"entry_id"`
+	PaymentAmount string `json:"payment_amount"`
+	MerchantName  string `json:"merchant_name"`
+	ShortCode     string `json:"short_code"`
 }
 
 type createEntryPredictionRequest struct {

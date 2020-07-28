@@ -111,7 +111,6 @@ func frontendJoinHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, 
 			EntriesAccepted:       entriesAccepted,
 			EntriesUntil:          season.EntriesAccepted.Until,
 			SeasonName:            season.Name,
-			SupportEmailFormatted: domain.RealmFromContext(ctx).Contact.EmailProper,
 			PayPalClientID:        c.Config().PayPalClientID,
 			EntryFee:              domain.RealmFromContext(ctx).EntryFee,
 		}

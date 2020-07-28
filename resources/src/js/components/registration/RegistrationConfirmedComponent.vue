@@ -1,17 +1,24 @@
 <template>
     <div class="confirmed-step-container">
         <div class="row">
-            <div class="col-md-8 offset-md-2">
-                <h1>You're In!</h1>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-md-8 offset-md-2">
-                <p>Use the <em>My Prediction</em> link in the menu to submit your league table prediction!</p>
-                <ul>
-                    <li>Nickname: <strong>{{entryData.entryNickname}}</strong></li>
-                    <li>Short Code: <strong>{{entryData.entryShortCode}}</strong></li>
-                </ul>
+            <div class="col">
+                <div class="registration-success-summary">
+                    <div class="success-highlight">
+                        <div class="big-tick">
+                            <i class="fa fa-check" aria-hidden="true"></i>
+                        </div>
+                        <h2>You're In!</h2>
+                    </div>
+
+                    <p>Your payment of <strong>{{entryFeeData.label}}</strong> will show on your bank statement
+                        as <strong>{{paymentData.bankStatementDescriptor}}</strong></p>
+                    <p>Your PayPal reference is <strong>{{paymentData.paymentReference}}</strong></p>
+                    <p>We've just sent a confirmation email
+                        to<br /><span class="text-highlight">{{entryData.email}}</span></p>
+                    <p>This will provide instructions on how to submit your first prediction!</p>
+                    <p>If you don't receive your email, please contact us
+                        at <a v-bind:href="mailToSupportEmail">{{supportEmailPlainText}}</a></p>
+                </div>
             </div>
         </div>
     </div>
@@ -27,14 +34,25 @@
             entryData: {
                 type: Object
             },
+            entryFeeData: {
+                type: Object
+            },
             paymentData: {
                 type: Object
+            },
+            supportEmailFormatted: {
+                type: String
+            },
+            supportEmailPlainText: {
+                type: String
+            },
+            realmName: {
+                type: String
             }
         },
-        watch: {
-            paymentData: function(newPaymentData) {
-                console.log('TODO - render new payment data')
-                console.log(newPaymentData)
+        data: function() {
+            return {
+                mailToSupportEmail: 'mailto:' + this.supportEmailFormatted + '?subject=Please%20help%20me%20with%20my%20confirmation%20email%20at%20' + this.realmName
             }
         }
     }

@@ -22,9 +22,8 @@ func (e EmailQueueRunner) Run(_ context.Context) error {
 	log.Println("starting email queue runner")
 
 	for message := range e.EmailQueue() {
-		if !e.Config().InProduction {
-			// if we're not in production mode, don't send via the client
-			// just print to the logs instead
+		if e.Config().SendGridAPIKey == "" {
+			// email client config is missing so just print to the logs instead
 			log.Printf("email on queue: %+v", message)
 			continue
 		}
