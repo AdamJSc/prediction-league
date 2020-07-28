@@ -16,6 +16,9 @@ import (
 	"time"
 )
 
+// shortCodeLength represents the number of characters that a short code will contain
+const shortCodeLength = 6
+
 // EntryAgentInjector defines the dependencies required by our EntryAgent
 type EntryAgentInjector interface {
 	MySQL() coresql.Agent
@@ -590,7 +593,7 @@ func sanitiseEntry(entry *models.Entry) error {
 func GenerateUniqueShortCode(ctx context.Context, db coresql.Agent) (string, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(db)
 
-	shortCode := generateRandomAlphaNumericString(4)
+	shortCode := generateRandomAlphaNumericString(shortCodeLength)
 
 	_, err := entryRepo.Select(ctx, map[string]interface{}{
 		"short_code": shortCode,

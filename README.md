@@ -6,7 +6,7 @@
 
 ### About
 
-### Workflows
+### User Workflows
 
 ### Dependencies
 
@@ -55,6 +55,10 @@ I prefer Backend...
 
 Anyway, both build processes will watch for changes to CSS/JS/Vue files - however, changing Go files or
 HTML files/templates will require the service itself to be restarted each time.
+
+### Dependencies Config
+
+* Empty `PAYPAL_CLIENT_ID` and `SENDGRID_API_KEY` variables change behaviour
 
 ### Run App
 
@@ -264,6 +268,15 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 * Clean up of expired tokens
 
 ### Cookie Management
+
+### Registration Workflow
+
+* Return to payment stage mid-entry
+* Use cookies
+
+### Email provider
+
+* Replace SendGrid
 
 ### Scheduled Tasks Concurrency
 
