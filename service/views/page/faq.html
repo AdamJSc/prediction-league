@@ -2,12 +2,8 @@
     {{template "header" .}}
     {{with .Data}}
         {{if .Err}}
-            <div class="row">
-                <div class="col">
-                    <div class="alert alert-danger">
-                        <p>{{.Err}}</p>
-                    </div>
-                </div>
+            <div class="alert alert-danger">
+                <p>{{.Err}}</p>
             </div>
         {{else}}
             <div class="col">

@@ -1,49 +1,31 @@
 {{define "prediction"}}
     {{template "header" .}}
+    <div id="app">
     {{$parent := .}}
     {{with .Data}}
         {{if .Err}}
-            <div class="row">
-                <div class="col">
-                    <div class="alert alert-danger">
-                        <p>{{.Err}}</p>
-                    </div>
-                </div>
+            <div class="alert alert-danger">
+                <p>{{.Err}}</p>
             </div>
         {{else}}
             {{if .Predictions.BeingAccepted}}
-                <div class="row">
-                    <div class="col">
-                        <prediction-countdown subject="prediction-close" unix="{{timestamp_as_unix .Predictions.AcceptedUntil}}"></prediction-countdown>
-                    </div>
-                </div>
+                <countdown label="Window closes in..." v-bind:unix="{{timestamp_as_unix .Predictions.AcceptedUntil}}"></countdown>
                 {{if $parent.IsLoggedIn}}
-                    <div class="row">
-                        <div class="col">
-                            <open-prediction v-bind:entry="{id: '{{.Entry.ID}}', shortCode: '{{.Entry.ShortCode}}'}" raw-teams="{{.Teams.Raw}}" unix="{{timestamp_as_unix .Teams.LastUpdated}}"></open-prediction>
-                        </div>
-                    </div>
+                    <open-prediction v-bind:entry="{id: '{{.Entry.ID}}', shortCode: '{{.Entry.ShortCode}}'}" raw-teams="{{.Teams.Raw}}" unix="{{timestamp_as_unix .Teams.LastUpdated}}"></open-prediction>
                 {{else}}
-                    <div class="row">
-                        <div class="col">
-                            <prediction-login></prediction-login>
-                        </div>
-                    </div>
+                    <prediction-login></prediction-login>
                 {{end}}
             {{else if .Predictions.NextAcceptedFrom}}
-                <div class="row">
-                    <div class="col">
-                        <prediction-countdown subject="prediction-open" unix="{{timestamp_as_unix .Predictions.NextAcceptedFrom}}"></prediction-countdown>
-                    </div>
-                </div>
+                <countdown label="Next window opens in..." v-bind:unix="{{timestamp_as_unix .Predictions.NextAcceptedFrom}}"></countdown>
             {{else}}
-                <div class="row">
-                    <div class="col">
-                        <p>That's it for the current season... Good luck!</p>
-                    </div>
+                <div class="no-more-predictions-summary">
+                    <p>That's it for the current season...</p>
+                    <p><strong>Good Luck!</strong></p>
+                    <p>And don't forget to join us for the next one 😎</p>
                 </div>
             {{end}}
         {{end}}
+    </div>
     {{end}}
     {{template "footer" .}}
 {{end}}

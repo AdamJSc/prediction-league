@@ -115,10 +115,9 @@ func getPredictionPageData(ctx context.Context, authToken string, entryAgent dom
 	seasonState := season.GetState(domain.TimestampFromContext(ctx))
 	data.Predictions.BeingAccepted = seasonState.IsAcceptingPredictions
 	if seasonState.NextPredictionsWindow != nil {
-		switch data.Predictions.BeingAccepted {
-		case true:
+		if data.Predictions.BeingAccepted {
 			data.Predictions.AcceptedUntil = &seasonState.NextPredictionsWindow.Until
-		default:
+		} else {
 			data.Predictions.NextAcceptedFrom = &seasonState.NextPredictionsWindow.From
 		}
 	}
@@ -152,7 +151,7 @@ func getPredictionPageData(ctx context.Context, authToken string, entryAgent dom
 		data.Entry.ShortCode = entry.ShortCode
 
 		// if entry has an associated entry prediction
-		// then override the team IDs with the most recent prediction
+		// then override the default season team IDs with the most recent prediction
 		entryPrediction, err := entryAgent.RetrieveEntryPredictionByTimestamp(ctx, entry, domain.TimestampFromContext(ctx))
 		if err == nil {
 			// we have an entry prediction, let's capture what we need for our view
@@ -161,7 +160,7 @@ func getPredictionPageData(ctx context.Context, authToken string, entryAgent dom
 		}
 	}
 
-	// retrieve teams
+	// filter all teams to just the IDs that we need
 	teams, err := domain.FilterTeamsByIDs(teamIDs, datastore.Teams)
 	if err != nil {
 		// something went wrong
