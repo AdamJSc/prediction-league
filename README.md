@@ -58,7 +58,7 @@ HTML files/templates will require the service itself to be restarted each time.
 
 ### Dependencies Config
 
-* Empty `PAYPAL_CLIENT_ID` and `SENDGRID_API_KEY` variables change behaviour
+* Empty `PAYPAL_CLIENT_ID`, `SENDGRID_API_KEY`, `FOOTBALLDATA_API_TOKEN` variables change behaviour
 
 ### Run App
 
