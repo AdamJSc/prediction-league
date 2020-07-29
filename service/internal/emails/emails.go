@@ -8,8 +8,15 @@ type EmailData struct {
 	SupportEmail string
 }
 
+type PaymentDetails struct {
+	Amount       string
+	Reference    string
+	MerchantName string
+}
+
 type NewEntryEmailData struct {
 	EmailData
+	PaymentDetails PaymentDetails
 	PredictionsURL string
 	ShortCode      string
 }

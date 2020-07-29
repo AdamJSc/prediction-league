@@ -3,6 +3,7 @@ package domain
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
 	"prediction-league/service/internal/datastore"
@@ -30,7 +31,19 @@ type CommunicationsAgentInjector interface {
 type CommunicationsAgent struct{ CommunicationsAgentInjector }
 
 // IssueNewEntryEmail generates a "new entry" email for the provided Entry and pushes it to the send queue
-func (c CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *models.Entry) error {
+func (c CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *models.Entry, paymentDetails *emails.PaymentDetails) error {
+	if entry == nil {
+		return InternalError{errors.New("no entry provided")}
+	}
+
+	if paymentDetails == nil {
+		return InternalError{errors.New("no payment details provided")}
+	}
+
+	if paymentDetails.Amount == "" || paymentDetails.Reference == "" || paymentDetails.MerchantName == "" {
+		return ValidationError{Reasons: []string{"invalid payment details"}}
+	}
+
 	realm, ok := c.Config().Realms[entry.RealmName]
 	if !ok {
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
@@ -43,6 +56,7 @@ func (c CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *models
 
 	d := emails.NewEntryEmailData{
 		EmailData:      newEmailData(realm, entry.EntrantName, season.Name),
+		PaymentDetails: *paymentDetails,
 		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
 		ShortCode:      entry.ShortCode,
 	}

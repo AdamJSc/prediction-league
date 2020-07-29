@@ -1,30 +1,34 @@
 <template>
     <div class="prediction-login-container">
-        <transition name="fade">
-            <div v-if="errorMessages.length > 0" class="error-messages alert alert-block alert-danger">
-                <button type="button" class="close" v-on:click="resetErrorMessages">&times;</button>
-                <ul><li v-for="msg in errorMessages">{{msg}}</li></ul>
-            </div>
-        </transition>
-        <form id="prediction-login-form" class="form-primary">
-            <div class="form-label-group">
-                <input v-model="formData.email_nickname" type="email" id="inputEmailNickname" name="email_nickname" class="form-control" placeholder="Email or Nickname" required autofocus>
-                <label for="inputEmailNickname">Email or Nickname</label>
-            </div>
+        <div class="row">
+            <div class="col-lg-6 offset-lg-3 col-md-10 offset-md-1">
+                <transition name="fade">
+                    <div v-if="errorMessages.length > 0" class="error-messages alert alert-block alert-danger">
+                        <button type="button" class="close" v-on:click="resetErrorMessages">&times;</button>
+                        <ul><li v-for="msg in errorMessages">{{msg}}</li></ul>
+                    </div>
+                </transition>
+                <form id="prediction-login-form" class="form-primary">
+                    <div class="form-label-group">
+                        <input v-model="formData.email_nickname" type="email" id="inputEmailNickname" name="email_nickname" class="form-control" placeholder="Email or Nickname" required>
+                        <label for="inputEmailNickname">Email or Nickname</label>
+                    </div>
 
-            <div class="form-label-group">
-                <input v-model="formData.short_code" type="text" id="inputShortCode" name="short_code" class="form-control" placeholder="Short Code" required>
-                <label for="inputShortCode">Short Code</label>
-            </div>
+                    <div class="form-label-group">
+                        <input v-model="formData.short_code" type="text" id="inputShortCode" name="short_code" class="form-control" placeholder="Short Code" required>
+                        <label for="inputShortCode">Short Code</label>
+                    </div>
 
-            <div class="submit-wrapper">
-                <action-button
-                        label="Login"
-                        @clicked="loginOnClick"
-                        :is-disabled="working"
-                        :is-working="working"></action-button>
+                    <div class="submit-wrapper">
+                        <action-button
+                                label="Go!"
+                                @clicked="loginOnClick"
+                                :is-disabled="working"
+                                :is-working="working"></action-button>
+                    </div>
+                </form>
             </div>
-        </form>
+        </div>
     </div>
 </template>
 

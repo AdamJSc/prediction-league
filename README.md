@@ -1,6 +1,18 @@
-# prediction-league
+# Prediction League
 
-## Requirements
+* Summary
+
+## Background
+
+### About
+
+### User Workflows
+
+### Dependencies
+
+## Running Locally
+
+### Requirements
 
 Either...
 
@@ -18,9 +30,7 @@ Or...
 * Docker Compose
 * Make
 
-## Getting Started
-
-### Local Environment
+### Environment
 
 This project can be run either fully-Dockerised (runs exclusively within containers) or
 partly-Dockerised (dependencies and build tools are in containers, but the service runs
@@ -45,6 +55,10 @@ I prefer Backend...
 
 Anyway, both build processes will watch for changes to CSS/JS/Vue files - however, changing Go files or
 HTML files/templates will require the service itself to be restarted each time.
+
+### Dependencies Config
+
+* Empty `PAYPAL_CLIENT_ID` and `SENDGRID_API_KEY` variables change behaviour
 
 ### Run App
 
@@ -255,6 +269,15 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 
 ### Cookie Management
 
+### Registration Workflow
+
+* Return to payment stage mid-entry
+* Use cookies
+
+### Email provider
+
+* Replace SendGrid
+
 ### Scheduled Tasks Concurrency
 
 * Make processing of Standings concurrent when retrieving Latest Standings + scoring Entry Predictions
@@ -264,7 +287,7 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 
 * If sending of email fails, retry it X times with a cool-off in between each
 
-### Datastore
+### Global Data Store
 
 * Hard-coded seasons and teams data
 * Replace with a "seasons data provider" and "teams data provider" that can be injected via container
@@ -275,7 +298,3 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 * Webpack was warning against huge chunks otherwise
 
 ### Split out tests
-
-### Cron
-
-* Move it to a runnable process?

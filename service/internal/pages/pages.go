@@ -8,9 +8,11 @@ import (
 
 type Base struct {
 	Title                 string
+	BannerTitle           template.HTML
 	ActivePage            string
 	IsLoggedIn            bool
 	SupportEmailPlainText string
+	SupportEmailFormatted string
 	RealmName             string
 	RunningVersion        string
 	VersionTimestamp      string
@@ -49,7 +51,9 @@ type LeaderBoardPageData struct {
 }
 
 type JoinPageData struct {
-	SupportEmailFormatted string
+	EntriesAccepted       bool
+	EntriesUntil          time.Time
+	SeasonName            string
 	PayPalClientID        string
 	EntryFee              domain.RealmEntryFee
 }

@@ -5,6 +5,10 @@ Great news {{.Name}} - you're in! 🎉
 
 It's lovely to have you on-board for the {{.SeasonName}} season ⚽️
 
+Your payment of {{.PaymentDetails.Amount}} will show on your bank statement as {{.PaymentDetails.MerchantName}}.
+
+Your PayPal reference is {{.PaymentDetails.Reference}}
+
 To submit your first prediction, go to:
 {{.PredictionsURL}}
 

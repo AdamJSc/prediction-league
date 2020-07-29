@@ -16,6 +16,9 @@ import (
 	"time"
 )
 
+// shortCodeLength represents the number of characters that a short code will contain
+const shortCodeLength = 6
+
 // EntryAgentInjector defines the dependencies required by our EntryAgent
 type EntryAgentInjector interface {
 	MySQL() coresql.Agent
@@ -393,20 +396,25 @@ func (e EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPredicti
 }
 
 // UpdateEntryPaymentDetails provides a shortcut to updating the payment details for a provided entryID
-func (e EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, paymentMethod, paymentRef string) (models.Entry, error) {
+func (e EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, paymentMethod, paymentRef string, acceptsOther bool) (models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 
 	// ensure that payment method is valid
 	if !isValidEntryPaymentMethod(paymentMethod) {
 		return models.Entry{}, ValidationError{
-			Reasons: []string{"Invalid payment method"},
+			Reasons: []string{"invalid payment method"},
 		}
+	}
+
+	// ensure that we are only able to explicitly accept payment method "other"
+	if paymentMethod == models.EntryPaymentMethodOther && !acceptsOther {
+		return models.Entry{}, ConflictError{fmt.Errorf("cannot accept payment method: %s", models.EntryPaymentMethodOther)}
 	}
 
 	// ensure that payment ref is not empty
 	if paymentRef == "" {
 		return models.Entry{}, ValidationError{
-			Reasons: []string{"Invalid payment ref"},
+			Reasons: []string{"invalid payment ref"},
 		}
 	}
 
@@ -430,7 +438,7 @@ func (e EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, paym
 	}
 
 	// ensure that Guard value matches Entry ID
-	if !GuardFromContext(ctx).AttemptMatches(entry.ID.String()) {
+	if !GuardFromContext(ctx).AttemptMatches(entry.ShortCode) {
 		return models.Entry{}, ValidationError{
 			Reasons: []string{"Invalid Entry ID"},
 		}
@@ -585,7 +593,7 @@ func sanitiseEntry(entry *models.Entry) error {
 func GenerateUniqueShortCode(ctx context.Context, db coresql.Agent) (string, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(db)
 
-	shortCode := generateRandomAlphaNumericString(4)
+	shortCode := generateRandomAlphaNumericString(shortCodeLength)
 
 	_, err := entryRepo.Select(ctx, map[string]interface{}{
 		"short_code": shortCode,

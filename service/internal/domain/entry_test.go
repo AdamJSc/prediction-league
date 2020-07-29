@@ -1032,7 +1032,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	paymentRef := "ABCD1234"
 
 	t.Run("update payment details for an existent entry with valid credentials must succeed", func(t *testing.T) {
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ID.String())
+		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
 		defer cancel()
 
 		entryWithPaymentDetails, err := agent.UpdateEntryPaymentDetails(
@@ -1040,6 +1040,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 			entry.ID.String(),
 			models.EntryPaymentMethodPayPal,
 			paymentRef,
+			true,
 		)
 		if err != nil {
 			t.Fatal(err)
@@ -1063,9 +1064,26 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 			entry.ID.String(),
 			"not_a_valid_payment_method",
 			paymentRef,
+			true,
 		)
 		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
 			expectedTypeOfGot(t, domain.ValidationError{}, err)
+		}
+	})
+
+	t.Run("update entry with payment method 'other' when this is not accepted must fail", func(t *testing.T) {
+		ctx, cancel := testContextWithGuardAttempt(t, entry.ID.String())
+		defer cancel()
+
+		_, err := agent.UpdateEntryPaymentDetails(
+			ctx,
+			entry.ID.String(),
+			models.EntryPaymentMethodOther,
+			paymentRef,
+			false,
+		)
+		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
+			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
 	})
 
@@ -1078,6 +1096,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 			entry.ID.String(),
 			models.EntryPaymentMethodPayPal,
 			"",
+			true,
 		)
 		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
 			expectedTypeOfGot(t, domain.ValidationError{}, err)
@@ -1093,6 +1112,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 			"not_an_existing_entry_id",
 			models.EntryPaymentMethodPayPal,
 			paymentRef,
+			true,
 		)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
@@ -1110,6 +1130,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 			entry.ID.String(),
 			models.EntryPaymentMethodPayPal,
 			paymentRef,
+			true,
 		)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
@@ -1125,6 +1146,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 			entry.ID.String(),
 			models.EntryPaymentMethodPayPal,
 			paymentRef,
+			true,
 		)
 		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
 			expectedTypeOfGot(t, domain.ValidationError{}, err)
@@ -1132,7 +1154,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update payment details for an existing entry with an invalid status must fail", func(t *testing.T) {
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ID.String())
+		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
 		defer cancel()
 
 		entryWithInvalidStatus := generateTestEntry(t,
@@ -1149,6 +1171,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 			entry.ID.String(),
 			models.EntryPaymentMethodPayPal,
 			paymentRef,
+			true,
 		)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)

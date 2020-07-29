@@ -1,21 +1,22 @@
 <template>
     <div class="registration-workflow-container">
+        <countdown label="Entries close in..." v-bind:unix="unix"></countdown>
         <div class="carousel slide">
             <div class="carousel-inner">
                 <div class="carousel-item active">
                     <registration-entry
                             v-show="showRegistrationSteps.registrationForm"
                             v-on:workflow-step-change="changeWorkflowStep"
-                            v-on:refresh-entry-data="refreshEntryData"
+                            v-on:update-entry-data="updateEntryData"
                             v-bind:entry-fee-data="entryFeeData"></registration-entry>
                 </div>
                 <div class="carousel-item">
                     <registration-payment
                             v-show="showRegistrationSteps.registrationPayment"
                             v-on:workflow-step-change="changeWorkflowStep"
-                            v-on:refresh-payment-data="refreshPaymentData"
+                            v-on:update-payment-data="updatePaymentData"
                             v-bind:entry-data="entryData"
-                            v-bind:payment-amount="entryFeeData.amount"
+                            v-bind:entry-fee-data="entryFeeData"
                             v-bind:support-email-formatted="supportEmailFormatted"
                             v-bind:support-email-plain-text="supportEmailPlainText"
                             v-bind:realm-name="realmName"></registration-payment>
@@ -24,7 +25,11 @@
                     <registration-confirmed
                             v-show="showRegistrationSteps.registrationConfirmed"
                             v-bind:entry-data="entryData"
-                            v-bind:payment-data="paymentData"></registration-confirmed>
+                            v-bind:entry-fee-data="entryFeeData"
+                            v-bind:payment-data="paymentData"
+                            v-bind:support-email-formatted="supportEmailFormatted"
+                            v-bind:support-email-plain-text="supportEmailPlainText"
+                            v-bind:realm-name="realmName"></registration-confirmed>
                 </div>
             </div>
         </div>
@@ -35,6 +40,9 @@
     export default {
         name: 'RegistrationWorkflowComponent',
         props: {
+            unix: {
+                type: String
+            },
             entryFeeAmount: {
                 type: Number
             },
@@ -42,7 +50,7 @@
                 type: String
             },
             rawEntryFeeBreakdown: {
-                type: Array
+                type: String
             },
             supportEmailFormatted: {
                 type: String
@@ -68,8 +76,10 @@
                     breakdown: JSON.parse(this.rawEntryFeeBreakdown)
                 },
                 entryData: {
-                    entryID: "",
-                    entryShortCode: ""
+                    id: "",
+                    email: "",
+                    shortCode: "",
+                    needsPayment: true
                 },
                 paymentData: {
                     paymentReference: "",
@@ -82,10 +92,10 @@
             this.carousel.carousel({interval: false})
         },
         methods: {
-            refreshEntryData: function(newEntryData) {
+            updateEntryData: function(newEntryData) {
                 this.entryData = newEntryData
             },
-            refreshPaymentData: function(newPaymentData) {
+            updatePaymentData: function(newPaymentData) {
                 this.paymentData = newPaymentData
             },
             changeWorkflowStep: function(newWorkflowStep) {

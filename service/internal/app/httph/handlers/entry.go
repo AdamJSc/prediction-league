@@ -9,6 +9,7 @@ import (
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
+	"prediction-league/service/internal/emails"
 	"prediction-league/service/internal/models"
 )
 
@@ -74,9 +75,10 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 		rest.CreatedResponse(&rest.Data{
 			Type: "entry",
 			Content: createEntryResponse{
-				ID:        createdEntry.ID.String(),
-				Nickname:  createdEntry.EntrantNickname,
-				ShortCode: createdEntry.ShortCode,
+				ID:           createdEntry.ID.String(),
+				Nickname:     createdEntry.EntrantNickname,
+				ShortCode:    createdEntry.ShortCode,
+				NeedsPayment: c.Config().PayPalClientID != "",
 			},
 		}, nil).WriteTo(w)
 	}
@@ -118,17 +120,25 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 		}
 		defer cancel()
 
-		domain.GuardFromContext(ctx).SetAttempt(input.EntryID)
+		paymentDetails := emails.PaymentDetails{
+			Amount:       input.PaymentAmount,
+			Reference:    input.PaymentRef,
+			MerchantName: input.MerchantName,
+		}
+
+		domain.GuardFromContext(ctx).SetAttempt(input.ShortCode)
+
+		isPayPalConfigMissing := c.Config().PayPalClientID == ""
 
 		// update payment details for entry
-		entry, err := entryAgent.UpdateEntryPaymentDetails(ctx, entryID, input.PaymentMethod, input.PaymentRef)
+		entry, err := entryAgent.UpdateEntryPaymentDetails(ctx, entryID, input.PaymentMethod, input.PaymentRef, isPayPalConfigMissing)
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return
 		}
 
 		// issue new entry email
-		if err := commsAgent.IssueNewEntryEmail(ctx, &entry); err != nil {
+		if err := commsAgent.IssueNewEntryEmail(ctx, &entry, &paymentDetails); err != nil {
 			responseFromError(err).WriteTo(w)
 			return
 		}
