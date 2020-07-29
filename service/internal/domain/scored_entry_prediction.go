@@ -122,6 +122,28 @@ func (s ScoredEntryPredictionAgent) UpdateScoredEntryPrediction(ctx context.Cont
 	return scoredEntryPrediction, nil
 }
 
+// ScoreEntryPredictionBasedOnStandings generates a scored entry prediction from the provided entry prediction and standings
+func ScoreEntryPredictionBasedOnStandings(
+	entryPrediction models.EntryPrediction,
+	standings models.Standings,
+) (*models.ScoredEntryPrediction, error) {
+	standingsRankingCollection := models.NewRankingCollectionFromRankingWithMetas(standings.Rankings)
+
+	rws, err := CalculateRankingsScores(entryPrediction.Rankings, standingsRankingCollection)
+	if err != nil {
+		return nil, err
+	}
+
+	sep := models.ScoredEntryPrediction{
+		EntryPredictionID: entryPrediction.ID,
+		StandingsID:       standings.ID,
+		Rankings:          *rws,
+		Score:             rws.GetTotal(),
+	}
+
+	return &sep, nil
+}
+
 // TeamRankingsAsStrings returns the provided rankings as a slice of strings formatted with padding
 func TeamRankingsAsStrings(sepRankings []models.RankingWithScore, standingsRankings []models.RankingWithMeta) ([]string, error) {
 	if len(sepRankings) == 0 {

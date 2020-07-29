@@ -252,6 +252,7 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 * TBC
 * Additional comms methods - HTML email + SMS
 * Additional comms events - prediction window opens, prediction window pre-close reminder
+* Short Code reset workflow
 
 ## Improvements
 

@@ -6,11 +6,11 @@ import (
 )
 
 // CalculateRankingsScores compares baseRC with comparisonRC to produce a new RankingWithScoreCollection
-func CalculateRankingsScores(baseRC, comparisonRC models.RankingCollection) (models.RankingWithScoreCollection, error) {
+func CalculateRankingsScores(baseRC, comparisonRC models.RankingCollection) (*models.RankingWithScoreCollection, error) {
 	var collection models.RankingWithScoreCollection
 
 	if err := rankingsIDsMatch(baseRC, comparisonRC); err != nil {
-		return models.RankingWithScoreCollection{}, err
+		return nil, err
 	}
 
 	for _, baseRanking := range baseRC {
@@ -20,7 +20,7 @@ func CalculateRankingsScores(baseRC, comparisonRC models.RankingCollection) (mod
 
 		comparisonRanking, err := comparisonRC.GetByID(baseRanking.ID)
 		if err != nil {
-			return models.RankingWithScoreCollection{}, err
+			return nil, NotFoundError{err}
 		}
 
 		// score should be the absolute value of the difference between our ranking positions
@@ -35,7 +35,7 @@ func CalculateRankingsScores(baseRC, comparisonRC models.RankingCollection) (mod
 		collection = append(collection, rws)
 	}
 
-	return collection, nil
+	return &collection, nil
 }
 
 // rankingsIDsMatch returns an error if the provided RankingCollections do not match their respective IDs in full

@@ -5,6 +5,10 @@ import (
 	"testing"
 )
 
+// TODO - tests for Season.GetState
+
+// TODO - tests for Season.IsCompletedByStandings
+
 func TestSeasonCollection_GetByID(t *testing.T) {
 	collection := models.SeasonCollection{
 		"season_1": models.Season{ID: "season_1"},

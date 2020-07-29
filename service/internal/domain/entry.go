@@ -528,6 +528,44 @@ func (e EntryAgent) RetrieveEntryPredictionByTimestamp(ctx context.Context, entr
 	return entryPrediction, nil
 }
 
+// RetrieveEntryPredictionsForActiveSeasonByTimestamp retrieves all entry predictions active at the provided timestamp
+// for the provided active season
+func (e EntryAgent) RetrieveEntryPredictionsForActiveSeasonByTimestamp(
+	ctx context.Context,
+	season models.Season,
+	timestamp *time.Time,
+) ([]models.EntryPrediction, error) {
+	ts := time.Now()
+	if timestamp != nil {
+		ts = *timestamp
+	}
+
+	// ensure that season is active based on provided timestamp
+	if !season.Active.HasBegunBy(ts) || season.Active.HasElapsedBy(ts) {
+		return nil, ConflictError{fmt.Errorf("season not active: id %s", season.ID)}
+	}
+
+	// retrieve all entries for provided season
+	seasonEntries, err := e.RetrieveEntriesBySeasonID(ctx, season.ID, false)
+	if err != nil {
+		return nil, err
+	}
+
+	// get the entry prediction valid at the provided timestamp for each of the entries we've just retrieved
+	var currentEntryPredictions []models.EntryPrediction
+	for _, entry := range seasonEntries {
+		es, err := getEntryPredictionValidAtTimestamp(entry.EntryPredictions, ts)
+		if err != nil {
+			// error indicates that no prediction has been found, so just ignore this entry and continue to the next
+			continue
+		}
+
+		currentEntryPredictions = append(currentEntryPredictions, es)
+	}
+
+	return currentEntryPredictions, nil
+}
+
 // sanitiseEntry sanitises and validates an Entry
 func sanitiseEntry(entry *models.Entry) error {
 	// only permit alphanumeric characters withing entrant nickname
@@ -609,8 +647,8 @@ func GenerateUniqueShortCode(ctx context.Context, db coresql.Agent) (string, err
 	return "", err
 }
 
-// GetEntryPredictionValidAtTimestamp returns the latest EntryPrediction that existed at the point of the provided timestamp
-func GetEntryPredictionValidAtTimestamp(entryPredictions []models.EntryPrediction, ts time.Time) (models.EntryPrediction, error) {
+// getEntryPredictionValidAtTimestamp returns the latest EntryPrediction that existed at the point of the provided timestamp
+func getEntryPredictionValidAtTimestamp(entryPredictions []models.EntryPrediction, ts time.Time) (models.EntryPrediction, error) {
 	desc := entryPredictions
 	sort.SliceStable(desc, func(i, j int) bool {
 		// sort descending
