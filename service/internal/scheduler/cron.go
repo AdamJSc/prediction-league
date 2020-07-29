@@ -12,8 +12,10 @@ import (
 func LoadCron(container *httph.HTTPAppContainer) *cron.Cron {
 	c := cron.New()
 
-	for _, j := range mustGenerateRetrieveLatestStandingsJobs(container) {
-		c.AddFunc(j.spec, j.task)
+	if container.Config().FootballDataAPIToken != "" {
+		for _, j := range mustGenerateRetrieveLatestStandingsJobs(container) {
+			c.AddFunc(j.spec, j.task)
+		}
 	}
 
 	return c

@@ -330,7 +330,7 @@ func MustSeed(db coresql.Agent) {
 	entryRepo := repositories.NewEntryDatabaseRepository(db)
 	entryPredictionRepo := repositories.NewEntryPredictionDatabaseRepository(db)
 
-	seasonID := "201920_1"
+	seasonID := "FakeSeason"
 	realmName := "localhost"
 	paymentMethod := models.EntryPaymentMethodOther
 	paymentRef := "payment_ref"

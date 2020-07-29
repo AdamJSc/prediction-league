@@ -135,7 +135,7 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 					jobName,
 					errors.Wrapf(
 						err,
-						"score entry prediction id %s based on standings id %s",
+						"score entry prediction id %s based on standings id %d",
 						entryPrediction.ID.String(),
 						standings.RoundNumber,
 					),
@@ -182,7 +182,7 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 		for err := range errChan {
 			log.Println(wrapJobError(
 				jobName,
-				errors.Wrapf(err, "issue round complete email", err),
+				errors.Wrap(err, "issue round complete email"),
 			))
 		}
 
