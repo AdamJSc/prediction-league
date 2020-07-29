@@ -7,27 +7,20 @@
                 <div class="alert alert-danger">
                     <p>{{.Err}}</p>
                 </div>
-            {{else}}
-                <div class="row">
-                    <div class="text-center col">
-                        <p><i class="fa fa-info-circle" aria-hidden="true"></i> Select a name to view their score breakdown for each round</p>
-                    </div>
+            {{else if .Entries.RawRankings}}
+                <div class="text-center">
+                    <p><i class="fa fa-info-circle" aria-hidden="true"></i> Select a name to view their score breakdown for each round</p>
                 </div>
-                <div class="row">
-                    <div class="col">
-                        {{if .Entries.RawRankings}}
-                            <leaderboard
-                                    season-id="{{.Season.ID}}"
-                                    initial-round-number="{{.RoundNumber}}"
-                                    unix="{{timestamp_as_unix .LastUpdated}}"
-                                    raw-entries="{{.Entries.RawEntries}}"
-                                    raw-rankings="{{.Entries.RawRankings}}"
-                                    raw-teams="{{.Season.RawTeams}}"></leaderboard>
-                        {{else}}
-                            <p>No entries yet</p>
-                            <p><a href="/join">Be the first!</a></p>
-                        {{end}}
-                    </div>
+                <leaderboard
+                        season-id="{{.Season.ID}}"
+                        initial-round-number="{{.RoundNumber}}"
+                        unix="{{timestamp_as_unix .LastUpdated}}"
+                        raw-entries="{{.Entries.RawEntries}}"
+                        raw-rankings="{{.Entries.RawRankings}}"
+                        raw-teams="{{.Season.RawTeams}}"></leaderboard>
+            {{else}}
+                <div class="highlight-container">
+                    Entries coming soon!
                 </div>
             {{end}}
         </div>
