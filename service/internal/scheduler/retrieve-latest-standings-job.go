@@ -82,6 +82,13 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 
 		var standings models.Standings
 
+		// if standings represents a completed season, ensure that standings round number reflects the season's max rounds
+		// standings data from upstream client was stuck on round 37 for a 38-round PL season in 2019/20
+		// this check safeguards against that
+		if season.IsCompletedByStandings(standings) && standings.RoundNumber != season.MaxRounds {
+			standings.RoundNumber = season.MaxRounds
+		}
+
 		existingStandings, err := standingsAgent.RetrieveStandingsBySeasonAndRoundNumber(ctx, season.ID, clientStandings.RoundNumber)
 		switch err.(type) {
 		case nil:

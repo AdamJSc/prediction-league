@@ -70,11 +70,6 @@ func (s Season) IsCompletedByStandings(standings Standings) bool {
 		return false
 	}
 
-	if standings.RoundNumber != s.MaxRounds {
-		// standings does not represents final round, so season is not complete
-		return false
-	}
-
 	for _, rwm := range standings.Rankings {
 		played, ok := rwm.MetaData[MetaKeyPlayedGames]
 		if !ok || played != s.MaxRounds {
