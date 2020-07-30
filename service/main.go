@@ -29,6 +29,10 @@ import (
 )
 
 func main() {
+	// TODO PRELAUNCH - write FAQs
+
+	// TODO PRELAUNCH - update TBC season teams and timeframes
+
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// setup env and config
