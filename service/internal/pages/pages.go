@@ -51,11 +51,13 @@ type LeaderBoardPageData struct {
 }
 
 type JoinPageData struct {
-	EntriesAccepted       bool
-	EntriesUntil          time.Time
-	SeasonName            string
-	PayPalClientID        string
-	EntryFee              domain.RealmEntryFee
+	EntriesOpen     bool
+	EntriesOpenTS   time.Time
+	EntriesClosed   bool
+	EntriesClosedTS time.Time
+	SeasonName      string
+	PayPalClientID  string
+	EntryFee        domain.RealmEntryFee
 }
 
 type FAQPageData struct {

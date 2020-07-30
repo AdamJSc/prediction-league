@@ -455,6 +455,10 @@ table.round {
 .text-highlight {
   color: $secondary-dark;
   font-weight: bold;
+
+  &.bigger {
+    font-size: 1.3rem;
+  }
 }
 
 .text-lolight {

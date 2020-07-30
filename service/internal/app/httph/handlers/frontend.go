@@ -105,14 +105,17 @@ func frontendJoinHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, 
 		}
 
 		now := time.Now()
-		entriesAccepted := season.EntriesAccepted.HasBegunBy(now) && !season.EntriesAccepted.HasElapsedBy(now)
+		entriesOpen := season.EntriesAccepted.HasBegunBy(now) && !season.EntriesAccepted.HasElapsedBy(now)
+		entriesClosed := season.EntriesAccepted.HasElapsedBy(now)
 
 		data := pages.JoinPageData{
-			EntriesAccepted:       entriesAccepted,
-			EntriesUntil:          season.EntriesAccepted.Until,
-			SeasonName:            season.Name,
-			PayPalClientID:        c.Config().PayPalClientID,
-			EntryFee:              domain.RealmFromContext(ctx).EntryFee,
+			EntriesOpen:     entriesOpen,
+			EntriesOpenTS:   season.EntriesAccepted.From,
+			EntriesClosed:   entriesClosed,
+			EntriesClosedTS: season.EntriesAccepted.Until,
+			SeasonName:      season.Name,
+			PayPalClientID:  c.Config().PayPalClientID,
+			EntryFee:        domain.RealmFromContext(ctx).EntryFee,
 		}
 
 		p := newPage(r, c, "Join", "join", "Join", data)

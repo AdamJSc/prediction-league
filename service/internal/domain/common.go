@@ -69,6 +69,8 @@ func MustLoadConfigFromEnvPaths(paths ...string) Config {
 
 	config.Realms = mustParseRealmsFromPath(fmt.Sprintf("./data/realms.yml"))
 
+	// TODO - add log if no PayPal config
+
 	return config
 }
 
@@ -119,6 +121,9 @@ var templateFunctions = template.FuncMap{
 			return 0
 		}
 		return ts.Unix()
+	},
+	"format_timestamp": func(ts time.Time, layout string) string {
+		return ts.Format(layout)
 	},
 	"jsonify_strings": func(input []string) string {
 		bytes, err := json.Marshal(input)

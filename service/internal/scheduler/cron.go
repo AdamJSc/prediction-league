@@ -13,6 +13,7 @@ func LoadCron(container *httph.HTTPAppContainer) *cron.Cron {
 	c := cron.New()
 
 	if container.Config().FootballDataAPIToken != "" {
+		// TODO - add log if no config
 		for _, j := range mustGenerateRetrieveLatestStandingsJobs(container) {
 			c.AddFunc(j.spec, j.task)
 		}
