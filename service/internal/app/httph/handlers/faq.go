@@ -12,7 +12,7 @@ import (
 func getFAQPageData(realmName string) pages.FAQPageData {
 	var data pages.FAQPageData
 
-	// read faqs for provided realm
+	// read faq for provided realm
 	contents, err := ioutil.ReadFile(fmt.Sprintf("./data/faq-by-realm/%s.yml", realmName))
 	if err != nil {
 		data.Err = err
