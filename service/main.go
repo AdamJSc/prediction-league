@@ -10,7 +10,7 @@ import (
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/app/httph/handlers"
 	"prediction-league/service/internal/clients"
-	"prediction-league/service/internal/clients/sendgrid"
+	"prediction-league/service/internal/clients/mailgun"
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/messages"
@@ -59,7 +59,7 @@ func main() {
 	httpAppContainer := httph.NewHTTPAppContainer(dependencies{
 		config:         config,
 		mysql:          db,
-		emailClient:    sendgrid.NewClient(config.SendGridAPIKey),
+		emailClient:    mailgun.NewClient(config.MailgunAPIKey),
 		emailQueue:     make(chan messages.Email),
 		router:         mux.NewRouter(),
 		templates:      domain.MustParseTemplates("./service/views"),

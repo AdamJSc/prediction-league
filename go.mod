@@ -13,6 +13,7 @@ require (
 	github.com/google/go-cmp v0.3.0
 	github.com/gorilla/mux v1.7.4
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/mailgun/mailgun-go/v3 v3.6.4
 	github.com/pkg/errors v0.8.1
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/sendgrid/rest v2.6.0+incompatible // indirect

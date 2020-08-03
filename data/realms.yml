@@ -1,6 +1,7 @@
 realms:
     localhost:
       origin: http://localhost:3000
+      sender_domain: localhost
       contact:
         name: Harry R and the PL Team
         email_proper: wont_you_please_please_help_me@localhost

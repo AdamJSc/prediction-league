@@ -275,10 +275,6 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 * Return to payment stage mid-entry
 * Use cookies
 
-### Email provider
-
-* Replace SendGrid
-
 ### Scheduled Tasks Concurrency
 
 * Make processing of Standings concurrent when retrieving Latest Standings + scoring Entry Predictions

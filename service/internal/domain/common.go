@@ -20,9 +20,10 @@ import (
 
 // Realm represents a realm in which the system has been configured to run
 type Realm struct {
-	Name    string
-	Origin  string `yaml:"origin"`
-	Contact struct {
+	Name         string
+	Origin       string `yaml:"origin"`
+	SenderDomain string `yaml:"sender_domain"`
+	Contact      struct {
 		Name            string `yaml:"name"`
 		EmailProper     string `yaml:"email_proper"`
 		EmailSanitised  string `yaml:"email_sanitised"`
@@ -50,7 +51,7 @@ type Config struct {
 	VersionTimestamp     string `envconfig:"VERSION_TIMESTAMP" required:"true"`
 	FootballDataAPIToken string `envconfig:"FOOTBALLDATA_API_TOKEN" required:"true"`
 	PayPalClientID       string `envconfig:"PAYPAL_CLIENT_ID" required:"true"`
-	SendGridAPIKey       string `envconfig:"SENDGRID_API_KEY" required:"true"`
+	MailgunAPIKey        string `envconfig:"MAILGUN_API_KEY" required:"true"`
 	Realms               map[string]Realm
 }
 
