@@ -528,7 +528,7 @@ func MustInflate() {
 
 	Seasons[FakeSeasonID] = models.Season{
 		ID:       FakeSeasonID,
-		ClientID: nil, // will not trigger requests to client when running in retrieve latest standings job
+		ClientID: nil, // will not invoke requests to client when running in retrieve latest standings job
 		Name:     "Localhost Season",
 		EntriesAccepted: models.TimeFrame{
 			From:  time.Now(),

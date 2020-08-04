@@ -26,7 +26,7 @@ func (t testCommsAgentInjector) MySQL() coresql.Agent            { return t.db }
 func (t testCommsAgentInjector) EmailQueue() chan messages.Email { return t.queue }
 func (t testCommsAgentInjector) Template() *views.Templates      { return t.templates }
 
-func TestCommunicationsAgent_IssuesNewEntryEmail(t *testing.T) {
+func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 	defer truncate(t)
 
 	testConfig := domain.Config{
@@ -43,7 +43,7 @@ func TestCommunicationsAgent_IssuesNewEntryEmail(t *testing.T) {
 
 	injector := testCommsAgentInjector{
 		config:    testConfig,
-		queue:     make(chan messages.Email, 10), // only add 1 email at a time to channel in actual tests
+		queue:     make(chan messages.Email, 1),
 		templates: templates,
 	}
 
@@ -215,7 +215,7 @@ func TestCommunicationsAgent_IssuesNewEntryEmail(t *testing.T) {
 	})
 }
 
-func TestCommunicationsAgent_IssuesRoundCompleteEmail(t *testing.T) {
+func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 	defer truncate(t)
 
 	testConfig := domain.Config{
@@ -236,7 +236,7 @@ func TestCommunicationsAgent_IssuesRoundCompleteEmail(t *testing.T) {
 	injector := testCommsAgentInjector{
 		config:    testConfig,
 		db:        db,
-		queue:     make(chan messages.Email, 10), // only add 1 email at a time to channel in actual tests
+		queue:     make(chan messages.Email, 1),
 		templates: templates,
 	}
 
@@ -456,6 +456,139 @@ func TestCommunicationsAgent_IssuesRoundCompleteEmail(t *testing.T) {
 		sep.Rankings = nil
 
 		err := agent.IssueRoundCompleteEmail(ctx, &sep, false)
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		}
+	})
+}
+
+func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
+	defer truncate(t)
+
+	testConfig := domain.Config{
+		Realms: make(map[string]domain.Realm),
+	}
+	testRealm := testRealm(t)
+	testConfig.Realms[testRealm.Name] = testRealm
+
+	injector := testCommsAgentInjector{
+		config:    testConfig,
+		queue:     make(chan messages.Email, 1),
+		templates: templates,
+	}
+
+	agent := domain.CommunicationsAgent{
+		CommunicationsAgentInjector: injector,
+	}
+
+	t.Run("issue short code reset begin email with a valid entry must succeed", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		entry := generateTestEntry(
+			t,
+			"Harry Redknapp",
+			"Mr Harry R",
+			"harry.redknapp@football.net",
+		)
+
+		resetToken := "RESET12345"
+
+		if err := agent.IssueShortCodeResetBeginEmail(ctx, &entry, resetToken); err != nil {
+			t.Fatal(err)
+		}
+
+		queue := agent.EmailQueue()
+		close(queue)
+
+		if len(queue) != 1 {
+			expectedGot(t, 1, queue)
+		}
+
+		email := <-queue
+
+		expectedSubject := domain.EmailSubjectShortCodeResetBegin
+
+		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_short_code_reset_begin", emails.ShortCodeResetBeginEmail{
+			EmailData: emails.EmailData{
+				Name:         entry.EntrantName,
+				SeasonName:   testSeason.Name,
+				SignOff:      testRealm.Contact.Name,
+				URL:          testRealm.Origin,
+				SupportEmail: testRealm.Contact.EmailProper,
+			},
+			ResetURL: fmt.Sprintf("%s/short-code-reset/%s", testRealm.Origin, resetToken),
+		})
+
+		if email.From.Name != testRealm.Contact.Name {
+			expectedGot(t, testRealm.Contact.Name, email.From.Name)
+		}
+		if email.From.Address != testRealm.Contact.EmailDoNotReply {
+			expectedGot(t, testRealm.Contact.EmailDoNotReply, email.From.Address)
+		}
+		if email.To.Name != entry.EntrantName {
+			expectedGot(t, entry.EntrantName, email.To.Name)
+		}
+		if email.To.Address != entry.EntrantEmail {
+			expectedGot(t, entry.EntrantEmail, email.To.Address)
+		}
+		if email.ReplyTo.Name != testRealm.Contact.Name {
+			expectedGot(t, testRealm.Contact.Name, email.ReplyTo.Name)
+		}
+		if email.ReplyTo.Address != testRealm.Contact.EmailProper {
+			expectedGot(t, testRealm.Contact.EmailProper, email.ReplyTo.Address)
+		}
+		if email.Subject != expectedSubject {
+			expectedGot(t, expectedSubject, email.Subject)
+		}
+		if email.PlainText != expectedPlainText {
+			t.Fatal(gocmp.Diff(expectedPlainText, email.PlainText))
+		}
+	})
+
+	t.Run("issue short code reset begin email with no entry must fail", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		err := agent.IssueShortCodeResetBeginEmail(ctx, nil, "dat_string")
+		if !cmp.ErrorType(err, domain.InternalError{})().Success() {
+			expectedTypeOfGot(t, domain.InternalError{}, err)
+		}
+	})
+
+	t.Run("issue short code reset begin email with an entry whose realm does not exist must fail", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		entry := generateTestEntry(
+			t,
+			"Harry Redknapp",
+			"Mr Harry R",
+			"harry.redknapp@football.net",
+		)
+
+		entry.RealmName = "not_a_valid_realm"
+
+		err := agent.IssueShortCodeResetBeginEmail(ctx, &entry, "dat_string")
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		}
+	})
+
+	t.Run("issue short code reset begin email with an entry whose season does not exist must fail", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		entry := generateTestEntry(
+			t,
+			"Harry Redknapp",
+			"Mr Harry R",
+			"harry.redknapp@football.net",
+		)
+
+		entry.SeasonID = "not_a_valid_season"
+
+		err := agent.IssueShortCodeResetBeginEmail(ctx, &entry, "dat_string")
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
