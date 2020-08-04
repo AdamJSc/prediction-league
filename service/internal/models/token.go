@@ -4,10 +4,6 @@ import (
 	"time"
 )
 
-const (
-	TokenTypeAuthToken = iota
-)
-
 // Token defines a token model
 type Token struct {
 	ID        string    `db:"id"`

@@ -99,7 +99,7 @@ func setAuthCookieValue(value string, w http.ResponseWriter, r *http.Request) {
 		Name:    authCookieName,
 		Value:   value,
 		Domain:  stripPort(r.Host),
-		Expires: time.Now().Add(domain.TokenDurationInMinutes * time.Minute),
+		Expires: time.Now().Add(domain.TokenValidityDuration[domain.TokenTypeAuth]),
 		Path:    "/",
 	}
 	http.SetCookie(w, cookie)

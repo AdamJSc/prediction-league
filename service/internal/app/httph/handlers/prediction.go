@@ -10,7 +10,6 @@ import (
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/pages"
 )
 
@@ -90,7 +89,7 @@ func predictionLoginHandler(c *httph.HTTPAppContainer) func(http.ResponseWriter,
 		}
 
 		// generate a new auth token for our entry, and set it as a cookie
-		token, err := tokenAgent.GenerateToken(ctx, models.TokenTypeAuthToken, entry.ID.String())
+		token, err := tokenAgent.GenerateToken(ctx, domain.TokenTypeAuth, entry.ID.String())
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return
