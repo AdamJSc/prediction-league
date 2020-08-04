@@ -1,8 +1,11 @@
 package handlers
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/LUSHDigital/core/rest"
+	"io/ioutil"
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/datastore"
@@ -152,5 +155,87 @@ func frontendPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWr
 		)
 
 		writeResponse(data)
+	}
+}
+
+func frontendShortCodeResetHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+	entryAgent := domain.EntryAgent{EntryAgentInjector: c}
+	tokenAgent := domain.TokenAgent{TokenAgentInjector: c}
+	commsAgent := domain.CommunicationsAgent{CommunicationsAgentInjector: c}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		var writeResponse = func(data pages.ShortCodeResetBeginPageData) {
+			p := newPage(r, c, "Reset my Short Code", "", "Reset my Short Code", data)
+
+			if err := c.Template().ExecuteTemplate(w, "short-code-reset-begin", p); err != nil {
+				rest.InternalError(err).WriteTo(w)
+			}
+		}
+
+		var input shortCodeResetRequest
+
+		// read request body
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			writeResponse(pages.ShortCodeResetBeginPageData{Err: err})
+			return
+		}
+		defer closeBody(r)
+
+		// parse request body
+		if err := json.Unmarshal(body, &input); err != nil {
+			writeResponse(pages.ShortCodeResetBeginPageData{Err: err})
+			return
+		}
+
+		// check that input is valid
+		if input.EmailNickname == "" {
+			writeResponse(pages.ShortCodeResetBeginPageData{Err: errors.New("invalid request")})
+			return
+		}
+
+		// get context from request
+		ctx, cancel, err := contextFromRequest(r, c)
+		if err != nil {
+			writeResponse(pages.ShortCodeResetBeginPageData{Err: err})
+			return
+		}
+		defer cancel()
+
+		// retrieve entry
+		entry, err := retrieveEntryByEmailOrNickname(ctx, input.EmailNickname, entryAgent)
+		if err != nil {
+			switch err.(type) {
+			case domain.NotFoundError:
+				// we can't find an existing entry, but we don't want to let the user know
+				// just pretend everything is ok...
+				writeResponse(pages.ShortCodeResetBeginPageData{EmailNickname: input.EmailNickname})
+				return
+			}
+			writeResponse(pages.ShortCodeResetBeginPageData{Err: err})
+			return
+		}
+
+		// does realm name match our entry?
+		if domain.RealmFromContext(ctx).Name != entry.RealmName {
+			writeResponse(pages.ShortCodeResetBeginPageData{Err: errors.New("invalid realm")})
+			return
+		}
+
+		// generate short code reset token
+		token, err := tokenAgent.GenerateToken(ctx, domain.TokenTypeShortCodeResetToken, entry.ID.String())
+		if err != nil {
+			writeResponse(pages.ShortCodeResetBeginPageData{Err: err})
+			return
+		}
+
+		// issue short code reset email
+		if err := commsAgent.IssueShortCodeResetBeginEmail(nil, entry, token.ID); err != nil {
+			writeResponse(pages.ShortCodeResetBeginPageData{Err: err})
+			return
+		}
+
+		// all good!
+		writeResponse(pages.ShortCodeResetBeginPageData{EmailNickname: input.EmailNickname})
 	}
 }

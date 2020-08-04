@@ -42,29 +42,8 @@ func predictionLoginHandler(c *httph.HTTPAppContainer) func(http.ResponseWriter,
 		}
 		defer cancel()
 
-		var retrieveEntryFromInput = func(input predictionLoginRequest) (*models.Entry, error) {
-			// see if we can retrieve by email
-			entry, err := entryAgent.RetrieveEntryByEntrantEmail(ctx, input.EmailNickname)
-			if err != nil {
-				switch err.(type) {
-				case domain.NotFoundError:
-					// see if we can retrieve by nickname
-					entry, err := entryAgent.RetrieveEntryByEntrantNickname(ctx, input.EmailNickname)
-					if err != nil {
-						return nil, err
-					}
-
-					return &entry, nil
-				default:
-					return nil, err
-				}
-			}
-
-			return &entry, nil
-		}
-
 		// retrieve entry based on input
-		entry, err := retrieveEntryFromInput(input)
+		entry, err := retrieveEntryByEmailOrNickname(ctx, input.EmailNickname, entryAgent)
 		if err != nil {
 			switch err.(type) {
 			case domain.NotFoundError:

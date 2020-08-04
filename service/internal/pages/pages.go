@@ -69,3 +69,8 @@ type FAQItem struct {
 	Question string
 	Answer   template.HTML
 }
+
+type ShortCodeResetBeginPageData struct {
+	Err           error
+	EmailNickname string
+}

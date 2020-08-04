@@ -40,3 +40,7 @@ type predictionLoginRequest struct {
 	EmailNickname string `json:"email_nickname"`
 	ShortCode     string `json:"short_code"`
 }
+
+type shortCodeResetRequest struct {
+	EmailNickname string `json:"email_nickname"`
+}

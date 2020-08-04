@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/domain"
+	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/pages"
 	"strconv"
 	"strings"
@@ -19,12 +20,14 @@ import (
 
 const authCookieName = "PL_AUTH"
 
+// closeBody closes the body of the provided request
 func closeBody(r *http.Request) {
 	if err := r.Body.Close(); err != nil {
 		log.Println(err)
 	}
 }
 
+// getRouteParam retrieves the provided named route parameter from the provided request object
 func getRouteParam(r *http.Request, name string, value interface{}) error {
 	val, ok := mux.Vars(r)[name]
 	if !ok {
@@ -145,4 +148,26 @@ func newPage(r *http.Request, c *httph.HTTPAppContainer, title, activePage, bann
 		VersionTimestamp:      c.Config().VersionTimestamp,
 		Data:                  data,
 	}
+}
+
+// retrieveEntryByEmailOrNickname retrieves an entry from the provided input, whether this pertains to an email address or nickname
+func retrieveEntryByEmailOrNickname(ctx context.Context, emailOrNickname string, entryAgent domain.EntryAgent) (*models.Entry, error) {
+	// see if we can retrieve by email
+	entry, err := entryAgent.RetrieveEntryByEntrantEmail(ctx, emailOrNickname)
+	if err != nil {
+		switch err.(type) {
+		case domain.NotFoundError:
+			// see if we can retrieve by nickname
+			entry, err := entryAgent.RetrieveEntryByEntrantNickname(ctx, emailOrNickname)
+			if err != nil {
+				return nil, err
+			}
+
+			return &entry, nil
+		default:
+			return nil, err
+		}
+	}
+
+	return &entry, nil
 }

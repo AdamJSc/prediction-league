@@ -8,7 +8,9 @@ Looks like you asked us to reset your Short Code.
 If this was you, use this link to reset it:
 {{.ResetURL}}
 
-If it wasn't, just ignore this email.
+The link will automatically expire after 10 minutes.
+
+If you haven't requested a Short Code reset, just ignore this email.
 
 In the meantime, Happy Predicting! 🧙🔮
 {{- template "email_txt_footer" .}}
