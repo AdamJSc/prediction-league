@@ -396,6 +396,7 @@ func MustInflate() {
 				"CFC",
 				"CPFC",
 				"EFC",
+				"FFC",
 				"LFC",
 				"LCFC",
 				"LUFC",
@@ -447,14 +448,13 @@ func MustInflate() {
 			TeamIDs: []string{
 				"AFCB",
 				"BFC2",
-				"BFC3", // TBC - Playoffs?
+				"BFC3",
 				"BCFC",
 				"BCFC2",
 				"BRFC",
-				"CCFC", // TBC - Playoffs?
+				"CCFC",
 				"CCFC2",
 				"DCFC",
-				"FFC", // TBC - Playoffs?
 				"HTAFC",
 				"LTFC",
 				"MFC",
