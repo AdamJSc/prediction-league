@@ -74,3 +74,8 @@ type ShortCodeResetBeginPageData struct {
 	Err           error
 	EmailNickname string
 }
+
+type ShortCodeResetCompletePageData struct {
+	Err       error
+	ShortCode string
+}

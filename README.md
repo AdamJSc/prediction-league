@@ -266,7 +266,8 @@ Running the testsuite again will apply the rules to each `Season` in the map and
 ### Tokens
 
 * Robustness
-* Clean up of expired tokens
+* Clean up of expired tokens (`elapsed_at`)
+* Set a `consumed_at` date instead of deleting
 
 ### Cookie Management
 

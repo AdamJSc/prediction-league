@@ -158,7 +158,7 @@ func frontendPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWr
 	}
 }
 
-func frontendShortCodeResetHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendShortCodeResetBeginHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	entryAgent := domain.EntryAgent{EntryAgentInjector: c}
 	tokenAgent := domain.TokenAgent{TokenAgentInjector: c}
 	commsAgent := domain.CommunicationsAgent{CommunicationsAgentInjector: c}
@@ -229,7 +229,7 @@ func frontendShortCodeResetHandler(c *httph.HTTPAppContainer) func(w http.Respon
 			return
 		}
 
-		// issue short code reset email
+		// issue email with short code reset link
 		if err := commsAgent.IssueShortCodeResetBeginEmail(nil, entry, token.ID); err != nil {
 			writeResponse(pages.ShortCodeResetBeginPageData{Err: err})
 			return
@@ -237,5 +237,106 @@ func frontendShortCodeResetHandler(c *httph.HTTPAppContainer) func(w http.Respon
 
 		// all good!
 		writeResponse(pages.ShortCodeResetBeginPageData{EmailNickname: input.EmailNickname})
+	}
+}
+
+func frontendShortCodeResetCompleteHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+	entryAgent := domain.EntryAgent{EntryAgentInjector: c}
+	tokenAgent := domain.TokenAgent{TokenAgentInjector: c}
+	commsAgent := domain.CommunicationsAgent{CommunicationsAgentInjector: c}
+
+	invalidTokenErr := errors.New("oh no! looks like your token is invalid :'( please try resetting your short code again")
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		var writeResponse = func(data pages.ShortCodeResetCompletePageData) {
+			p := newPage(r, c, "Reset my Short Code", "", "Reset my Short Code", data)
+
+			if err := c.Template().ExecuteTemplate(w, "short-code-reset-complete", p); err != nil {
+				rest.InternalError(err).WriteTo(w)
+			}
+		}
+
+		// parse reset token from route
+		var resetToken string
+		if err := getRouteParam(r, "reset_token", &resetToken); err != nil {
+			writeResponse(pages.ShortCodeResetCompletePageData{Err: err})
+			return
+		}
+
+		// get context from request
+		ctx, cancel, err := contextFromRequest(r, c)
+		if err != nil {
+			writeResponse(pages.ShortCodeResetCompletePageData{Err: err})
+			return
+		}
+		defer cancel()
+
+		// retrieve token
+		token, err := tokenAgent.RetrieveTokenByID(ctx, resetToken)
+		if err != nil {
+			switch err.(type) {
+			case domain.NotFoundError:
+				writeResponse(pages.ShortCodeResetCompletePageData{Err: invalidTokenErr})
+				return
+			}
+			writeResponse(pages.ShortCodeResetCompletePageData{Err: err})
+			return
+		}
+
+		// has token expired?
+		if token.ExpiresAt.Before(domain.TimestampFromContext(ctx)) {
+			writeResponse(pages.ShortCodeResetCompletePageData{Err: invalidTokenErr})
+			return
+		}
+
+		// is token a short code refresh token?
+		if token.Type != domain.TokenTypeShortCodeResetToken {
+			writeResponse(pages.ShortCodeResetCompletePageData{Err: invalidTokenErr})
+			return
+		}
+
+		// retrieve entry
+		entry, err := entryAgent.RetrieveEntryByID(ctx, token.Value)
+		if err != nil {
+			writeResponse(pages.ShortCodeResetCompletePageData{Err: err})
+			return
+		}
+
+		// does realm name match our entry?
+		if domain.RealmFromContext(ctx).Name != entry.RealmName {
+			writeResponse(pages.ShortCodeResetCompletePageData{Err: errors.New("invalid realm")})
+			return
+		}
+
+		// we've made it this far!
+		// now generate a new short code
+		newShortCode, err := domain.GenerateUniqueShortCode(ctx, c.MySQL())
+		if err != nil {
+			writeResponse(pages.ShortCodeResetCompletePageData{Err: err})
+			return
+		}
+
+		// update our entry's short code
+		entry.ShortCode = newShortCode
+		entry, err = entryAgent.UpdateEntry(ctx, entry)
+		if err != nil {
+			writeResponse(pages.ShortCodeResetCompletePageData{Err: err})
+			return
+		}
+
+		// delete short code reset token
+		if err := tokenAgent.DeleteToken(ctx, *token); err != nil {
+			writeResponse(pages.ShortCodeResetCompletePageData{Err: err})
+			return
+		}
+
+		// issue email confirming short code reset
+		if err := commsAgent.IssueShortCodeResetCompleteEmail(nil, &entry); err != nil {
+			writeResponse(pages.ShortCodeResetCompletePageData{Err: err})
+			return
+		}
+
+		// all good!
+		writeResponse(pages.ShortCodeResetCompletePageData{ShortCode: newShortCode})
 	}
 }

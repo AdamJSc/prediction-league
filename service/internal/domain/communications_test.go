@@ -517,7 +517,7 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 				URL:          testRealm.Origin,
 				SupportEmail: testRealm.Contact.EmailProper,
 			},
-			ResetURL: fmt.Sprintf("%s/short-code-reset/%s", testRealm.Origin, resetToken),
+			ResetURL: fmt.Sprintf("%s/reset/%s", testRealm.Origin, resetToken),
 		})
 
 		if email.From.Name != testRealm.Contact.Name {

@@ -32,5 +32,6 @@ func RegisterRoutes(c *httph.HTTPAppContainer) {
 	c.Router().HandleFunc("/join", frontendJoinHandler(c)).Methods(http.MethodGet)
 	c.Router().HandleFunc("/prediction", frontendPredictionHandler(c)).Methods(http.MethodGet)
 
-	c.Router().HandleFunc("/reset", frontendShortCodeResetHandler(c)).Methods(http.MethodPost)
+	c.Router().HandleFunc("/reset", frontendShortCodeResetBeginHandler(c)).Methods(http.MethodPost)
+	c.Router().HandleFunc("/reset/{reset_token}", frontendShortCodeResetCompleteHandler(c)).Methods(http.MethodGet)
 }

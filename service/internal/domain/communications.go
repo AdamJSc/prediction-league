@@ -149,7 +149,7 @@ func (c CommunicationsAgent) IssueShortCodeResetBeginEmail(_ context.Context, en
 
 	d := emails.ShortCodeResetBeginEmail{
 		EmailData: newEmailData(realm, entry.EntrantName, season.Name),
-		ResetURL:  fmt.Sprintf("%s/short-code-reset/%s", realm.Origin, resetToken),
+		ResetURL:  fmt.Sprintf("%s/reset/%s", realm.Origin, resetToken),
 	}
 	var emailContent bytes.Buffer
 	if err := c.Template().ExecuteTemplate(&emailContent, "email_txt_short_code_reset_begin", d); err != nil {
