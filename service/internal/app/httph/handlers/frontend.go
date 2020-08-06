@@ -202,8 +202,11 @@ func frontendShortCodeResetBeginHandler(c *httph.HTTPAppContainer) func(w http.R
 		}
 		defer cancel()
 
+		// get realm from context
+		realm := domain.RealmFromContext(ctx)
+
 		// retrieve entry
-		entry, err := retrieveEntryByEmailOrNickname(ctx, input.EmailNickname, entryAgent)
+		entry, err := retrieveEntryByEmailOrNickname(ctx, input.EmailNickname, realm.SeasonID, realm.Name, entryAgent)
 		if err != nil {
 			switch err.(type) {
 			case domain.NotFoundError:

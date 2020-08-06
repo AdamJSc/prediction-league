@@ -158,12 +158,13 @@ func (e EntryAgent) RetrieveEntryByID(ctx context.Context, id string) (models.En
 }
 
 // RetrieveEntryByEntrantEmail handles the retrieval of an existing Entry in the database by its email
-func (e EntryAgent) RetrieveEntryByEntrantEmail(ctx context.Context, email string) (models.Entry, error) {
-	// TODO - include season id and realm in query
+func (e EntryAgent) RetrieveEntryByEntrantEmail(ctx context.Context, email, seasonID, realmName string) (models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 	entryPredictionRepo := repositories.NewEntryPredictionDatabaseRepository(e.MySQL())
 
 	entries, err := entryRepo.Select(ctx, map[string]interface{}{
+		"season_id":     seasonID,
+		"realm_name":    realmName,
 		"entrant_email": email,
 	}, false)
 	if err != nil {
@@ -194,12 +195,13 @@ func (e EntryAgent) RetrieveEntryByEntrantEmail(ctx context.Context, email strin
 }
 
 // RetrieveEntryByEntrantNickname handles the retrieval of an existing Entry in the database by its nickname
-func (e EntryAgent) RetrieveEntryByEntrantNickname(ctx context.Context, nickname string) (models.Entry, error) {
-	// TODO - include season id and realm in query
+func (e EntryAgent) RetrieveEntryByEntrantNickname(ctx context.Context, nickname, seasonID, realmName string) (models.Entry, error) {
 	entryRepo := repositories.NewEntryDatabaseRepository(e.MySQL())
 	entryPredictionRepo := repositories.NewEntryPredictionDatabaseRepository(e.MySQL())
 
 	entries, err := entryRepo.Select(ctx, map[string]interface{}{
+		"season_id":        seasonID,
+		"realm_name":       realmName,
 		"entrant_nickname": nickname,
 	}, false)
 	if err != nil {

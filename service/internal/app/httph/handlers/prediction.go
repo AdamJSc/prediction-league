@@ -42,8 +42,11 @@ func predictionLoginHandler(c *httph.HTTPAppContainer) func(http.ResponseWriter,
 		}
 		defer cancel()
 
+		// get realm from context
+		realm := domain.RealmFromContext(ctx)
+
 		// retrieve entry based on input
-		entry, err := retrieveEntryByEmailOrNickname(ctx, input.EmailNickname, entryAgent)
+		entry, err := retrieveEntryByEmailOrNickname(ctx, input.EmailNickname, realm.SeasonID, realm.Name, entryAgent)
 		if err != nil {
 			switch err.(type) {
 			case domain.NotFoundError:
