@@ -36,7 +36,8 @@
                                             label="Update"
                                             @clicked="updateOnClick"
                                             :is-disabled="dirtyTeamIDs.length === 0 || working"
-                                            :is-working="working"></action-button>
+                                            :is-working="working"
+                                            is-primary="true"></action-button>
                                     <button v-on:click="resetState" class="btn btn-secondary">Reset</button>
                                 </div>
                             </div>

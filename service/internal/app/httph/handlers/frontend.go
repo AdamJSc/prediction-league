@@ -1,11 +1,9 @@
 package handlers
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/LUSHDigital/core/rest"
-	"io/ioutil"
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/datastore"
@@ -172,20 +170,16 @@ func frontendShortCodeResetBeginHandler(c *httph.HTTPAppContainer) func(w http.R
 			}
 		}
 
-		var input shortCodeResetRequest
-
-		// read request body
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
+		// parse request body (standard form)
+		if err := r.ParseForm(); err != nil {
 			writeResponse(pages.ShortCodeResetBeginPageData{Err: err})
 			return
 		}
-		defer closeBody(r)
-
-		// parse request body
-		if err := json.Unmarshal(body, &input); err != nil {
-			writeResponse(pages.ShortCodeResetBeginPageData{Err: err})
-			return
+		var input shortCodeResetRequest
+		for k, v := range r.Form {
+			if k == "email_nickname" && len(v) > 0 {
+				input.EmailNickname = v[0]
+			}
 		}
 
 		// check that input is valid

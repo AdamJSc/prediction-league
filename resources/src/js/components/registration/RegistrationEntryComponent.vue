@@ -100,7 +100,8 @@
                                 label="Join"
                                 @clicked="enterOnClick"
                                 :is-disabled="working"
-                                :is-working="working"></action-button>
+                                :is-working="working"
+                                is-primary="true"></action-button>
                     </div>
                 </div>
             </div>
