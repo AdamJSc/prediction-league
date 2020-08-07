@@ -12,7 +12,7 @@ Your PayPal reference is {{.PaymentDetails.Reference}}
 To submit your first prediction, go to:
 {{.PredictionsURL}}
 
-Your short code is:
+Your Short Code is:
 {{.ShortCode}}
 
 Keep this in a safe place - you'll need it in order to change your prediction throughout the season.

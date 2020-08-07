@@ -8,9 +8,19 @@
                         <ul><li v-for="msg in errorMessages">{{msg}}</li></ul>
                     </div>
                 </transition>
-                <form id="prediction-login-form" class="form-primary">
+                <form v-if="showForgotShortCodeForm" class="form-primary" method="POST" action="/reset">
                     <div class="form-label-group">
-                        <input v-model="formData.email_nickname" type="email" id="inputEmailNickname" name="email_nickname" class="form-control" placeholder="Email or Nickname" required>
+                        <input type="text" id="inputForgotShortCodeEmailNickname" name="email_nickname" class="form-control" placeholder="Email or Nickname" required>
+                        <label for="inputForgotShortCodeEmailNickname">Email or Nickname</label>
+                    </div>
+
+                    <div class="submit-wrapper">
+                        <button type="submit" class="btn btn-primary">Reset my Short Code</button>
+                    </div>
+                </form>
+                <form v-else id="prediction-login-form" class="form-primary">
+                    <div class="form-label-group">
+                        <input v-model="formData.email_nickname" type="text" id="inputEmailNickname" name="email_nickname" class="form-control" placeholder="Email or Nickname" required>
                         <label for="inputEmailNickname">Email or Nickname</label>
                     </div>
 
@@ -23,6 +33,12 @@
                         <action-button
                                 label="Go!"
                                 @clicked="loginOnClick"
+                                :is-disabled="working"
+                                :is-working="working"
+                                is-primary="true"></action-button>
+                        <action-button
+                                label="Forgot my Short Code"
+                                @clicked="forgotShortCodeOnClick"
                                 :is-disabled="working"
                                 :is-working="working"></action-button>
                     </div>
@@ -41,6 +57,7 @@
             return {
                 working: false,
                 errorMessages: [],
+                showForgotShortCodeForm: false,
                 formData: {}
             }
         },
@@ -74,6 +91,9 @@
                         }
                         vm.working = false
                     })
+            },
+            forgotShortCodeOnClick: function() {
+                this.showForgotShortCodeForm = true
             }
         }
     }

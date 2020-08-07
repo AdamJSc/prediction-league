@@ -1,5 +1,5 @@
 <template>
-    <button v-on:click="buttonClick" class="btn btn-primary" v-bind:disabled="isDisabled">
+    <button v-on:click="buttonClick" v-bind:class="{'btn': true, 'btn-primary': isPrimary, 'btn-secondary': '!isPrimary'}" v-bind:disabled="isDisabled">
         <span v-if="isWorking"><img alt="loader" src="/assets/img/loader-dark-bg.svg" /></span>
         <span v-else>{{label}}</span>
     </button>
@@ -16,6 +16,9 @@
                 type: Boolean
             },
             isWorking: {
+                type: Boolean
+            },
+            isPrimary: {
                 type: Boolean
             }
         },

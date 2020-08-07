@@ -573,7 +573,7 @@ func TestEntryAgent_RetrieveEntryByEntrantEmail(t *testing.T) {
 		defer cancel()
 
 		// should succeed
-		retrievedEntry, err := agent.RetrieveEntryByEntrantEmail(ctx, entry.EntrantEmail)
+		retrievedEntry, err := agent.RetrieveEntryByEntrantEmail(ctx, entry.EntrantEmail, entry.SeasonID, entry.RealmName)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -627,7 +627,17 @@ func TestEntryAgent_RetrieveEntryByEntrantEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		_, err := agent.RetrieveEntryByEntrantEmail(ctx, "not_an_existent_email")
+		_, err := agent.RetrieveEntryByEntrantEmail(ctx, "not_an_existent_email", entry.SeasonID, entry.RealmName)
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		}
+
+		_, err = agent.RetrieveEntryByEntrantEmail(ctx, entry.EntrantEmail, "not_an_existent_season_id", entry.RealmName)
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		}
+
+		_, err = agent.RetrieveEntryByEntrantEmail(ctx, entry.EntrantEmail, entry.SeasonID, "not_an_existent_realm_name")
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -639,7 +649,7 @@ func TestEntryAgent_RetrieveEntryByEntrantEmail(t *testing.T) {
 
 		domain.RealmFromContext(ctx).Name = "DIFFERENT_REALM"
 
-		_, err := agent.RetrieveEntryByEntrantEmail(ctx, entry.EntrantEmail)
+		_, err := agent.RetrieveEntryByEntrantEmail(ctx, entry.EntrantEmail, entry.SeasonID, entry.RealmName)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
@@ -666,7 +676,7 @@ func TestEntryAgent_RetrieveEntryByEntrantNickname(t *testing.T) {
 		defer cancel()
 
 		// should succeed
-		retrievedEntry, err := agent.RetrieveEntryByEntrantNickname(ctx, entry.EntrantNickname)
+		retrievedEntry, err := agent.RetrieveEntryByEntrantNickname(ctx, entry.EntrantNickname, entry.SeasonID, entry.RealmName)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -720,7 +730,17 @@ func TestEntryAgent_RetrieveEntryByEntrantNickname(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		_, err := agent.RetrieveEntryByEntrantNickname(ctx, "not_an_existent_nickname")
+		_, err := agent.RetrieveEntryByEntrantNickname(ctx, "not_an_existent_nickname", entry.SeasonID, entry.RealmName)
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		}
+
+		_, err = agent.RetrieveEntryByEntrantNickname(ctx, entry.EntrantNickname, "not_an_existent_season_id", entry.RealmName)
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		}
+
+		_, err = agent.RetrieveEntryByEntrantNickname(ctx, entry.EntrantNickname, entry.SeasonID, "not_an_existent_realm_name")
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -732,7 +752,7 @@ func TestEntryAgent_RetrieveEntryByEntrantNickname(t *testing.T) {
 
 		domain.RealmFromContext(ctx).Name = "DIFFERENT_REALM"
 
-		_, err := agent.RetrieveEntryByEntrantNickname(ctx, entry.EntrantNickname)
+		_, err := agent.RetrieveEntryByEntrantNickname(ctx, entry.EntrantNickname, entry.SeasonID, entry.RealmName)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}

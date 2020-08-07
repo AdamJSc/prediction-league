@@ -27,3 +27,14 @@ type RoundCompleteEmailData struct {
 	RankingsAsStrings []string
 	LeaderBoardURL    string
 }
+
+type ShortCodeResetBeginEmail struct {
+	EmailData
+	ResetURL string
+}
+
+type ShortCodeResetCompleteEmail struct {
+	EmailData
+	PredictionsURL string
+	ShortCode      string
+}

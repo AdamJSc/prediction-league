@@ -11,9 +11,15 @@ import (
 )
 
 const (
-	TokenLength            = 32
-	TokenDurationInMinutes = 20
+	TokenLength   = 32
+	TokenTypeAuth = iota
+	TokenTypeShortCodeResetToken
 )
+
+var TokenValidityDuration = map[int]time.Duration{
+	TokenTypeAuth:                time.Minute * 20,
+	TokenTypeShortCodeResetToken: time.Minute * 10,
+}
 
 // TokenAgentInjector defines the dependencies required by our TokenAgent
 type TokenAgentInjector interface {
@@ -32,6 +38,11 @@ func (t TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (*
 		return nil, err
 	}
 
+	tokenDur, ok := TokenValidityDuration[typ]
+	if !ok {
+		return nil, NotFoundError{fmt.Errorf("token type %d has no validity duration", typ)}
+	}
+
 	now := TimestampFromContext(ctx)
 
 	token := models.Token{
@@ -39,7 +50,7 @@ func (t TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (*
 		Type:      typ,
 		Value:     value,
 		IssuedAt:  now,
-		ExpiresAt: now.Add(TokenDurationInMinutes * time.Minute),
+		ExpiresAt: now.Add(tokenDur),
 	}
 
 	if err := tokenRepo.Insert(ctx, &token); err != nil {

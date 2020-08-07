@@ -6,26 +6,24 @@
                 <p>{{.Err}}</p>
             </div>
         {{else}}
-            <div class="col">
-                {{if .FAQs}}
-                    <div class="accordion" id="faqRender">
-                        {{range $idx, $faq := .FAQs}}
-                            <div class="card">
-                                <div class="card-header" id="q{{$idx}}-heading">
-                                    <h2 data-toggle="collapse" data-target="#q{{$idx}}-body" aria-expanded="false" aria-controls="q{{$idx}}-body">
-                                        Q: {{$faq.Question}}
-                                    </h2>
-                                </div>
-                                <div id="q{{$idx}}-body" class="collapse" aria-labelledby="q{{$idx}}-heading" data-parent="#faqRender">
-                                    <div class="card-body">
-                                        {{$faq.Answer}}
-                                    </div>
+            {{if .FAQs}}
+                <div class="accordion" id="faqRender">
+                    {{range $idx, $faq := .FAQs}}
+                        <div class="card">
+                            <div class="card-header" id="q{{$idx}}-heading">
+                                <h2 data-toggle="collapse" data-target="#q{{$idx}}-body" aria-expanded="false" aria-controls="q{{$idx}}-body">
+                                    Q: {{$faq.Question}}
+                                </h2>
+                            </div>
+                            <div id="q{{$idx}}-body" class="collapse" aria-labelledby="q{{$idx}}-heading" data-parent="#faqRender">
+                                <div class="card-body">
+                                    {{$faq.Answer}}
                                 </div>
                             </div>
-                        {{end}}
-                    </div>
-                {{end}}
-            </div>
+                        </div>
+                    {{end}}
+                </div>
+            {{end}}
         {{end}}
     {{end}}
     {{template "footer" .}}
