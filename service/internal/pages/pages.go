@@ -16,6 +16,7 @@ type Base struct {
 	RealmName             string
 	RunningVersion        string
 	VersionTimestamp      string
+	AnalyticsCode         string
 	Data                  interface{}
 }
 

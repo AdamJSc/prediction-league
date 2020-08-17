@@ -29,9 +29,10 @@ type Realm struct {
 		EmailSanitised  string `yaml:"email_sanitised"`
 		EmailDoNotReply string `yaml:"email_do_not_reply"`
 	} `yaml:"contact"`
-	PIN      string        `yaml:"pin"`
-	SeasonID string        `yaml:"season_id"`
-	EntryFee RealmEntryFee `yaml:"entry_fee"`
+	PIN           string        `yaml:"pin"`
+	SeasonID      string        `yaml:"season_id"`
+	EntryFee      RealmEntryFee `yaml:"entry_fee"`
+	AnalyticsCode string        `yaml:"analytics_code"`
 }
 
 // RealmEntryFee represents the entry fee settings for a realm

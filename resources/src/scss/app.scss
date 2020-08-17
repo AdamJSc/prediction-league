@@ -56,7 +56,7 @@ h1, h2, h3, h4 {
     position: absolute;
     bottom: 0;
     width: 100%;
-    height: 1em;
+    height: auto;
     padding: 0 0.3em;
     line-height: 0.75em;
     background: $secondary-dark;
@@ -68,10 +68,12 @@ h1, h2, h3, h4 {
 
     .left-section {
       float: left;
+      text-align: center;
     }
 
-    .right {
+    .right-section {
       float: right;
+      text-align: center;
     }
 
     .status-information {
@@ -463,6 +465,16 @@ table.round {
 
 .text-lolight {
   color: $primary-light-tint-dark;
+}
+
+@media screen and (min-width: 576px) {
+  .left-section {
+    text-align: left!important;
+  }
+
+  .right-section {
+    text-align: right!important;
+  }
 }
 
 @media screen and (min-width: 768px) {
