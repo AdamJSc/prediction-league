@@ -190,4 +190,14 @@ The frontend also provides an FAQ page which can be customised on a per-[Realm](
 
 ## Domain Knowledge
 
-For more details around core business logic and entities, see [docs/domain-knowledge.md](docs/domain-knowledge.md)
+For more details around core business logic and entities, see [Domain Knowledge](docs/domain-knowledge.md)
+
+
+## Features and Improvements
+
+For more details around the project's intended roadmap, see [Features and Improvements](docs/features-and-improvements.md)
+
+
+## Contributing
+
+If you'd like to help out with this project in any way, please feel free to fork and PR! 😁
