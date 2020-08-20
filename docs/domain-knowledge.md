@@ -115,7 +115,7 @@ until the next game week is reached (or the [Season](#season) expires)
 * A `ScoredEntryPrediction` object represents a [Prediction](#entryprediction) that has been provided with a total score
 based on a given [Standings](#standings) object.
 
-* It is unique to a single combination of [EntryPrediction](#entryprediction) and [Standings](#standings) objects.
+* It is unique to a single combination of an [EntryPrediction](#entryprediction) object and a [Standings](#standings) object.
 
 * It is used to calculate the total cumulative score for each [Entry](#entry) on a [LeaderBoard](#leaderboard).
 
