@@ -188,25 +188,22 @@ func testRealm(t *testing.T) domain.Realm {
 func generateTestStandings(t *testing.T) models.Standings {
 	t.Helper()
 
-	// get first season
-	key := reflect.ValueOf(datastore.Seasons).MapKeys()[0].String()
-	season := datastore.Seasons[key]
-
-	id, err := uuid.NewV4()
+	// generate random ID
+	standingsID, err := uuid.NewV4()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	var rankings []models.RankingWithMeta
-	for _, id := range season.TeamIDs {
+	for _, teamID := range testSeason.TeamIDs {
 		rwm := models.NewRankingWithMeta()
-		rwm.Ranking = models.Ranking{ID: id}
+		rwm.Ranking = models.Ranking{ID: teamID}
 		rankings = append(rankings, rwm)
 	}
 
 	return models.Standings{
-		ID:          id,
-		SeasonID:    season.ID,
+		ID:          standingsID,
+		SeasonID:    testSeason.ID,
 		RoundNumber: 1,
 		Rankings:    rankings,
 		Finalised:   true,
