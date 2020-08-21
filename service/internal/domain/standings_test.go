@@ -5,9 +5,7 @@ import (
 	"github.com/LUSHDigital/uuid"
 	gocmp "github.com/google/go-cmp/cmp"
 	"gotest.tools/assert/cmp"
-	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
-	"reflect"
 	"testing"
 	"time"
 )
@@ -215,9 +213,10 @@ func TestStandingsAgent_RetrieveStandingsBySeasonAndRoundNumber(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		seasonID := reflect.ValueOf(datastore.Seasons).MapKeys()[0].String()
+		seasonID := testSeason.ID
+		roundNumber := 1
 
-		retrievedStandings, err := agent.RetrieveStandingsBySeasonAndRoundNumber(ctx, seasonID, 1)
+		retrievedStandings, err := agent.RetrieveStandingsBySeasonAndRoundNumber(ctx, seasonID, roundNumber)
 		if err != nil {
 			t.Fatal(err)
 		}
