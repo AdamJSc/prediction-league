@@ -15,41 +15,43 @@ of [Entries](#entry).
 competing against each other.
 
 * The Realm Name is determined by the domain portion of the request URL via which an [Entry](#entry) is initially created.
-This excludes any port numbers that are appended to the request URL.
+This excludes any port numbers that are appended to the domain name portion of the request URL.
 
 * This approach enables multiple hosts/domains/sub-domains to route traffic to a single running binary, which itself can
 serve multiple game instances at the same time.
 
-* Each Realm must comprise one [Season](#season), which determines the real-world league table data that each [Entry](#entry)
-is scored against.
+* Each Realm must comprise one [Season](#season), which determines the [Teams](#team) that are available to select when
+making a [Prediction](#entryprediction), as well as the real-world league table data that each [Entry](#entry) will be
+scored against.
+
+* The [Season](#season) that is associated with a Realm can (and should) change every year, in line with changes to the
+currently active real-world season - i.e. `201920_1` ("Premier League 2019/20") becomes `202021_1` ("Premier League 2020/21")
+etc.
 
 * Each Realm must also have a corresponding PIN that is supplied when creating an [Entry](#entry), in order to prevent
 unwelcome sign-ups.
-
-* Each Realm should also be associated with the ID of a [Season](#season) that is currently active for that Realm.
-This enables multiple different Realms to be playing under multiple [Seasons](#season) at the same time. e.g. One Realm
-could be assigned `202021_1` ("Premier League 2020/21") whilst at the same time another Realm is assigned `202021_2`
-("EFL Championship 2020/21").
 
 * Realms must be configured in advance, within the `./data/realms.yml` file. This file's payload comprises the single
 root-level key named `realms`, and each key beneath this should match the lowercase realm name (domain) -
 e.g. `localhost` or `my.sub.domain.com`. See the file itself for an example.
 
 * Each Realm config object should comprise the following values:
-    * `origin`: Base URL to use in transactional email links (e.g. `http://localhost:3000`)
+    * `origin`: Base URL to use for links inside transactional emails that are sent to [Entries](#entry) belonging to Realm
+    (e.g. `http://localhost:3000`)
     * `contact.name`: Name to sign off transactional emails with (e.g .`Harry R and the PL Team`)
-    * `contact.email_proper`: Formatted support email address for current Realm (e.g. `wont_you_please_please_help_me@localhost`)
-    * `contact.email_sanitised`: Sanitised display support email address for current Realm (e.g. `wont_you_please_please_help_me (at) localhost`)
-    * `contact.email_do_not_reply`: Sender's email address when issuing transactional emails (e.g. `do_not_reply@localhost`)
-    * `pin`: Arbitrary string value required when creating a new [Entry](#entry) to prevent unwanted sign-ups (e.g. `1234`)
+    * `contact.email_proper`: Formatted support email address (e.g. `wont_you_please_please_help_me@localhost`)
+    * `contact.email_sanitised`: Sanitised support email address for display purposes (e.g. `wont_you_please_please_help_me (at) localhost`)
+    * `contact.email_do_not_reply`: Sender's email address on transactional emails (e.g. `do_not_reply@localhost`)
+    * `sender_domain`: Outgoing sender domain validated via DNS with Mailgun.
+    * `pin`: Arbitrary string value required when creating a new [Entry](#entry) to prevent unwanted sign-ups (e.g. `MYPIN1234`)
     * `season_id`: ID of current [Season](#season) that Realm pertains to, must be an existing key within `datastore.Seasons` (e.g. `201920_1`)
-    * `entry_fee.amount`: Numerical entry fee value, currently GBP only (e.g. `1.23`)
+    * `entry_fee.amount`: Numerical entry fee value charged via PayPal, currently supports GBP only (e.g. `1.23`)
     * `entry_fee.label`: Entry fee's display value (e.g. `£1.23`)
     * `entry_fee.breakdown`: Array of strings that explain breakdown of entry fee (e.g. `- £1.00 kitty contribution, - £0.23 processing fee`) 
-    * `analytics_code`: Google Analytics code (optional, analytics ignored if left blank)
+    * `analytics_code`: Google Analytics code for Realm (optional, analytics ignored if left blank)
 
-* The values of these payloads are parsed as `Realm` objects and inflated on a `domain.Config` object on the app's
-dependency container within the main bootstrap. This can then be passed between handlers as required.
+* The values of these payloads are parsed as `Realm` objects within the main app bootstrap, and subsequently retrievable
+by accessing `Config().Realms[realm_key]` on the app's dependency container.
 
 * The default Realm Name when running locally is `localhost`.
 
@@ -59,8 +61,8 @@ dependency container within the main bootstrap. This can then be passed between 
 
 * The Seasons data used throughout the system is defined in code as a single data structure (see `datastore.Seasons`).
 
-* This is deliberately controlled by the project maintainer as a one-off action approximately once a year, immediately
-prior to accepting new [Entry](#entry) into a game.
+* This is deliberately controlled by the project maintainer as a one-off action that is required approximately once a year
+(i.e. between one Season finishing and another beginning).
 
 * For details on the system's default Season, see ["FakeSeason"](#fakeseason) (below).
 
@@ -68,15 +70,16 @@ prior to accepting new [Entry](#entry) into a game.
 
 * A `Team` represents a team that are competing within a [Season](#season).
 
-* Each [Season](#season) defines a slice of Teams that are:
-    * presented to the User when selecting their [Prediction](#entryprediction), and
-    * expected to be found when ingesting real-world [Standings](#standings) from the upstream data source.
+* Each [Season](#season) defines a slice of Teams that...
+    * ...are presented to the User when setting their [Prediction](#entryprediction), and...
+    * ...must be present within the ingested real-world [Standings](#standings) from the upstream data source
+    for a given [Season](#season).
 
 ### Entry
 
 * An `Entry` represents a user who has been entered into a game instance.
 
-* Each Entry belongs to a single [Realm](#realm), as well as a single [Season](#season).
+* Each Entry belongs to a single combination of [Realm](#realm) and [Season](#season).
 
 * Entries are only considered active if they have been "approved" by an Admin (see [Payments](../README.md#payments)).
 
@@ -85,18 +88,19 @@ when "logging in" to make changes to a [Prediction](#entryprediction)
 
 ### EntryPrediction
 
-* An `EntryPrediction` represents a Prediction that has been made as part of an [Entry](#entry)
+* An `EntryPrediction` (also referred to as a `Prediction`) represents a Prediction that has been made as part of an [Entry](#entry)
 
 * It comprises a creation timestamp, as well as a JSON array containing a sequence of [Team](#team) IDs that are considered
-to be the Predicted order of [Teams](#team) within a real-world league table.
+to be the chosen order of [Teams](#team) by which the [Entry](#entry) will accrue points for all current and subsequent
+game weeks (until a new EntryPrediction is made).
 
-* Each EntryPrediction belongs to a single [Entry](#entry)
+* Each EntryPrediction belongs to a single [Entry](#entry).
 
 * An EntryPrediction can only be created and not updated.
 
 * The act of a user changing their existing EntryPrediction creates a new one with a more recent timestamp instead. This
 facilitates an "event-based" paradigm, providing a full historic audit trail of all EntryPredictions that have ever
-belonged to an [Entry](#entry)
+belonged to an [Entry](#entry).
 
 ### Standings
 
@@ -107,26 +111,26 @@ such as number of matches played, won, drawn, lost etc. for each [Team](#team).
 
 * It is inflated as part of the [Retrieve Latest Standings](#retrieve-latest-standings) cron job.
 
-* Each Standings record is unique by SeasonID and RoundNumber (game week) which is overwritten by each cron job execution,
-until the next game week is reached (or the [Season](#season) expires) 
+* Each Standings record is unique by SeasonID and Round Number (game week) which is overwritten by each cron job execution,
+until the next game week is reached (or the [Season](#season) reaches completion). 
 
 ### ScoredEntryPrediction
 
-* A `ScoredEntryPrediction` object represents a [Prediction](#entryprediction) that has been provided with a total score
-based on a given [Standings](#standings) object.
+* A `ScoredEntryPrediction` object represents a [Prediction](#entryprediction) that has been provided with a score of
+penalty points based on a given [Standings](#standings) object.
 
-* It is unique to a single combination of an [EntryPrediction](#entryprediction) object and a [Standings](#standings) object.
+* It is unique to a single combination of a [Prediction](#entryprediction) object and a [Standings](#standings) object.
 
 * It is used to calculate the total cumulative score for each [Entry](#entry) on a [LeaderBoard](#leaderboard).
 
 ### Ranking
 
-* A `Ranking` represents an arbitrary ID that has an associated numerical position (i.e. an ordered place within a sequence)
+* A `Ranking` represents an arbitrary ID that has an associated numerical position (i.e. an ordered position within a sequence).
 
 ### RankingWithMeta
 
 * A `RankingWithMeta` represents a [Ranking](#ranking) that has an associated map of meta data, such as those found
-within a [Standings](#standings) object.
+for each [Team](#team) within a [Standings](#standings) object.
 
 ### RankingWithScore
 
@@ -197,15 +201,16 @@ ShortCode Reset Tokens are simply removed after having been used. This should id
 ### Retrieving Latest Standings
 
 Real-world league table standings are consumed from the [football-data.org](https://www.football-data.org/) API, for the
-purposes of calculating new scores for each [Entry](#entry) per game week. 
+purposes of calculating new scores for each [Entry](#entry) per game week (also known as
+[ScoredEntryPredictions](#scoredentryprediction)).
 
-This occurs within a cron job that is scheduled to run every 15 minutes (see `newRetrieveLatestStandingsJob()`).
+This occurs within a cron job that is scheduled to run every 15 minutes (see `scheduler.newRetrieveLatestStandingsJob()`).
 
 A separate cron job is instantiated for every existing [Season](#season) that fulfils all of the following criteria
 at the time the service boots up:
 
-* is currently affiliated with an existing [Realm](#realm), and
-* comprises a `ClientID` that is not `nil`
+* ...is currently affiliated with an existing [Realm](#realm), and...
+* ...comprises a `ClientID` that is not `nil`.
 
 The `.env` variable `FOOTBALLDATA_API_TOKEN` must also have a value for any of these cron jobs to run.
 
@@ -213,7 +218,7 @@ The cron job's task executes the following logic:
 
 * Check that [Season](#season) is `Active` - exit if not.
 
-* Retrieve all **latest** [EntryPredictions](#entryprediction) for provided [Season](#season) - exit if none found.
+* Retrieve **newest** [EntryPredictions](#entryprediction) associated with the provided [Season](#season) - exit if none.
 
 * Retrieve latest [Standings](#standings) from football data client - exit if error
 
@@ -222,10 +227,10 @@ The cron job's task executes the following logic:
 * Check for an existing [Standings](#standings) record that matches the Round Number (game week) of the retrieved
 [Standings](#standings):
     * If we already have it, just update its Rankings
-    * Otherwise we have a new one, so retrieve the [Standings](#standings) for the previous Round Number (game week) 
-    mark it as "finalised", and continue with this instead.
+    * Otherwise we have a new one, so retrieve the [Standings](#standings) for the **previous** Round Number (game week) 
+    mark it as "finalised", and continue with this one instead.
 
-* For each [EntryPrediction](#entryprediction) we retrieved earlier:
+* For each [Prediction](#entryprediction) we retrieved earlier:
     * Calculate new [ScoredEntryPrediction](#scoredentryprediction) based on our [Standings](#standings)
     * Insert new/Update existing [ScoredEntryPrediction](#scoredentryprediction) for current [Entry](#entry) ID and
     [Standings](#standings) ID.
@@ -235,38 +240,42 @@ The cron job's task executes the following logic:
 ### "FakeSeason"
 
 Much of the functionality within this system is time-sensitive in relation to the [Season](#season) that applies to the
-current [Realm](#realm). Functionality such as whether or not an [Entry](#entry) or [EntryPrediction](#entryprediction)
+current [Realm](#realm).
+
+Functionality such as whether or not an [Entry](#entry) or [Prediction](#entryprediction)
 can be created or updated at any given moment is determined by the corresponding timeframes set on the [Season](#season)
-itself.
+object itself.
 
 Usually these will be **absolute** timeframes that pertain to the dates relevant to a real-world [Season](#season)
 (see `201920_1` in `datastore.Seasons` as an example).
 
-For this reason, the default [Realm](#realm) (`localhost`) is affiliated with a specific [Season](#season) that has the
-ID `FakeSeason`. This [Season's](#season) timeframes are **relative** to the point at which the system is run, so that
-core functionality can be used immediately when running locally.
+For this reason, the default [Realm](#realm) (`localhost`) is affiliated with a [Season](#season) which has the ID `FakeSeason`
+and whose sole purpose is to enable time-sensitive operations to be more easily debugged.
+
+This [Season's](#season) timeframes are **relative** to the point at which the system is run, so that core functionality
+can be used immediately when running locally.
 
 The schedule takes place as follows:
 
 * 0 mins - 20 mins
     * [Entries](#entry) **can** be created or updated
-    * [EntryPredictions](#entryprediction) **can** be created
+    * [Predictions](#entryprediction) **can** be created
 * 20 mins - 40 mins
     * [Entries](#entry) **cannot** be created or updated
-    * [EntryPredictions](#entryprediction) **cannot** be created
+    * [Predictions](#entryprediction) **cannot** be created
 * 40 mins - 60 mins
     * [Entries](#entry) **cannot** be created or updated
-    * [EntryPredictions](#entryprediction) **can** be created
+    * [Predictions](#entryprediction) **can** be created
 * 60 mins+
     * [Entries](#entry) **cannot** be created or updated
-    * [EntryPredictions](#entryprediction) **cannot** be created
+    * [Predictions](#entryprediction) **cannot** be created
 
 ### Transactional Emails
 
 When a new email is issued via one of the `domain.CommunicationsAgent` object methods, it is sent to a channel that
 acts as an arbitrary message queue.
 
-This channel is consumed within a separate long-running go routine which is responsible for the physical dispatch of the
+This channel is consumed within a separate long-running _goroutine_ which is responsible for the physical dispatch of the
 email itself via Mailgun, in an attempt to leverage decoupling/concurrency.
 
 Due to time constraints, there is currently no retry/cool-off mechanism or dead-letter handling for failed emails.
@@ -289,8 +298,8 @@ There are two component parts to a Guard: the `Attempt` and the `Target`.
 
 The `Attempt` is usually the value supplied within a request in some way.
 
-The `Target` is usually a "known" value that the `Attempt` must match in order to return a positive result to the
-agent method.
+The `Target` is usually a "known" value that the `Attempt` must equal in order that the agent method experiences a 
+positive match.
 
 For example...
 

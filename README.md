@@ -7,20 +7,22 @@
 
 Prediction League is a game that started socially between friends.
 
-Everyone in the group puts some coins into the kitty and writes down what they think the final Premier League table will look like,
-before a ball has even been kicked.
+Everyone in the group puts some coins into the kitty and writes down what they think the final Premier League table will
+look like, before a ball has even been kicked.
 
-Whoever is closest at the end of the season wins the kitty. And sometimes gets to pick the following week’s teams for 6-a-side...
+Whoever is closest at the end of the season wins the kitty. And sometimes gets to pick the following week’s teams for
+6-a-side...
 
 ### Who needs pen-and-paper?? 📝
 
-This project is a digital representation of the game, which implements a frontend and backend for handling new entries,
-payment workflows, management of predictions and cumulative scoring of points.
+This project is a digital representation of the game, which implements a Frontend and Backend for handling new entries,
+payment workflows, management of predictions and scoring of points (which are now accrued on a cumulative basis throughout
+the season instead of just at the end).
 
 It's written in [Golang](https://golang.org/), using Go [templates](https://golang.org/pkg/text/template/) for HTML and
 elements of the [LUSH Core](https://github.com/LUSHDigital/core) library for bootstrapping.
 
-[Vuejs](https://vuejs.org/) and [Bootstrap](https://getbootstrap.com/) are used on the frontend.
+[Vuejs](https://vuejs.org/) and [Bootstrap](https://getbootstrap.com/) are used on the Frontend.
 [Sass](https://sass-lang.com/) is used for pre-processing CSS and [npm](https://npmjs.com/) + [Webpack](https://webpack.js.org/)
 are used for building assets.
 
@@ -30,7 +32,7 @@ It's hosted at [prem.footyga.me](https://prem.footyga.me) (current Premier Leagu
 
 ## Local Environment ♻️ 🌳
 
-To read about the passive-aggressive joys of trying to scaffold this project in the first place, see [docs/local-environment.md](docs/local-environment.md)
+To read about the passive-aggressive joys of trying to scaffold this project in the first place, see [docs/local-environment-setup.md](docs/local-environment-setup.md)
 
 ### Configuring Dependencies
 
@@ -127,10 +129,11 @@ pre-defined windows throughout the [Season](docs/domain-knowledge.md#season).
 
 These timeframes are configured independently for each [Season](docs/domain-knowledge.md#season).
 
-e.g. No more [Entries](docs/domain-knowledge.md#entry) can be made once the [Season's](docs/domain-knowledge.md#season) `EntriesAccepted`
+For example, no more [Entries](docs/domain-knowledge.md#entry) can be made once the [Season's](docs/domain-knowledge.md#season) `EntriesAccepted`
 timeframe has elapsed.
 
-Additional settings can also be configured for each [Realm](docs/domain-knowledge.md#realm).
+Additional settings can also be configured for each [Realm](docs/domain-knowledge.md#realm) (an instance of the game which
+runs on a particular URL/sub-domain).
 
 ### Payments
 
@@ -140,7 +143,7 @@ This is to fund the kitty that the winner receives at the end of the game.
 
 For convenience and user peace-of-mind, payment is made via PayPal using their [Basic Checkout Integration](https://developer.paypal.com/docs/checkout/integrate/).
 
-Given that the payment flow exists entirely on the frontend, each [Entry](docs/domain-knowledge.md#entry) must be "approved" by an
+Given that the payment flow exists entirely on the Frontend, each [Entry](docs/domain-knowledge.md#entry) must be "approved" by an
 Admin in order that payment can be verified manually.
 
 This is a single API endpoint whose Basic Auth credentials can be configured via the `.env` variable named `ADMIN_BASIC_AUTH`.
@@ -168,11 +171,14 @@ For a Championship season with 24 teams, there are 46 game weeks.
 
 Once a new game week starts, the previous game week’s score is frozen and the next game week begins with a score of `0`.
 
-The total cumulative score over all game weeks for each [Entry](docs/domain-knowledge.md#entry) is used to calculate the
-[LeaderBoard](docs/domain-knowledge.md#leaderboard), which is topped by the [Entry](docs/domain-knowledge.md#entry) with the lowest cumulative score.
+### LeaderBoard
+
+The total cumulative score over all game weeks for each [Entry](docs/domain-knowledge.md#entry) is calculated and used to
+produce the [LeaderBoard](docs/domain-knowledge.md#leaderboard). The [LeaderBoard](docs/domain-knowledge.md#leaderboard)
+is topped by the [Entry](docs/domain-knowledge.md#entry) with the lowest cumulative score of penalty points.
 
 In the event of a tie on the [LeaderBoard](docs/domain-knowledge.md#leaderboard), the tied [Entries](docs/domain-knowledge.md#entry) will
-be ordered by the minimum score that each one has gained throughout all game weeks so far, lowest first. You can think
+be ordered by the **minimum** score that each one has gained throughout all game weeks so far, lowest first. You can think
 of this as the equivalent of “goal difference” when ranking teams on equal points in the real-world.
 
 ### Data Source
@@ -180,12 +186,13 @@ of this as the equivalent of “goal difference” when ranking teams on equal p
 The real-world league table data used to calculate each score is retrieved from [football-data.org](https://www.football-data.org/).
 
 This data source is polled every 15 minutes as a cron task. At this point, the most recently made [Prediction](docs/domain-knowledge.md#entryprediction)
-for each [Entry](docs/domain-knowledge.md#entry) is used to calculate the [Entry's](docs/domain-knowledge.md#entry) new score for the
-current game week. It is also used to determine if a new game week has begun, or if the final game week has been completed.
+for each [Entry](docs/domain-knowledge.md#entry) is used to calculate the [Entry's](docs/domain-knowledge.md#entry) new
+score for the current game week. It is also used to determine if a new game week has begun, or if the final game week has
+ended (at which point the [Season](docs/domain-knowledge.md#season) is considered to be complete).
 
 ### FAQ
 
-The frontend also provides an FAQ page which can be customised on a per-[Realm](docs/domain-knowledge.md#realm) basis. 
+The Frontend also provides an FAQ page which can be customised on a per-[Realm](docs/domain-knowledge.md#realm) basis. 
 
 
 ## Domain Knowledge
@@ -193,11 +200,11 @@ The frontend also provides an FAQ page which can be customised on a per-[Realm](
 For more details around core business logic and entities, see [Domain Knowledge](docs/domain-knowledge.md)
 
 
-## Features and Improvements
+## New Features and Improvements
 
-For more details around the project's intended roadmap, see [Features and Improvements](docs/features-and-improvements.md)
+For more details around the project's intended Roadmap, see [New Features and Improvements](docs/new-features-and-improvements.md)
 
 
 ## Contributing
 
-If you'd like to help out with this project in any way, please feel free to fork and PR! 😁
+If you'd like to help out with this project in any way, please feel free to fork it and submit your PRs! 😁

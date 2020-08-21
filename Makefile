@@ -40,6 +40,7 @@ test.docker.stop:
 
 app.release:
 	# requires following vars to be passed to command: BUILD_TAG, RELEASE_TAG, SSH_KEY, SSH_USER, SSH_HOST, DOCKER_PROJECT_DIR
+	# this command can be ignored once CI/CD pipelines are configured and working
 
 	# build front end assets
 	docker run --rm -v ${PWD}:/app -w /app node:13.10 npm install && npm run prod
