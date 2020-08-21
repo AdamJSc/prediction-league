@@ -12,7 +12,7 @@ pipelines:
             - export MYSQL_URL="test-db-user:test-db-pwd@tcp(localhost:3306)/test-db-name?parseTime=true"
             - go test -v ./...
       - step:
-          name: Front-End Build
+          name: Frontend Build
           image: node:13.10
           script:
             - npm install
@@ -43,7 +43,7 @@ pipelines:
       - variables:
           - name: BuildTag
       - step:
-          name: Front-End Build
+          name: Frontend Build
           image: node:13.10
           script:
             - npm install

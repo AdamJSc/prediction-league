@@ -6,11 +6,11 @@ import (
 
 // Team defines the structure of a Team that belongs to a Season
 type Team struct {
-	ID        string             `json:"id"`
-	ClientID  ResourceIdentifier `json:"-"`
-	Name      string             `json:"name"`
-	ShortName string             `json:"short_name"`
-	CrestURL  string             `json:"crest_url"`
+	ID        string             `json:"id"`         // team's initials, e.g. AFCB (must be unique)
+	ClientID  ResourceIdentifier `json:"-"`          // identifier within the football data source
+	Name      string             `json:"name"`       // team's long name, e.g. AFC Bournemouth
+	ShortName string             `json:"short_name"` // team's short name, e.g. Bournemouth
+	CrestURL  string             `json:"crest_url"`  // absolute URL representing image of team's crest
 }
 
 // TeamCollection is map of Teams

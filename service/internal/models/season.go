@@ -13,14 +13,14 @@ const (
 
 // Season defines the structure of a Season against which Entries are played
 type Season struct {
-	ID                  string
-	ClientID            ResourceIdentifier
-	Name                string
-	Active              TimeFrame
-	EntriesAccepted     TimeFrame
-	PredictionsAccepted []TimeFrame
-	TeamIDs             []string
-	MaxRounds           int
+	ID                  string             // representation of season's start/end year along with instance number, e.g. 202021_1
+	ClientID            ResourceIdentifier // identifier within the football data source
+	Name                string             // season name, e.g. Premier League 2020/21
+	Active              TimeFrame          // timeframe for which the season is active (real-world standings will be consumed during this timeframe)
+	EntriesAccepted     TimeFrame          // timeframe within which new entries will be accepted
+	PredictionsAccepted []TimeFrame        // series of timeframes within which changes to entry predictions will be accepted
+	TeamIDs             []string           // slice of strings representing valid team IDs that exist within TeamsCollection
+	MaxRounds           int                // number of rounds after which season is considered completed (maximum number of games to be played by each team)
 }
 
 // GetState determines a Season's state based on a supplied timestamp
