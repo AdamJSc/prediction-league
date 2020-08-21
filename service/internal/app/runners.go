@@ -23,7 +23,9 @@ type EmailQueueRunner struct {
 func (e EmailQueueRunner) Run(_ context.Context) error {
 	log.Println("starting email queue runner")
 
-	// TODO - add log if no config
+	if e.Config().MailgunAPIKey == "" {
+		log.Println("missing config: mailgun... transactional email content will be printed to log...")
+	}
 
 	for message := range e.EmailQueue() {
 		if e.Config().MailgunAPIKey == "" {
@@ -31,8 +33,6 @@ func (e EmailQueueRunner) Run(_ context.Context) error {
 			log.Printf("email on queue: %+v", message)
 			continue
 		}
-
-		// TODO - add retry mechanism
 
 		go func(m messages.Email) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)

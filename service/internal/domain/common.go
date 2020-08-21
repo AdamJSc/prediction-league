@@ -71,7 +71,9 @@ func MustLoadConfigFromEnvPaths(paths ...string) Config {
 
 	config.Realms = mustParseRealmsFromPath(fmt.Sprintf("./data/realms.yml"))
 
-	// TODO - add log if no PayPal config
+	if config.PayPalClientID == "" {
+		log.Println("missing config: paypal... entry signup payment step will be skipped...")
+	}
 
 	return config
 }

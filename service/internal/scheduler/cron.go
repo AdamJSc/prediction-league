@@ -12,11 +12,13 @@ import (
 func LoadCron(container *httph.HTTPAppContainer) *cron.Cron {
 	c := cron.New()
 
-	if container.Config().FootballDataAPIToken != "" {
-		// TODO - add log if no config
-		for _, j := range mustGenerateRetrieveLatestStandingsJobs(container) {
-			c.AddFunc(j.spec, j.task)
-		}
+	if container.Config().FootballDataAPIToken == "" {
+		log.Println("missing config: football data api... scheduled retrieval of latest standings will not run...")
+		return c
+	}
+
+	for _, j := range mustGenerateRetrieveLatestStandingsJobs(container) {
+		c.AddFunc(j.spec, j.task)
 	}
 
 	return c
