@@ -10,12 +10,16 @@ pipelines:
             - gomodules
           services:
             - docker
-            - test-db
           script:
-            # amend mysql container config
-            - export SQL_MODE="STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
-            - docker exec -i test-db mysql -u root -e "SET @@GLOBAL.sql_mode=\"${SQL_MODE}\";" test-db-name
+            # setup and configure mysql container
+            - "docker run -d --name=test-db  -e MYSQL_ALLOW_EMPTY_PASSWORD=\"yeah sure\" \
+                  -e MYSQL_USER=test-db-user -e MYSQL_PASSWORD=test-db-pwd  -e MYSQL_DATABASE=test-db-name \
+                  -p 3306:3306 mysql:5.7"
+            - docker cp ${BITBUCKET_CLONE_DIR}/docker/db/mysql-override.cnf test-db:/etc/mysql/mysql.conf.d/mysql-override.cnf
+            - docker exec test-db chmod 0444 /etc/mysql/mysql.conf.d/mysql-override.cnf
+            - docker restart test-db
 
+            # run go tests
             - export MYSQL_URL="test-db-user:test-db-pwd@tcp(localhost:3306)/test-db-name?parseTime=true"
             - go mod vendor
             - go test -v ./...
@@ -83,11 +87,3 @@ pipelines:
 definitions:
   caches:
     gomodules: vendor
-  services:
-    test-db:
-      image: mysql:5.7
-      variables:
-        MYSQL_USER: test-db-user
-        MYSQL_PASSWORD: test-db-pwd
-        MYSQL_DATABASE: test-db-name
-        MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
