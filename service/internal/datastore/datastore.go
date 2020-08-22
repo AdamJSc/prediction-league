@@ -8,6 +8,8 @@ import (
 
 const FakeSeasonID = "FakeSeason"
 
+// TODO PRELAUNCH - find + update Team Client IDs that are TBC
+
 // Teams provides a pre-determined data structure of all Teams that can be referenced within the system
 var Teams = models.TeamCollection{
 	"AFC": {
@@ -250,7 +252,7 @@ var Teams = models.TeamCollection{
 	},
 	"RUFC": {
 		ID:        "RUFC",
-		ClientID:  models.TeamIdentifier{TeamID: 99999}, // TBC
+		ClientID:  models.TeamIdentifier{TeamID: 385},
 		Name:      "Rotherham United",
 		ShortName: "Rotherham",
 		CrestURL:  "https://upload.wikimedia.org/wikipedia/en/thumb/c/c0/Rotherham_United_FC.svg/250px-Rotherham_United_FC.svg.png",
