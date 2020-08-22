@@ -4,15 +4,23 @@ pipelines:
 
     v*.*.*:
       - step:
-          name: Go Test
+          name: Run Go tests
           image: golang:1.14
+          caches:
+            - gomodules
           services:
+            - docker
             - test-db
           script:
+            # amend mysql container config
+            - export SQL_MODE="STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+            - docker exec -i test-db mysql -u root -e "SET @@GLOBAL.sql_mode=\"${SQL_MODE}\";" test-db-name
+
             - export MYSQL_URL="test-db-user:test-db-pwd@tcp(localhost:3306)/test-db-name?parseTime=true"
+            - go mod vendor
             - go test -v ./...
       - step:
-          name: Frontend Build
+          name: Run Node build
           image: node:13.10
           script:
             - npm install
@@ -20,8 +28,10 @@ pipelines:
           artifacts:
             - resources/dist/**
       - step:
-          name: Go Build
+          name: Run Docker Image build
           image: atlassian/default-image:2
+          caches:
+            - gomodules
           services:
             - docker
           script:
@@ -32,7 +42,7 @@ pipelines:
             - docker push adamjsc/prediction-league-app:${BITBUCKET_TAG}
             - docker push adamjsc/prediction-league-app:latest
       - step:
-          name: Release
+          name: Deploy
           image: atlassian/default-image:2
           script:
             - ssh ${PROD_SSH_USER}@${PROD_SSH_HOST} '/bin/sh -s' < release.sh ${PROD_HOST_DIR} ${BITBUCKET_TAG}
@@ -71,6 +81,8 @@ pipelines:
             - ssh ${PROD_SSH_USER}@${PROD_SSH_HOST} '/bin/sh -s' < release.sh ${PROD_HOST_DIR} ${BuildTag}
 
 definitions:
+  caches:
+    gomodules: vendor
   services:
     test-db:
       image: mysql:5.7
@@ -78,4 +90,4 @@ definitions:
         MYSQL_USER: test-db-user
         MYSQL_PASSWORD: test-db-pwd
         MYSQL_DATABASE: test-db-name
-        MYSQL_ROOT_PASSWORD: root
+        MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
