@@ -361,9 +361,7 @@ func MustInflate() {
 			ClientID: models.SeasonIdentifier{SeasonID: "PL"},
 			Name:     "Premier League 2020/21",
 			Active: models.TimeFrame{
-				// TBC
 				From: time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
-				// TBC
 				Until: time.Date(2021, 5, 23, 23, 59, 59, 0, loc),
 			},
 			EntriesAccepted: models.TimeFrame{
@@ -388,7 +386,6 @@ func MustInflate() {
 				},
 			},
 			TeamIDs: []string{
-				// TBC - Playoff Winner
 				"AFC",
 				"AVFC",
 				"BFC",
@@ -419,9 +416,7 @@ func MustInflate() {
 			ClientID: models.SeasonIdentifier{SeasonID: "ELC"},
 			Name:     "Championship 2020/21",
 			Active: models.TimeFrame{
-				// TBC
 				From: time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
-				// TBC
 				Until: time.Date(2021, 5, 9, 23, 59, 59, 0, loc),
 			},
 			EntriesAccepted: models.TimeFrame{
