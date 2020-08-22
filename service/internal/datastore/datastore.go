@@ -361,7 +361,7 @@ func MustInflate() {
 			ClientID: models.SeasonIdentifier{SeasonID: "PL"},
 			Name:     "Premier League 2020/21",
 			Active: models.TimeFrame{
-				From: time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
+				From:  time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
 				Until: time.Date(2021, 5, 23, 23, 59, 59, 0, loc),
 			},
 			EntriesAccepted: models.TimeFrame{
@@ -374,15 +374,25 @@ func MustInflate() {
 					From:  time.Date(2020, 8, 29, 9, 0, 0, 0, loc),
 					Until: time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
 				},
-				// Nations League / International Friendlies
+				// FIFA International Break weekend (Thurs to Thurs)
 				{
-					From:  time.Date(2020, 10, 7, 0, 0, 0, 0, loc),
-					Until: time.Date(2020, 10, 14, 23, 59, 59, 0, loc),
+					From:  time.Date(2020, 10, 8, 0, 0, 0, 0, loc),
+					Until: time.Date(2020, 10, 15, 23, 59, 59, 0, loc),
 				},
-				// Nations League / International Friendlies
+				// FIFA International Break weekend (Thurs to Thurs)
 				{
-					From:  time.Date(2020, 11, 11, 0, 0, 0, 0, loc),
-					Until: time.Date(2020, 11, 18, 23, 59, 59, 0, loc),
+					From:  time.Date(2020, 11, 12, 0, 0, 0, 0, loc),
+					Until: time.Date(2020, 11, 19, 23, 59, 59, 0, loc),
+				},
+				// FA Cup Third Round weekend (Thurs to Thurs)
+				{
+					From:  time.Date(2021, 01, 07, 0, 0, 0, 0, loc),
+					Until: time.Date(2021, 01, 14, 23, 59, 59, 0, loc),
+				},
+				// FIFA International Break weekend (Thurs to Thurs)
+				{
+					From:  time.Date(2021, 03, 25, 0, 0, 0, 0, loc),
+					Until: time.Date(2021, 04, 01, 23, 59, 59, 0, loc),
 				},
 			},
 			TeamIDs: []string{
@@ -416,7 +426,7 @@ func MustInflate() {
 			ClientID: models.SeasonIdentifier{SeasonID: "ELC"},
 			Name:     "Championship 2020/21",
 			Active: models.TimeFrame{
-				From: time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
+				From:  time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
 				Until: time.Date(2021, 5, 9, 23, 59, 59, 0, loc),
 			},
 			EntriesAccepted: models.TimeFrame{
@@ -429,15 +439,25 @@ func MustInflate() {
 					From:  time.Date(2020, 8, 29, 9, 0, 0, 0, loc),
 					Until: time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
 				},
-				// Nations League / International Friendlies
+				// FIFA International Break weekend (Thurs to Thurs)
 				{
-					From:  time.Date(2020, 10, 7, 0, 0, 0, 0, loc),
-					Until: time.Date(2020, 10, 14, 23, 59, 59, 0, loc),
+					From:  time.Date(2020, 10, 8, 0, 0, 0, 0, loc),
+					Until: time.Date(2020, 10, 15, 23, 59, 59, 0, loc),
 				},
-				// Nations League / International Friendlies
+				// FIFA International Break weekend (Thurs to Thurs)
 				{
-					From:  time.Date(2020, 11, 11, 0, 0, 0, 0, loc),
-					Until: time.Date(2020, 11, 18, 23, 59, 59, 0, loc),
+					From:  time.Date(2020, 11, 12, 0, 0, 0, 0, loc),
+					Until: time.Date(2020, 11, 19, 23, 59, 59, 0, loc),
+				},
+				// FA Cup Third Round weekend (Thurs to Thurs)
+				{
+					From:  time.Date(2021, 01, 07, 0, 0, 0, 0, loc),
+					Until: time.Date(2021, 01, 14, 23, 59, 59, 0, loc),
+				},
+				// FIFA International Break weekend (Thurs to Thurs)
+				{
+					From:  time.Date(2021, 03, 25, 0, 0, 0, 0, loc),
+					Until: time.Date(2021, 04, 01, 23, 59, 59, 0, loc),
 				},
 			},
 			TeamIDs: []string{
