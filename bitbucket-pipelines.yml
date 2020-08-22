@@ -26,6 +26,8 @@ pipelines:
       - step:
           name: Run Node build
           image: node:13.10
+          caches:
+            - node
           script:
             - npm install
             - npm run prod
