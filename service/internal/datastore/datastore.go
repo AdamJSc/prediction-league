@@ -8,8 +8,6 @@ import (
 
 const FakeSeasonID = "FakeSeason"
 
-// TODO PRELAUNCH - find + update Team Client IDs that are TBC
-
 // Teams provides a pre-determined data structure of all Teams that can be referenced within the system
 var Teams = models.TeamCollection{
 	"AFC": {
@@ -98,7 +96,7 @@ var Teams = models.TeamCollection{
 	},
 	"CCFC2": {
 		ID:        "CCFC2",
-		ClientID:  models.TeamIdentifier{TeamID: 99999}, // TBC
+		ClientID:  models.TeamIdentifier{TeamID: 1076},
 		Name:      "Coventry City",
 		ShortName: "Coventry",
 		CrestURL:  "https://upload.wikimedia.org/wikipedia/en/thumb/9/94/Coventry_City_FC_logo.svg/278px-Coventry_City_FC_logo.svg.png",
@@ -336,7 +334,7 @@ var Teams = models.TeamCollection{
 	},
 	"WWFC2": {
 		ID:        "WWFC2",
-		ClientID:  models.TeamIdentifier{TeamID: 99999}, // TBC
+		ClientID:  models.TeamIdentifier{TeamID: 1146},
 		Name:      "Wycombe Wanderers",
 		ShortName: "Wycombe",
 		CrestURL:  "https://upload.wikimedia.org/wikipedia/en/thumb/f/fb/Wycombe_Wanderers_FC_logo.svg/240px-Wycombe_Wanderers_FC_logo.svg.png",
