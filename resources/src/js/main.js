@@ -28,8 +28,13 @@ if (logout !== null) {
 const logoutAction = document.getElementById('logout-action')
 if (logoutAction !== null) {
     logoutAction.addEventListener('click', function(){
-        // reset cookie value
-        document.cookie = 'PL_AUTH=;expires=1970-01-01T00:00:00Z;path=/'
+        // fix to
+        const loc = window.location
+        const domain = loc.host.split(':' + loc.port)[0]
+        const cookieString = 'PL_AUTH=;expires=Thu, 01 Jan 1970 00:00:01 GMT;path=/;domain='
+        // reset cookie values
+        document.cookie = cookieString + domain         // root domain
+        document.cookie = cookieString + '.' + domain   // wildcard sub-domains
         window.location = '/'
     })
 }
