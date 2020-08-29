@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"log"
+	"prediction-league/service/internal/messages"
+	"time"
 )
 
 // EmailQueueRunnerInjector defines the dependencies required by our EmailQueueRunner
@@ -21,17 +23,26 @@ type EmailQueueRunner struct {
 func (e EmailQueueRunner) Run(_ context.Context) error {
 	log.Println("starting email queue runner")
 
+	if e.Config().MailgunAPIKey == "" {
+		log.Println("missing config: mailgun... transactional email content will be printed to log...")
+	}
+
 	for message := range e.EmailQueue() {
-		if e.Config().SendGridAPIKey == "" {
+		if e.Config().MailgunAPIKey == "" {
 			// email client config is missing so just print to the logs instead
 			log.Printf("email on queue: %+v", message)
 			continue
 		}
 
-		// TODO - add retry mechanism
-		if err := e.EmailClient().SendEmail(message); err != nil {
-			log.Printf("failed to send email: %+v", err)
-		}
+		go func(m messages.Email) {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+			defer cancel()
+
+			if err := e.EmailClient().SendEmail(ctx, m); err != nil {
+				log.Printf("failed to send email: %+v", err)
+			}
+		}(message)
+
 	}
 
 	return nil

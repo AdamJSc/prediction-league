@@ -96,7 +96,7 @@ var Teams = models.TeamCollection{
 	},
 	"CCFC2": {
 		ID:        "CCFC2",
-		ClientID:  models.TeamIdentifier{TeamID: 99999}, // TBC
+		ClientID:  models.TeamIdentifier{TeamID: 1076},
 		Name:      "Coventry City",
 		ShortName: "Coventry",
 		CrestURL:  "https://upload.wikimedia.org/wikipedia/en/thumb/9/94/Coventry_City_FC_logo.svg/278px-Coventry_City_FC_logo.svg.png",
@@ -250,7 +250,7 @@ var Teams = models.TeamCollection{
 	},
 	"RUFC": {
 		ID:        "RUFC",
-		ClientID:  models.TeamIdentifier{TeamID: 99999}, // TBC
+		ClientID:  models.TeamIdentifier{TeamID: 385},
 		Name:      "Rotherham United",
 		ShortName: "Rotherham",
 		CrestURL:  "https://upload.wikimedia.org/wikipedia/en/thumb/c/c0/Rotherham_United_FC.svg/250px-Rotherham_United_FC.svg.png",
@@ -334,7 +334,7 @@ var Teams = models.TeamCollection{
 	},
 	"WWFC2": {
 		ID:        "WWFC2",
-		ClientID:  models.TeamIdentifier{TeamID: 99999}, // TBC
+		ClientID:  models.TeamIdentifier{TeamID: 1146},
 		Name:      "Wycombe Wanderers",
 		ShortName: "Wycombe",
 		CrestURL:  "https://upload.wikimedia.org/wikipedia/en/thumb/f/fb/Wycombe_Wanderers_FC_logo.svg/240px-Wycombe_Wanderers_FC_logo.svg.png",
@@ -361,9 +361,7 @@ func MustInflate() {
 			ClientID: models.SeasonIdentifier{SeasonID: "PL"},
 			Name:     "Premier League 2020/21",
 			Active: models.TimeFrame{
-				// TBC
-				From: time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
-				// TBC
+				From:  time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
 				Until: time.Date(2021, 5, 23, 23, 59, 59, 0, loc),
 			},
 			EntriesAccepted: models.TimeFrame{
@@ -376,19 +374,28 @@ func MustInflate() {
 					From:  time.Date(2020, 8, 29, 9, 0, 0, 0, loc),
 					Until: time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
 				},
-				// Nations League / International Friendlies
+				// FIFA International Break weekend (Thurs to Thurs)
 				{
-					From:  time.Date(2020, 10, 7, 0, 0, 0, 0, loc),
-					Until: time.Date(2020, 10, 14, 23, 59, 59, 0, loc),
+					From:  time.Date(2020, 10, 8, 0, 0, 0, 0, loc),
+					Until: time.Date(2020, 10, 15, 23, 59, 59, 0, loc),
 				},
-				// Nations League / International Friendlies
+				// FIFA International Break weekend (Thurs to Thurs)
 				{
-					From:  time.Date(2020, 11, 11, 0, 0, 0, 0, loc),
-					Until: time.Date(2020, 11, 18, 23, 59, 59, 0, loc),
+					From:  time.Date(2020, 11, 12, 0, 0, 0, 0, loc),
+					Until: time.Date(2020, 11, 19, 23, 59, 59, 0, loc),
+				},
+				// FA Cup Third Round weekend (Thurs to Thurs)
+				{
+					From:  time.Date(2021, 01, 07, 0, 0, 0, 0, loc),
+					Until: time.Date(2021, 01, 14, 23, 59, 59, 0, loc),
+				},
+				// FIFA International Break weekend (Thurs to Thurs)
+				{
+					From:  time.Date(2021, 03, 25, 0, 0, 0, 0, loc),
+					Until: time.Date(2021, 04, 01, 23, 59, 59, 0, loc),
 				},
 			},
 			TeamIDs: []string{
-				// TBC - Playoff Winner
 				"AFC",
 				"AVFC",
 				"BFC",
@@ -396,6 +403,7 @@ func MustInflate() {
 				"CFC",
 				"CPFC",
 				"EFC",
+				"FFC",
 				"LFC",
 				"LCFC",
 				"LUFC",
@@ -418,9 +426,7 @@ func MustInflate() {
 			ClientID: models.SeasonIdentifier{SeasonID: "ELC"},
 			Name:     "Championship 2020/21",
 			Active: models.TimeFrame{
-				// TBC
-				From: time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
-				// TBC
+				From:  time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
 				Until: time.Date(2021, 5, 9, 23, 59, 59, 0, loc),
 			},
 			EntriesAccepted: models.TimeFrame{
@@ -433,28 +439,37 @@ func MustInflate() {
 					From:  time.Date(2020, 8, 29, 9, 0, 0, 0, loc),
 					Until: time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
 				},
-				// Nations League / International Friendlies
+				// FIFA International Break weekend (Thurs to Thurs)
 				{
-					From:  time.Date(2020, 10, 7, 0, 0, 0, 0, loc),
-					Until: time.Date(2020, 10, 14, 23, 59, 59, 0, loc),
+					From:  time.Date(2020, 10, 8, 0, 0, 0, 0, loc),
+					Until: time.Date(2020, 10, 15, 23, 59, 59, 0, loc),
 				},
-				// Nations League / International Friendlies
+				// FIFA International Break weekend (Thurs to Thurs)
 				{
-					From:  time.Date(2020, 11, 11, 0, 0, 0, 0, loc),
-					Until: time.Date(2020, 11, 18, 23, 59, 59, 0, loc),
+					From:  time.Date(2020, 11, 12, 0, 0, 0, 0, loc),
+					Until: time.Date(2020, 11, 19, 23, 59, 59, 0, loc),
+				},
+				// FA Cup Third Round weekend (Thurs to Thurs)
+				{
+					From:  time.Date(2021, 01, 07, 0, 0, 0, 0, loc),
+					Until: time.Date(2021, 01, 14, 23, 59, 59, 0, loc),
+				},
+				// FIFA International Break weekend (Thurs to Thurs)
+				{
+					From:  time.Date(2021, 03, 25, 0, 0, 0, 0, loc),
+					Until: time.Date(2021, 04, 01, 23, 59, 59, 0, loc),
 				},
 			},
 			TeamIDs: []string{
 				"AFCB",
 				"BFC2",
-				"BFC3", // TBC - Playoffs?
+				"BFC3",
 				"BCFC",
 				"BCFC2",
 				"BRFC",
-				"CCFC", // TBC - Playoffs?
+				"CCFC",
 				"CCFC2",
 				"DCFC",
-				"FFC", // TBC - Playoffs?
 				"HTAFC",
 				"LTFC",
 				"MFC",
@@ -528,7 +543,7 @@ func MustInflate() {
 
 	Seasons[FakeSeasonID] = models.Season{
 		ID:       FakeSeasonID,
-		ClientID: nil, // will not trigger requests to client when running in retrieve latest standings job
+		ClientID: nil, // will not invoke requests to client when running in retrieve latest standings job
 		Name:     "Localhost Season",
 		EntriesAccepted: models.TimeFrame{
 			From:  time.Now(),

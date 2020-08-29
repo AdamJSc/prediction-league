@@ -20,12 +20,12 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 	// arbitrary timestamp that isn't the current moment
 	ts := time.Now().Add(-24 * time.Hour)
 
-	t.Run("generate a token must succeed", func(t *testing.T) {
+	t.Run("generate an auth token must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		ctx = domain.SetTimestampOnContext(ctx, ts)
 		defer cancel()
 
-		expectedType := 123
+		expectedType := domain.TokenTypeAuth
 		expectedValue := "Hello World"
 
 		token, err := agent.GenerateToken(ctx, expectedType, expectedValue)
@@ -45,7 +45,7 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 		if !token.IssuedAt.Equal(ts) {
 			expectedGot(t, ts, token.IssuedAt)
 		}
-		expectedExpires := ts.Add(domain.TokenDurationInMinutes * time.Minute)
+		expectedExpires := ts.Add(domain.TokenValidityDuration[expectedType])
 		if !token.ExpiresAt.Equal(expectedExpires) {
 			expectedGot(t, expectedExpires, token.ExpiresAt)
 		}
@@ -54,6 +54,56 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 		err = repositories.NewTokenDatabaseRepository(db).Insert(ctx, token)
 		if !cmp.ErrorType(err, repositories.DuplicateDBRecordError{})().Success() {
 			expectedTypeOfGot(t, repositories.DuplicateDBRecordError{}, err)
+		}
+	})
+
+	t.Run("generate a short code reset token must succeed", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		ctx = domain.SetTimestampOnContext(ctx, ts)
+		defer cancel()
+
+		expectedType := domain.TokenTypeShortCodeResetToken
+		expectedValue := "Hello World"
+
+		token, err := agent.GenerateToken(ctx, expectedType, expectedValue)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(token.ID) != domain.TokenLength {
+			expectedGot(t, domain.TokenLength, len(token.ID))
+		}
+		if token.Type != expectedType {
+			expectedGot(t, expectedType, token.Type)
+		}
+		if token.Value != expectedValue {
+			expectedGot(t, expectedValue, token.Value)
+		}
+		if !token.IssuedAt.Equal(ts) {
+			expectedGot(t, ts, token.IssuedAt)
+		}
+		expectedExpires := ts.Add(domain.TokenValidityDuration[expectedType])
+		if !token.ExpiresAt.Equal(expectedExpires) {
+			expectedGot(t, expectedExpires, token.ExpiresAt)
+		}
+
+		// inserting same token a second time must fail
+		err = repositories.NewTokenDatabaseRepository(db).Insert(ctx, token)
+		if !cmp.ErrorType(err, repositories.DuplicateDBRecordError{})().Success() {
+			expectedTypeOfGot(t, repositories.DuplicateDBRecordError{}, err)
+		}
+	})
+
+	t.Run("generate a token of a non-existent token type must fail", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		ctx = domain.SetTimestampOnContext(ctx, ts)
+		defer cancel()
+
+		nonExistentTokenType := 123456
+
+		_, err := agent.GenerateToken(ctx, nonExistentTokenType, "Hello World")
+		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
 	})
 }

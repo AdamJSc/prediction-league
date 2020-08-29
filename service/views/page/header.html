@@ -7,6 +7,17 @@
             <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" type="text/css" />
             <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
             <link rel="stylesheet" href="/assets/app.css?{{.RunningVersion}}" type="text/css" />
+            {{if .AnalyticsCode}}
+                <!-- Global site tag (gtag.js) - Google Analytics -->
+                <script async src="https://www.googletagmanager.com/gtag/js?id={{.AnalyticsCode}}"></script>
+                <script>
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+
+                    gtag('config', '{{.AnalyticsCode}}');
+                </script>
+            {{end}}
         </head>
         <body>
             <div class="main-wrapper">
@@ -42,13 +53,12 @@
                                     FAQ {{if eq .ActivePage "faq"}}<span class="sr-only">(current)</span>{{end}}
                                 </a>
                             </li>
-                            {{if not .IsLoggedIn}}
-                                <li class="nav-item">
-                                    <a class="nav-link{{if eq .ActivePage "prediction"}} active{{end}}" href="/prediction">
-                                        My Prediction
-                                    </a>
-                                </li>
-                            {{else}}
+                            <li class="nav-item">
+                                <a class="nav-link{{if eq .ActivePage "prediction"}} active{{end}}" href="/prediction">
+                                    My Prediction
+                                </a>
+                            </li>
+                            {{if .IsLoggedIn}}
                                 <li class="nav-item">
                                     <a class="nav-link" id="logout" href="#">
                                         Logout <i class="fa fa-sign-out" aria-hidden="true"></i>

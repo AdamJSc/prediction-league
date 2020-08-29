@@ -4,24 +4,40 @@ pipelines:
 
     v*.*.*:
       - step:
-          name: Go Test
+          name: Run Go tests
           image: golang:1.14
+          caches:
+            - gomodules
           services:
-            - test-db
+            - docker
           script:
+            # setup and configure mysql container
+            - "docker run -d --name=test-db  -e MYSQL_ALLOW_EMPTY_PASSWORD=\"yeah sure\" \
+                  -e MYSQL_USER=test-db-user -e MYSQL_PASSWORD=test-db-pwd  -e MYSQL_DATABASE=test-db-name \
+                  -p 3306:3306 mysql:5.7"
+            - docker cp ${BITBUCKET_CLONE_DIR}/docker/db/mysql-override.cnf test-db:/etc/mysql/mysql.conf.d/mysql-override.cnf
+            - docker exec test-db chmod 0444 /etc/mysql/mysql.conf.d/mysql-override.cnf
+            - docker restart test-db
+
+            # run go tests
             - export MYSQL_URL="test-db-user:test-db-pwd@tcp(localhost:3306)/test-db-name?parseTime=true"
+            - go mod vendor
             - go test -v ./...
       - step:
-          name: Frontend Build
+          name: Run Node build
           image: node:13.10
+          caches:
+            - node
           script:
             - npm install
             - npm run prod
           artifacts:
             - resources/dist/**
       - step:
-          name: Go Build
+          name: Run Docker Image build
           image: atlassian/default-image:2
+          caches:
+            - gomodules
           services:
             - docker
           script:
@@ -32,7 +48,7 @@ pipelines:
             - docker push adamjsc/prediction-league-app:${BITBUCKET_TAG}
             - docker push adamjsc/prediction-league-app:latest
       - step:
-          name: Release
+          name: Deploy
           image: atlassian/default-image:2
           script:
             - ssh ${PROD_SSH_USER}@${PROD_SSH_HOST} '/bin/sh -s' < release.sh ${PROD_HOST_DIR} ${BITBUCKET_TAG}
@@ -71,11 +87,5 @@ pipelines:
             - ssh ${PROD_SSH_USER}@${PROD_SSH_HOST} '/bin/sh -s' < release.sh ${PROD_HOST_DIR} ${BuildTag}
 
 definitions:
-  services:
-    test-db:
-      image: mysql:5.7
-      variables:
-        MYSQL_USER: test-db-user
-        MYSQL_PASSWORD: test-db-pwd
-        MYSQL_DATABASE: test-db-name
-        MYSQL_ROOT_PASSWORD: root
+  caches:
+    gomodules: vendor

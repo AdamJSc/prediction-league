@@ -16,6 +16,7 @@ type Base struct {
 	RealmName             string
 	RunningVersion        string
 	VersionTimestamp      string
+	AnalyticsCode         string
 	Data                  interface{}
 }
 
@@ -51,11 +52,13 @@ type LeaderBoardPageData struct {
 }
 
 type JoinPageData struct {
-	EntriesAccepted       bool
-	EntriesUntil          time.Time
-	SeasonName            string
-	PayPalClientID        string
-	EntryFee              domain.RealmEntryFee
+	EntriesOpen     bool
+	EntriesOpenTS   time.Time
+	EntriesClosed   bool
+	EntriesClosedTS time.Time
+	SeasonName      string
+	PayPalClientID  string
+	EntryFee        domain.RealmEntryFee
 }
 
 type FAQPageData struct {
@@ -66,4 +69,14 @@ type FAQPageData struct {
 type FAQItem struct {
 	Question string
 	Answer   template.HTML
+}
+
+type ShortCodeResetBeginPageData struct {
+	Err           error
+	EmailNickname string
+}
+
+type ShortCodeResetCompletePageData struct {
+	Err       error
+	ShortCode string
 }

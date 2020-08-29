@@ -6,9 +6,10 @@ type Identity struct {
 }
 
 type Email struct {
-	From      Identity
-	To        Identity
-	ReplyTo   Identity
-	Subject   string
-	PlainText string
+	From         Identity
+	To           Identity
+	ReplyTo      Identity
+	SenderDomain string
+	Subject      string
+	PlainText    string
 }

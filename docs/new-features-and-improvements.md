@@ -131,6 +131,11 @@ recent stage of the sign-up workflow should they encounter any issues.
 * This will enable a user to return to the payment processing stage of the sign-up workflow, should an issue occur
 after the first [Entry](domain-knowledge.md#entry) creation stage has been successful.
 
+## Cookies / Logout
+
+* When user "logs out" after making a prediction, consider clearing cookie on the backend (and deleting the token)
+rather than the frontend
+
 ## Concurrency within Scheduled Tasks
 
 * In the cron job that retrieves latest standings, consider generating scores concurrently (i.e. where

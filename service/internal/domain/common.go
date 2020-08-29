@@ -20,17 +20,19 @@ import (
 
 // Realm represents a realm in which the system has been configured to run
 type Realm struct {
-	Name    string
-	Origin  string `yaml:"origin"`
-	Contact struct {
+	Name         string
+	Origin       string `yaml:"origin"`
+	SenderDomain string `yaml:"sender_domain"`
+	Contact      struct {
 		Name            string `yaml:"name"`
 		EmailProper     string `yaml:"email_proper"`
 		EmailSanitised  string `yaml:"email_sanitised"`
 		EmailDoNotReply string `yaml:"email_do_not_reply"`
 	} `yaml:"contact"`
-	PIN      string        `yaml:"pin"`
-	SeasonID string        `yaml:"season_id"`
-	EntryFee RealmEntryFee `yaml:"entry_fee"`
+	PIN           string        `yaml:"pin"`
+	SeasonID      string        `yaml:"season_id"`
+	EntryFee      RealmEntryFee `yaml:"entry_fee"`
+	AnalyticsCode string        `yaml:"analytics_code"`
 }
 
 // RealmEntryFee represents the entry fee settings for a realm
@@ -50,7 +52,7 @@ type Config struct {
 	VersionTimestamp     string `envconfig:"VERSION_TIMESTAMP" required:"true"`
 	FootballDataAPIToken string `envconfig:"FOOTBALLDATA_API_TOKEN" required:"true"`
 	PayPalClientID       string `envconfig:"PAYPAL_CLIENT_ID" required:"true"`
-	SendGridAPIKey       string `envconfig:"SENDGRID_API_KEY" required:"true"`
+	MailgunAPIKey        string `envconfig:"MAILGUN_API_KEY" required:"true"`
 	Realms               map[string]Realm
 }
 
@@ -68,6 +70,10 @@ func MustLoadConfigFromEnvPaths(paths ...string) Config {
 	}
 
 	config.Realms = mustParseRealmsFromPath(fmt.Sprintf("./data/realms.yml"))
+
+	if config.PayPalClientID == "" {
+		log.Println("missing config: paypal... entry signup payment step will be skipped...")
+	}
 
 	return config
 }
@@ -119,6 +125,9 @@ var templateFunctions = template.FuncMap{
 			return 0
 		}
 		return ts.Unix()
+	},
+	"format_timestamp": func(ts time.Time, layout string) string {
+		return ts.Format(layout)
 	},
 	"jsonify_strings": func(input []string) string {
 		bytes, err := json.Marshal(input)

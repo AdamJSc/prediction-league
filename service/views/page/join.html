@@ -1,22 +1,18 @@
 {{define "join"}}
     {{template "header" .}}
     <div id="app">
-        {{if .Data.EntriesAccepted}}
+        {{if .Data.EntriesOpen}}
             <registration-workflow
-                    unix="{{timestamp_as_unix .Data.EntriesUntil}}"
+                    unix="{{timestamp_as_unix .Data.EntriesClosedTS}}"
                     v-bind:entry-fee-amount="{{.Data.EntryFee.Amount}}"
                     entry-fee-label="{{.Data.EntryFee.Label}}"
                     raw-entry-fee-breakdown="{{jsonify_strings .Data.EntryFee.Breakdown}}"
                     support-email-formatted="{{.SupportEmailFormatted}}"
                     support-email-plain-text="{{.SupportEmailPlainText}}"
                     realm-name="{{.RealmName}}"></registration-workflow>
-        {{else}}
-            <div class="row">
-                <div class="col">
-                    <h3>Entries are now closed for the {{.Data.SeasonName}} season</h3>
-                    <p>Make sure you check back again and join us for next season!</p>
-                </div>
-            </div>
+        {{else if .Data.EntriesClosed}}
+            <h2>Entries are now closed for the {{.Data.SeasonName}} season</h2>
+            <p>Make sure you check back again and join us for next season!</p>
             <div class="cta-group page-section row">
                 <div class="heading col-md-12">
                     <h3>Already signed up?</h3>
@@ -28,6 +24,13 @@
                     <p><a class="btn btn-primary btn-lg" href="/prediction" role="button">Change my prediction</a></p>
                 </div>
             </div>
+        {{else}}
+            <div class="text-center">
+                <p>Entries open...</p>
+                <p class="text-highlight bigger">{{format_timestamp .Data.EntriesOpenTS "Monday 2 January 2006 at 3:04am"}}</p>
+                <p>Stick it in the diary!</p>
+            </div>
+            <countdown label="" unix="{{timestamp_as_unix .Data.EntriesOpenTS}}"></countdown>
         {{end}}
     </div>
     {{template "footer" .}}

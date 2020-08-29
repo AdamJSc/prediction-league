@@ -13,5 +13,5 @@ type FootballDataSource interface {
 
 // EmailClient defines the interface for our email client
 type EmailClient interface {
-	SendEmail(message messages.Email) error
+	SendEmail(ctx context.Context, message messages.Email) error
 }

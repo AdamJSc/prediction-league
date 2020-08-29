@@ -1,6 +1,7 @@
 realms:
     localhost:
       origin: http://localhost:3000
+      sender_domain: localhost
       contact:
         name: Harry R and the PL Team
         email_proper: wont_you_please_please_help_me@localhost
@@ -14,3 +15,4 @@ realms:
         breakdown:
           - £1.00 entry fee
           - £0.23 coffee fund
+      analytics_code:

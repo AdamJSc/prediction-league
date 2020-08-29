@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/domain"
+	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/pages"
 	"strconv"
 	"strings"
@@ -19,12 +20,14 @@ import (
 
 const authCookieName = "PL_AUTH"
 
+// closeBody closes the body of the provided request
 func closeBody(r *http.Request) {
 	if err := r.Body.Close(); err != nil {
 		log.Println(err)
 	}
 }
 
+// getRouteParam retrieves the provided named route parameter from the provided request object
 func getRouteParam(r *http.Request, name string, value interface{}) error {
 	val, ok := mux.Vars(r)[name]
 	if !ok {
@@ -99,7 +102,7 @@ func setAuthCookieValue(value string, w http.ResponseWriter, r *http.Request) {
 		Name:    authCookieName,
 		Value:   value,
 		Domain:  stripPort(r.Host),
-		Expires: time.Now().Add(domain.TokenDurationInMinutes * time.Minute),
+		Expires: time.Now().Add(domain.TokenValidityDuration[domain.TokenTypeAuth]),
 		Path:    "/",
 	}
 	http.SetCookie(w, cookie)
@@ -143,6 +146,29 @@ func newPage(r *http.Request, c *httph.HTTPAppContainer, title, activePage, bann
 		RealmName:             realm.Name,
 		RunningVersion:        c.Config().RunningVersion,
 		VersionTimestamp:      c.Config().VersionTimestamp,
+		AnalyticsCode:         realm.AnalyticsCode,
 		Data:                  data,
 	}
+}
+
+// retrieveEntryByEmailOrNickname retrieves an entry from the provided input, whether this pertains to an email address or nickname
+func retrieveEntryByEmailOrNickname(ctx context.Context, emailOrNickname, seasonID, realmName string, entryAgent domain.EntryAgent) (*models.Entry, error) {
+	// see if we can retrieve by email
+	entry, err := entryAgent.RetrieveEntryByEntrantEmail(ctx, emailOrNickname, seasonID, realmName)
+	if err != nil {
+		switch err.(type) {
+		case domain.NotFoundError:
+			// see if we can retrieve by nickname
+			entry, err := entryAgent.RetrieveEntryByEntrantNickname(ctx, emailOrNickname, seasonID, realmName)
+			if err != nil {
+				return nil, err
+			}
+
+			return &entry, nil
+		default:
+			return nil, err
+		}
+	}
+
+	return &entry, nil
 }

@@ -10,7 +10,6 @@ import (
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/pages"
 )
 
@@ -43,29 +42,11 @@ func predictionLoginHandler(c *httph.HTTPAppContainer) func(http.ResponseWriter,
 		}
 		defer cancel()
 
-		var retrieveEntryFromInput = func(input predictionLoginRequest) (*models.Entry, error) {
-			// see if we can retrieve by email
-			entry, err := entryAgent.RetrieveEntryByEntrantEmail(ctx, input.EmailNickname)
-			if err != nil {
-				switch err.(type) {
-				case domain.NotFoundError:
-					// see if we can retrieve by nickname
-					entry, err := entryAgent.RetrieveEntryByEntrantNickname(ctx, input.EmailNickname)
-					if err != nil {
-						return nil, err
-					}
-
-					return &entry, nil
-				default:
-					return nil, err
-				}
-			}
-
-			return &entry, nil
-		}
+		// get realm from context
+		realm := domain.RealmFromContext(ctx)
 
 		// retrieve entry based on input
-		entry, err := retrieveEntryFromInput(input)
+		entry, err := retrieveEntryByEmailOrNickname(ctx, input.EmailNickname, realm.SeasonID, realm.Name, entryAgent)
 		if err != nil {
 			switch err.(type) {
 			case domain.NotFoundError:
@@ -90,7 +71,7 @@ func predictionLoginHandler(c *httph.HTTPAppContainer) func(http.ResponseWriter,
 		}
 
 		// generate a new auth token for our entry, and set it as a cookie
-		token, err := tokenAgent.GenerateToken(ctx, models.TokenTypeAuthToken, entry.ID.String())
+		token, err := tokenAgent.GenerateToken(ctx, domain.TokenTypeAuth, entry.ID.String())
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return

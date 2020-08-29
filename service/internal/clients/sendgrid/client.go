@@ -1,6 +1,10 @@
 package sendgrid
 
+// This project has since retired its use of SendGrid in favour of Mailgun.
+// However, this client has been retained or posterity.
+
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -17,7 +21,7 @@ type Client struct {
 }
 
 // SendEmail implements this method on the clients.EmailClient interface
-func (c *Client) SendEmail(message messages.Email) error {
+func (c *Client) SendEmail(_ context.Context, message messages.Email) error {
 	requestBody := transformEmailMessageToSendMailRequest(message)
 	requestBodyString, err := json.Marshal(requestBody)
 	if err != nil {
@@ -95,7 +99,6 @@ func transformEmailMessageToSendMailRequest(message messages.Email) *sendMailReq
 				Type:  "text/plain",
 				Value: message.PlainText,
 			},
-			// TODO - implement HTML/rich message content
 		},
 	}
 }

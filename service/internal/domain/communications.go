@@ -15,8 +15,10 @@ import (
 )
 
 const (
-	EmailSubjectNewEntry      = "You're In!"
-	EmailSubjectRoundComplete = "End of Round %d"
+	EmailSubjectNewEntry               = "You're In!"
+	EmailSubjectRoundComplete          = "End of Round %d"
+	EmailSubjectShortCodeResetBegin    = "Resetting your Short Code"
+	EmailSubjectShortCodeResetComplete = "Your new Short Code"
 )
 
 // CommunicationsAgentInjector defines the dependencies required by our CommunicationsAgent
@@ -129,6 +131,77 @@ func (c CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *m
 	return nil
 }
 
+// IssueShortCodeResetBeginEmail generates a "short code reset begin" email for the provided Entry and pushes it to the send queue
+func (c CommunicationsAgent) IssueShortCodeResetBeginEmail(_ context.Context, entry *models.Entry, resetToken string) error {
+	if entry == nil {
+		return InternalError{errors.New("no entry provided")}
+	}
+
+	realm, ok := c.Config().Realms[entry.RealmName]
+	if !ok {
+		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
+	}
+
+	season, err := datastore.Seasons.GetByID(entry.SeasonID)
+	if err != nil {
+		return NotFoundError{err}
+	}
+
+	d := emails.ShortCodeResetBeginEmail{
+		EmailData: newEmailData(realm, entry.EntrantName, season.Name),
+		ResetURL:  fmt.Sprintf("%s/reset/%s", realm.Origin, resetToken),
+	}
+	var emailContent bytes.Buffer
+	if err := c.Template().ExecuteTemplate(&emailContent, "email_txt_short_code_reset_begin", d); err != nil {
+		return err
+	}
+
+	recipient := messages.Identity{
+		Name:    entry.EntrantName,
+		Address: entry.EntrantEmail,
+	}
+	email := newEmail(realm, recipient, EmailSubjectShortCodeResetBegin, emailContent.String())
+	c.EmailQueue() <- email
+
+	return nil
+}
+
+// IssueShortCodeResetCompleteEmail generates a "short code reset complete" email for the provided Entry and pushes it to the send queue
+func (c CommunicationsAgent) IssueShortCodeResetCompleteEmail(_ context.Context, entry *models.Entry) error {
+	if entry == nil {
+		return InternalError{errors.New("no entry provided")}
+	}
+
+	realm, ok := c.Config().Realms[entry.RealmName]
+	if !ok {
+		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
+	}
+
+	season, err := datastore.Seasons.GetByID(entry.SeasonID)
+	if err != nil {
+		return NotFoundError{err}
+	}
+
+	d := emails.ShortCodeResetCompleteEmail{
+		EmailData:      newEmailData(realm, entry.EntrantName, season.Name),
+		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
+		ShortCode:      entry.ShortCode,
+	}
+	var emailContent bytes.Buffer
+	if err := c.Template().ExecuteTemplate(&emailContent, "email_txt_short_code_reset_complete", d); err != nil {
+		return err
+	}
+
+	recipient := messages.Identity{
+		Name:    entry.EntrantName,
+		Address: entry.EntrantEmail,
+	}
+	email := newEmail(realm, recipient, EmailSubjectShortCodeResetComplete, emailContent.String())
+	c.EmailQueue() <- email
+
+	return nil
+}
+
 // getEntryFromScoredEntryPrediction retrieves the relationally-affiliated entry from the provided scored entry prediction
 func getEntryFromScoredEntryPrediction(ctx context.Context, sep *models.ScoredEntryPrediction, db coresql.Agent) (*models.Entry, error) {
 	entryPredictionRepo := repositories.NewEntryPredictionDatabaseRepository(db)
@@ -189,8 +262,9 @@ func newEmail(realm Realm, to messages.Identity, subject, plainText string) mess
 			Name:    realm.Contact.Name,
 			Address: realm.Contact.EmailProper,
 		},
-		Subject:   subject,
-		PlainText: plainText,
+		SenderDomain: realm.SenderDomain,
+		Subject:      subject,
+		PlainText:    plainText,
 	}
 }
 
