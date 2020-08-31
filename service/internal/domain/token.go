@@ -17,7 +17,7 @@ const (
 )
 
 var TokenValidityDuration = map[int]time.Duration{
-	TokenTypeAuth:                time.Minute * 20,
+	TokenTypeAuth:                time.Minute * 60,
 	TokenTypeShortCodeResetToken: time.Minute * 10,
 }
 
