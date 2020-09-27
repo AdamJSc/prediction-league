@@ -84,6 +84,12 @@ func GuardFromContext(ctx context.Context) *Guard {
 func RealmFromContext(ctx context.Context) *Realm {
 	var r = &Realm{}
 
+	// check that we are dealing with a valid context
+	if ctx == nil {
+		ctx = context.WithValue(ctx, contextKeyRealm, r)
+		return r
+	}
+
 	val := ctx.Value(contextKeyRealm)
 	switch val.(type) {
 	case *Realm:

@@ -80,14 +80,14 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 			return
 		}
 
-		var standings models.Standings
-
-		// if standings represents a completed season, ensure that standings round number reflects the season's max rounds
-		// standings data from upstream client was stuck on round 37 for a 38-round PL season in 2019/20
-		// this check safeguards against that
-		if season.IsCompletedByStandings(standings) && standings.RoundNumber != season.MaxRounds {
-			standings.RoundNumber = season.MaxRounds
+		// if standings retrieved from client represents a completed season, ensure that round number reflects the season's
+		// max rounds - standings data from upstream client was stuck on round 37 for a 38-round PL season in 2019/20
+		// so this check safeguards against that
+		if season.IsCompletedByStandings(clientStandings) && clientStandings.RoundNumber != season.MaxRounds {
+			clientStandings.RoundNumber = season.MaxRounds
 		}
+
+		var standings models.Standings
 
 		existingStandings, err := standingsAgent.RetrieveStandingsBySeasonAndRoundNumber(ctx, season.ID, clientStandings.RoundNumber)
 		switch err.(type) {
@@ -120,7 +120,7 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 			return
 		}
 
-		if season.IsCompletedByStandings(standings) && standings.Finalised {
+		if season.IsCompletedByStandings(&standings) && standings.Finalised {
 			// we've already finalised the last round of our season so just exit early
 			return
 		}
@@ -160,7 +160,7 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 		var errChan chan error
 
 		switch {
-		case season.IsCompletedByStandings(standings):
+		case season.IsCompletedByStandings(&standings):
 			// finalise final round
 			standings.Finalised = true
 			if _, err := standingsAgent.UpdateStandings(ctx, standings); err != nil {

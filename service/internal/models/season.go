@@ -64,7 +64,7 @@ func (s Season) GetState(ts time.Time) SeasonState {
 }
 
 // IsCompletedByStandings returns true if the provided standings represents a completed final round, otherwise false
-func (s Season) IsCompletedByStandings(standings Standings) bool {
+func (s Season) IsCompletedByStandings(standings *Standings) bool {
 	if standings.SeasonID != s.ID {
 		// standings pertain to a different season
 		return false
