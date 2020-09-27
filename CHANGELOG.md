@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2020-09-27
+### Security
+- Bump elliptic from 6.5.2 to 6.5.3
+- Bump lodash from 4.17.15 to 4.17.20
+- Bump copy-webpack-plugin from 6.0.2 to 6.1.1
+- Bump terser-webpack-plugin from 1.4.3 to 1.4.5
+- Bump node-sass from 4.14.0 to 4.14.1
+- Bump node-sass-chokidar from 1.4.0 to 1.5.0
+
 ## [1.0.2] - 2020-09-27
 ### Fixed
 - When retrieving latest standings and checking for a completed season, fixed check so that this is made on the
