@@ -15,11 +15,15 @@ import (
 )
 
 const (
-	EmailSubjectNewEntry               = "You're In!"
-	EmailSubjectRoundComplete          = "End of Round %d"
-	EmailSubjectShortCodeResetBegin    = "Resetting your Short Code"
-	EmailSubjectShortCodeResetComplete = "Your new Short Code"
+	EmailSubjectNewEntry                  = "You're In!"
+	EmailSubjectRoundComplete             = "End of Round %d"
+	EmailSubjectShortCodeResetBegin       = "Resetting your Short Code"
+	EmailSubjectShortCodeResetComplete    = "Your new Short Code"
+	EmailSubjectPredictionWindowOpen      = "Prediction Window Open!"
+	EmailSubjectPredictionWindowOpenFinal = "Prediction Window Open (Last Chance!)"
 )
+
+var ErrCurrentTimeFrameIsMissing = errors.New("current time frame is missing")
 
 // CommunicationsAgentInjector defines the dependencies required by our CommunicationsAgent
 type CommunicationsAgentInjector interface {
@@ -202,6 +206,53 @@ func (c CommunicationsAgent) IssueShortCodeResetCompleteEmail(_ context.Context,
 	return nil
 }
 
+// IssuePredictionWindowOpenEmail generates a "prediction window open" email for the provided Entry and pushes it to the send queue
+func (c CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, entry *models.Entry, tf models.SequencedTimeFrame) error {
+	if entry == nil {
+		return InternalError{errors.New("no entry provided")}
+	}
+
+	realm, ok := c.Config().Realms[entry.RealmName]
+	if !ok {
+		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
+	}
+
+	season, err := datastore.Seasons.GetByID(entry.SeasonID)
+	if err != nil {
+		return NotFoundError{err}
+	}
+
+	window, err := getWindowDataFromSequencedTimeFrame(tf)
+	if err != nil {
+		return InternalError{err}
+	}
+
+	d := emails.PredictionWindowEmail{
+		EmailData:      newEmailData(realm, entry.EntrantName, season.Name),
+		Window:         *window,
+		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
+	}
+	var emailContent bytes.Buffer
+	if err := c.Template().ExecuteTemplate(&emailContent, "email_txt_prediction_window_open", d); err != nil {
+		return err
+	}
+
+	recipient := messages.Identity{
+		Name:    entry.EntrantName,
+		Address: entry.EntrantEmail,
+	}
+
+	subject := EmailSubjectPredictionWindowOpen
+	if window.IsLast {
+		subject = EmailSubjectPredictionWindowOpenFinal
+	}
+
+	email := newEmail(realm, recipient, subject, emailContent.String())
+	c.EmailQueue() <- email
+
+	return nil
+}
+
 // getEntryFromScoredEntryPrediction retrieves the relationally-affiliated entry from the provided scored entry prediction
 func getEntryFromScoredEntryPrediction(ctx context.Context, sep *models.ScoredEntryPrediction, db coresql.Agent) (*models.Entry, error) {
 	entryPredictionRepo := repositories.NewEntryPredictionDatabaseRepository(db)
@@ -248,6 +299,32 @@ func getStandingsFromScoredEntryPrediction(ctx context.Context, sep *models.Scor
 	}
 
 	return &standings[0], nil
+}
+
+// getWindowDataFromSequencedTimeFrame generates an email WindowData object from the provided SequencedTimeFrame
+func getWindowDataFromSequencedTimeFrame(tf models.SequencedTimeFrame) (*emails.WindowData, error) {
+	var window emails.WindowData
+
+	if tf.Current == nil {
+		return nil, ErrCurrentTimeFrameIsMissing
+	}
+
+	window.Current = tf.Count
+	window.Total = tf.Total
+
+	window.CurrentClosingDate = tf.Current.Until.Format("Mon 2 January")
+	window.CurrentClosingTime = tf.Current.Until.Format("3:04pm")
+
+	if tf.Next != nil {
+		window.NextOpeningDate = tf.Next.From.Format("Mon 2 January")
+		window.NextOpeningTime = tf.Next.From.Format("3:04pm")
+	}
+
+	if tf.Count == tf.Total {
+		window.IsLast = true
+	}
+
+	return &window, nil
 }
 
 // newEmail returns an email message object inflated with the provided data items

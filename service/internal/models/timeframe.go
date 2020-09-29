@@ -53,3 +53,11 @@ func (t TimeFrame) OverlapsWith(tf TimeFrame) bool {
 
 	return tStartOverlaps || tEndOverlaps || tfStartOverlaps || tfEndOverlaps
 }
+
+// SequencedTimeFrame represents a TimeFrame within the context of a wider sequence/schedule of TimeFrames
+type SequencedTimeFrame struct {
+	Count   int
+	Total   int
+	Current *TimeFrame
+	Next    *TimeFrame
+}

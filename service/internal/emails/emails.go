@@ -14,7 +14,7 @@ type PaymentDetails struct {
 	MerchantName string
 }
 
-type Window struct {
+type WindowData struct {
 	Current            int
 	Total              int
 	IsLast             bool
@@ -51,6 +51,6 @@ type ShortCodeResetCompleteEmail struct {
 
 type PredictionWindowEmail struct {
 	EmailData
-	Window         Window
+	Window         WindowData
 	PredictionsURL string
 }

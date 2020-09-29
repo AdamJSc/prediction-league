@@ -7,7 +7,7 @@ Hey {{.Name}},
 Your FINAL Prediction Window is now open!
 {{else}}
 Your latest Prediction Window is now open!
-{{endif}}
+{{end}}
 
 You have until {{.Window.CurrentClosingTime}} on {{.Window.CurrentClosingDate}} to update your Prediction as often as you like.
 Only your most recent Prediction will apply once the current Window closes.

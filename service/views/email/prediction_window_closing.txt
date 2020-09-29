@@ -20,7 +20,7 @@ If you have forgotten your Short Code, you can follow the steps at the link abov
 This is your FINAL Prediction Window of the current season - make it count! 😀
 {{else}}
 Your next Prediction Window opens at {{.Window.NextOpeningTime}} on {{.Window.NextOpeningDate}}.
-{{endif}}
+{{end}}
 
 In the meantime, Happy Predicting! 🧙🔮
 {{- template "email_txt_footer" .}}
