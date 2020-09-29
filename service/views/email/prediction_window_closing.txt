@@ -1,4 +1,4 @@
-{{define "email_txt_prediction_window_open"}}Prediction Window {{.Window.Current}} of {{.Window.Total}}
+{{define "email_txt_prediction_window_closing"}}Prediction Window {{.Window.Current}} of {{.Window.Total}}
 ==================
 
 Hey {{.Name}},
@@ -9,7 +9,7 @@ The current Window will close at {{.Window.CurrentClosingTime}} on {{.Window.Cur
 
 To update your Prediction:
 
-1) Go to {{.PredictionURL}}
+1) Go to {{.PredictionsURL}}
 2) Enter your Email or Nickname
 3) Enter your Short Code
 4) Click Go!
@@ -19,7 +19,7 @@ If you have forgotten your Short Code, you can follow the steps at the link abov
 {{if .Window.IsLast}}
 This is your FINAL Prediction Window of the current season - make it count! 😀
 {{else}}
-Your next Prediction Window opens at {{.Window.NextClosingTime}} on {{.Window.NextClosingDate}}.
+Your next Prediction Window opens at {{.Window.NextOpeningTime}} on {{.Window.NextOpeningDate}}.
 {{endif}}
 
 In the meantime, Happy Predicting! 🧙🔮

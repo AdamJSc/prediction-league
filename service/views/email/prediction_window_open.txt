@@ -14,7 +14,7 @@ Only your most recent Prediction will apply once the current Window closes.
 
 To update your Prediction:
 
-1) Go to {{.PredictionURL}}
+1) Go to {{.PredictionsURL}}
 2) Enter your Email or Nickname
 3) Enter your Short Code
 4) Click Go!
