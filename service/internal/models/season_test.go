@@ -14,12 +14,12 @@ import (
 func TestSeason_GetPredictionWindowBeginsWithin(t *testing.T) {
 	var now = time.Now()
 	var twoNanosecondsAgo = now.Add(-2 * time.Nanosecond)
-	var fourNanosecondsAgo = now.Add(-4 * time.Nanosecond)
-	var sixNanosecondsAgo = now.Add(-6 * time.Nanosecond)
+	var fiveNanosecondsAgo = now.Add(-5 * time.Nanosecond)
+	var sevenNanosecondsAgo = now.Add(-7 * time.Nanosecond)
 
 	window1 := models.TimeFrame{
-		From:  sixNanosecondsAgo,
-		Until: fourNanosecondsAgo,
+		From:  sevenNanosecondsAgo,
+		Until: fiveNanosecondsAgo,
 	}
 
 	window2 := models.TimeFrame{
@@ -115,6 +115,24 @@ func TestSeason_GetPredictionWindowBeginsWithin(t *testing.T) {
 			if diff != "" {
 				expectedGot(t, "empty diff", diff)
 			}
+		}
+	})
+
+	t.Run("timeframe that begins and ends between either prediction window must return error", func(t *testing.T) {
+		if _, err := season.GetPredictionWindowBeginsWithin(models.TimeFrame{
+			From:  window1.Until.Add(time.Nanosecond),
+			Until: window2.From.Add(-time.Nanosecond),
+		}); err != models.ErrNoMatchingPredictionWindow {
+			expectedGot(t, models.ErrNoMatchingPredictionWindow, err)
+		}
+	})
+
+	t.Run("timeframe that begins after second prediction window begins must return error", func(t *testing.T) {
+		if _, err := season.GetPredictionWindowBeginsWithin(models.TimeFrame{
+			From:  window2.From.Add(time.Nanosecond),
+			Until: window2.From.Add(2 * time.Nanosecond),
+		}); err != models.ErrNoMatchingPredictionWindow {
+			expectedGot(t, models.ErrNoMatchingPredictionWindow, err)
 		}
 	})
 }
