@@ -15,12 +15,14 @@ import (
 )
 
 const (
-	EmailSubjectNewEntry                  = "You're In!"
-	EmailSubjectRoundComplete             = "End of Round %d"
-	EmailSubjectShortCodeResetBegin       = "Resetting your Short Code"
-	EmailSubjectShortCodeResetComplete    = "Your new Short Code"
-	EmailSubjectPredictionWindowOpen      = "Prediction Window Open!"
-	EmailSubjectPredictionWindowOpenFinal = "Prediction Window Open (Last Chance!)"
+	EmailSubjectNewEntry                     = "You're In!"
+	EmailSubjectRoundComplete                = "End of Round %d"
+	EmailSubjectShortCodeResetBegin          = "Resetting your Short Code"
+	EmailSubjectShortCodeResetComplete       = "Your new Short Code"
+	EmailSubjectPredictionWindowOpen         = "Prediction Window Open!"
+	EmailSubjectPredictionWindowOpenFinal    = "Final Prediction Window Open!"
+	EmailSubjectPredictionWindowClosing      = "Last chance to change your Prediction!"
+	EmailSubjectPredictionWindowClosingFinal = "Final chance to change your Prediction this season!"
 )
 
 var ErrCurrentTimeFrameIsMissing = errors.New("current time frame is missing")
@@ -245,6 +247,53 @@ func (c CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, e
 	subject := EmailSubjectPredictionWindowOpen
 	if window.IsLast {
 		subject = EmailSubjectPredictionWindowOpenFinal
+	}
+
+	email := newEmail(realm, recipient, subject, emailContent.String())
+	c.EmailQueue() <- email
+
+	return nil
+}
+
+// IssuePredictionWindowClosingEmail generates a "prediction window closing" email for the provided Entry and pushes it to the send queue
+func (c CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Context, entry *models.Entry, tf models.SequencedTimeFrame) error {
+	if entry == nil {
+		return InternalError{errors.New("no entry provided")}
+	}
+
+	realm, ok := c.Config().Realms[entry.RealmName]
+	if !ok {
+		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
+	}
+
+	season, err := datastore.Seasons.GetByID(entry.SeasonID)
+	if err != nil {
+		return NotFoundError{err}
+	}
+
+	window, err := getWindowDataFromSequencedTimeFrame(tf)
+	if err != nil {
+		return InternalError{err}
+	}
+
+	d := emails.PredictionWindowEmail{
+		EmailData:      newEmailData(realm, entry.EntrantName, season.Name),
+		Window:         *window,
+		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
+	}
+	var emailContent bytes.Buffer
+	if err := c.Template().ExecuteTemplate(&emailContent, "email_txt_prediction_window_closing", d); err != nil {
+		return err
+	}
+
+	recipient := messages.Identity{
+		Name:    entry.EntrantName,
+		Address: entry.EntrantEmail,
+	}
+
+	subject := EmailSubjectPredictionWindowClosing
+	if window.IsLast {
+		subject = EmailSubjectPredictionWindowClosingFinal
 	}
 
 	email := newEmail(realm, recipient, subject, emailContent.String())
