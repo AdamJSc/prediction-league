@@ -111,6 +111,32 @@ func (s Season) GetPredictionWindowBeginsWithin(tf TimeFrame) (SequencedTimeFram
 	return SequencedTimeFrame{}, ErrNoMatchingPredictionWindow
 }
 
+// GetPredictionWindowEndsWithin returns the Prediction Window that ends within the provided TimeFrame,
+// or an error if no match is found
+func (s Season) GetPredictionWindowEndsWithin(tf TimeFrame) (SequencedTimeFrame, error) {
+	total := len(s.PredictionsAccepted)
+	count := 0
+
+	for idx, window := range s.PredictionsAccepted {
+		count++
+		if window.EndsWithin(tf) {
+			stf := SequencedTimeFrame{
+				Count:   count,
+				Total:   total,
+				Current: &window,
+			}
+
+			if count < total {
+				stf.Next = &s.PredictionsAccepted[idx+1]
+			}
+
+			return stf, nil
+		}
+	}
+
+	return SequencedTimeFrame{}, ErrNoMatchingPredictionWindow
+}
+
 // SeasonState defines the state of a Season
 type SeasonState struct {
 	Status                 string
