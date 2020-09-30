@@ -243,3 +243,137 @@ func TestTimeFrame_OverlapsWith(t *testing.T) {
 		}
 	})
 }
+
+func TestTimeFrame_BeginsWithin(t *testing.T) {
+	var now = time.Now()
+	var oneNanosecondAgo = now.Add(-time.Nanosecond)
+	var twoNanosecondsAgo = now.Add(-2 * time.Nanosecond)
+	var threeNanosecondsAgo = now.Add(-3 * time.Nanosecond)
+
+	t.Run("base timeframe that begins within provided timeframe must return true", func(t *testing.T) {
+		base := models.TimeFrame{
+			From:  twoNanosecondsAgo,
+			Until: oneNanosecondAgo,
+		}
+		provided := models.TimeFrame{
+			From:  threeNanosecondsAgo,
+			Until: now,
+		}
+
+		if !base.BeginsWithin(provided) {
+			t.Fatalf("expected timeframe %+v to begin within %+v, but it doesn't", base, provided)
+		}
+	})
+
+	t.Run("base timeframe that does not begin within provided timeframe must return false", func(t *testing.T) {
+		base := models.TimeFrame{
+			From:  threeNanosecondsAgo,
+			Until: oneNanosecondAgo,
+		}
+		provided := models.TimeFrame{
+			From:  twoNanosecondsAgo,
+			Until: now,
+		}
+
+		if base.BeginsWithin(provided) {
+			t.Fatalf("expected timeframe %+v to not begin within %+v, but it does", base, provided)
+		}
+	})
+
+	t.Run("base timeframe that begins at same time as provided timeframe begins must return true", func(t *testing.T) {
+		base := models.TimeFrame{
+			From:  threeNanosecondsAgo,
+			Until: now,
+		}
+		provided := models.TimeFrame{
+			From:  threeNanosecondsAgo,
+			Until: oneNanosecondAgo,
+		}
+
+		if !base.BeginsWithin(provided) {
+			t.Fatalf("expected timeframe %+v to begin within %+v, but it doesn't", base, provided)
+		}
+	})
+
+	t.Run("base timeframe that begins at same time as provided timeframe ends must return true", func(t *testing.T) {
+		base := models.TimeFrame{
+			From:  twoNanosecondsAgo,
+			Until: now,
+		}
+		provided := models.TimeFrame{
+			From:  threeNanosecondsAgo,
+			Until: twoNanosecondsAgo,
+		}
+
+		if !base.BeginsWithin(provided) {
+			t.Fatalf("expected timeframe %+v to begin within %+v, but it doesn't", base, provided)
+		}
+	})
+}
+
+func TestTimeFrame_EndsWithin(t *testing.T) {
+	var now = time.Now()
+	var oneNanosecondAgo = now.Add(-time.Nanosecond)
+	var twoNanosecondsAgo = now.Add(-2 * time.Nanosecond)
+	var threeNanosecondsAgo = now.Add(-3 * time.Nanosecond)
+
+	t.Run("base timeframe that ends within provided timeframe must return true", func(t *testing.T) {
+		base := models.TimeFrame{
+			From:  threeNanosecondsAgo,
+			Until: oneNanosecondAgo,
+		}
+		provided := models.TimeFrame{
+			From:  twoNanosecondsAgo,
+			Until: now,
+		}
+
+		if !base.EndsWithin(provided) {
+			t.Fatalf("expected timeframe %+v to end within %+v, but it doesn't", base, provided)
+		}
+	})
+
+	t.Run("base timeframe that does not end within provided timeframe must return false", func(t *testing.T) {
+		base := models.TimeFrame{
+			From:  oneNanosecondAgo,
+			Until: now,
+		}
+		provided := models.TimeFrame{
+			From:  threeNanosecondsAgo,
+			Until: twoNanosecondsAgo,
+		}
+
+		if base.EndsWithin(provided) {
+			t.Fatalf("expected timeframe %+v to not end within %+v, but it does", base, provided)
+		}
+	})
+
+	t.Run("base timeframe that ends at same time as provided timeframe begins must return true", func(t *testing.T) {
+		base := models.TimeFrame{
+			From:  threeNanosecondsAgo,
+			Until: twoNanosecondsAgo,
+		}
+		provided := models.TimeFrame{
+			From:  twoNanosecondsAgo,
+			Until: oneNanosecondAgo,
+		}
+
+		if !base.EndsWithin(provided) {
+			t.Fatalf("expected timeframe %+v to end within %+v, but it doesn't", base, provided)
+		}
+	})
+
+	t.Run("base timeframe that ends at same time as provided timeframe ends must return true", func(t *testing.T) {
+		base := models.TimeFrame{
+			From:  twoNanosecondsAgo,
+			Until: oneNanosecondAgo,
+		}
+		provided := models.TimeFrame{
+			From:  threeNanosecondsAgo,
+			Until: oneNanosecondAgo,
+		}
+
+		if !base.EndsWithin(provided) {
+			t.Fatalf("expected timeframe %+v to end within %+v, but it doesn't", base, provided)
+		}
+	})
+}

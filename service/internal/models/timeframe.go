@@ -54,6 +54,16 @@ func (t TimeFrame) OverlapsWith(tf TimeFrame) bool {
 	return tStartOverlaps || tEndOverlaps || tfStartOverlaps || tfEndOverlaps
 }
 
+// BeginsWithin determines whether the associated TimeFrame begins within the provided TimeFrame
+func (t TimeFrame) BeginsWithin(tf TimeFrame) bool {
+	return !t.From.Before(tf.From) && t.HasBegunBy(tf.Until)
+}
+
+// EndsWithin determines whether the associated TimeFrame ends within the provided TimeFrame
+func (t TimeFrame) EndsWithin(tf TimeFrame) bool {
+	return !t.Until.Before(tf.From) && t.HasElapsedBy(tf.Until)
+}
+
 // SequencedTimeFrame represents a TimeFrame within the context of a wider sequence/schedule of TimeFrames
 type SequencedTimeFrame struct {
 	Count   int
