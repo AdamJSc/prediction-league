@@ -224,7 +224,7 @@ func (c CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, e
 		return NotFoundError{err}
 	}
 
-	window, err := getWindowDataFromSequencedTimeFrame(tf)
+	window, err := GenerateWindowDataFromSequencedTimeFrame(tf)
 	if err != nil {
 		return InternalError{err}
 	}
@@ -271,7 +271,7 @@ func (c CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Context
 		return NotFoundError{err}
 	}
 
-	window, err := getWindowDataFromSequencedTimeFrame(tf)
+	window, err := GenerateWindowDataFromSequencedTimeFrame(tf)
 	if err != nil {
 		return InternalError{err}
 	}
@@ -350,8 +350,8 @@ func getStandingsFromScoredEntryPrediction(ctx context.Context, sep *models.Scor
 	return &standings[0], nil
 }
 
-// getWindowDataFromSequencedTimeFrame generates an email WindowData object from the provided SequencedTimeFrame
-func getWindowDataFromSequencedTimeFrame(tf models.SequencedTimeFrame) (*emails.WindowData, error) {
+// GenerateWindowDataFromSequencedTimeFrame generates an email WindowData object from the provided SequencedTimeFrame
+func GenerateWindowDataFromSequencedTimeFrame(tf models.SequencedTimeFrame) (*emails.WindowData, error) {
 	var window emails.WindowData
 
 	if tf.Current == nil {

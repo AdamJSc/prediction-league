@@ -1253,6 +1253,90 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 	})
 }
 
+func TestGenerateWindowDataFromSequencedTimeFrame(t *testing.T) {
+	t.Run("generating window data from sequenced time frame without a current timeframe must return error", func(t *testing.T) {
+		sequenced := models.SequencedTimeFrame{} // Current is nil
+
+		if _, err := domain.GenerateWindowDataFromSequencedTimeFrame(sequenced); err != domain.ErrCurrentTimeFrameIsMissing {
+			expectedGot(t, domain.ErrCurrentTimeFrameIsMissing, err)
+		}
+	})
+
+	t.Run("generating window data from sequenced time frame without next timeframe must succeed", func(t *testing.T) {
+		loc, err := time.LoadLocation("Europe/London")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		sequenced := models.SequencedTimeFrame{
+			Current: &models.TimeFrame{
+				From:  time.Date(2018, 5, 26, 14, 0, 0, 0, loc),
+				Until: time.Date(2018, 5, 26, 15, 0, 0, 0, loc),
+			},
+			Count: 123,
+			Total: 456,
+		}
+
+		expected := emails.WindowData{
+			Current:            123,
+			Total:              456,
+			IsLast:             false,
+			CurrentClosingDate: "Sat 26 May",
+			CurrentClosingTime: "3:00pm",
+		}
+
+		actual, err := domain.GenerateWindowDataFromSequencedTimeFrame(sequenced)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		diff := gocmp.Diff(expected, *actual)
+		if diff != "" {
+			expectedGot(t, "empty diff", diff)
+		}
+	})
+
+	t.Run("generating window data from sequenced time frame with next timeframe must succeed", func(t *testing.T) {
+		loc, err := time.LoadLocation("Europe/London")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		sequenced := models.SequencedTimeFrame{
+			Current: &models.TimeFrame{
+				From:  time.Date(2018, 5, 26, 14, 0, 0, 0, loc),
+				Until: time.Date(2018, 5, 26, 15, 0, 0, 0, loc),
+			},
+			Next: &models.TimeFrame{
+				From:  time.Date(2018, 5, 29, 16, 0, 0, 0, loc),
+				Until: time.Date(2018, 5, 29, 17, 0, 0, 0, loc),
+			},
+			Count: 456,
+			Total: 456,
+		}
+
+		expected := emails.WindowData{
+			Current:            456,
+			Total:              456,
+			IsLast:             true,
+			CurrentClosingDate: "Sat 26 May",
+			CurrentClosingTime: "3:00pm",
+			NextOpeningDate:    "Tue 29 May",
+			NextOpeningTime:    "4:00pm",
+		}
+
+		actual, err := domain.GenerateWindowDataFromSequencedTimeFrame(sequenced)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		diff := gocmp.Diff(expected, *actual)
+		if diff != "" {
+			expectedGot(t, "empty diff", diff)
+		}
+	})
+}
+
 // mustExecuteTemplate executes the provided template name with the provided template data or produces a test failure on error
 func mustExecuteTemplate(t *testing.T, templates *views.Templates, templateName string, templateData interface{}) string {
 	t.Helper()
