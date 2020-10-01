@@ -12,6 +12,10 @@ import (
 func LoadCron(container *httph.HTTPAppContainer) *cron.Cron {
 	c := cron.New()
 
+	for _, j := range mustGeneratePredictionWindowBeginsJobs(container) {
+		c.AddFunc(j.spec, j.task)
+	}
+
 	if container.Config().FootballDataAPIToken == "" {
 		log.Println("missing config: football data api... scheduled retrieval of latest standings will not run...")
 		return c
@@ -56,6 +60,33 @@ func mustGenerateRetrieveLatestStandingsJobs(container *httph.HTTPAppContainer) 
 		jobs = append(jobs, newRetrieveLatestStandingsJob(
 			season,
 			footballdata.NewClient(config.FootballDataAPIToken),
+			container,
+		))
+	}
+
+	return jobs
+}
+
+// mustGeneratePredictionWindowBeginsJobs generates the PredictionWindowBegins jobs to be used by the cron
+func mustGeneratePredictionWindowBeginsJobs(container *httph.HTTPAppContainer) []*job {
+	config := container.Config()
+
+	// get the current season ID for all realms
+	var seasonIDs = make(map[string]struct{})
+	for _, realm := range config.Realms {
+		seasonIDs[realm.SeasonID] = struct{}{}
+	}
+
+	// add a job for each unique season ID that retrieves the latest standings
+	var jobs []*job
+	for id := range seasonIDs {
+		season, err := datastore.Seasons.GetByID(id)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		jobs = append(jobs, newPredictionWindowBeginsJob(
+			season,
 			container,
 		))
 	}
