@@ -13,8 +13,13 @@ import (
 	"time"
 )
 
-const predictionWindowOpenCronSpec = "5 17 * * *"
-const predictionWindowJobFrequency = 24 * time.Hour
+// predictionWindowOpenCronSpec determines the frequency by which the PredictionWindowOpenJob will run
+// (i.e. every day at 12:34pm)
+const predictionWindowOpenCronSpec = "34 12 * * *"
+
+// predictionWindowOpenTimeRangeUpper determines the upper limit of the timeframe for each cron job run
+// (i.e. 24 hours since last job run)
+const predictionWindowOpenTimeRangeUpper = 24 * time.Hour
 
 // newPredictionWindowOpenJob returns a new job that issues emails to entrants
 // when a new Prediction Window has been opened for the provided season
@@ -33,10 +38,10 @@ func newPredictionWindowOpenJob(season models.Season, injector app.DependencyInj
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		// determine required timeframe since last job run
+		// determine required timeframe for this job run
 		now := time.Now()
 		tf := models.TimeFrame{
-			From:  now.Add(-predictionWindowJobFrequency),
+			From:  now.Add(-predictionWindowOpenTimeRangeUpper),
 			Until: now,
 		}
 

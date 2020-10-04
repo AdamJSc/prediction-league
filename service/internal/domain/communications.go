@@ -21,8 +21,8 @@ const (
 	EmailSubjectShortCodeResetComplete       = "Your new Short Code"
 	EmailSubjectPredictionWindowOpen         = "Prediction Window Open!"
 	EmailSubjectPredictionWindowOpenFinal    = "Final Prediction Window Open!"
-	EmailSubjectPredictionWindowClosing      = "Last chance to change your Prediction!"
-	EmailSubjectPredictionWindowClosingFinal = "Final chance to change your Prediction this season!"
+	EmailSubjectPredictionWindowClosing      = "Last chance to revise your Prediction!"
+	EmailSubjectPredictionWindowClosingFinal = "Final chance to revise your Prediction this season!"
 )
 
 var ErrCurrentTimeFrameIsMissing = errors.New("current time frame is missing")

@@ -3,9 +3,9 @@
 
 Hey {{.Name}},
 
-Last chance to update your Prediction!
+Last chance to amend your Prediction!
 
-The current Window will close at {{.Window.CurrentClosingTime}} on {{.Window.CurrentClosingDate}}.
+The current Prediction Window will close at {{.Window.CurrentClosingTime}} on {{.Window.CurrentClosingDate}}.
 
 To update your Prediction:
 
