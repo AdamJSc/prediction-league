@@ -12,7 +12,7 @@ import (
 func LoadCron(container *httph.HTTPAppContainer) *cron.Cron {
 	c := cron.New()
 
-	for _, j := range mustGeneratePredictionWindowBeginsJobs(container) {
+	for _, j := range mustGeneratePredictionWindowOpenJobs(container) {
 		c.AddFunc(j.spec, j.task)
 	}
 
@@ -67,8 +67,8 @@ func mustGenerateRetrieveLatestStandingsJobs(container *httph.HTTPAppContainer) 
 	return jobs
 }
 
-// mustGeneratePredictionWindowBeginsJobs generates the PredictionWindowBegins jobs to be used by the cron
-func mustGeneratePredictionWindowBeginsJobs(container *httph.HTTPAppContainer) []*job {
+// mustGeneratePredictionWindowOpenJobs generates the PredictionWindowOpen jobs to be used by the cron
+func mustGeneratePredictionWindowOpenJobs(container *httph.HTTPAppContainer) []*job {
 	config := container.Config()
 
 	// get the current season ID for all realms
@@ -85,7 +85,7 @@ func mustGeneratePredictionWindowBeginsJobs(container *httph.HTTPAppContainer) [
 			log.Fatal(err)
 		}
 
-		jobs = append(jobs, newPredictionWindowBeginsJob(
+		jobs = append(jobs, newPredictionWindowOpenJob(
 			season,
 			container,
 		))

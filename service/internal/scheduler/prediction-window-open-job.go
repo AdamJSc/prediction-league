@@ -13,13 +13,13 @@ import (
 	"time"
 )
 
-const predictionWindowBeginCronSpec = "5 17 * * *"
+const predictionWindowOpenCronSpec = "5 17 * * *"
 const predictionWindowJobFrequency = 24 * time.Hour
 
-// newPredictionWindowBeginsJob returns a new job that issues emails to entrants
+// newPredictionWindowOpenJob returns a new job that issues emails to entrants
 // when a new Prediction Window has been opened for the provided season
-func newPredictionWindowBeginsJob(season models.Season, injector app.DependencyInjector) *job {
-	jobName := strings.ToLower(fmt.Sprintf("prediction-window-begins-%s", season.ID))
+func newPredictionWindowOpenJob(season models.Season, injector app.DependencyInjector) *job {
+	jobName := strings.ToLower(fmt.Sprintf("prediction-window-open-%s", season.ID))
 
 	entryAgent := domain.EntryAgent{
 		EntryAgentInjector: injector,
@@ -40,10 +40,10 @@ func newPredictionWindowBeginsJob(season models.Season, injector app.DependencyI
 			Until: now,
 		}
 
-		// see if a prediction window has begun within this timeframe for the provided season
+		// see if a prediction window has opened within this timeframe for the provided season
 		window, err := season.GetPredictionWindowBeginsWithin(tf)
 		if err != nil {
-			// no new prediction windows have begun since the last job run
+			// no new prediction windows have opened since the last job run
 			// exit early
 			return
 		}
@@ -74,7 +74,7 @@ func newPredictionWindowBeginsJob(season models.Season, injector app.DependencyI
 	}
 
 	return &job{
-		spec: predictionWindowBeginCronSpec,
+		spec: predictionWindowOpenCronSpec,
 		task: task,
 	}
 }
