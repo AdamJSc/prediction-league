@@ -25,7 +25,7 @@ const (
 	EmailSubjectPredictionWindowClosingFinal = "Final chance to revise your Prediction this season!"
 )
 
-var ErrCurrentTimeFrameIsMissing = errors.New("current time frame is missing")
+var ErrCurrentTimeFrameIsMissing = errors.New("current timeframe is missing")
 
 // CommunicationsAgentInjector defines the dependencies required by our CommunicationsAgent
 type CommunicationsAgentInjector interface {

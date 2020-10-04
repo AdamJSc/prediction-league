@@ -753,7 +753,7 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 		CommunicationsAgentInjector: injector,
 	}
 
-	t.Run("issue prediction window open email with a valid entry and sequenced time frame that is not last must succeed", func(t *testing.T) {
+	t.Run("issue prediction window open email with a valid entry and sequenced timeframe that is not last must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
@@ -831,7 +831,7 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 		}
 	})
 
-	t.Run("issue prediction window open email with a valid entry and sequenced time frame that is last must succeed", func(t *testing.T) {
+	t.Run("issue prediction window open email with a valid entry and sequenced timeframe that is last must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
@@ -1012,7 +1012,7 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 		CommunicationsAgentInjector: injector,
 	}
 
-	t.Run("issue prediction window closing email with a valid entry and sequenced time frame that is not last must succeed", func(t *testing.T) {
+	t.Run("issue prediction window closing email with a valid entry and sequenced timeframe that is not last must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
@@ -1096,7 +1096,7 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 		}
 	})
 
-	t.Run("issue prediction window closing email with a valid entry and sequenced time frame that is last must succeed", func(t *testing.T) {
+	t.Run("issue prediction window closing email with a valid entry and sequenced timeframe that is last must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
@@ -1254,7 +1254,7 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 }
 
 func TestGenerateWindowDataFromSequencedTimeFrame(t *testing.T) {
-	t.Run("generating window data from sequenced time frame without a current timeframe must return error", func(t *testing.T) {
+	t.Run("generating window data from sequenced timeframe without a current timeframe must return error", func(t *testing.T) {
 		sequenced := models.SequencedTimeFrame{} // Current is nil
 
 		if _, err := domain.GenerateWindowDataFromSequencedTimeFrame(sequenced); err != domain.ErrCurrentTimeFrameIsMissing {
@@ -1262,7 +1262,7 @@ func TestGenerateWindowDataFromSequencedTimeFrame(t *testing.T) {
 		}
 	})
 
-	t.Run("generating window data from sequenced time frame without next timeframe must succeed", func(t *testing.T) {
+	t.Run("generating window data from sequenced timeframe without next timeframe must succeed", func(t *testing.T) {
 		loc, err := time.LoadLocation("Europe/London")
 		if err != nil {
 			t.Fatal(err)
@@ -1296,7 +1296,7 @@ func TestGenerateWindowDataFromSequencedTimeFrame(t *testing.T) {
 		}
 	})
 
-	t.Run("generating window data from sequenced time frame with next timeframe must succeed", func(t *testing.T) {
+	t.Run("generating window data from sequenced timeframe with next timeframe must succeed", func(t *testing.T) {
 		loc, err := time.LoadLocation("Europe/London")
 		if err != nil {
 			t.Fatal(err)
