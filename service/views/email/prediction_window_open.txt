@@ -1,0 +1,26 @@
+{{define "email_txt_prediction_window_open"}}Prediction Window {{.Window.Current}} of {{.Window.Total}}
+==================
+
+Hey {{.Name}},
+
+{{if .Window.IsLast}}
+Your FINAL Prediction Window is now open!
+{{else}}
+Your latest Prediction Window is now open!
+{{end}}
+
+You have until {{.Window.CurrentClosingTime}} on {{.Window.CurrentClosingDate}} to update your Prediction as often as you like.
+Only your most recent Prediction will apply once the current Prediction Window closes.
+
+To update your Prediction:
+
+1) Go to {{.PredictionsURL}}
+2) Enter your Email or Nickname
+3) Enter your Short Code
+4) Click Go!
+
+If you have forgotten your Short Code, you can follow the steps at the link above to reset it.
+
+In the meantime, Happy Predicting! 🧙🔮
+{{- template "email_txt_footer" .}}
+{{end}}

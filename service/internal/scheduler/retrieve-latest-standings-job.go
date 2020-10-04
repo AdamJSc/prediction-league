@@ -182,7 +182,7 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 		for err := range errChan {
 			log.Println(wrapJobError(
 				jobName,
-				errors.Wrap(err, "issue round complete email"),
+				errors.Wrap(err, "issue email: round complete"),
 			))
 		}
 
@@ -283,7 +283,7 @@ func issueRoundCompleteEmails(
 	commsAgent domain.CommunicationsAgent,
 ) {
 	var wg sync.WaitGroup
-	var sem = make(chan struct{}, 10)
+	var sem = make(chan struct{}, 10) // send a maximum of 10 concurrent emails
 
 	errChan = make(chan error, len(scoredEntryPredictions))
 

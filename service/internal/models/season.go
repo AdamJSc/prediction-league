@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
@@ -10,6 +11,8 @@ const (
 	SeasonStatusActive  = "active"
 	SeasonStatusElapsed = "elapsed"
 )
+
+var ErrNoMatchingPredictionWindow = errors.New("no matching prediction window")
 
 // Season defines the structure of a Season against which Entries are played
 type Season struct {
@@ -80,6 +83,58 @@ func (s Season) IsCompletedByStandings(standings *Standings) bool {
 
 	// season is complete
 	return true
+}
+
+// GetPredictionWindowBeginsWithin returns the Prediction Window that begins within the provided TimeFrame,
+// or an error if no match is found
+func (s Season) GetPredictionWindowBeginsWithin(tf TimeFrame) (SequencedTimeFrame, error) {
+	total := len(s.PredictionsAccepted)
+	count := 0
+
+	for idx, window := range s.PredictionsAccepted {
+		count++
+		if window.BeginsWithin(tf) {
+			stf := SequencedTimeFrame{
+				Count:   count,
+				Total:   total,
+				Current: &window,
+			}
+
+			if count < total {
+				stf.Next = &s.PredictionsAccepted[idx+1]
+			}
+
+			return stf, nil
+		}
+	}
+
+	return SequencedTimeFrame{}, ErrNoMatchingPredictionWindow
+}
+
+// GetPredictionWindowEndsWithin returns the Prediction Window that ends within the provided TimeFrame,
+// or an error if no match is found
+func (s Season) GetPredictionWindowEndsWithin(tf TimeFrame) (SequencedTimeFrame, error) {
+	total := len(s.PredictionsAccepted)
+	count := 0
+
+	for idx, window := range s.PredictionsAccepted {
+		count++
+		if window.EndsWithin(tf) {
+			stf := SequencedTimeFrame{
+				Count:   count,
+				Total:   total,
+				Current: &window,
+			}
+
+			if count < total {
+				stf.Next = &s.PredictionsAccepted[idx+1]
+			}
+
+			return stf, nil
+		}
+	}
+
+	return SequencedTimeFrame{}, ErrNoMatchingPredictionWindow
 }
 
 // SeasonState defines the state of a Season

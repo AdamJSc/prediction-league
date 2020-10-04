@@ -14,6 +14,16 @@ type PaymentDetails struct {
 	MerchantName string
 }
 
+type WindowData struct {
+	Current            int
+	Total              int
+	IsLast             bool
+	CurrentClosingDate string
+	CurrentClosingTime string
+	NextOpeningDate    string
+	NextOpeningTime    string
+}
+
 type NewEntryEmailData struct {
 	EmailData
 	PaymentDetails PaymentDetails
@@ -37,4 +47,10 @@ type ShortCodeResetCompleteEmail struct {
 	EmailData
 	PredictionsURL string
 	ShortCode      string
+}
+
+type PredictionWindowEmail struct {
+	EmailData
+	Window         WindowData
+	PredictionsURL string
 }

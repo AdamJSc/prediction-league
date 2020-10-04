@@ -1,13 +1,267 @@
 package models_test
 
 import (
+	"github.com/google/go-cmp/cmp"
 	"prediction-league/service/internal/models"
 	"testing"
+	"time"
 )
 
 // TODO - tests for Season.GetState
 
 // TODO - tests for Season.IsCompletedByStandings
+
+func TestSeason_GetPredictionWindowBeginsWithin(t *testing.T) {
+	var now = time.Now()
+	var twoNanosecondsAgo = now.Add(-2 * time.Nanosecond)
+	var fiveNanosecondsAgo = now.Add(-5 * time.Nanosecond)
+	var sevenNanosecondsAgo = now.Add(-7 * time.Nanosecond)
+
+	window1 := models.TimeFrame{
+		From:  sevenNanosecondsAgo,
+		Until: fiveNanosecondsAgo,
+	}
+
+	window2 := models.TimeFrame{
+		From:  twoNanosecondsAgo,
+		Until: now,
+	}
+
+	season := models.Season{
+		PredictionsAccepted: []models.TimeFrame{window1, window2},
+	}
+
+	t.Run("timeframe that ends before first prediction window begins must return error", func(t *testing.T) {
+		if _, err := season.GetPredictionWindowBeginsWithin(models.TimeFrame{
+			From:  window1.From.Add(-2 * time.Nanosecond),
+			Until: window1.From.Add(-time.Nanosecond),
+		}); err != models.ErrNoMatchingPredictionWindow {
+			expectedGot(t, models.ErrNoMatchingPredictionWindow, err)
+		}
+	})
+
+	t.Run("timeframes that first prediction window begins within must return first prediction window", func(t *testing.T) {
+		testCases := []models.TimeFrame{
+			// straddles window1 begin
+			{
+				From:  window1.From.Add(-time.Nanosecond),
+				Until: window1.From.Add(time.Nanosecond),
+			},
+			// start matches window1 begin
+			{
+				From:  window1.From,
+				Until: window1.From.Add(time.Nanosecond),
+			},
+			// end matches window1 begin
+			{
+				From:  window1.From.Add(-time.Nanosecond),
+				Until: window1.From,
+			},
+		}
+
+		expected := models.SequencedTimeFrame{
+			Count:   1,
+			Total:   2,
+			Current: &window1,
+			Next:    &window2,
+		}
+
+		for _, tc := range testCases {
+			actual, err := season.GetPredictionWindowBeginsWithin(tc)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			diff := cmp.Diff(expected, actual)
+			if diff != "" {
+				expectedGot(t, "empty diff", diff)
+			}
+		}
+	})
+
+	t.Run("timeframes that second prediction window begins within must return second prediction window", func(t *testing.T) {
+		testCases := []models.TimeFrame{
+			// straddles window2 begin
+			{
+				From:  window2.From.Add(-time.Nanosecond),
+				Until: window2.From.Add(time.Nanosecond),
+			},
+			// start matches window2 begin
+			{
+				From:  window2.From,
+				Until: window2.From.Add(time.Nanosecond),
+			},
+			// end matches window2 begin
+			{
+				From:  window2.From.Add(-time.Nanosecond),
+				Until: window2.From,
+			},
+		}
+
+		expected := models.SequencedTimeFrame{
+			Count:   2,
+			Total:   2,
+			Current: &window2,
+			Next:    nil,
+		}
+
+		for _, tc := range testCases {
+			actual, err := season.GetPredictionWindowBeginsWithin(tc)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			diff := cmp.Diff(expected, actual)
+			if diff != "" {
+				expectedGot(t, "empty diff", diff)
+			}
+		}
+	})
+
+	t.Run("timeframe that begins and ends between either prediction window must return error", func(t *testing.T) {
+		if _, err := season.GetPredictionWindowBeginsWithin(models.TimeFrame{
+			From:  window1.Until.Add(time.Nanosecond),
+			Until: window2.From.Add(-time.Nanosecond),
+		}); err != models.ErrNoMatchingPredictionWindow {
+			expectedGot(t, models.ErrNoMatchingPredictionWindow, err)
+		}
+	})
+
+	t.Run("timeframe that begins after second prediction window begins must return error", func(t *testing.T) {
+		if _, err := season.GetPredictionWindowBeginsWithin(models.TimeFrame{
+			From:  window2.From.Add(time.Nanosecond),
+			Until: window2.From.Add(2 * time.Nanosecond),
+		}); err != models.ErrNoMatchingPredictionWindow {
+			expectedGot(t, models.ErrNoMatchingPredictionWindow, err)
+		}
+	})
+}
+
+func TestSeason_GetPredictionWindowEndsWithin(t *testing.T) {
+	var now = time.Now()
+	var twoNanosecondsAgo = now.Add(-2 * time.Nanosecond)
+	var fiveNanosecondsAgo = now.Add(-5 * time.Nanosecond)
+	var sevenNanosecondsAgo = now.Add(-7 * time.Nanosecond)
+
+	window1 := models.TimeFrame{
+		From:  sevenNanosecondsAgo,
+		Until: fiveNanosecondsAgo,
+	}
+
+	window2 := models.TimeFrame{
+		From:  twoNanosecondsAgo,
+		Until: now,
+	}
+
+	season := models.Season{
+		PredictionsAccepted: []models.TimeFrame{window1, window2},
+	}
+
+	t.Run("timeframe that ends before first prediction window ends must return error", func(t *testing.T) {
+		if _, err := season.GetPredictionWindowEndsWithin(models.TimeFrame{
+			From:  window1.Until.Add(-2 * time.Nanosecond),
+			Until: window1.Until.Add(-time.Nanosecond),
+		}); err != models.ErrNoMatchingPredictionWindow {
+			expectedGot(t, models.ErrNoMatchingPredictionWindow, err)
+		}
+	})
+
+	t.Run("timeframes that first prediction window ends within must return first prediction window", func(t *testing.T) {
+		testCases := []models.TimeFrame{
+			// straddles window1 end
+			{
+				From:  window1.Until.Add(-time.Nanosecond),
+				Until: window1.Until.Add(time.Nanosecond),
+			},
+			// start matches window1 end
+			{
+				From:  window1.Until,
+				Until: window1.Until.Add(time.Nanosecond),
+			},
+			// end matches window1 end
+			{
+				From:  window1.Until.Add(-time.Nanosecond),
+				Until: window1.Until,
+			},
+		}
+
+		expected := models.SequencedTimeFrame{
+			Count:   1,
+			Total:   2,
+			Current: &window1,
+			Next:    &window2,
+		}
+
+		for _, tc := range testCases {
+			actual, err := season.GetPredictionWindowEndsWithin(tc)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			diff := cmp.Diff(expected, actual)
+			if diff != "" {
+				expectedGot(t, "empty diff", diff)
+			}
+		}
+	})
+
+	t.Run("timeframes that second prediction window ends within must return second prediction window", func(t *testing.T) {
+		testCases := []models.TimeFrame{
+			// straddles window2 end
+			{
+				From:  window2.Until.Add(-time.Nanosecond),
+				Until: window2.Until.Add(time.Nanosecond),
+			},
+			// start matches window2 end
+			{
+				From:  window2.Until,
+				Until: window2.Until.Add(time.Nanosecond),
+			},
+			// end matches window2 end
+			{
+				From:  window2.Until.Add(-time.Nanosecond),
+				Until: window2.Until,
+			},
+		}
+
+		expected := models.SequencedTimeFrame{
+			Count:   2,
+			Total:   2,
+			Current: &window2,
+			Next:    nil,
+		}
+
+		for _, tc := range testCases {
+			actual, err := season.GetPredictionWindowEndsWithin(tc)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			diff := cmp.Diff(expected, actual)
+			if diff != "" {
+				expectedGot(t, "empty diff", diff)
+			}
+		}
+	})
+
+	t.Run("timeframe that begins and ends between either prediction window must return error", func(t *testing.T) {
+		if _, err := season.GetPredictionWindowEndsWithin(models.TimeFrame{
+			From:  window1.Until.Add(time.Nanosecond),
+			Until: window2.From.Add(-time.Nanosecond),
+		}); err != models.ErrNoMatchingPredictionWindow {
+			expectedGot(t, models.ErrNoMatchingPredictionWindow, err)
+		}
+	})
+
+	t.Run("timeframe that begins after second prediction window bendsegins must return error", func(t *testing.T) {
+		if _, err := season.GetPredictionWindowEndsWithin(models.TimeFrame{
+			From:  window2.Until.Add(time.Nanosecond),
+			Until: window2.Until.Add(2 * time.Nanosecond),
+		}); err != models.ErrNoMatchingPredictionWindow {
+			expectedGot(t, models.ErrNoMatchingPredictionWindow, err)
+		}
+	})
+}
 
 func TestSeasonCollection_GetByID(t *testing.T) {
 	collection := models.SeasonCollection{
