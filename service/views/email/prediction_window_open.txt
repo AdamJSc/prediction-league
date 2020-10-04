@@ -10,7 +10,7 @@ Your latest Prediction Window is now open!
 {{end}}
 
 You have until {{.Window.CurrentClosingTime}} on {{.Window.CurrentClosingDate}} to update your Prediction as often as you like.
-Only your most recent Prediction will apply once the current Window closes.
+Only your most recent Prediction will apply once the current Prediction Window closes.
 
 To update your Prediction:
 
