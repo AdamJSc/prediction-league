@@ -12,7 +12,6 @@ import (
 	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/repositories"
 	"prediction-league/service/internal/views"
-	"time"
 )
 
 const (
@@ -375,29 +374,6 @@ func GenerateWindowDataFromSequencedTimeFrame(tf models.SequencedTimeFrame) (*em
 	}
 
 	return &window, nil
-}
-
-// GenerateTimeFrameForPredictionWindowOpenQuery returns the timeframe required for querying
-// Prediction Windows within the PredictionWindowOpen cron job
-func GenerateTimeFrameForPredictionWindowOpenQuery(t time.Time) models.TimeFrame {
-	// from 24 hours prior to base time
-	// until one minute before base time
-	return models.TimeFrame{
-		From:  t.Add(-24 * time.Hour),
-		Until: t.Add(-time.Minute),
-	}
-}
-
-// GenerateTimeFrameForPredictionWindowClosingQuery returns the timeframe required for querying
-// Prediction Windows within the PredictionWindowClosing cron job
-func GenerateTimeFrameForPredictionWindowClosingQuery(t time.Time) models.TimeFrame {
-	// from 12 hours after base time
-	// until 24 hours after from time, less a minute
-	from := t.Add(12 * time.Hour)
-	return models.TimeFrame{
-		From:  from,
-		Until: from.Add(24 * time.Hour).Add(-time.Minute),
-	}
 }
 
 // newEmail returns an email message object inflated with the provided data items

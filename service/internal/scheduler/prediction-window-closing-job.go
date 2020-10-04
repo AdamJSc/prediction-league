@@ -35,7 +35,7 @@ func newPredictionWindowClosingJob(season models.Season, injector app.Dependency
 		defer cancel()
 
 		// from 4:48am tomorrow, until 4:47am the following day
-		tf := domain.GenerateTimeFrameForPredictionWindowClosingQuery(time.Now())
+		tf := GenerateTimeFrameForPredictionWindowClosingQuery(time.Now())
 
 		// see if a prediction window is due to close within this timeframe for the provided season
 		window, err := season.GetPredictionWindowEndsWithin(tf)
@@ -106,4 +106,16 @@ func issuePredictionWindowClosingEmails(
 
 	wg.Wait()
 	close(errChan)
+}
+
+// GenerateTimeFrameForPredictionWindowClosingQuery returns the timeframe required for querying
+// Prediction Windows within the PredictionWindowClosing cron job
+func GenerateTimeFrameForPredictionWindowClosingQuery(t time.Time) models.TimeFrame {
+	// from 12 hours after base time
+	// until 24 hours after from time, less a minute
+	from := t.Add(12 * time.Hour)
+	return models.TimeFrame{
+		From:  from,
+		Until: from.Add(24 * time.Hour).Add(-time.Minute),
+	}
 }

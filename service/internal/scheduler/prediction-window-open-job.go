@@ -35,7 +35,7 @@ func newPredictionWindowOpenJob(season models.Season, injector app.DependencyInj
 		defer cancel()
 
 		// from 12:34pm previous day, until 12:33pm today
-		tf := domain.GenerateTimeFrameForPredictionWindowOpenQuery(time.Now())
+		tf := GenerateTimeFrameForPredictionWindowOpenQuery(time.Now())
 
 		// see if a prediction window has opened within this timeframe for the provided season
 		window, err := season.GetPredictionWindowBeginsWithin(tf)
@@ -106,4 +106,15 @@ func issuePredictionWindowOpenEmails(
 
 	wg.Wait()
 	close(errChan)
+}
+
+// GenerateTimeFrameForPredictionWindowOpenQuery returns the timeframe required for querying
+// Prediction Windows within the PredictionWindowOpen cron job
+func GenerateTimeFrameForPredictionWindowOpenQuery(t time.Time) models.TimeFrame {
+	// from 24 hours prior to base time
+	// until one minute before base time
+	return models.TimeFrame{
+		From:  t.Add(-24 * time.Hour),
+		Until: t.Add(-time.Minute),
+	}
 }
