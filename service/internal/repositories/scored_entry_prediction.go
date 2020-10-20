@@ -43,19 +43,21 @@ const stmtSelectEntryWithTotalScore = `
 // score for the provided round number
 const stmtSelectEntryWithScoreThisRound = `
 	SELECT
-		ep.entry_id,
-		sep.score AS score_this_round
+		tbl.entry_id,
+		tbl.score AS score_this_round
 	FROM (
-		SELECT *
-		FROM scored_entry_prediction
-		ORDER BY created_at DESC
+		SELECT
+			e.id AS entry_id,
+			sep.*
+		FROM scored_entry_prediction sep
+		INNER JOIN entry_prediction ep ON sep.entry_prediction_id = ep.id
+		INNER JOIN entry e ON ep.entry_id = e.id
+		INNER JOIN standings s ON sep.standings_id = s.id
+		WHERE e.realm_name = ? AND e.season_id = ? AND s.round_number = ?
+		ORDER BY sep.created_at DESC
 		LIMIT 100000000 -- arbitrary limit so that order by desc row order is retained for parent query
-	) sep
-	INNER JOIN standings s ON sep.standings_id = s.id
-	INNER JOIN entry_prediction ep ON sep.entry_prediction_id = ep.id
-	INNER JOIN entry e ON ep.entry_id = e.id
-	WHERE e.realm_name = ? AND e.season_id = ? AND s.round_number = ?
-	GROUP BY ep.entry_id
+	) tbl
+	GROUP BY entry_id
 `
 
 // stmtSelectEntryWithMinScore represents a partial nested statement for grouping entry IDs along with their
