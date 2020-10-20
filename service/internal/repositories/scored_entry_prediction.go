@@ -63,27 +63,29 @@ const stmtSelectEntryWithScoreThisRound = `
 // minimum score at the point of the provided round number
 const stmtSelectEntryWithMinScore = `
 	SELECT
-		entry_id,
-		MIN(score) AS min_score
+		t2.entry_id,
+		MIN(t2.score) AS min_score
 	FROM (
 		SELECT
-			ep.entry_id,
-			s.round_number,
-			sep.score
+			t1.entry_id,
+			t1.score,
+			t1.round_number
 		FROM (
-			SELECT *
-			FROM scored_entry_prediction
-			ORDER BY created_at DESC
+			SELECT
+				e.id AS entry_id,
+				sep.*,
+				s.round_number
+			FROM scored_entry_prediction sep
+			INNER JOIN entry_prediction ep ON sep.entry_prediction_id = ep.id
+			INNER JOIN entry e ON ep.entry_id = e.id
+			INNER JOIN standings s ON sep.standings_id = s.id
+			WHERE e.realm_name = ? AND e.season_id = ? AND s.round_number <= ?
+			ORDER BY sep.created_at DESC
 			LIMIT 100000000 -- arbitrary limit so that order by desc row order is retained for parent query
-		) sep
-		INNER JOIN standings s ON sep.standings_id = s.id
-		INNER JOIN entry_prediction ep ON sep.entry_prediction_id = ep.id
-		INNER JOIN entry e ON ep.entry_id = e.id
-		WHERE e.realm_name = ? AND e.season_id = ? AND s.round_number <= ?
-		GROUP BY ep.entry_id, s.round_number
-		ORDER BY ep.entry_id ASC, s.round_number DESC
-	) AS sub
-	GROUP BY entry_id
+		) t1
+		GROUP BY t1.entry_id, t1.round_number
+	) t2
+	GROUP BY t2.entry_id
 `
 
 // scoredEntryPredictionDBFields defines the fields used regularly in ScoredEntryPredictions-related transactions
