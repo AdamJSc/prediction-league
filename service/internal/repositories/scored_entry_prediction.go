@@ -29,7 +29,11 @@ const stmtSelectEntryWithTotalScore = `
 			INNER JOIN entry_prediction ep ON sep.entry_prediction_id = ep.id
 			INNER JOIN entry e ON ep.entry_id = e.id
 			INNER JOIN standings s ON sep.standings_id = s.id
-			WHERE e.realm_name = ? AND e.season_id = ? AND s.round_number <= ?
+			WHERE
+				e.realm_name = ?
+				AND e.season_id = ?
+				AND s.round_number <= ?
+				AND e.approved_at IS NOT NULL
 			ORDER BY sep.created_at DESC
 			LIMIT 100000000 -- arbitrary limit so that order by desc row order is retained for parent query
 		) t1
@@ -52,7 +56,11 @@ const stmtSelectEntryWithScoreThisRound = `
 		INNER JOIN entry_prediction ep ON sep.entry_prediction_id = ep.id
 		INNER JOIN entry e ON ep.entry_id = e.id
 		INNER JOIN standings s ON sep.standings_id = s.id
-		WHERE e.realm_name = ? AND e.season_id = ? AND s.round_number = ?
+		WHERE
+			e.realm_name = ?
+			AND e.season_id = ?
+			AND s.round_number = ?
+			AND e.approved_at IS NOT NULL
 		ORDER BY sep.created_at DESC
 		LIMIT 100000000 -- arbitrary limit so that order by desc row order is retained for parent query
 	) t1
@@ -79,7 +87,11 @@ const stmtSelectEntryWithMinScore = `
 			INNER JOIN entry_prediction ep ON sep.entry_prediction_id = ep.id
 			INNER JOIN entry e ON ep.entry_id = e.id
 			INNER JOIN standings s ON sep.standings_id = s.id
-			WHERE e.realm_name = ? AND e.season_id = ? AND s.round_number <= ?
+			WHERE
+				e.realm_name = ?
+				AND e.season_id = ?
+				AND s.round_number <= ?
+				AND e.approved_at IS NOT NULL
 			ORDER BY sep.created_at DESC
 			LIMIT 100000000 -- arbitrary limit so that order by desc row order is retained for parent query
 		) t1
