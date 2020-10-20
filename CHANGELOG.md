@@ -6,10 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2020-10-20
+### Fixed
+- Bug where the most recently created Scored Entry Prediction was not necessarily being retrieved for each specified
+combination of Entry/Round Number (Game Week) when building the Leaderboard, due to spurious behaviour of MySQL's
+Group/Order By functions.
+- Amended the sub-queries that are used to select Entries' cumulative scores by Realm, such that the order of records
+produced when descending by Scored Entry Prediction's `created_at` field is guaranteed to be retained by the parent query. 
+
 ## [1.1.0] - 2020-10-04
 ### Added
 - Transactional emails representing the opening and closing of a Season's Prediction Window.
-- Cron jobs that check for recently opened, or forthcoming closing, Prediciton Windows within a 24-hour period, and issue
+- Cron jobs that check for recently opened, or forthcoming closing, Prediction Windows within a 24-hour period, and issue
 email comms to all Entrants of the respective active Season.
 
 ## [1.0.3] - 2020-09-27
