@@ -1,4 +1,4 @@
-FROM golang:1.14-alpine
+FROM golang:1.14-alpine AS builder
 
 RUN apk update && apk --no-cache add tzdata git
 
@@ -6,8 +6,10 @@ WORKDIR /app
 
 COPY . .
 
-RUN go mod vendor
+RUN go build -o /prediction-league ./service
 
-RUN go build -mod vendor -o ./bin/prediction-league ./service
+FROM alpine
 
-CMD ["./bin/prediction-league"]
+COPY --from=builder /prediction-league /prediction-league
+
+CMD ["/prediction-league"]
