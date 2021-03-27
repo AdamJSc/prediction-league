@@ -1,6 +1,6 @@
 module prediction-league
 
-go 1.14
+go 1.16
 
 require (
 	github.com/LUSHDigital/core v0.23.1
