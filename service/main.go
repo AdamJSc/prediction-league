@@ -37,11 +37,14 @@ func main() {
 	// setup db connection
 	db := coresql.MustOpen("mysql", config.MySQLURL)
 	driver, _ := mysql.WithInstance(db.DB, &mysql.Config{})
-	mig, _ := migrate.NewWithDatabaseInstance(
+	mig, err := migrate.NewWithDatabaseInstance(
 		config.MigrationsURL,
 		"mysql",
 		driver,
 	)
+	if err != nil {
+		log.Fatal(fmt.Errorf("cannot open sql connection: %w", err))
+	}
 	coresql.MustMigrateUp(mig)
 	seeder.MustSeed(db)
 
