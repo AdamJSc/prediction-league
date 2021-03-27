@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.2] - 2021-03-27
+### Changed
+- Docker builder pattern to reduce the Docker image size
+
+### Security
+- Bump Go from 1.14 to 1.16
+- Bump ini from 1.3.5 to 1.3.8
+- Bump axios from 0.19.2 to 0.21.1
+- Bump elliptic from 6.5.3 to 6.5.4
+
 ## [1.1.1] - 2020-10-20
 ### Fixed
 - Bug where the most recently created Scored Entry Prediction was not necessarily being retrieved for each specified

@@ -1,6 +1,6 @@
 # Prediction League ⚽️‍ 🔮 🧙‍
 
-**v1.1.1**
+**v1.1.2**
 
 ## About
 
@@ -86,7 +86,7 @@ Requires more dependencies installed on the host machine, but results in general
 
 ### Requirements
 
-* [Golang](https://golang.org/) 1.14
+* [Golang](https://golang.org/) 1.16
 * [npm](https://npmjs.com/) 13.10 (or [nvm](http://nvm.sh))
 * [Docker](https://docker.com/) + [Docker Compose](https://github.com/docker/compose)
 * [GNU Make](https://gnu.org/software/make/manual/make.html)

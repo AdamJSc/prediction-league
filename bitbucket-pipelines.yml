@@ -5,7 +5,7 @@ pipelines:
     v*.*.*:
       - step:
           name: Run Go tests
-          image: golang:1.14
+          image: golang:1.16
           caches:
             - gomodules
           services:
