@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.3] - 2021-03-27
+### Fixed
+- Docker image build copies additional source files not included in binary
+
+### Added
+- Database startup error detail
+
 ## [1.1.2] - 2021-03-27
 ### Changed
 - Docker builder pattern to reduce the Docker image size
