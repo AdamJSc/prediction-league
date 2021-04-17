@@ -8,7 +8,6 @@ import (
 	gocmp "github.com/google/go-cmp/cmp"
 	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/emails"
 	"prediction-league/service/internal/messages"
 	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/views"
@@ -37,7 +36,7 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 	testRealm := testRealm(t)
 	testConfig.Realms[testRealm.Name] = testRealm
 
-	testPaymentDetails := emails.PaymentDetails{
+	testPaymentDetails := domain.PaymentDetails{
 		Amount:       "£12.34",
 		Reference:    "PAYMENT_REFERENCE",
 		MerchantName: "MERCHANT_NAME",
@@ -79,8 +78,8 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 
 		expectedSubject := domain.EmailSubjectNewEntry
 
-		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_new_entry", emails.NewEntryEmailData{
-			EmailData: emails.EmailData{
+		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_new_entry", domain.NewEntryEmailData{
+			EmailData: domain.EmailData{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
 				SignOff:      testRealm.Contact.Name,
@@ -259,8 +258,8 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 
 		expectedSubject := fmt.Sprintf(domain.EmailSubjectRoundComplete, standings.RoundNumber)
 
-		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_round_complete", emails.RoundCompleteEmailData{
-			EmailData: emails.EmailData{
+		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_round_complete", domain.RoundCompleteEmailData{
+			EmailData: domain.EmailData{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
 				SignOff:      testRealm.Contact.Name,
@@ -321,8 +320,8 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 
 		expectedSubject := fmt.Sprintf(domain.EmailSubjectRoundComplete, standings.RoundNumber)
 
-		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_final_round_complete", emails.RoundCompleteEmailData{
-			EmailData: emails.EmailData{
+		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_final_round_complete", domain.RoundCompleteEmailData{
+			EmailData: domain.EmailData{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
 				SignOff:      testRealm.Contact.Name,
@@ -511,8 +510,8 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 
 		expectedSubject := domain.EmailSubjectShortCodeResetBegin
 
-		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_short_code_reset_begin", emails.ShortCodeResetBeginEmail{
-			EmailData: emails.EmailData{
+		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_short_code_reset_begin", domain.ShortCodeResetBeginEmail{
+			EmailData: domain.EmailData{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
 				SignOff:      testRealm.Contact.Name,
@@ -642,8 +641,8 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 
 		expectedSubject := domain.EmailSubjectShortCodeResetComplete
 
-		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_short_code_reset_complete", emails.ShortCodeResetCompleteEmail{
-			EmailData: emails.EmailData{
+		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_short_code_reset_complete", domain.ShortCodeResetCompleteEmail{
+			EmailData: domain.EmailData{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
 				SignOff:      testRealm.Contact.Name,
@@ -787,15 +786,15 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 
 		expectedSubject := domain.EmailSubjectPredictionWindowOpen
 
-		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_prediction_window_open", emails.PredictionWindowEmail{
-			EmailData: emails.EmailData{
+		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_prediction_window_open", domain.PredictionWindowEmail{
+			EmailData: domain.EmailData{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
 				SignOff:      testRealm.Contact.Name,
 				URL:          testRealm.Origin,
 				SupportEmail: testRealm.Contact.EmailProper,
 			},
-			Window: emails.WindowData{
+			Window: domain.WindowData{
 				Current:            1,
 				Total:              2,
 				IsLast:             false,
@@ -866,15 +865,15 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 
 		expectedSubject := domain.EmailSubjectPredictionWindowOpenFinal
 
-		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_prediction_window_open", emails.PredictionWindowEmail{
-			EmailData: emails.EmailData{
+		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_prediction_window_open", domain.PredictionWindowEmail{
+			EmailData: domain.EmailData{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
 				SignOff:      testRealm.Contact.Name,
 				URL:          testRealm.Origin,
 				SupportEmail: testRealm.Contact.EmailProper,
 			},
-			Window: emails.WindowData{
+			Window: domain.WindowData{
 				Current:            2,
 				Total:              2,
 				IsLast:             true,
@@ -1050,15 +1049,15 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 		expectedSubject := domain.EmailSubjectPredictionWindowClosing
 
-		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_prediction_window_closing", emails.PredictionWindowEmail{
-			EmailData: emails.EmailData{
+		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_prediction_window_closing", domain.PredictionWindowEmail{
+			EmailData: domain.EmailData{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
 				SignOff:      testRealm.Contact.Name,
 				URL:          testRealm.Origin,
 				SupportEmail: testRealm.Contact.EmailProper,
 			},
-			Window: emails.WindowData{
+			Window: domain.WindowData{
 				Current:            1,
 				Total:              2,
 				IsLast:             false,
@@ -1131,15 +1130,15 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 		expectedSubject := domain.EmailSubjectPredictionWindowClosingFinal
 
-		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_prediction_window_closing", emails.PredictionWindowEmail{
-			EmailData: emails.EmailData{
+		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_prediction_window_closing", domain.PredictionWindowEmail{
+			EmailData: domain.EmailData{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
 				SignOff:      testRealm.Contact.Name,
 				URL:          testRealm.Origin,
 				SupportEmail: testRealm.Contact.EmailProper,
 			},
-			Window: emails.WindowData{
+			Window: domain.WindowData{
 				Current:            2,
 				Total:              2,
 				IsLast:             true,
@@ -1277,7 +1276,7 @@ func TestGenerateWindowDataFromSequencedTimeFrame(t *testing.T) {
 			Total: 456,
 		}
 
-		expected := emails.WindowData{
+		expected := domain.WindowData{
 			Current:            123,
 			Total:              456,
 			IsLast:             false,
@@ -1315,7 +1314,7 @@ func TestGenerateWindowDataFromSequencedTimeFrame(t *testing.T) {
 			Total: 456,
 		}
 
-		expected := emails.WindowData{
+		expected := domain.WindowData{
 			Current:            456,
 			Total:              456,
 			IsLast:             true,

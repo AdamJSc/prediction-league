@@ -7,7 +7,6 @@ import (
 	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
 	"prediction-league/service/internal/datastore"
-	"prediction-league/service/internal/emails"
 	"prediction-league/service/internal/messages"
 	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/repositories"
@@ -39,7 +38,7 @@ type CommunicationsAgentInjector interface {
 type CommunicationsAgent struct{ CommunicationsAgentInjector }
 
 // IssueNewEntryEmail generates a "new entry" email for the provided Entry and pushes it to the send queue
-func (c CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *models.Entry, paymentDetails *emails.PaymentDetails) error {
+func (c CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *models.Entry, paymentDetails *PaymentDetails) error {
 	if entry == nil {
 		return InternalError{errors.New("no entry provided")}
 	}
@@ -62,7 +61,7 @@ func (c CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *models
 		return NotFoundError{err}
 	}
 
-	d := emails.NewEntryEmailData{
+	d := NewEntryEmailData{
 		EmailData:      newEmailData(realm, entry.EntrantName, season.Name),
 		PaymentDetails: *paymentDetails,
 		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
@@ -110,7 +109,7 @@ func (c CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *m
 		return err
 	}
 
-	d := emails.RoundCompleteEmailData{
+	d := RoundCompleteEmailData{
 		EmailData:         newEmailData(realm, entry.EntrantName, season.Name),
 		RoundNumber:       standings.RoundNumber,
 		RankingsAsStrings: rankingsAsStrings,
@@ -153,7 +152,7 @@ func (c CommunicationsAgent) IssueShortCodeResetBeginEmail(_ context.Context, en
 		return NotFoundError{err}
 	}
 
-	d := emails.ShortCodeResetBeginEmail{
+	d := ShortCodeResetBeginEmail{
 		EmailData: newEmailData(realm, entry.EntrantName, season.Name),
 		ResetURL:  fmt.Sprintf("%s/reset/%s", realm.Origin, resetToken),
 	}
@@ -188,7 +187,7 @@ func (c CommunicationsAgent) IssueShortCodeResetCompleteEmail(_ context.Context,
 		return NotFoundError{err}
 	}
 
-	d := emails.ShortCodeResetCompleteEmail{
+	d := ShortCodeResetCompleteEmail{
 		EmailData:      newEmailData(realm, entry.EntrantName, season.Name),
 		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
 		ShortCode:      entry.ShortCode,
@@ -229,7 +228,7 @@ func (c CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, e
 		return InternalError{err}
 	}
 
-	d := emails.PredictionWindowEmail{
+	d := PredictionWindowEmail{
 		EmailData:      newEmailData(realm, entry.EntrantName, season.Name),
 		Window:         *window,
 		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
@@ -276,7 +275,7 @@ func (c CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Context
 		return InternalError{err}
 	}
 
-	d := emails.PredictionWindowEmail{
+	d := PredictionWindowEmail{
 		EmailData:      newEmailData(realm, entry.EntrantName, season.Name),
 		Window:         *window,
 		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
@@ -351,8 +350,8 @@ func getStandingsFromScoredEntryPrediction(ctx context.Context, sep *models.Scor
 }
 
 // GenerateWindowDataFromSequencedTimeFrame generates an email WindowData object from the provided SequencedTimeFrame
-func GenerateWindowDataFromSequencedTimeFrame(tf models.SequencedTimeFrame) (*emails.WindowData, error) {
-	var window emails.WindowData
+func GenerateWindowDataFromSequencedTimeFrame(tf models.SequencedTimeFrame) (*WindowData, error) {
+	var window WindowData
 
 	if tf.Current == nil {
 		return nil, ErrCurrentTimeFrameIsMissing
@@ -395,12 +394,67 @@ func newEmail(realm Realm, to messages.Identity, subject, plainText string) mess
 }
 
 // newEmailData returns an email data object inflated with the provided data items
-func newEmailData(realm Realm, name string, seasonName string) emails.EmailData {
-	return emails.EmailData{
+func newEmailData(realm Realm, name string, seasonName string) EmailData {
+	return EmailData{
 		Name:         name,
 		SignOff:      realm.Contact.Name,
 		SeasonName:   seasonName,
 		URL:          realm.Origin,
 		SupportEmail: realm.Contact.EmailProper,
 	}
+}
+
+type EmailData struct {
+	Name         string
+	SignOff      string
+	SeasonName   string
+	URL          string
+	SupportEmail string
+}
+
+type PaymentDetails struct {
+	Amount       string
+	Reference    string
+	MerchantName string
+}
+
+type WindowData struct {
+	Current            int
+	Total              int
+	IsLast             bool
+	CurrentClosingDate string
+	CurrentClosingTime string
+	NextOpeningDate    string
+	NextOpeningTime    string
+}
+
+type NewEntryEmailData struct {
+	EmailData
+	PaymentDetails PaymentDetails
+	PredictionsURL string
+	ShortCode      string
+}
+
+type RoundCompleteEmailData struct {
+	EmailData
+	RoundNumber       int
+	RankingsAsStrings []string
+	LeaderBoardURL    string
+}
+
+type ShortCodeResetBeginEmail struct {
+	EmailData
+	ResetURL string
+}
+
+type ShortCodeResetCompleteEmail struct {
+	EmailData
+	PredictionsURL string
+	ShortCode      string
+}
+
+type PredictionWindowEmail struct {
+	EmailData
+	Window         WindowData
+	PredictionsURL string
 }

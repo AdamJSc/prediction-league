@@ -9,7 +9,6 @@ import (
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/emails"
 	"prediction-league/service/internal/models"
 )
 
@@ -120,7 +119,7 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 		}
 		defer cancel()
 
-		paymentDetails := emails.PaymentDetails{
+		paymentDetails := domain.PaymentDetails{
 			Amount:       input.PaymentAmount,
 			Reference:    input.PaymentRef,
 			MerchantName: input.MerchantName,
