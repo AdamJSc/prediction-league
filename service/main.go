@@ -13,7 +13,6 @@ import (
 	"prediction-league/service/internal/clients/mailgun"
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/messages"
 	"prediction-league/service/internal/scheduler"
 	"prediction-league/service/internal/seeder"
 	"prediction-league/service/internal/views"
@@ -59,7 +58,7 @@ func main() {
 		config:         config,
 		mysql:          db,
 		emailClient:    mailgun.NewClient(config.MailgunAPIKey),
-		emailQueue:     make(chan messages.Email),
+		emailQueue:     make(chan domain.Email),
 		router:         mux.NewRouter(),
 		templates:      domain.MustParseTemplates("./service/views"),
 		debugTimestamp: parseTimeString(ts),
@@ -96,7 +95,7 @@ type dependencies struct {
 	config         domain.Config
 	mysql          coresql.Agent
 	emailClient    clients.EmailClient
-	emailQueue     chan messages.Email
+	emailQueue     chan domain.Email
 	router         *mux.Router
 	templates      *views.Templates
 	debugTimestamp *time.Time
@@ -105,7 +104,7 @@ type dependencies struct {
 func (d dependencies) Config() domain.Config            { return d.config }
 func (d dependencies) MySQL() coresql.Agent             { return d.mysql }
 func (d dependencies) EmailClient() clients.EmailClient { return d.emailClient }
-func (d dependencies) EmailQueue() chan messages.Email  { return d.emailQueue }
+func (d dependencies) EmailQueue() chan domain.Email  { return d.emailQueue }
 func (d dependencies) Router() *mux.Router              { return d.router }
 func (d dependencies) Template() *views.Templates       { return d.templates }
 func (d dependencies) DebugTimestamp() *time.Time       { return d.debugTimestamp }

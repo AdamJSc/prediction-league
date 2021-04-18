@@ -7,10 +7,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"prediction-league/service/internal/messages"
-
 	"github.com/sendgrid/sendgrid-go"
+	"net/http"
+	"prediction-league/service/internal/domain"
 )
 
 const baseURL = "https://api.sendgrid.com"
@@ -21,8 +20,8 @@ type Client struct {
 }
 
 // SendEmail implements this method on the clients.EmailClient interface
-func (c *Client) SendEmail(_ context.Context, message messages.Email) error {
-	requestBody := transformEmailMessageToSendMailRequest(message)
+func (c *Client) SendEmail(_ context.Context, em domain.Email) error {
+	requestBody := transformEmailMessageToSendMailRequest(em)
 	requestBodyString, err := json.Marshal(requestBody)
 	if err != nil {
 		return err
@@ -73,31 +72,31 @@ type sendMailRequest struct {
 	Content          []sendMailContent                `json:"content"`
 }
 
-func transformEmailMessageToSendMailRequest(message messages.Email) *sendMailRequest {
+func transformEmailMessageToSendMailRequest(em domain.Email) *sendMailRequest {
 	return &sendMailRequest{
 		Personalizations: []sendMailRequestPersonalization{
 			{
 				To: []sendMailEmailName{
 					{
-						Email: message.To.Address,
-						Name:  message.To.Name,
+						Email: em.To.Address,
+						Name:  em.To.Name,
 					},
 				},
-				Subject: message.Subject,
+				Subject: em.Subject,
 			},
 		},
 		From: sendMailEmailName{
-			Email: message.From.Address,
-			Name:  message.From.Name,
+			Email: em.From.Address,
+			Name:  em.From.Name,
 		},
 		ReplyTo: sendMailEmailName{
-			Email: message.ReplyTo.Address,
-			Name:  message.ReplyTo.Name,
+			Email: em.ReplyTo.Address,
+			Name:  em.ReplyTo.Name,
 		},
 		Content: []sendMailContent{
 			{
 				Type:  "text/plain",
-				Value: message.PlainText,
+				Value: em.PlainText,
 			},
 		},
 	}

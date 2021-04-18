@@ -7,7 +7,6 @@ import (
 	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
 	"prediction-league/service/internal/datastore"
-	"prediction-league/service/internal/messages"
 	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/repositories"
 	"prediction-league/service/internal/views"
@@ -30,7 +29,7 @@ var ErrCurrentTimeFrameIsMissing = errors.New("current timeframe is missing")
 type CommunicationsAgentInjector interface {
 	Config() Config
 	MySQL() coresql.Agent
-	EmailQueue() chan messages.Email
+	EmailQueue() chan Email
 	Template() *views.Templates
 }
 
@@ -62,7 +61,7 @@ func (c CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *models
 	}
 
 	d := NewEntryEmailData{
-		EmailData:      newEmailData(realm, entry.EntrantName, season.Name),
+		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
 		PaymentDetails: *paymentDetails,
 		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
 		ShortCode:      entry.ShortCode,
@@ -72,7 +71,7 @@ func (c CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *models
 		return err
 	}
 
-	recipient := messages.Identity{
+	recipient := Identity{
 		Name:    entry.EntrantName,
 		Address: entry.EntrantEmail,
 	}
@@ -110,7 +109,7 @@ func (c CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *m
 	}
 
 	d := RoundCompleteEmailData{
-		EmailData:         newEmailData(realm, entry.EntrantName, season.Name),
+		MessagePayload:    newMessagePayload(realm, entry.EntrantName, season.Name),
 		RoundNumber:       standings.RoundNumber,
 		RankingsAsStrings: rankingsAsStrings,
 		LeaderBoardURL:    fmt.Sprintf("%s/leaderboard", realm.Origin),
@@ -126,7 +125,7 @@ func (c CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *m
 		return err
 	}
 
-	recipient := messages.Identity{
+	recipient := Identity{
 		Name:    entry.EntrantName,
 		Address: entry.EntrantEmail,
 	}
@@ -153,15 +152,15 @@ func (c CommunicationsAgent) IssueShortCodeResetBeginEmail(_ context.Context, en
 	}
 
 	d := ShortCodeResetBeginEmail{
-		EmailData: newEmailData(realm, entry.EntrantName, season.Name),
-		ResetURL:  fmt.Sprintf("%s/reset/%s", realm.Origin, resetToken),
+		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
+		ResetURL:       fmt.Sprintf("%s/reset/%s", realm.Origin, resetToken),
 	}
 	var emailContent bytes.Buffer
 	if err := c.Template().ExecuteTemplate(&emailContent, "email_txt_short_code_reset_begin", d); err != nil {
 		return err
 	}
 
-	recipient := messages.Identity{
+	recipient := Identity{
 		Name:    entry.EntrantName,
 		Address: entry.EntrantEmail,
 	}
@@ -188,7 +187,7 @@ func (c CommunicationsAgent) IssueShortCodeResetCompleteEmail(_ context.Context,
 	}
 
 	d := ShortCodeResetCompleteEmail{
-		EmailData:      newEmailData(realm, entry.EntrantName, season.Name),
+		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
 		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
 		ShortCode:      entry.ShortCode,
 	}
@@ -197,7 +196,7 @@ func (c CommunicationsAgent) IssueShortCodeResetCompleteEmail(_ context.Context,
 		return err
 	}
 
-	recipient := messages.Identity{
+	recipient := Identity{
 		Name:    entry.EntrantName,
 		Address: entry.EntrantEmail,
 	}
@@ -229,7 +228,7 @@ func (c CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, e
 	}
 
 	d := PredictionWindowEmail{
-		EmailData:      newEmailData(realm, entry.EntrantName, season.Name),
+		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
 		Window:         *window,
 		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
 	}
@@ -238,7 +237,7 @@ func (c CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, e
 		return err
 	}
 
-	recipient := messages.Identity{
+	recipient := Identity{
 		Name:    entry.EntrantName,
 		Address: entry.EntrantEmail,
 	}
@@ -276,7 +275,7 @@ func (c CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Context
 	}
 
 	d := PredictionWindowEmail{
-		EmailData:      newEmailData(realm, entry.EntrantName, season.Name),
+		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
 		Window:         *window,
 		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
 	}
@@ -285,7 +284,7 @@ func (c CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Context
 		return err
 	}
 
-	recipient := messages.Identity{
+	recipient := Identity{
 		Name:    entry.EntrantName,
 		Address: entry.EntrantEmail,
 	}
@@ -375,15 +374,31 @@ func GenerateWindowDataFromSequencedTimeFrame(tf models.SequencedTimeFrame) (*Wi
 	return &window, nil
 }
 
+// Identity defines a combination of name and address
+type Identity struct {
+	Name    string
+	Address string
+}
+
+// Email defines the properties of an email message
+type Email struct {
+	From         Identity
+	To           Identity
+	ReplyTo      Identity
+	SenderDomain string
+	Subject      string
+	PlainText    string
+}
+
 // newEmail returns an email message object inflated with the provided data items
-func newEmail(realm Realm, to messages.Identity, subject, plainText string) messages.Email {
-	return messages.Email{
-		From: messages.Identity{
+func newEmail(realm Realm, to Identity, subject, plainText string) Email {
+	return Email{
+		From: Identity{
 			Name:    realm.Contact.Name,
 			Address: realm.Contact.EmailDoNotReply,
 		},
 		To: to,
-		ReplyTo: messages.Identity{
+		ReplyTo: Identity{
 			Name:    realm.Contact.Name,
 			Address: realm.Contact.EmailProper,
 		},
@@ -393,9 +408,9 @@ func newEmail(realm Realm, to messages.Identity, subject, plainText string) mess
 	}
 }
 
-// newEmailData returns an email data object inflated with the provided data items
-func newEmailData(realm Realm, name string, seasonName string) EmailData {
-	return EmailData{
+// newMessagePayload returns an email data object inflated with the provided data items
+func newMessagePayload(realm Realm, name string, seasonName string) MessagePayload {
+	return MessagePayload{
 		Name:         name,
 		SignOff:      realm.Contact.Name,
 		SeasonName:   seasonName,
@@ -404,7 +419,8 @@ func newEmailData(realm Realm, name string, seasonName string) EmailData {
 	}
 }
 
-type EmailData struct {
+// MessagePayload defines the fields required by an email message
+type MessagePayload struct {
 	Name         string
 	SignOff      string
 	SeasonName   string
@@ -412,12 +428,14 @@ type EmailData struct {
 	SupportEmail string
 }
 
+// PaymentDetails defines the fields relating to a payment
 type PaymentDetails struct {
 	Amount       string
 	Reference    string
 	MerchantName string
 }
 
+// WindowData defines the fields relating to a prediction window
 type WindowData struct {
 	Current            int
 	Total              int
@@ -428,33 +446,38 @@ type WindowData struct {
 	NextOpeningTime    string
 }
 
+// NewEntryEmailData defines the fields relating to the content of a new entry email
 type NewEntryEmailData struct {
-	EmailData
+	MessagePayload
 	PaymentDetails PaymentDetails
 	PredictionsURL string
 	ShortCode      string
 }
 
+// RoundCompleteEmailData defines the fields relating to the content of a round complete email
 type RoundCompleteEmailData struct {
-	EmailData
+	MessagePayload
 	RoundNumber       int
 	RankingsAsStrings []string
 	LeaderBoardURL    string
 }
 
+// ShortCodeResetBeginEmail defines the fields relating to the content of a short code reset begin email
 type ShortCodeResetBeginEmail struct {
-	EmailData
+	MessagePayload
 	ResetURL string
 }
 
+// ShortCodeResetBeginEmail defines the fields relating to the content of a short code reset begin email
 type ShortCodeResetCompleteEmail struct {
-	EmailData
+	MessagePayload
 	PredictionsURL string
 	ShortCode      string
 }
 
+// PredictionWindowEmail defines the fields relating to the content of a prediction window email
 type PredictionWindowEmail struct {
-	EmailData
+	MessagePayload
 	Window         WindowData
 	PredictionsURL string
 }

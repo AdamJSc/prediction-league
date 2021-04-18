@@ -8,7 +8,6 @@ import (
 	gocmp "github.com/google/go-cmp/cmp"
 	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/messages"
 	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/views"
 	"testing"
@@ -18,14 +17,14 @@ import (
 type testCommsAgentInjector struct {
 	config    domain.Config
 	db        coresql.Agent
-	queue     chan messages.Email
+	queue     chan domain.Email
 	templates *views.Templates
 }
 
-func (t testCommsAgentInjector) Config() domain.Config           { return t.config }
-func (t testCommsAgentInjector) MySQL() coresql.Agent            { return t.db }
-func (t testCommsAgentInjector) EmailQueue() chan messages.Email { return t.queue }
-func (t testCommsAgentInjector) Template() *views.Templates      { return t.templates }
+func (t testCommsAgentInjector) Config() domain.Config         { return t.config }
+func (t testCommsAgentInjector) MySQL() coresql.Agent          { return t.db }
+func (t testCommsAgentInjector) EmailQueue() chan domain.Email { return t.queue }
+func (t testCommsAgentInjector) Template() *views.Templates    { return t.templates }
 
 func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 	defer truncate(t)
@@ -44,7 +43,7 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 
 	injector := testCommsAgentInjector{
 		config:    testConfig,
-		queue:     make(chan messages.Email, 1),
+		queue:     make(chan domain.Email, 1),
 		templates: templates,
 	}
 
@@ -79,7 +78,7 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 		expectedSubject := domain.EmailSubjectNewEntry
 
 		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_new_entry", domain.NewEntryEmailData{
-			EmailData: domain.EmailData{
+			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
 				SignOff:      testRealm.Contact.Name,
@@ -237,7 +236,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 	injector := testCommsAgentInjector{
 		config:    testConfig,
 		db:        db,
-		queue:     make(chan messages.Email, 1),
+		queue:     make(chan domain.Email, 1),
 		templates: templates,
 	}
 
@@ -259,7 +258,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		expectedSubject := fmt.Sprintf(domain.EmailSubjectRoundComplete, standings.RoundNumber)
 
 		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_round_complete", domain.RoundCompleteEmailData{
-			EmailData: domain.EmailData{
+			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
 				SignOff:      testRealm.Contact.Name,
@@ -321,7 +320,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		expectedSubject := fmt.Sprintf(domain.EmailSubjectRoundComplete, standings.RoundNumber)
 
 		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_final_round_complete", domain.RoundCompleteEmailData{
-			EmailData: domain.EmailData{
+			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
 				SignOff:      testRealm.Contact.Name,
@@ -474,7 +473,7 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 
 	injector := testCommsAgentInjector{
 		config:    testConfig,
-		queue:     make(chan messages.Email, 1),
+		queue:     make(chan domain.Email, 1),
 		templates: templates,
 	}
 
@@ -511,7 +510,7 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 		expectedSubject := domain.EmailSubjectShortCodeResetBegin
 
 		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_short_code_reset_begin", domain.ShortCodeResetBeginEmail{
-			EmailData: domain.EmailData{
+			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
 				SignOff:      testRealm.Contact.Name,
@@ -607,7 +606,7 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 
 	injector := testCommsAgentInjector{
 		config:    testConfig,
-		queue:     make(chan messages.Email, 1),
+		queue:     make(chan domain.Email, 1),
 		templates: templates,
 	}
 
@@ -642,7 +641,7 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 		expectedSubject := domain.EmailSubjectShortCodeResetComplete
 
 		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_short_code_reset_complete", domain.ShortCodeResetCompleteEmail{
-			EmailData: domain.EmailData{
+			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
 				SignOff:      testRealm.Contact.Name,
@@ -744,7 +743,7 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 
 	injector := testCommsAgentInjector{
 		config:    testConfig,
-		queue:     make(chan messages.Email, 1),
+		queue:     make(chan domain.Email, 1),
 		templates: templates,
 	}
 
@@ -787,7 +786,7 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 		expectedSubject := domain.EmailSubjectPredictionWindowOpen
 
 		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_prediction_window_open", domain.PredictionWindowEmail{
-			EmailData: domain.EmailData{
+			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
 				SignOff:      testRealm.Contact.Name,
@@ -866,7 +865,7 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 		expectedSubject := domain.EmailSubjectPredictionWindowOpenFinal
 
 		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_prediction_window_open", domain.PredictionWindowEmail{
-			EmailData: domain.EmailData{
+			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
 				SignOff:      testRealm.Contact.Name,
@@ -1003,7 +1002,7 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 	injector := testCommsAgentInjector{
 		config:    testConfig,
-		queue:     make(chan messages.Email, 1),
+		queue:     make(chan domain.Email, 1),
 		templates: templates,
 	}
 
@@ -1050,7 +1049,7 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 		expectedSubject := domain.EmailSubjectPredictionWindowClosing
 
 		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_prediction_window_closing", domain.PredictionWindowEmail{
-			EmailData: domain.EmailData{
+			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
 				SignOff:      testRealm.Contact.Name,
@@ -1131,7 +1130,7 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 		expectedSubject := domain.EmailSubjectPredictionWindowClosingFinal
 
 		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_prediction_window_closing", domain.PredictionWindowEmail{
-			EmailData: domain.EmailData{
+			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
 				SignOff:      testRealm.Contact.Name,

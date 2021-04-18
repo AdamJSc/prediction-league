@@ -2,7 +2,7 @@ package clients
 
 import (
 	"context"
-	"prediction-league/service/internal/messages"
+	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/models"
 )
 
@@ -13,5 +13,5 @@ type FootballDataSource interface {
 
 // EmailClient defines the interface for our email client
 type EmailClient interface {
-	SendEmail(ctx context.Context, message messages.Email) error
+	SendEmail(ctx context.Context, em domain.Email) error
 }

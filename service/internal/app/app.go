@@ -3,7 +3,6 @@ package app
 import (
 	"prediction-league/service/internal/clients"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/messages"
 	"prediction-league/service/internal/views"
 	"time"
 
@@ -24,7 +23,7 @@ type DependencyInjector interface {
 type ConfigInjector interface{ Config() domain.Config }
 type MySQLInjector interface{ MySQL() coresql.Agent }
 type EmailClientInjector interface{ EmailClient() clients.EmailClient }
-type EmailQueueInjector interface{ EmailQueue() chan messages.Email }
+type EmailQueueInjector interface{ EmailQueue() chan domain.Email }
 type RouterInjector interface{ Router() *mux.Router }
 type TemplateInjector interface{ Template() *views.Templates }
 type DebugTimestampInjector interface{ DebugTimestamp() *time.Time }

@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 	"log"
-	"prediction-league/service/internal/messages"
+	"prediction-league/service/internal/domain"
 	"time"
 )
 
@@ -34,11 +34,11 @@ func (e EmailQueueRunner) Run(_ context.Context) error {
 			continue
 		}
 
-		go func(m messages.Email) {
+		go func(em domain.Email) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 			defer cancel()
 
-			if err := e.EmailClient().SendEmail(ctx, m); err != nil {
+			if err := e.EmailClient().SendEmail(ctx, em); err != nil {
 				log.Printf("failed to send email: %+v", err)
 			}
 		}(message)

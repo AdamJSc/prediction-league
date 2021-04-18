@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"prediction-league/service/internal/messages"
+	"prediction-league/service/internal/domain"
 
 	"github.com/mailgun/mailgun-go/v3"
 )
@@ -17,20 +17,20 @@ type Client struct {
 }
 
 // SendEmail implements this method on the clients.EmailClient interface
-func (c *Client) SendEmail(ctx context.Context, message messages.Email) error {
-	mg := mailgun.NewMailgun(message.SenderDomain, c.apiKey)
+func (c *Client) SendEmail(ctx context.Context, msg domain.Email) error {
+	mg := mailgun.NewMailgun(msg.SenderDomain, c.apiKey)
 	mg.SetAPIBase(mailgun.APIBaseEU)
 
-	msg := mg.NewMessage(
-		fmt.Sprintf("%s <%s>", message.From.Name, message.From.Address),
-		message.Subject,
-		message.PlainText,
-		fmt.Sprintf("%s <%s>", message.To.Name, message.To.Address),
+	mgMsg := mg.NewMessage(
+		fmt.Sprintf("%s <%s>", msg.From.Name, msg.From.Address),
+		msg.Subject,
+		msg.PlainText,
+		fmt.Sprintf("%s <%s>", msg.To.Name, msg.To.Address),
 	)
-	msg.SetTracking(true)
-	msg.SetReplyTo(fmt.Sprintf("%s <%s>", message.ReplyTo.Name, message.ReplyTo.Address))
+	mgMsg.SetTracking(true)
+	mgMsg.SetReplyTo(fmt.Sprintf("%s <%s>", msg.ReplyTo.Name, msg.ReplyTo.Address))
 
-	result, id, err := mg.Send(ctx, msg)
+	result, id, err := mg.Send(ctx, mgMsg)
 	if err != nil {
 		return err
 	}
