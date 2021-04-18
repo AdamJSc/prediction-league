@@ -7,6 +7,7 @@ import (
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
+	"math/rand"
 	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/repositories"
@@ -668,6 +669,19 @@ func getEntryPredictionValidAtTimestamp(entryPredictions []models.EntryPredictio
 	}
 
 	return models.EntryPrediction{}, fmt.Errorf("entry prediction by timestamp %+v: not found", ts)
+}
+
+// generateRandomAlphaNumericString returns a randomised string of given length
+func generateRandomAlphaNumericString(length int) string {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	charset := "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[r.Intn(len(charset))]
+	}
+
+	return string(b)
 }
 
 func isValidEmail(email string) bool {
