@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"prediction-league/service/internal/datastore"
-	"prediction-league/service/internal/models"
+	"prediction-league/service/internal/domain"
 	"strings"
 )
 
@@ -19,7 +18,7 @@ type Client struct {
 }
 
 // RetrieveLatestStandingsBySeason implements this method on the clients.FootballDataSource interface
-func (c *Client) RetrieveLatestStandingsBySeason(ctx context.Context, s *models.Season) (*models.Standings, error) {
+func (c *Client) RetrieveLatestStandingsBySeason(ctx context.Context, s *domain.Season) (*domain.Standings, error) {
 	var url = getFullURL(fmt.Sprintf("/v2/competitions/%s/standings?season=%d&standingType=TOTAL",
 		s.ClientID.Value(),
 		s.Active.From.Year()),
@@ -44,7 +43,7 @@ func (c *Client) RetrieveLatestStandingsBySeason(ctx context.Context, s *models.
 		return nil, fmt.Errorf("expected standings length of 1, got %d", len(standingsResponse.Standings))
 	}
 
-	standings := models.Standings{
+	standings := domain.Standings{
 		SeasonID:    s.ID,
 		RoundNumber: standingsResponse.Season.CurrentMatchday,
 	}
@@ -113,21 +112,21 @@ type tableElem struct {
 }
 
 // toRankingWithMeta transforms a tableElem object to a more abstracted RankingWithMeta object
-func (t *tableElem) toRankingWithMeta() (models.RankingWithMeta, error) {
-	r := models.NewRankingWithMeta()
+func (t *tableElem) toRankingWithMeta() (domain.RankingWithMeta, error) {
+	r := domain.NewRankingWithMeta()
 
-	team, err := datastore.Teams.GetByResourceID(models.TeamIdentifier{TeamID: t.Team.ID})
+	team, err := domain.TeamsDataStore.GetByResourceID(domain.TeamIdentifier{TeamID: t.Team.ID})
 	if err != nil {
-		return models.RankingWithMeta{}, err
+		return domain.RankingWithMeta{}, err
 	}
 
 	r.ID = team.ID
 	r.Position = t.Position
-	r.MetaData[models.MetaKeyPlayedGames] = t.PlayedGames
-	r.MetaData[models.MetaKeyPoints] = t.Points
-	r.MetaData[models.MetaKeyGoalsFor] = t.GoalsFor
-	r.MetaData[models.MetaKeyGoalsAgainst] = t.GoalsAgainst
-	r.MetaData[models.MetaKeyGoalDifference] = t.GoalDifference
+	r.MetaData[domain.MetaKeyPlayedGames] = t.PlayedGames
+	r.MetaData[domain.MetaKeyPoints] = t.Points
+	r.MetaData[domain.MetaKeyGoalsFor] = t.GoalsFor
+	r.MetaData[domain.MetaKeyGoalsAgainst] = t.GoalsAgainst
+	r.MetaData[domain.MetaKeyGoalDifference] = t.GoalDifference
 
 	return r, nil
 }

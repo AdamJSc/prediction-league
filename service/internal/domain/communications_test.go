@@ -8,7 +8,6 @@ import (
 	gocmp "github.com/google/go-cmp/cmp"
 	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/views"
 	"testing"
 	"time"
@@ -762,10 +761,10 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 			"harry.redknapp@football.net",
 		)
 
-		window := models.SequencedTimeFrame{
+		window := domain.SequencedTimeFrame{
 			Count: 1,
 			Total: 2,
-			Current: &models.TimeFrame{
+			Current: &domain.TimeFrame{
 				From:  time.Date(2018, 5, 26, 14, 0, 0, 0, loc),
 				Until: time.Date(2018, 5, 26, 15, 0, 0, 0, loc),
 			},
@@ -840,10 +839,10 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 			"harry.redknapp@football.net",
 		)
 
-		window := models.SequencedTimeFrame{
+		window := domain.SequencedTimeFrame{
 			Count: 2,
 			Total: 2,
-			Current: &models.TimeFrame{
+			Current: &domain.TimeFrame{
 				From:  time.Date(2018, 5, 26, 14, 0, 0, 0, loc),
 				Until: time.Date(2018, 5, 26, 15, 0, 0, 0, loc),
 			},
@@ -912,7 +911,7 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		err := agent.IssuePredictionWindowOpenEmail(ctx, nil, models.SequencedTimeFrame{})
+		err := agent.IssuePredictionWindowOpenEmail(ctx, nil, domain.SequencedTimeFrame{})
 		if !cmp.ErrorType(err, domain.InternalError{})().Success() {
 			expectedTypeOfGot(t, domain.InternalError{}, err)
 		}
@@ -931,7 +930,7 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 
 		entry.RealmName = "not_a_valid_realm"
 
-		err := agent.IssuePredictionWindowOpenEmail(ctx, &entry, models.SequencedTimeFrame{})
+		err := agent.IssuePredictionWindowOpenEmail(ctx, &entry, domain.SequencedTimeFrame{})
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -950,7 +949,7 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 
 		entry.SeasonID = "not_a_valid_season"
 
-		err := agent.IssuePredictionWindowOpenEmail(ctx, &entry, models.SequencedTimeFrame{})
+		err := agent.IssuePredictionWindowOpenEmail(ctx, &entry, domain.SequencedTimeFrame{})
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -967,11 +966,11 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 			"harry.redknapp@football.net",
 		)
 
-		window := models.SequencedTimeFrame{
+		window := domain.SequencedTimeFrame{
 			Count:   1,
 			Total:   2,
 			Current: nil, // nil should fail test
-			Next: &models.TimeFrame{
+			Next: &domain.TimeFrame{
 				From:  time.Date(2018, 5, 26, 14, 0, 0, 0, loc),
 				Until: time.Date(2018, 5, 26, 15, 0, 0, 0, loc),
 			},
@@ -1021,14 +1020,14 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 			"harry.redknapp@football.net",
 		)
 
-		window := models.SequencedTimeFrame{
+		window := domain.SequencedTimeFrame{
 			Count: 1,
 			Total: 2,
-			Current: &models.TimeFrame{
+			Current: &domain.TimeFrame{
 				From:  time.Date(2018, 5, 26, 14, 0, 0, 0, loc),
 				Until: time.Date(2018, 5, 26, 15, 0, 0, 0, loc),
 			},
-			Next: &models.TimeFrame{
+			Next: &domain.TimeFrame{
 				From:  time.Date(2018, 5, 29, 16, 0, 0, 0, loc),
 				Until: time.Date(2018, 5, 29, 17, 0, 0, 0, loc),
 			},
@@ -1105,10 +1104,10 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 			"harry.redknapp@football.net",
 		)
 
-		window := models.SequencedTimeFrame{
+		window := domain.SequencedTimeFrame{
 			Count: 2,
 			Total: 2,
-			Current: &models.TimeFrame{
+			Current: &domain.TimeFrame{
 				From:  time.Date(2018, 5, 26, 14, 0, 0, 0, loc),
 				Until: time.Date(2018, 5, 26, 15, 0, 0, 0, loc),
 			},
@@ -1177,7 +1176,7 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		err := agent.IssuePredictionWindowClosingEmail(ctx, nil, models.SequencedTimeFrame{})
+		err := agent.IssuePredictionWindowClosingEmail(ctx, nil, domain.SequencedTimeFrame{})
 		if !cmp.ErrorType(err, domain.InternalError{})().Success() {
 			expectedTypeOfGot(t, domain.InternalError{}, err)
 		}
@@ -1196,7 +1195,7 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 		entry.RealmName = "not_a_valid_realm"
 
-		err := agent.IssuePredictionWindowClosingEmail(ctx, &entry, models.SequencedTimeFrame{})
+		err := agent.IssuePredictionWindowClosingEmail(ctx, &entry, domain.SequencedTimeFrame{})
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -1215,7 +1214,7 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 		entry.SeasonID = "not_a_valid_season"
 
-		err := agent.IssuePredictionWindowClosingEmail(ctx, &entry, models.SequencedTimeFrame{})
+		err := agent.IssuePredictionWindowClosingEmail(ctx, &entry, domain.SequencedTimeFrame{})
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -1232,11 +1231,11 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 			"harry.redknapp@football.net",
 		)
 
-		window := models.SequencedTimeFrame{
+		window := domain.SequencedTimeFrame{
 			Count:   1,
 			Total:   2,
 			Current: nil, // nil should fail test
-			Next: &models.TimeFrame{
+			Next: &domain.TimeFrame{
 				From:  time.Date(2018, 5, 26, 14, 0, 0, 0, loc),
 				Until: time.Date(2018, 5, 26, 15, 0, 0, 0, loc),
 			},
@@ -1253,7 +1252,7 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 func TestGenerateWindowDataFromSequencedTimeFrame(t *testing.T) {
 	t.Run("generating window data from sequenced timeframe without a current timeframe must return error", func(t *testing.T) {
-		sequenced := models.SequencedTimeFrame{} // Current is nil
+		sequenced := domain.SequencedTimeFrame{} // Current is nil
 
 		if _, err := domain.GenerateWindowDataFromSequencedTimeFrame(sequenced); err != domain.ErrCurrentTimeFrameIsMissing {
 			expectedGot(t, domain.ErrCurrentTimeFrameIsMissing, err)
@@ -1266,8 +1265,8 @@ func TestGenerateWindowDataFromSequencedTimeFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		sequenced := models.SequencedTimeFrame{
-			Current: &models.TimeFrame{
+		sequenced := domain.SequencedTimeFrame{
+			Current: &domain.TimeFrame{
 				From:  time.Date(2018, 5, 26, 14, 0, 0, 0, loc),
 				Until: time.Date(2018, 5, 26, 15, 0, 0, 0, loc),
 			},
@@ -1300,12 +1299,12 @@ func TestGenerateWindowDataFromSequencedTimeFrame(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		sequenced := models.SequencedTimeFrame{
-			Current: &models.TimeFrame{
+		sequenced := domain.SequencedTimeFrame{
+			Current: &domain.TimeFrame{
 				From:  time.Date(2018, 5, 26, 14, 0, 0, 0, loc),
 				Until: time.Date(2018, 5, 26, 15, 0, 0, 0, loc),
 			},
-			Next: &models.TimeFrame{
+			Next: &domain.TimeFrame{
 				From:  time.Date(2018, 5, 29, 16, 0, 0, 0, loc),
 				Until: time.Date(2018, 5, 29, 17, 0, 0, 0, loc),
 			},

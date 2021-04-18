@@ -3,12 +3,11 @@ package clients
 import (
 	"context"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 )
 
 // FootballDataSource defines the interface for our external football data source
 type FootballDataSource interface {
-	RetrieveLatestStandingsBySeason(ctx context.Context, s *models.Season) (*models.Standings, error)
+	RetrieveLatestStandingsBySeason(ctx context.Context, s *domain.Season) (*domain.Standings, error)
 }
 
 // EmailClient defines the interface for our email client

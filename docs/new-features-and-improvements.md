@@ -20,7 +20,7 @@ launched in time for the 2020/21 football season!
 ## Global Data Store
 
 * The [Seasons](domain-knowledge.md#season) and [Teams](domain-knowledge.md#team) data available to the system is 
-configured in code as a central in-memory data store (see `datastore.Seasons` and `datastore.Teams` respectively).
+configured in code as a central in-memory data store (see `domain.SeasonsDataStore` and `domain.TeamsDataStore` respectively).
 
 * This is a deliberate design decision, in order that this data (which changes only once a year, before a real-world
 season begins) can be carefully managed by the project maintainer, and does not require CRUD exposure from an end-user

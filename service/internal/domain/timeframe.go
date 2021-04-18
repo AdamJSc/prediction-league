@@ -1,10 +1,8 @@
-package models
+package domain
 
 import (
 	"time"
 )
-
-var emptyTime time.Time
 
 // TimeFrame defines a timeframe represented by two timestamps
 type TimeFrame struct {
@@ -15,10 +13,10 @@ type TimeFrame struct {
 // Valid determines whether the associated TimeFrame is chronologically sound
 func (t TimeFrame) Valid() bool {
 	switch {
-	case t.From.Equal(emptyTime) || t.Until.Equal(emptyTime):
+	case t.From.Equal(time.Time{}) || t.Until.Equal(time.Time{}):
 		// must have both From and Until
 		return false
-	case !t.From.Equal(emptyTime) && !t.Until.Equal(emptyTime):
+	case !t.From.Equal(time.Time{}) && !t.Until.Equal(time.Time{}):
 		if !t.Until.After(t.From) {
 			// Until must occur after From
 			return false

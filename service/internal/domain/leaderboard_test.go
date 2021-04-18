@@ -2,7 +2,6 @@ package domain_test
 
 import (
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 	"testing"
 	"time"
 
@@ -18,7 +17,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 	// <-- seed standings rounds -->
 
 	// start at round 2, so that we can check round 1 produces an empty leaderboard
-	var standingsRounds = make(map[int]models.Standings)
+	var standingsRounds = make(map[int]domain.Standings)
 	for i := 2; i <= 4; i++ {
 		s := generateTestStandings(t)
 		s.SeasonID = testSeason.ID
@@ -95,7 +94,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 
 	// <-- seed scored entry predictions -->
 
-	var harryScoredEntryPredictions = make(map[int]models.ScoredEntryPrediction)
+	var harryScoredEntryPredictions = make(map[int]domain.ScoredEntryPrediction)
 	var harryScoreSequence = []int{harryScores.min, harryScores.mid, harryScores.max}
 	for i := 2; i <= 4; i++ {
 		idx := i - 2
@@ -104,7 +103,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		sep.CreatedAt = time.Now().Add(time.Duration(i) * 24 * time.Hour)
 		harryScoredEntryPredictions[i] = insertScoredEntryPrediction(t, sep)
 	}
-	var jamieScoredEntryPredictions = make(map[int]models.ScoredEntryPrediction)
+	var jamieScoredEntryPredictions = make(map[int]domain.ScoredEntryPrediction)
 	var jamieScoreSequence = []int{jamieScores.max, jamieScores.min, jamieScores.mid}
 	for i := 2; i <= 4; i++ {
 		idx := i - 2
@@ -113,7 +112,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		sep.CreatedAt = time.Now().Add(time.Duration(i) * 24 * time.Hour)
 		jamieScoredEntryPredictions[i] = insertScoredEntryPrediction(t, sep)
 	}
-	var frankScoredEntryPredictions = make(map[int]models.ScoredEntryPrediction)
+	var frankScoredEntryPredictions = make(map[int]domain.ScoredEntryPrediction)
 	var frankScoreSequence = []int{frankScores.mid, frankScores.max, frankScores.min}
 	for i := 2; i <= 4; i++ {
 		idx := i - 2
@@ -201,9 +200,9 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		defer cancel()
 
 		// empty leaderboard should be sorted by entrants' nicknames
-		expectedLeaderBoard := &models.LeaderBoard{
+		expectedLeaderBoard := &domain.LeaderBoard{
 			RoundNumber: 1,
-			Rankings: []models.LeaderBoardRanking{
+			Rankings: []domain.LeaderBoardRanking{
 				generateTestLeaderBoardRanking(1, frankEntry.ID.String(), 0, 0, 0),
 				generateTestLeaderBoardRanking(2, harryEntry.ID.String(), 0, 0, 0),
 				generateTestLeaderBoardRanking(3, jamieEntry.ID.String(), 0, 0, 0),
@@ -225,9 +224,9 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		defer cancel()
 
 		lastUpdated := standingsRounds[2].CreatedAt // standingsRound[2].UpdatedAt is empty
-		expectedLeaderBoard := &models.LeaderBoard{
+		expectedLeaderBoard := &domain.LeaderBoard{
 			RoundNumber: 2,
-			Rankings: []models.LeaderBoardRanking{
+			Rankings: []domain.LeaderBoardRanking{
 				// total 122, min 122, current 122
 				generateTestLeaderBoardRanking(1, harryEntry.ID.String(), harryScores.min, harryScores.min, harryScores.min),
 				// total 124, min 124, current 124
@@ -253,9 +252,9 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		defer cancel()
 
 		lastUpdated := standingsRounds[3].UpdatedAt.Time
-		expectedLeaderBoard := &models.LeaderBoard{
+		expectedLeaderBoard := &domain.LeaderBoard{
 			RoundNumber: 3,
-			Rankings: []models.LeaderBoardRanking{
+			Rankings: []domain.LeaderBoardRanking{
 				// total 246, min 121, current 121
 				generateTestLeaderBoardRanking(1, jamieEntry.ID.String(), jamieScores.min, jamieScores.min, jamieScores.max+jamieScores.min),
 				// total 246, min 122, current 124
@@ -281,9 +280,9 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		defer cancel()
 
 		lastUpdated := standingsRounds[4].UpdatedAt.Time
-		expectedLeaderBoard := &models.LeaderBoard{
+		expectedLeaderBoard := &domain.LeaderBoard{
 			RoundNumber: 4,
-			Rankings: []models.LeaderBoardRanking{
+			Rankings: []domain.LeaderBoardRanking{
 				// total 368, min 119, current 119
 				generateTestLeaderBoardRanking(1, frankEntry.ID.String(), frankScores.min, frankScores.min, frankScores.mid+frankScores.max+frankScores.min),
 				// total 369, min 121, current 123
@@ -326,10 +325,10 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 }
 
 // generateTestLeaderBoardRanking provides a helper function for generating a leaderboard ranking based on the provided values
-func generateTestLeaderBoardRanking(position int, entryID string, score, minScore, totalScore int) models.LeaderBoardRanking {
-	return models.LeaderBoardRanking{
-		RankingWithScore: models.RankingWithScore{
-			Ranking: models.Ranking{
+func generateTestLeaderBoardRanking(position int, entryID string, score, minScore, totalScore int) domain.LeaderBoardRanking {
+	return domain.LeaderBoardRanking{
+		RankingWithScore: domain.RankingWithScore{
+			Ranking: domain.Ranking{
 				ID:       entryID,
 				Position: position,
 			},

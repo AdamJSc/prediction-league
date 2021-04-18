@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"prediction-league/service/internal/app/httph"
-	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/pages"
 )
@@ -87,7 +86,7 @@ func getPredictionPageData(ctx context.Context, authToken string, entryAgent dom
 
 	// retrieve season and determine its current state
 	seasonID := domain.RealmFromContext(ctx).SeasonID
-	season, err := datastore.Seasons.GetByID(seasonID)
+	season, err := domain.SeasonsDataStore.GetByID(seasonID)
 	if err != nil {
 		data.Err = err
 		return data
@@ -142,7 +141,7 @@ func getPredictionPageData(ctx context.Context, authToken string, entryAgent dom
 	}
 
 	// filter all teams to just the IDs that we need
-	teams, err := domain.FilterTeamsByIDs(teamIDs, datastore.Teams)
+	teams, err := domain.FilterTeamsByIDs(teamIDs, domain.TeamsDataStore)
 	if err != nil {
 		// something went wrong
 		data.Err = err

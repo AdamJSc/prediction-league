@@ -7,9 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"prediction-league/service/internal/app/httph"
-	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 )
 
 func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
@@ -56,7 +54,7 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 		}
 
 		// retrieve the season we need
-		season, err := datastore.Seasons.GetByID(seasonID)
+		season, err := domain.SeasonsDataStore.GetByID(seasonID)
 		if err != nil {
 			rest.NotFoundError(fmt.Errorf("invalid season: %s", seasonID)).WriteTo(w)
 			return
@@ -238,7 +236,7 @@ func retrieveLatestEntryPredictionHandler(c *httph.HTTPAppContainer) func(w http
 		}
 
 		// get teams that correlate to entry prediction's ranking IDs
-		teams, err := domain.FilterTeamsByIDs(entryPrediction.Rankings.GetIDs(), datastore.Teams)
+		teams, err := domain.FilterTeamsByIDs(entryPrediction.Rankings.GetIDs(), domain.TeamsDataStore)
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return
@@ -349,8 +347,8 @@ func retrieveLatestScoredEntryPrediction(c *httph.HTTPAppContainer) func(w http.
 }
 
 func getResponseRankingsFromStandingsRankings(
-	scoredRankings []models.RankingWithScore,
-	standingsRankings []models.RankingWithMeta,
+	scoredRankings []domain.RankingWithScore,
+	standingsRankings []domain.RankingWithMeta,
 ) ([]scoredEntryPredictionResponseRanking, error) {
 	var getStandingsPositionForTeamID = func(id string) (int, error) {
 		for _, r := range standingsRankings {

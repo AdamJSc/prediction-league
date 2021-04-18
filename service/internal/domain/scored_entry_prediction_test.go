@@ -3,7 +3,6 @@ package domain_test
 import (
 	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 	"strings"
 	"testing"
 	"time"
@@ -124,7 +123,7 @@ func TestScoredEntryPredictionAgent_UpdateScoredEntryPrediction(t *testing.T) {
 
 		changedScoredEntryPrediction := scoredEntryPrediction
 		changedScoredEntryPrediction.Score = 456
-		changedScoredEntryPrediction.Rankings = models.NewRankingWithScoreCollectionFromIDs([]string{"changedID_1", "changedID_2", "changedID_3"})
+		changedScoredEntryPrediction.Rankings = domain.NewRankingWithScoreCollectionFromIDs([]string{"changedID_1", "changedID_2", "changedID_3"})
 
 		updatedScoredEntryPrediction, err := agent.UpdateScoredEntryPrediction(ctx, changedScoredEntryPrediction)
 		if err != nil {
@@ -330,58 +329,58 @@ func TestScoredEntryPredictionAgent_RetrieveLatestScoredEntryPredictionByEntryID
 }
 
 func TestTeamRankingsAsStrings(t *testing.T) {
-	testRankingsWithScore := []models.RankingWithScore{
+	testRankingsWithScore := []domain.RankingWithScore{
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "AFC",
 				Position: 1,
 			},
 			Score: 11111111,
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "AVFC",
 				Position: 2,
 			},
 			Score: 1111111,
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "AFCB",
 				Position: 3,
 			},
 			Score: 111111,
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "BFC",
 				Position: 4,
 			},
 			Score: 11111,
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "BHAFC",
 				Position: 5,
 			},
 			Score: 1111,
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "CFC",
 				Position: 6,
 			},
 			Score: 111,
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "CPFC",
 				Position: 7,
 			},
 			Score: 11,
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "EFC",
 				Position: 8,
 			},
@@ -389,51 +388,51 @@ func TestTeamRankingsAsStrings(t *testing.T) {
 		},
 	}
 
-	testRankingsWithMeta := []models.RankingWithMeta{
+	testRankingsWithMeta := []domain.RankingWithMeta{
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "EFC",
 				Position: 12,
 			},
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "CPFC",
 				Position: 34,
 			},
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "CFC",
 				Position: 56,
 			},
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "BHAFC",
 				Position: 78,
 			},
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "BFC",
 				Position: 90,
 			},
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "AFCB",
 				Position: 123,
 			},
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "AVFC",
 				Position: 456,
 			},
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "AFC",
 				Position: 7890,
 			},
@@ -471,7 +470,7 @@ func TestTeamRankingsAsStrings(t *testing.T) {
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
-		_, err = domain.TeamRankingsAsStrings([]models.RankingWithScore{}, testRankingsWithMeta)
+		_, err = domain.TeamRankingsAsStrings([]domain.RankingWithScore{}, testRankingsWithMeta)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -482,14 +481,14 @@ func TestTeamRankingsAsStrings(t *testing.T) {
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
-		_, err = domain.TeamRankingsAsStrings(testRankingsWithScore, []models.RankingWithMeta{})
+		_, err = domain.TeamRankingsAsStrings(testRankingsWithScore, []domain.RankingWithMeta{})
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
 	})
 
 	t.Run("generating strings from team rankings with a score character length exceeding max must fail", func(t *testing.T) {
-		var rwsThatShouldFail []models.RankingWithScore
+		var rwsThatShouldFail []domain.RankingWithScore
 		rwsThatShouldFail = append(rwsThatShouldFail, testRankingsWithScore...)
 		rwsThatShouldFail[0].Score = 100000000 // max char length is 9
 
@@ -502,7 +501,7 @@ func TestTeamRankingsAsStrings(t *testing.T) {
 	})
 
 	t.Run("generating strings from team rankings with a position character length exceeding max must fail", func(t *testing.T) {
-		var rwsThatShouldFail []models.RankingWithScore
+		var rwsThatShouldFail []domain.RankingWithScore
 		rwsThatShouldFail = append(rwsThatShouldFail, testRankingsWithScore...)
 		rwsThatShouldFail[0].Ranking.Position = 10000 // max char length is 4
 
@@ -515,15 +514,15 @@ func TestTeamRankingsAsStrings(t *testing.T) {
 	})
 
 	t.Run("generating strings from team rankings with a non-existent ID must fail", func(t *testing.T) {
-		rwsThatShouldFail := []models.RankingWithScore{
+		rwsThatShouldFail := []domain.RankingWithScore{
 			{
-				Ranking: models.Ranking{
+				Ranking: domain.Ranking{
 					ID: "non_existent_team",
 				},
 			},
 		}
 
-		_, err := domain.TeamRankingsAsStrings(rwsThatShouldFail, []models.RankingWithMeta{})
+		_, err := domain.TeamRankingsAsStrings(rwsThatShouldFail, []domain.RankingWithMeta{})
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}

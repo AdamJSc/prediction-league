@@ -1,4 +1,4 @@
-package models_test
+package domain_test
 
 import (
 	"encoding/json"
@@ -6,7 +6,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"math/rand"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 	"strings"
 	"testing"
 	"time"
@@ -15,10 +14,10 @@ import (
 var rankingIDs = []string{"Pitman", "Wilson", "Hayter", "Pugh", "King"}
 
 func TestRankingCollection_GetIDs(t *testing.T) {
-	var rc models.RankingCollection
+	var rc domain.RankingCollection
 
 	for idx, id := range rankingIDs {
-		rc = append(rc, models.Ranking{ID: id, Position: idx + 1})
+		rc = append(rc, domain.Ranking{ID: id, Position: idx + 1})
 	}
 
 	t.Run("getting ids from ranking collection must match original slice of ids", func(t *testing.T) {
@@ -30,10 +29,10 @@ func TestRankingCollection_GetIDs(t *testing.T) {
 }
 
 func TestRankingCollection_GetByID(t *testing.T) {
-	var rc models.RankingCollection
+	var rc domain.RankingCollection
 
 	for idx, id := range rankingIDs {
-		rc = append(rc, models.Ranking{ID: id, Position: idx + 1})
+		rc = append(rc, domain.Ranking{ID: id, Position: idx + 1})
 	}
 
 	t.Run("get ranking by existing id must succeed", func(t *testing.T) {
@@ -65,7 +64,7 @@ func TestRankingCollection_GetByID(t *testing.T) {
 }
 
 func TestNewRankingCollectionFromIDs(t *testing.T) {
-	var rankings = models.NewRankingCollectionFromIDs(rankingIDs)
+	var rankings = domain.NewRankingCollectionFromIDs(rankingIDs)
 
 	t.Run("creating a new ranking collection from ids must successfully populate the expected positions", func(t *testing.T) {
 		for idx, ranking := range rankings {
@@ -90,7 +89,7 @@ func TestNewRankingCollectionFromIDs(t *testing.T) {
 			expectedGot(t, joined, string(marshaled))
 		}
 
-		var unmarshaled models.RankingCollection
+		var unmarshaled domain.RankingCollection
 		err = json.Unmarshal(marshaled, &unmarshaled)
 
 		if err != nil {
@@ -104,16 +103,16 @@ func TestNewRankingCollectionFromIDs(t *testing.T) {
 }
 
 func TestNewRankingCollectionFromRankingWithMetas(t *testing.T) {
-	rwms := []models.RankingWithMeta{
+	rwms := []domain.RankingWithMeta{
 		generateRankingWithMeta("id_1", 1, 123),
 		generateRankingWithMeta("id_2", 3, 456),
 		generateRankingWithMeta("id_3", 2, 789),
 	}
 
-	rankingsFromRWM := models.NewRankingCollectionFromRankingWithMetas(rwms)
+	rankingsFromRWM := domain.NewRankingCollectionFromRankingWithMetas(rwms)
 
 	t.Run("creating a new ranking collection from RankingWithMetas must successfully retain the expected positions", func(t *testing.T) {
-		expected := models.RankingCollection{
+		expected := domain.RankingCollection{
 			{
 				ID:       "id_1",
 				Position: 1,
@@ -137,7 +136,7 @@ func TestNewRankingCollectionFromRankingWithMetas(t *testing.T) {
 }
 
 func TestNewRankingWithScoreCollectionFromIDs(t *testing.T) {
-	var rankings = models.NewRankingWithScoreCollectionFromIDs(rankingIDs)
+	var rankings = domain.NewRankingWithScoreCollectionFromIDs(rankingIDs)
 
 	t.Run("creating a new ranking with score collection from ids must successfully populate the expected positions", func(t *testing.T) {
 		for idx, ranking := range rankings {
@@ -177,7 +176,7 @@ func TestRankingCollection_JSON(t *testing.T) {
 	t.Run("creating a new ranking collection must successfully populate the expected positions", func(t *testing.T) {
 		var (
 			ids      = []string{"Pitman", "Wilson", "Hayter", "Pugh", "King"}
-			rankings = models.NewRankingCollectionFromIDs(ids)
+			rankings = domain.NewRankingCollectionFromIDs(ids)
 		)
 
 		for idx, ranking := range rankings {
@@ -193,7 +192,7 @@ func TestRankingCollection_JSON(t *testing.T) {
 
 func TestCalculateRankingScores(t *testing.T) {
 	basePlanets := []string{"Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"}
-	baseRC := models.NewRankingCollectionFromIDs(basePlanets)
+	baseRC := domain.NewRankingCollectionFromIDs(basePlanets)
 
 	t.Run("calculate ranking scores of equivalent collections must produce the expected score", func(t *testing.T) {
 		comparisonPlanets := []string{
@@ -206,7 +205,7 @@ func TestCalculateRankingScores(t *testing.T) {
 			"Mercury", // should score 6
 			"Earth",   // should score 5
 		}
-		comparisonRC := models.NewRankingCollectionFromIDs(comparisonPlanets)
+		comparisonRC := domain.NewRankingCollectionFromIDs(comparisonPlanets)
 
 		rws, err := domain.CalculateRankingsScores(baseRC, comparisonRC)
 		if err != nil {
@@ -225,7 +224,7 @@ func TestCalculateRankingScores(t *testing.T) {
 	t.Run("calculate ranking scores of non-equivalent collections must fail", func(t *testing.T) {
 		// mismatched length
 		comparisonPlanets := append(basePlanets, "extra element")
-		comparisonRCMismatchedLength := models.NewRankingCollectionFromIDs(comparisonPlanets)
+		comparisonRCMismatchedLength := domain.NewRankingCollectionFromIDs(comparisonPlanets)
 
 		expectedErr := fmt.Errorf("mismatched baseIDs length: base %d, comparison %d", len(basePlanets), len(comparisonPlanets))
 		_, err := domain.CalculateRankingsScores(baseRC, comparisonRCMismatchedLength)
@@ -237,7 +236,7 @@ func TestCalculateRankingScores(t *testing.T) {
 		discrepantID := "Not A Planet"
 		comparisonPlanets = basePlanets[:len(basePlanets)-1]        // minus last base element
 		comparisonPlanets = append(comparisonPlanets, discrepantID) // add discrepant id to comparison
-		comparisonRCWithDiscrepantID := models.NewRankingCollectionFromIDs(comparisonPlanets)
+		comparisonRCWithDiscrepantID := domain.NewRankingCollectionFromIDs(comparisonPlanets)
 
 		expectedErr = fmt.Errorf("base collection does not have id: '%s'", discrepantID)
 		_, err = domain.CalculateRankingsScores(baseRC, comparisonRCWithDiscrepantID)
@@ -249,7 +248,7 @@ func TestCalculateRankingScores(t *testing.T) {
 		duplicateID := basePlanets[0]
 		comparisonPlanets = basePlanets
 		comparisonPlanets[len(comparisonPlanets)-1] = duplicateID // replace last slice element with duplicate id
-		comparisonRCWithDuplicateID := models.NewRankingCollectionFromIDs(comparisonPlanets)
+		comparisonRCWithDuplicateID := domain.NewRankingCollectionFromIDs(comparisonPlanets)
 
 		expectedErr = fmt.Errorf("mismatched counts: id '%s' base collection count = 1, collection count = 2", duplicateID)
 		_, err = domain.CalculateRankingsScores(baseRC, comparisonRCWithDuplicateID)
@@ -259,8 +258,8 @@ func TestCalculateRankingScores(t *testing.T) {
 	})
 }
 
-func generateRankingWithMeta(id string, pos int, metaVal int) models.RankingWithMeta {
-	var rwm = models.NewRankingWithMeta()
+func generateRankingWithMeta(id string, pos int, metaVal int) domain.RankingWithMeta {
+	var rwm = domain.NewRankingWithMeta()
 
 	rwm.ID = id
 	rwm.Position = pos

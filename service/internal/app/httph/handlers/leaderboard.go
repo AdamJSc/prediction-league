@@ -3,9 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/pages"
 )
 
@@ -86,14 +84,14 @@ func getLeaderBoardPageData(ctx context.Context, entryAgent domain.EntryAgent, s
 	data.Entries.RawEntries = string(rawEntries)
 
 	// finally, populate teams for season
-	season, err := datastore.Seasons.GetByID(seasonID)
+	season, err := domain.SeasonsDataStore.GetByID(seasonID)
 	if err != nil {
 		data.Err = err
 		return data
 	}
-	var teams []models.Team
+	var teams []domain.Team
 	for _, id := range season.TeamIDs {
-		team, err := datastore.Teams.GetByID(id)
+		team, err := domain.TeamsDataStore.GetByID(id)
 		if err != nil {
 			data.Err = err
 			return data

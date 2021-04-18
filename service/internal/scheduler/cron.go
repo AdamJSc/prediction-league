@@ -5,7 +5,7 @@ import (
 	"log"
 	"prediction-league/service/internal/app/httph"
 	footballdata "prediction-league/service/internal/clients/football-data-org"
-	"prediction-league/service/internal/datastore"
+	"prediction-league/service/internal/domain"
 )
 
 // LoadCron returns our populated cron
@@ -51,7 +51,7 @@ func mustGenerateRetrieveLatestStandingsJobs(container *httph.HTTPAppContainer) 
 	// add a job for each unique season ID that retrieves the latest standings
 	var jobs []*job
 	for id := range seasonIDs {
-		season, err := datastore.Seasons.GetByID(id)
+		season, err := domain.SeasonsDataStore.GetByID(id)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -84,7 +84,7 @@ func mustGeneratePredictionWindowOpenJobs(container *httph.HTTPAppContainer) []*
 	// add a job for each unique season ID that retrieves the latest standings
 	var jobs []*job
 	for id := range seasonIDs {
-		season, err := datastore.Seasons.GetByID(id)
+		season, err := domain.SeasonsDataStore.GetByID(id)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -111,7 +111,7 @@ func mustGeneratePredictionWindowClosingJobs(container *httph.HTTPAppContainer) 
 	// add a job for each unique season ID that retrieves the latest standings
 	var jobs []*job
 	for id := range seasonIDs {
-		season, err := datastore.Seasons.GetByID(id)
+		season, err := domain.SeasonsDataStore.GetByID(id)
 		if err != nil {
 			log.Fatal(err)
 		}

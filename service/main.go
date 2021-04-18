@@ -11,7 +11,6 @@ import (
 	"prediction-league/service/internal/app/httph/handlers"
 	"prediction-league/service/internal/clients"
 	"prediction-league/service/internal/clients/mailgun"
-	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/scheduler"
 	"prediction-league/service/internal/seeder"
@@ -47,7 +46,7 @@ func main() {
 	coresql.MustMigrateUp(mig)
 	seeder.MustSeed(db)
 
-	datastore.MustInflate()
+	domain.MustInflate()
 
 	// permit flag that provides a debug mode by overriding timestamp for time-sensitive operations
 	ts := flag.String("ts", "", "override timestamp used by time-sensitive operations, in the format yyyymmddhhmmss")
@@ -104,7 +103,7 @@ type dependencies struct {
 func (d dependencies) Config() domain.Config            { return d.config }
 func (d dependencies) MySQL() coresql.Agent             { return d.mysql }
 func (d dependencies) EmailClient() clients.EmailClient { return d.emailClient }
-func (d dependencies) EmailQueue() chan domain.Email  { return d.emailQueue }
+func (d dependencies) EmailQueue() chan domain.Email    { return d.emailQueue }
 func (d dependencies) Router() *mux.Router              { return d.router }
 func (d dependencies) Template() *views.Templates       { return d.templates }
 func (d dependencies) DebugTimestamp() *time.Time       { return d.debugTimestamp }

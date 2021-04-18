@@ -6,7 +6,7 @@ import (
 	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
 	"golang.org/x/net/context"
-	"prediction-league/service/internal/models"
+	"prediction-league/service/internal/domain"
 	"time"
 )
 
@@ -18,18 +18,18 @@ var entryPredictionDBFields = []string{
 
 // EntryPredictionRepository defines the interface for transacting with our EntryPredictions data source
 type EntryPredictionRepository interface {
-	Insert(ctx context.Context, entryPrediction *models.EntryPrediction) error
-	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]models.EntryPrediction, error)
+	Insert(ctx context.Context, entryPrediction *domain.EntryPrediction) error
+	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.EntryPrediction, error)
 	ExistsByID(ctx context.Context, id string) error
 }
 
 // EntryPredictionDatabaseRepository defines our DB-backed EntryPredictions data store
 type EntryPredictionDatabaseRepository struct {
-	agent coresql.Agent
+	Agent coresql.Agent
 }
 
 // Insert inserts a new EntryPrediction into the database
-func (e EntryPredictionDatabaseRepository) Insert(ctx context.Context, entryPrediction *models.EntryPrediction) error {
+func (e EntryPredictionDatabaseRepository) Insert(ctx context.Context, entryPrediction *domain.EntryPrediction) error {
 	stmt := `INSERT INTO entry_prediction (id, ` + getDBFieldsStringFromFields(entryPredictionDBFields) + `, created_at)
 					VALUES (?, ?, ?, ?)`
 
@@ -45,7 +45,7 @@ func (e EntryPredictionDatabaseRepository) Insert(ctx context.Context, entryPred
 		return err
 	}
 
-	rows, err := e.agent.QueryContext(
+	rows, err := e.Agent.QueryContext(
 		ctx,
 		stmt,
 		entryPrediction.ID,
@@ -62,22 +62,22 @@ func (e EntryPredictionDatabaseRepository) Insert(ctx context.Context, entryPred
 }
 
 // Select retrieves EntryPredictions from our database based on the provided criteria
-func (e EntryPredictionDatabaseRepository) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]models.EntryPrediction, error) {
+func (e EntryPredictionDatabaseRepository) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.EntryPrediction, error) {
 	whereStmt, params := dbWhereStmt(criteria, matchAny)
 
 	stmt := `SELECT id, ` + getDBFieldsStringFromFields(entryPredictionDBFields) + `, created_at FROM entry_prediction ` + whereStmt
 
-	rows, err := e.agent.QueryContext(ctx, stmt, params...)
+	rows, err := e.Agent.QueryContext(ctx, stmt, params...)
 	if err != nil {
 		return nil, wrapDBError(err)
 	}
 	defer rows.Close()
 
-	var entryPredictions []models.EntryPrediction
+	var entryPredictions []domain.EntryPrediction
 	var rawRankings []byte
 
 	for rows.Next() {
-		entryPrediction := models.EntryPrediction{}
+		entryPrediction := domain.EntryPrediction{}
 
 		if err := rows.Scan(
 			&entryPrediction.ID,
@@ -96,7 +96,7 @@ func (e EntryPredictionDatabaseRepository) Select(ctx context.Context, criteria 
 	}
 
 	if len(entryPredictions) == 0 {
-		return nil, MissingDBRecordError{errors.New("no entry predictions found")}
+		return nil, domain.MissingDBRecordError{Err: errors.New("no entry predictions found")}
 	}
 
 	return entryPredictions, nil
@@ -106,7 +106,7 @@ func (e EntryPredictionDatabaseRepository) Select(ctx context.Context, criteria 
 func (e EntryPredictionDatabaseRepository) ExistsByID(ctx context.Context, id string) error {
 	stmt := `SELECT COUNT(*) FROM entry_prediction WHERE id = ?`
 
-	row := e.agent.QueryRowContext(ctx, stmt, id)
+	row := e.Agent.QueryRowContext(ctx, stmt, id)
 
 	var count int
 	if err := row.Scan(&count); err != nil {
@@ -114,23 +114,23 @@ func (e EntryPredictionDatabaseRepository) ExistsByID(ctx context.Context, id st
 	}
 
 	if count == 0 {
-		return MissingDBRecordError{fmt.Errorf("entry prediction id %s: not found", id)}
+		return domain.MissingDBRecordError{Err: fmt.Errorf("entry prediction id %s: not found", id)}
 	}
 
 	return nil
 }
 
 // SelectByIDAndTimestamp retrieves the most recent EntryPrediction that exists for the provided entry ID and timestamp
-func (e EntryPredictionDatabaseRepository) SelectByEntryIDAndTimestamp(ctx context.Context, entryID string, ts time.Time) (models.EntryPrediction, error) {
+func (e EntryPredictionDatabaseRepository) SelectByEntryIDAndTimestamp(ctx context.Context, entryID string, ts time.Time) (domain.EntryPrediction, error) {
 	stmt := `SELECT id, ` + getDBFieldsStringFromFields(entryPredictionDBFields) + `, created_at FROM entry_prediction
 			WHERE entry_id = ?
 			AND created_at <= ?
 			ORDER BY created_at DESC
 			LIMIT 1`
 
-	row := e.agent.QueryRowContext(ctx, stmt, entryID, ts)
+	row := e.Agent.QueryRowContext(ctx, stmt, entryID, ts)
 
-	var entryPrediction models.EntryPrediction
+	var entryPrediction domain.EntryPrediction
 	var rawRankings []byte
 
 	if err := row.Scan(
@@ -139,17 +139,12 @@ func (e EntryPredictionDatabaseRepository) SelectByEntryIDAndTimestamp(ctx conte
 		&rawRankings,
 		&entryPrediction.CreatedAt,
 	); err != nil {
-		return models.EntryPrediction{}, wrapDBError(err)
+		return domain.EntryPrediction{}, wrapDBError(err)
 	}
 
 	if err := json.Unmarshal(rawRankings, &entryPrediction.Rankings); err != nil {
-		return models.EntryPrediction{}, err
+		return domain.EntryPrediction{}, err
 	}
 
 	return entryPrediction, nil
-}
-
-// NewEntryPredictionDatabaseRepository instantiates a new EntryPredictionDatabaseRepository with the provided DB agent
-func NewEntryPredictionDatabaseRepository(db coresql.Agent) EntryPredictionDatabaseRepository {
-	return EntryPredictionDatabaseRepository{agent: db}
 }

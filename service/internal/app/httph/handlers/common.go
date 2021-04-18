@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/pages"
 	"strconv"
 	"strings"
@@ -152,7 +151,7 @@ func newPage(r *http.Request, c *httph.HTTPAppContainer, title, activePage, bann
 }
 
 // retrieveEntryByEmailOrNickname retrieves an entry from the provided input, whether this pertains to an email address or nickname
-func retrieveEntryByEmailOrNickname(ctx context.Context, emailOrNickname, seasonID, realmName string, entryAgent domain.EntryAgent) (*models.Entry, error) {
+func retrieveEntryByEmailOrNickname(ctx context.Context, emailOrNickname, seasonID, realmName string, entryAgent domain.EntryAgent) (*domain.Entry, error) {
 	// see if we can retrieve by email
 	entry, err := entryAgent.RetrieveEntryByEntrantEmail(ctx, emailOrNickname, seasonID, realmName)
 	if err != nil {

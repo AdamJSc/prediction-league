@@ -1,7 +1,7 @@
 package scheduler_test
 
 import (
-	"prediction-league/service/internal/models"
+	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/scheduler"
 	"testing"
 	"time"
@@ -16,9 +16,9 @@ func TestGenerateTimeFrameForPredictionWindowOpenQuery(t *testing.T) {
 	t.Run("generated timeframe for prediction window open cron must match expected", func(t *testing.T) {
 		baseTime := time.Date(2018, 5, 26, 14, 0, 0, 0, loc)
 
-		expectedTimeframe := models.TimeFrame{
+		expectedTimeframe := domain.TimeFrame{
 			// 24 hours prior to base time
-			From:  time.Date(2018, 5, 25, 14, 0, 0, 0, loc),
+			From: time.Date(2018, 5, 25, 14, 0, 0, 0, loc),
 			// one minute prior to base time
 			Until: time.Date(2018, 5, 26, 13, 59, 0, 0, loc),
 		}
@@ -40,9 +40,9 @@ func TestGenerateTimeFrameForPredictionWindowClosingQuery(t *testing.T) {
 	t.Run("generated timeframe for prediction window closing cron must match expected", func(t *testing.T) {
 		baseTime := time.Date(2018, 5, 26, 14, 0, 0, 0, loc)
 
-		expectedTimeframe := models.TimeFrame{
+		expectedTimeframe := domain.TimeFrame{
 			// 12 hours in advance of base time
-			From:  time.Date(2018, 5, 27, 2, 0, 0, 0, loc),
+			From: time.Date(2018, 5, 27, 2, 0, 0, 0, loc),
 			// 24 hours in advance of "from" time, less a minute
 			Until: time.Date(2018, 5, 28, 1, 59, 0, 0, loc),
 		}

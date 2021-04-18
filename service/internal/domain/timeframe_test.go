@@ -1,7 +1,7 @@
-package models_test
+package domain_test
 
 import (
-	"prediction-league/service/internal/models"
+	"prediction-league/service/internal/domain"
 	"testing"
 	"time"
 )
@@ -11,7 +11,7 @@ func TestTimeFrame_Valid(t *testing.T) {
 	var oneNanosecondAgo = now.Add(-time.Nanosecond)
 
 	t.Run("empty timeframe must not be valid", func(t *testing.T) {
-		var tf models.TimeFrame
+		var tf domain.TimeFrame
 
 		if tf.Valid() {
 			t.Fatalf("expected timeframe %+v to be invalid, but it was valid", tf)
@@ -19,7 +19,7 @@ func TestTimeFrame_Valid(t *testing.T) {
 	})
 
 	t.Run("timeframe with only a from timestamp must not be valid", func(t *testing.T) {
-		var tf = models.TimeFrame{
+		var tf = domain.TimeFrame{
 			From: now,
 		}
 
@@ -29,7 +29,7 @@ func TestTimeFrame_Valid(t *testing.T) {
 	})
 
 	t.Run("timeframe with only an until timestamp must not be valid", func(t *testing.T) {
-		var tf = models.TimeFrame{
+		var tf = domain.TimeFrame{
 			Until: now,
 		}
 
@@ -39,7 +39,7 @@ func TestTimeFrame_Valid(t *testing.T) {
 	})
 
 	t.Run("timeframe with an until timestamp occurring after a from timestamp must be valid", func(t *testing.T) {
-		var tf = models.TimeFrame{
+		var tf = domain.TimeFrame{
 			From:  oneNanosecondAgo,
 			Until: now,
 		}
@@ -50,7 +50,7 @@ func TestTimeFrame_Valid(t *testing.T) {
 	})
 
 	t.Run("timeframe with a from timestamp occurring after an until timestamp must not be valid", func(t *testing.T) {
-		var tf = models.TimeFrame{
+		var tf = domain.TimeFrame{
 			From:  now,
 			Until: oneNanosecondAgo,
 		}
@@ -61,7 +61,7 @@ func TestTimeFrame_Valid(t *testing.T) {
 	})
 
 	t.Run("timeframe with a from timestamp equal to an until timestamp must not be valid", func(t *testing.T) {
-		var tf = models.TimeFrame{
+		var tf = domain.TimeFrame{
 			From:  now,
 			Until: now,
 		}
@@ -77,7 +77,7 @@ func TestTimeFrame_HasBegunBy(t *testing.T) {
 	var oneNanosecondAgo = now.Add(-time.Nanosecond)
 
 	t.Run("timeframe with from timestamp in the past must return true", func(t *testing.T) {
-		var tf = models.TimeFrame{
+		var tf = domain.TimeFrame{
 			From: oneNanosecondAgo,
 		}
 
@@ -87,7 +87,7 @@ func TestTimeFrame_HasBegunBy(t *testing.T) {
 	})
 
 	t.Run("timeframe with from timestamp that matches current timestamp must return true", func(t *testing.T) {
-		var tf = models.TimeFrame{
+		var tf = domain.TimeFrame{
 			From: now,
 		}
 
@@ -97,7 +97,7 @@ func TestTimeFrame_HasBegunBy(t *testing.T) {
 	})
 
 	t.Run("timeframe with from timestamp in the future must return false", func(t *testing.T) {
-		var tf = models.TimeFrame{
+		var tf = domain.TimeFrame{
 			From: now,
 		}
 
@@ -112,7 +112,7 @@ func TestTimeFrame_HasElapsedBy(t *testing.T) {
 	var oneNanosecondAgo = now.Add(-time.Nanosecond)
 
 	t.Run("timeframe with until timestamp in the past must return true", func(t *testing.T) {
-		var tf = models.TimeFrame{
+		var tf = domain.TimeFrame{
 			Until: oneNanosecondAgo,
 		}
 
@@ -122,7 +122,7 @@ func TestTimeFrame_HasElapsedBy(t *testing.T) {
 	})
 
 	t.Run("timeframe with until timestamp that matches current timestamp must return true", func(t *testing.T) {
-		var tf = models.TimeFrame{
+		var tf = domain.TimeFrame{
 			Until: now,
 		}
 
@@ -132,7 +132,7 @@ func TestTimeFrame_HasElapsedBy(t *testing.T) {
 	})
 
 	t.Run("timeframe with until timestamp in the future must return false", func(t *testing.T) {
-		var tf = models.TimeFrame{
+		var tf = domain.TimeFrame{
 			Until: now,
 		}
 
@@ -149,11 +149,11 @@ func TestTimeFrame_OverlapsWith(t *testing.T) {
 	var threeNanosecondsAgo = now.Add(-3 * time.Nanosecond)
 
 	t.Run("timeframes that do not overlap at all must return false", func(t *testing.T) {
-		tf1 := models.TimeFrame{
+		tf1 := domain.TimeFrame{
 			From:  threeNanosecondsAgo,
 			Until: twoNanosecondsAgo,
 		}
-		tf2 := models.TimeFrame{
+		tf2 := domain.TimeFrame{
 			From:  oneNanosecondAgo,
 			Until: now,
 		}
@@ -168,11 +168,11 @@ func TestTimeFrame_OverlapsWith(t *testing.T) {
 	})
 
 	t.Run("timeframes that are identical must return true", func(t *testing.T) {
-		tf1 := models.TimeFrame{
+		tf1 := domain.TimeFrame{
 			From:  oneNanosecondAgo,
 			Until: now,
 		}
-		tf2 := models.TimeFrame{
+		tf2 := domain.TimeFrame{
 			From:  oneNanosecondAgo,
 			Until: now,
 		}
@@ -187,11 +187,11 @@ func TestTimeFrame_OverlapsWith(t *testing.T) {
 	})
 
 	t.Run("timeframes that overlap completely must return true", func(t *testing.T) {
-		tf1 := models.TimeFrame{
+		tf1 := domain.TimeFrame{
 			From:  threeNanosecondsAgo,
 			Until: now,
 		}
-		tf2 := models.TimeFrame{
+		tf2 := domain.TimeFrame{
 			From:  twoNanosecondsAgo,
 			Until: oneNanosecondAgo,
 		}
@@ -206,11 +206,11 @@ func TestTimeFrame_OverlapsWith(t *testing.T) {
 	})
 
 	t.Run("timeframes that overlap partially must return true", func(t *testing.T) {
-		tf1 := models.TimeFrame{
+		tf1 := domain.TimeFrame{
 			From:  threeNanosecondsAgo,
 			Until: oneNanosecondAgo,
 		}
-		tf2 := models.TimeFrame{
+		tf2 := domain.TimeFrame{
 			From:  twoNanosecondsAgo,
 			Until: now,
 		}
@@ -225,11 +225,11 @@ func TestTimeFrame_OverlapsWith(t *testing.T) {
 	})
 
 	t.Run("timeframes that are consecutive must return false", func(t *testing.T) {
-		tf1 := models.TimeFrame{
+		tf1 := domain.TimeFrame{
 			From:  threeNanosecondsAgo,
 			Until: twoNanosecondsAgo,
 		}
-		tf2 := models.TimeFrame{
+		tf2 := domain.TimeFrame{
 			From:  twoNanosecondsAgo,
 			Until: oneNanosecondAgo,
 		}
@@ -251,11 +251,11 @@ func TestTimeFrame_BeginsWithin(t *testing.T) {
 	var threeNanosecondsAgo = now.Add(-3 * time.Nanosecond)
 
 	t.Run("base timeframe that begins within provided timeframe must return true", func(t *testing.T) {
-		base := models.TimeFrame{
+		base := domain.TimeFrame{
 			From:  twoNanosecondsAgo,
 			Until: oneNanosecondAgo,
 		}
-		provided := models.TimeFrame{
+		provided := domain.TimeFrame{
 			From:  threeNanosecondsAgo,
 			Until: now,
 		}
@@ -266,11 +266,11 @@ func TestTimeFrame_BeginsWithin(t *testing.T) {
 	})
 
 	t.Run("base timeframe that does not begin within provided timeframe must return false", func(t *testing.T) {
-		base := models.TimeFrame{
+		base := domain.TimeFrame{
 			From:  threeNanosecondsAgo,
 			Until: oneNanosecondAgo,
 		}
-		provided := models.TimeFrame{
+		provided := domain.TimeFrame{
 			From:  twoNanosecondsAgo,
 			Until: now,
 		}
@@ -281,11 +281,11 @@ func TestTimeFrame_BeginsWithin(t *testing.T) {
 	})
 
 	t.Run("base timeframe that begins at same time as provided timeframe begins must return true", func(t *testing.T) {
-		base := models.TimeFrame{
+		base := domain.TimeFrame{
 			From:  threeNanosecondsAgo,
 			Until: now,
 		}
-		provided := models.TimeFrame{
+		provided := domain.TimeFrame{
 			From:  threeNanosecondsAgo,
 			Until: oneNanosecondAgo,
 		}
@@ -296,11 +296,11 @@ func TestTimeFrame_BeginsWithin(t *testing.T) {
 	})
 
 	t.Run("base timeframe that begins at same time as provided timeframe ends must return true", func(t *testing.T) {
-		base := models.TimeFrame{
+		base := domain.TimeFrame{
 			From:  twoNanosecondsAgo,
 			Until: now,
 		}
-		provided := models.TimeFrame{
+		provided := domain.TimeFrame{
 			From:  threeNanosecondsAgo,
 			Until: twoNanosecondsAgo,
 		}
@@ -318,11 +318,11 @@ func TestTimeFrame_EndsWithin(t *testing.T) {
 	var threeNanosecondsAgo = now.Add(-3 * time.Nanosecond)
 
 	t.Run("base timeframe that ends within provided timeframe must return true", func(t *testing.T) {
-		base := models.TimeFrame{
+		base := domain.TimeFrame{
 			From:  threeNanosecondsAgo,
 			Until: oneNanosecondAgo,
 		}
-		provided := models.TimeFrame{
+		provided := domain.TimeFrame{
 			From:  twoNanosecondsAgo,
 			Until: now,
 		}
@@ -333,11 +333,11 @@ func TestTimeFrame_EndsWithin(t *testing.T) {
 	})
 
 	t.Run("base timeframe that does not end within provided timeframe must return false", func(t *testing.T) {
-		base := models.TimeFrame{
+		base := domain.TimeFrame{
 			From:  oneNanosecondAgo,
 			Until: now,
 		}
-		provided := models.TimeFrame{
+		provided := domain.TimeFrame{
 			From:  threeNanosecondsAgo,
 			Until: twoNanosecondsAgo,
 		}
@@ -348,11 +348,11 @@ func TestTimeFrame_EndsWithin(t *testing.T) {
 	})
 
 	t.Run("base timeframe that ends at same time as provided timeframe begins must return true", func(t *testing.T) {
-		base := models.TimeFrame{
+		base := domain.TimeFrame{
 			From:  threeNanosecondsAgo,
 			Until: twoNanosecondsAgo,
 		}
-		provided := models.TimeFrame{
+		provided := domain.TimeFrame{
 			From:  twoNanosecondsAgo,
 			Until: oneNanosecondAgo,
 		}
@@ -363,11 +363,11 @@ func TestTimeFrame_EndsWithin(t *testing.T) {
 	})
 
 	t.Run("base timeframe that ends at same time as provided timeframe ends must return true", func(t *testing.T) {
-		base := models.TimeFrame{
+		base := domain.TimeFrame{
 			From:  twoNanosecondsAgo,
 			Until: oneNanosecondAgo,
 		}
-		provided := models.TimeFrame{
+		provided := domain.TimeFrame{
 			From:  threeNanosecondsAgo,
 			Until: oneNanosecondAgo,
 		}

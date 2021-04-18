@@ -4,14 +4,11 @@ import (
 	"context"
 	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
-	"math/rand"
-	"prediction-league/service/internal/models"
-	"prediction-league/service/internal/repositories"
+	repofac2 "prediction-league/service/internal/repositories/repofac"
 	"time"
 )
 
 const (
-	TokenLength   = 32
 	TokenTypeAuth = iota
 	TokenTypeShortCodeResetToken
 )
@@ -30,10 +27,10 @@ type TokenAgentInjector interface {
 type TokenAgent struct{ TokenAgentInjector }
 
 // GenerateToken generates a new unique token
-func (t TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (*models.Token, error) {
-	tokenRepo := repositories.NewTokenDatabaseRepository(t.MySQL())
+func (t TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (*Token, error) {
+	tokenRepo := repofac2.NewTokenDatabaseRepository(t.MySQL())
 
-	id, err := generateUniqueTokenID(ctx, tokenRepo)
+	id, err := tokenRepo.GenerateUniqueTokenID(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +42,7 @@ func (t TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (*
 
 	now := TimestampFromContext(ctx)
 
-	token := models.Token{
+	token := Token{
 		ID:        id,
 		Type:      typ,
 		Value:     value,
@@ -61,8 +58,8 @@ func (t TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (*
 }
 
 // RetrieveTokenByID retrieves an existing token by the provided ID
-func (t TokenAgent) RetrieveTokenByID(ctx context.Context, id string) (*models.Token, error) {
-	tokenRepo := repositories.NewTokenDatabaseRepository(t.MySQL())
+func (t TokenAgent) RetrieveTokenByID(ctx context.Context, id string) (*Token, error) {
+	tokenRepo := repofac2.NewTokenDatabaseRepository(t.MySQL())
 
 	tokens, err := tokenRepo.Select(ctx, map[string]interface{}{
 		"id": id,
@@ -79,8 +76,8 @@ func (t TokenAgent) RetrieveTokenByID(ctx context.Context, id string) (*models.T
 }
 
 // DeleteToken removes the provided token
-func (t TokenAgent) DeleteToken(ctx context.Context, token models.Token) error {
-	tokenRepo := repositories.NewTokenDatabaseRepository(t.MySQL())
+func (t TokenAgent) DeleteToken(ctx context.Context, token Token) error {
+	tokenRepo := repofac2.NewTokenDatabaseRepository(t.MySQL())
 
 	err := tokenRepo.DeleteByID(ctx, token.ID)
 	if err != nil {
@@ -92,10 +89,10 @@ func (t TokenAgent) DeleteToken(ctx context.Context, token models.Token) error {
 
 // DeleteTokensExpiredAfter removes tokens that have expired since the provide timestamp
 func (t TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp time.Time) error {
-	tokenRepo := repositories.NewTokenDatabaseRepository(t.MySQL())
+	tokenRepo := repofac2.NewTokenDatabaseRepository(t.MySQL())
 
 	tokens, err := tokenRepo.Select(ctx, map[string]interface{}{
-		"expires_at": repositories.Condition{
+		"expires_at": DBQueryCondition{
 			Operator: "<=",
 			Operand:  timestamp,
 		},
@@ -111,37 +108,4 @@ func (t TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp time
 	}
 
 	return nil
-}
-
-// generateUniqueTokenID returns a string representing a unique token ID
-func generateUniqueTokenID(ctx context.Context, tokenRepo repositories.TokenRepository) (string, error) {
-	id := generateAlphaNumericString(TokenLength)
-
-	if err := tokenRepo.ExistsByID(ctx, id); err != nil {
-		switch err.(type) {
-		case repositories.MissingDBRecordError:
-			return id, nil
-		default:
-			return "", err
-		}
-	}
-
-	return generateUniqueTokenID(ctx, tokenRepo)
-}
-
-// generateAlphaNumericString generates an alphanumeric string to the provided length
-func generateAlphaNumericString(length int) string {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	source := "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz"
-	var generated string
-
-	sourceLen := len(source)
-
-	for i := 0; i < length; i++ {
-		randInt := r.Int63n(int64(sourceLen))
-		randByte := []byte(source)[randInt]
-		generated += string(randByte)
-	}
-
-	return generated
 }

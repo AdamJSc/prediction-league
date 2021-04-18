@@ -7,18 +7,17 @@ import (
 	"github.com/LUSHDigital/uuid"
 	"log"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
-	"prediction-league/service/internal/repositories"
+	repofac2 "prediction-league/service/internal/repositories/repofac"
 	"time"
 )
 
-var entries = []models.Entry{
+var entries = []domain.Entry{
 	{
 		EntrantName:     "Adam S",
 		EntrantNickname: "AdamS",
 		EntrantEmail:    "seeded1@example.net",
-		EntryPredictions: []models.EntryPrediction{
-			models.NewEntryPrediction([]string{
+		EntryPredictions: []domain.EntryPrediction{
+			domain.NewEntryPrediction([]string{
 				"MCFC",
 				"LFC",
 				"THFC",
@@ -46,8 +45,8 @@ var entries = []models.Entry{
 		EntrantName:     "Ben M",
 		EntrantNickname: "BenM",
 		EntrantEmail:    "seeded2@example.net",
-		EntryPredictions: []models.EntryPrediction{
-			models.NewEntryPrediction([]string{
+		EntryPredictions: []domain.EntryPrediction{
+			domain.NewEntryPrediction([]string{
 				"MCFC",
 				"LFC",
 				"CFC",
@@ -74,8 +73,8 @@ var entries = []models.Entry{
 		EntrantName:     "Chris F",
 		EntrantNickname: "ChrisF",
 		EntrantEmail:    "seeded3@example.net",
-		EntryPredictions: []models.EntryPrediction{
-			models.NewEntryPrediction([]string{
+		EntryPredictions: []domain.EntryPrediction{
+			domain.NewEntryPrediction([]string{
 				"MCFC",
 				"THFC",
 				"LFC",
@@ -102,8 +101,8 @@ var entries = []models.Entry{
 		EntrantName:     "Dan N",
 		EntrantNickname: "DanN",
 		EntrantEmail:    "seeded4@example.net",
-		EntryPredictions: []models.EntryPrediction{
-			models.NewEntryPrediction([]string{
+		EntryPredictions: []domain.EntryPrediction{
+			domain.NewEntryPrediction([]string{
 				"MCFC",
 				"LFC",
 				"THFC",
@@ -130,8 +129,8 @@ var entries = []models.Entry{
 		EntrantName:     "Ed T",
 		EntrantNickname: "EdT",
 		EntrantEmail:    "seeded5@example.net",
-		EntryPredictions: []models.EntryPrediction{
-			models.NewEntryPrediction([]string{
+		EntryPredictions: []domain.EntryPrediction{
+			domain.NewEntryPrediction([]string{
 				"MCFC",
 				"LFC",
 				"AFC",
@@ -158,8 +157,8 @@ var entries = []models.Entry{
 		EntrantName:     "Gary B",
 		EntrantNickname: "GaryB",
 		EntrantEmail:    "seeded6@example.net",
-		EntryPredictions: []models.EntryPrediction{
-			models.NewEntryPrediction([]string{
+		EntryPredictions: []domain.EntryPrediction{
+			domain.NewEntryPrediction([]string{
 				"LFC",
 				"MCFC",
 				"THFC",
@@ -186,8 +185,8 @@ var entries = []models.Entry{
 		EntrantName:     "Nigel B",
 		EntrantNickname: "NigelB",
 		EntrantEmail:    "seeded7@example.net",
-		EntryPredictions: []models.EntryPrediction{
-			models.NewEntryPrediction([]string{
+		EntryPredictions: []domain.EntryPrediction{
+			domain.NewEntryPrediction([]string{
 				"LFC",
 				"MCFC",
 				"AFC",
@@ -214,8 +213,8 @@ var entries = []models.Entry{
 		EntrantName:     "Ray G",
 		EntrantNickname: "RayG",
 		EntrantEmail:    "seeded8@example.net",
-		EntryPredictions: []models.EntryPrediction{
-			models.NewEntryPrediction([]string{
+		EntryPredictions: []domain.EntryPrediction{
+			domain.NewEntryPrediction([]string{
 				"LFC",
 				"MCFC",
 				"THFC",
@@ -242,8 +241,8 @@ var entries = []models.Entry{
 		EntrantName:     "Rich L",
 		EntrantNickname: "RichL",
 		EntrantEmail:    "seeded9@example.net",
-		EntryPredictions: []models.EntryPrediction{
-			models.NewEntryPrediction([]string{
+		EntryPredictions: []domain.EntryPrediction{
+			domain.NewEntryPrediction([]string{
 				"MCFC",
 				"LFC",
 				"THFC",
@@ -270,8 +269,8 @@ var entries = []models.Entry{
 		EntrantName:     "Tom M",
 		EntrantNickname: "TomM",
 		EntrantEmail:    "seeded10@example.net",
-		EntryPredictions: []models.EntryPrediction{
-			models.NewEntryPrediction([]string{
+		EntryPredictions: []domain.EntryPrediction{
+			domain.NewEntryPrediction([]string{
 				"MCFC",
 				"LFC",
 				"THFC",
@@ -298,8 +297,8 @@ var entries = []models.Entry{
 		EntrantName:     "Trev H",
 		EntrantNickname: "TrevH",
 		EntrantEmail:    "seede11@example.net",
-		EntryPredictions: []models.EntryPrediction{
-			models.NewEntryPrediction([]string{
+		EntryPredictions: []domain.EntryPrediction{
+			domain.NewEntryPrediction([]string{
 				"MCFC",
 				"LFC",
 				"THFC",
@@ -327,12 +326,12 @@ var entries = []models.Entry{
 // MustSeed inserts the existing entries for the 2019/20 Season in the localhost Realm
 func MustSeed(db coresql.Agent) {
 	ctx := context.Background()
-	entryRepo := repositories.NewEntryDatabaseRepository(db)
-	entryPredictionRepo := repositories.NewEntryPredictionDatabaseRepository(db)
+	entryRepo := repofac2.NewEntryDatabaseRepository(db)
+	entryPredictionRepo := repofac2.NewEntryPredictionDatabaseRepository(db)
 
 	seasonID := "FakeSeason"
 	realmName := "localhost"
-	paymentMethod := models.EntryPaymentMethodOther
+	paymentMethod := domain.EntryPaymentMethodOther
 	paymentRef := "payment_ref"
 	approvedAt := time.Now()
 
@@ -346,14 +345,14 @@ func MustSeed(db coresql.Agent) {
 		entry.ShortCode = shortCode
 		entry.SeasonID = seasonID
 		entry.RealmName = realmName
-		entry.Status = models.EntryStatusReady
+		entry.Status = domain.EntryStatusReady
 		entry.PaymentMethod = sqltypes.ToNullString(&paymentMethod)
 		entry.PaymentRef = sqltypes.ToNullString(&paymentRef)
 		entry.ApprovedAt = sqltypes.ToNullTime(approvedAt)
 
 		if err := entryRepo.Insert(context.Background(), &entry); err != nil {
 			switch err.(type) {
-			case repositories.DuplicateDBRecordError:
+			case domain.DuplicateDBRecordError:
 				// already seeded, so we can fail silently
 				continue
 			}
@@ -366,7 +365,7 @@ func MustSeed(db coresql.Agent) {
 
 			if err := entryPredictionRepo.Insert(context.Background(), &entryPrediction); err != nil {
 				switch err.(type) {
-				case repositories.DuplicateDBRecordError:
+				case domain.DuplicateDBRecordError:
 					// already seeded, so we can fail silently
 					continue
 				}

@@ -14,10 +14,8 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"log"
 	"os"
-	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
-	"prediction-league/service/internal/repositories"
+	repofac2 "prediction-league/service/internal/repositories/repofac"
 	"prediction-league/service/internal/views"
 	"reflect"
 	"strings"
@@ -30,7 +28,7 @@ var (
 	truncator  sqltest.Truncator
 	utc        *time.Location
 	templates  *views.Templates
-	testSeason models.Season
+	testSeason domain.Season
 )
 
 const (
@@ -82,20 +80,20 @@ func TestMain(m *testing.M) {
 	)
 	coresql.MustMigrateUp(mig)
 
-	datastore.MustInflate()
+	domain.MustInflate()
 
 	// find service path and load templates
 	// everything before the last occurrence of "service" within the current working directory path
 	dirOfServicePath := wd[:strings.LastIndex(wd, "service")]
 	templates = domain.MustParseTemplates(fmt.Sprintf("%s/service/views", dirOfServicePath))
 
-	// set testSeason to the first entry within our datastore.Seasons slice
-	keys := reflect.ValueOf(datastore.Seasons).MapKeys()
+	// set testSeason to the first entry within our domain.SeasonsDataStore slice
+	keys := reflect.ValueOf(domain.SeasonsDataStore).MapKeys()
 	if len(keys) < 1 {
-		log.Fatal("need more than one datastore.Season")
+		log.Fatal("need more than one domain.Season")
 	}
 
-	testSeason = datastore.Seasons[keys[0].String()]
+	testSeason = domain.SeasonsDataStore[keys[0].String()]
 
 	// run test
 	os.Exit(m.Run())
@@ -185,7 +183,7 @@ func testRealm(t *testing.T) domain.Realm {
 }
 
 // generateTestStandings generates a new Standings entity for use within the testsuite
-func generateTestStandings(t *testing.T) models.Standings {
+func generateTestStandings(t *testing.T) domain.Standings {
 	t.Helper()
 
 	// generate random ID
@@ -194,14 +192,14 @@ func generateTestStandings(t *testing.T) models.Standings {
 		t.Fatal(err)
 	}
 
-	var rankings []models.RankingWithMeta
+	var rankings []domain.RankingWithMeta
 	for _, teamID := range testSeason.TeamIDs {
-		rwm := models.NewRankingWithMeta()
-		rwm.Ranking = models.Ranking{ID: teamID}
+		rwm := domain.NewRankingWithMeta()
+		rwm.Ranking = domain.Ranking{ID: teamID}
 		rankings = append(rankings, rwm)
 	}
 
-	return models.Standings{
+	return domain.Standings{
 		ID:          standingsID,
 		SeasonID:    testSeason.ID,
 		RoundNumber: 1,
@@ -212,13 +210,13 @@ func generateTestStandings(t *testing.T) models.Standings {
 }
 
 // insertStandings inserts a generated Standings entity into the DB for use within the testsuite
-func insertStandings(t *testing.T, standings models.Standings) models.Standings {
+func insertStandings(t *testing.T, standings domain.Standings) domain.Standings {
 	t.Helper()
 
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := repositories.NewStandingsDatabaseRepository(db).Insert(ctx, &standings); err != nil {
+	if err := repofac2.NewStandingsDatabaseRepository(db).Insert(ctx, &standings); err != nil {
 		t.Fatal(err)
 	}
 
@@ -226,13 +224,13 @@ func insertStandings(t *testing.T, standings models.Standings) models.Standings 
 }
 
 // updateStandings updates a generated Standings entity in the DB for use within the testsuite
-func updateStandings(t *testing.T, standings models.Standings) models.Standings {
+func updateStandings(t *testing.T, standings domain.Standings) domain.Standings {
 	t.Helper()
 
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := repositories.NewStandingsDatabaseRepository(db).Update(ctx, &standings); err != nil {
+	if err := repofac2.NewStandingsDatabaseRepository(db).Update(ctx, &standings); err != nil {
 		t.Fatal(err)
 	}
 
@@ -240,7 +238,7 @@ func updateStandings(t *testing.T, standings models.Standings) models.Standings 
 }
 
 // generateTestEntry generates a new Entry entity for use within the testsuite
-func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail string) models.Entry {
+func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail string) domain.Entry {
 	t.Helper()
 
 	ctx, cancel := testContextDefault(t)
@@ -256,10 +254,10 @@ func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail 
 		t.Fatal(err)
 	}
 
-	paymentMethod := models.EntryPaymentMethodOther
+	paymentMethod := domain.EntryPaymentMethodOther
 	paymentRef := "my_payment_ref"
 
-	return models.Entry{
+	return domain.Entry{
 		ID:               id,
 		ShortCode:        shortCode,
 		SeasonID:         testSeason.ID,
@@ -267,7 +265,7 @@ func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail 
 		EntrantName:      entrantName,
 		EntrantNickname:  entrantNickname,
 		EntrantEmail:     entrantEmail,
-		Status:           models.EntryStatusPending,
+		Status:           domain.EntryStatusPending,
 		PaymentMethod:    sqltypes.ToNullString(&paymentMethod),
 		PaymentRef:       sqltypes.ToNullString(&paymentRef),
 		EntryPredictions: nil,
@@ -275,13 +273,13 @@ func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail 
 }
 
 // insertEntry insert a generated Entry entity into the DB for use within the testsuite
-func insertEntry(t *testing.T, entry models.Entry) models.Entry {
+func insertEntry(t *testing.T, entry domain.Entry) domain.Entry {
 	t.Helper()
 
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := repositories.NewEntryDatabaseRepository(db).Insert(ctx, &entry); err != nil {
+	if err := repofac2.NewEntryDatabaseRepository(db).Insert(ctx, &entry); err != nil {
 		t.Fatal(err)
 	}
 
@@ -289,27 +287,27 @@ func insertEntry(t *testing.T, entry models.Entry) models.Entry {
 }
 
 // generateTestEntryPrediction generates a new EntryPrediction entity for use within the testsuite
-func generateTestEntryPrediction(t *testing.T, entryID uuid.UUID) models.EntryPrediction {
+func generateTestEntryPrediction(t *testing.T, entryID uuid.UUID) domain.EntryPrediction {
 	id, err := uuid.NewV4()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	return models.EntryPrediction{
+	return domain.EntryPrediction{
 		ID:       id,
 		EntryID:  entryID,
-		Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs),
+		Rankings: domain.NewRankingCollectionFromIDs(testSeason.TeamIDs),
 	}
 }
 
 // insertEntryPrediction inserts a generated EntryPrediction entity into the DB for use within the testsuite
-func insertEntryPrediction(t *testing.T, entryPrediction models.EntryPrediction) models.EntryPrediction {
+func insertEntryPrediction(t *testing.T, entryPrediction domain.EntryPrediction) domain.EntryPrediction {
 	t.Helper()
 
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := repositories.NewEntryPredictionDatabaseRepository(db).Insert(ctx, &entryPrediction); err != nil {
+	if err := repofac2.NewEntryPredictionDatabaseRepository(db).Insert(ctx, &entryPrediction); err != nil {
 		t.Fatal(err)
 	}
 
@@ -317,26 +315,26 @@ func insertEntryPrediction(t *testing.T, entryPrediction models.EntryPrediction)
 }
 
 // generateTestScoredEntryPrediction generates a new ScoredEntryPrediction entity for use within the testsuite
-func generateTestScoredEntryPrediction(t *testing.T, entryPredictionID, standingsID uuid.UUID) models.ScoredEntryPrediction {
+func generateTestScoredEntryPrediction(t *testing.T, entryPredictionID, standingsID uuid.UUID) domain.ScoredEntryPrediction {
 	t.Helper()
 
-	return models.ScoredEntryPrediction{
+	return domain.ScoredEntryPrediction{
 		EntryPredictionID: entryPredictionID,
 		StandingsID:       standingsID,
-		Rankings:          models.NewRankingWithScoreCollectionFromIDs(testSeason.TeamIDs),
+		Rankings:          domain.NewRankingWithScoreCollectionFromIDs(testSeason.TeamIDs),
 		Score:             123,
 		CreatedAt:         time.Now().Truncate(time.Second),
 	}
 }
 
 // insertScoredEntryPrediction inserts a generated ScoredEntryPrediction entity into the DB for use within the testsuite
-func insertScoredEntryPrediction(t *testing.T, scoredEntryPrediction models.ScoredEntryPrediction) models.ScoredEntryPrediction {
+func insertScoredEntryPrediction(t *testing.T, scoredEntryPrediction domain.ScoredEntryPrediction) domain.ScoredEntryPrediction {
 	t.Helper()
 
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := repositories.NewScoredEntryPredictionDatabaseRepository(db).Insert(ctx, &scoredEntryPrediction); err != nil {
+	if err := repofac2.NewScoredEntryPredictionDatabaseRepository(db).Insert(ctx, &scoredEntryPrediction); err != nil {
 		t.Fatal(err)
 	}
 

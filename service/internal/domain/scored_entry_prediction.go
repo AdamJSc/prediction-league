@@ -7,9 +7,7 @@ import (
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
-	"prediction-league/service/internal/datastore"
-	"prediction-league/service/internal/models"
-	"prediction-league/service/internal/repositories"
+	repofac2 "prediction-league/service/internal/repositories/repofac"
 	"strconv"
 	"strings"
 	"time"
@@ -26,59 +24,59 @@ type ScoredEntryPredictionAgent struct {
 }
 
 // CreateScoredEntryPrediction handles the creation of a new ScoredEntryPrediction in the database
-func (s ScoredEntryPredictionAgent) CreateScoredEntryPrediction(ctx context.Context, scoredEntryPrediction models.ScoredEntryPrediction) (models.ScoredEntryPrediction, error) {
+func (s ScoredEntryPredictionAgent) CreateScoredEntryPrediction(ctx context.Context, scoredEntryPrediction ScoredEntryPrediction) (ScoredEntryPrediction, error) {
 	db := s.MySQL()
 
 	var emptyID uuid.UUID
 
 	if scoredEntryPrediction.EntryPredictionID.String() == emptyID.String() {
-		return models.ScoredEntryPrediction{}, ValidationError{Reasons: []string{
+		return ScoredEntryPrediction{}, ValidationError{Reasons: []string{
 			"EntryPredictionID is empty",
 		}}
 	}
 
 	if scoredEntryPrediction.StandingsID.String() == emptyID.String() {
-		return models.ScoredEntryPrediction{}, ValidationError{Reasons: []string{
+		return ScoredEntryPrediction{}, ValidationError{Reasons: []string{
 			"StandingsID is empty",
 		}}
 	}
 
 	// ensure that entryPrediction exists
-	entryPredictionRepo := repositories.NewEntryPredictionDatabaseRepository(db)
+	entryPredictionRepo := repofac2.NewEntryPredictionDatabaseRepository(db)
 	if err := entryPredictionRepo.ExistsByID(ctx, scoredEntryPrediction.EntryPredictionID.String()); err != nil {
-		return models.ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
+		return ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
 
 	// ensure that standings exists
-	standingsRepo := repositories.NewStandingsDatabaseRepository(db)
+	standingsRepo := repofac2.NewStandingsDatabaseRepository(db)
 	if err := standingsRepo.ExistsByID(ctx, scoredEntryPrediction.StandingsID.String()); err != nil {
-		return models.ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
+		return ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
 
 	// override these values
 	scoredEntryPrediction.CreatedAt = time.Now().Truncate(time.Second)
 	scoredEntryPrediction.UpdatedAt = sqltypes.NullTime{}
 
-	scoredEntryPredictionRepo := repositories.NewScoredEntryPredictionDatabaseRepository(db)
+	scoredEntryPredictionRepo := repofac2.NewScoredEntryPredictionDatabaseRepository(db)
 
 	// write scoredEntryPrediction to database
 	if err := scoredEntryPredictionRepo.Insert(ctx, &scoredEntryPrediction); err != nil {
-		return models.ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
+		return ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
 
 	return scoredEntryPrediction, nil
 }
 
 // RetrieveScoredEntryPredictionByIDs handles the retrieval of an existing ScoredEntryPrediction in the database by its ID
-func (s ScoredEntryPredictionAgent) RetrieveScoredEntryPredictionByIDs(ctx context.Context, entryPredictionID, standingsID string) (models.ScoredEntryPrediction, error) {
-	scoredEntryPredictionRepo := repositories.NewScoredEntryPredictionDatabaseRepository(s.MySQL())
+func (s ScoredEntryPredictionAgent) RetrieveScoredEntryPredictionByIDs(ctx context.Context, entryPredictionID, standingsID string) (ScoredEntryPrediction, error) {
+	scoredEntryPredictionRepo := repofac2.NewScoredEntryPredictionDatabaseRepository(s.MySQL())
 
 	retrievedScoredEntryPredictions, err := scoredEntryPredictionRepo.Select(ctx, map[string]interface{}{
 		"entry_prediction_id": entryPredictionID,
 		"standings_id":        standingsID,
 	}, false)
 	if err != nil {
-		return models.ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
+		return ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
 
 	return retrievedScoredEntryPredictions[0], nil
@@ -86,8 +84,8 @@ func (s ScoredEntryPredictionAgent) RetrieveScoredEntryPredictionByIDs(ctx conte
 
 // RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber handles the retrieval of
 // the most recently created ScoredEntryPrediction by the provided entry ID and round number
-func (s ScoredEntryPredictionAgent) RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(ctx context.Context, entryID string, roundNumber int) (*models.ScoredEntryPrediction, error) {
-	scoredEntryPredictionRepo := repositories.NewScoredEntryPredictionDatabaseRepository(s.MySQL())
+func (s ScoredEntryPredictionAgent) RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(ctx context.Context, entryID string, roundNumber int) (*ScoredEntryPrediction, error) {
+	scoredEntryPredictionRepo := repofac2.NewScoredEntryPredictionDatabaseRepository(s.MySQL())
 
 	retrievedScoredEntryPredictions, err := scoredEntryPredictionRepo.SelectByEntryIDAndRoundNumber(ctx, entryID, roundNumber)
 	if err != nil {
@@ -99,8 +97,8 @@ func (s ScoredEntryPredictionAgent) RetrieveLatestScoredEntryPredictionByEntryID
 }
 
 // UpdateScoredEntryPrediction handles the updating of an existing ScoredEntryPrediction in the database
-func (s ScoredEntryPredictionAgent) UpdateScoredEntryPrediction(ctx context.Context, scoredEntryPrediction models.ScoredEntryPrediction) (models.ScoredEntryPrediction, error) {
-	scoredEntryPredictionRepo := repositories.NewScoredEntryPredictionDatabaseRepository(s.MySQL())
+func (s ScoredEntryPredictionAgent) UpdateScoredEntryPrediction(ctx context.Context, scoredEntryPrediction ScoredEntryPrediction) (ScoredEntryPrediction, error) {
+	scoredEntryPredictionRepo := repofac2.NewScoredEntryPredictionDatabaseRepository(s.MySQL())
 
 	// ensure the scoredEntryPrediction exists
 	if err := scoredEntryPredictionRepo.Exists(
@@ -108,7 +106,7 @@ func (s ScoredEntryPredictionAgent) UpdateScoredEntryPrediction(ctx context.Cont
 		scoredEntryPrediction.EntryPredictionID.String(),
 		scoredEntryPrediction.StandingsID.String(),
 	); err != nil {
-		return models.ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
+		return ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
 
 	// override these values
@@ -116,7 +114,7 @@ func (s ScoredEntryPredictionAgent) UpdateScoredEntryPrediction(ctx context.Cont
 
 	// write to database
 	if err := scoredEntryPredictionRepo.Update(ctx, &scoredEntryPrediction); err != nil {
-		return models.ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
+		return ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
 
 	return scoredEntryPrediction, nil
@@ -124,17 +122,17 @@ func (s ScoredEntryPredictionAgent) UpdateScoredEntryPrediction(ctx context.Cont
 
 // ScoreEntryPredictionBasedOnStandings generates a scored entry prediction from the provided entry prediction and standings
 func ScoreEntryPredictionBasedOnStandings(
-	entryPrediction models.EntryPrediction,
-	standings models.Standings,
-) (*models.ScoredEntryPrediction, error) {
-	standingsRankingCollection := models.NewRankingCollectionFromRankingWithMetas(standings.Rankings)
+	entryPrediction EntryPrediction,
+	standings Standings,
+) (*ScoredEntryPrediction, error) {
+	standingsRankingCollection := NewRankingCollectionFromRankingWithMetas(standings.Rankings)
 
 	rws, err := CalculateRankingsScores(entryPrediction.Rankings, standingsRankingCollection)
 	if err != nil {
 		return nil, err
 	}
 
-	sep := models.ScoredEntryPrediction{
+	sep := ScoredEntryPrediction{
 		EntryPredictionID: entryPrediction.ID,
 		StandingsID:       standings.ID,
 		Rankings:          *rws,
@@ -145,7 +143,7 @@ func ScoreEntryPredictionBasedOnStandings(
 }
 
 // TeamRankingsAsStrings returns the provided rankings as a slice of strings formatted with padding
-func TeamRankingsAsStrings(sepRankings []models.RankingWithScore, standingsRankings []models.RankingWithMeta) ([]string, error) {
+func TeamRankingsAsStrings(sepRankings []RankingWithScore, standingsRankings []RankingWithMeta) ([]string, error) {
 	if len(sepRankings) == 0 {
 		return nil, NotFoundError{errors.New("provided scored entry predictions are empty")}
 	}
@@ -168,7 +166,7 @@ func TeamRankingsAsStrings(sepRankings []models.RankingWithScore, standingsRanki
 		sequentialStandingsPos  []string
 	)
 
-	teams := datastore.Teams
+	teams := TeamsDataStore
 
 	var getStandingsPosByTeamID = func(teamID string) (int, error) {
 		for _, r := range standingsRankings {
@@ -180,7 +178,7 @@ func TeamRankingsAsStrings(sepRankings []models.RankingWithScore, standingsRanki
 		return 0, fmt.Errorf("no standings rankings entry found for team ID: %s", teamID)
 	}
 
-	totalScoreStr := strconv.Itoa(models.RankingWithScoreCollection(sepRankings).GetTotal())
+	totalScoreStr := strconv.Itoa(RankingWithScoreCollection(sepRankings).GetTotal())
 	if len(totalScoreStr) > maxRankingScoreLength {
 		return nil, fmt.Errorf("total score character length cannot exceed %d: actual length %d", maxRankingScoreLength, len(totalScoreStr))
 	}

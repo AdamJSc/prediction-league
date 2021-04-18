@@ -4,8 +4,8 @@ import (
 	"context"
 	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 	"prediction-league/service/internal/repositories"
+	repofac2 "prediction-league/service/internal/repositories/repofac"
 	"testing"
 	"time"
 )
@@ -33,8 +33,8 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(token.ID) != domain.TokenLength {
-			expectedGot(t, domain.TokenLength, len(token.ID))
+		if len(token.ID) != repositories.TokenLength {
+			expectedGot(t, repositories.TokenLength, len(token.ID))
 		}
 		if token.Type != expectedType {
 			expectedGot(t, expectedType, token.Type)
@@ -51,9 +51,9 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 		}
 
 		// inserting same token a second time must fail
-		err = repositories.NewTokenDatabaseRepository(db).Insert(ctx, token)
-		if !cmp.ErrorType(err, repositories.DuplicateDBRecordError{})().Success() {
-			expectedTypeOfGot(t, repositories.DuplicateDBRecordError{}, err)
+		err = repofac2.NewTokenDatabaseRepository(db).Insert(ctx, token)
+		if !cmp.ErrorType(err, domain.DuplicateDBRecordError{})().Success() {
+			expectedTypeOfGot(t, domain.DuplicateDBRecordError{}, err)
 		}
 	})
 
@@ -70,8 +70,8 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(token.ID) != domain.TokenLength {
-			expectedGot(t, domain.TokenLength, len(token.ID))
+		if len(token.ID) != repositories.TokenLength {
+			expectedGot(t, repositories.TokenLength, len(token.ID))
 		}
 		if token.Type != expectedType {
 			expectedGot(t, expectedType, token.Type)
@@ -88,9 +88,9 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 		}
 
 		// inserting same token a second time must fail
-		err = repositories.NewTokenDatabaseRepository(db).Insert(ctx, token)
-		if !cmp.ErrorType(err, repositories.DuplicateDBRecordError{})().Success() {
-			expectedTypeOfGot(t, repositories.DuplicateDBRecordError{}, err)
+		err = repofac2.NewTokenDatabaseRepository(db).Insert(ctx, token)
+		if !cmp.ErrorType(err, domain.DuplicateDBRecordError{})().Success() {
+			expectedTypeOfGot(t, domain.DuplicateDBRecordError{}, err)
 		}
 	})
 
@@ -112,7 +112,7 @@ func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 	defer truncate(t)
 
 	token := generateTestToken()
-	tokenRepo := repositories.NewTokenDatabaseRepository(db)
+	tokenRepo := repofac2.NewTokenDatabaseRepository(db)
 	if err := tokenRepo.Insert(context.Background(), token); err != nil {
 		t.Fatal(err)
 	}
@@ -162,7 +162,7 @@ func TestTokenAgent_DeleteToken(t *testing.T) {
 	defer truncate(t)
 
 	token := generateTestToken()
-	tokenRepo := repositories.NewTokenDatabaseRepository(db)
+	tokenRepo := repofac2.NewTokenDatabaseRepository(db)
 	if err := tokenRepo.Insert(context.Background(), token); err != nil {
 		t.Fatal(err)
 	}
@@ -181,8 +181,8 @@ func TestTokenAgent_DeleteToken(t *testing.T) {
 
 		// token must have been deleted
 		err := tokenRepo.ExistsByID(ctx, token.ID)
-		if !cmp.ErrorType(err, repositories.MissingDBRecordError{})().Success() {
-			expectedTypeOfGot(t, repositories.MissingDBRecordError{}, err)
+		if !cmp.ErrorType(err, domain.MissingDBRecordError{})().Success() {
+			expectedTypeOfGot(t, domain.MissingDBRecordError{}, err)
 		}
 	})
 }
@@ -207,13 +207,13 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 	token3.ID = "test_token_3"
 	token3.ExpiresAt = now.Add(time.Second)
 
-	var tokens = []*models.Token{
+	var tokens = []*domain.Token{
 		token1,
 		token2,
 		token3,
 	}
 
-	tokenRepo := repositories.NewTokenDatabaseRepository(db)
+	tokenRepo := repofac2.NewTokenDatabaseRepository(db)
 	for _, token := range tokens {
 		if err := tokenRepo.Insert(context.Background(), token); err != nil {
 			t.Fatal(err)
@@ -234,14 +234,14 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 
 		// token 1 must have been deleted
 		err := tokenRepo.ExistsByID(ctx, token1.ID)
-		if !cmp.ErrorType(err, repositories.MissingDBRecordError{})().Success() {
-			expectedTypeOfGot(t, repositories.MissingDBRecordError{}, err)
+		if !cmp.ErrorType(err, domain.MissingDBRecordError{})().Success() {
+			expectedTypeOfGot(t, domain.MissingDBRecordError{}, err)
 		}
 
 		// token 2 must have been deleted
 		err = tokenRepo.ExistsByID(ctx, token2.ID)
-		if !cmp.ErrorType(err, repositories.MissingDBRecordError{})().Success() {
-			expectedTypeOfGot(t, repositories.MissingDBRecordError{}, err)
+		if !cmp.ErrorType(err, domain.MissingDBRecordError{})().Success() {
+			expectedTypeOfGot(t, domain.MissingDBRecordError{}, err)
 		}
 
 		// token 3 must have been deleted
@@ -251,11 +251,11 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 	})
 }
 
-func generateTestToken() *models.Token {
+func generateTestToken() *domain.Token {
 	// arbitrary timestamp that isn't the current moment
 	ts := time.Now().Truncate(time.Second).Add(-24 * time.Hour)
 
-	return &models.Token{
+	return &domain.Token{
 		ID:        "token_id",
 		Type:      123,
 		Value:     "Hello World",

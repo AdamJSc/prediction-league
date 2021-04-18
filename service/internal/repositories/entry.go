@@ -6,7 +6,7 @@ import (
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"golang.org/x/net/context"
-	"prediction-league/service/internal/models"
+	"prediction-league/service/internal/domain"
 	"time"
 )
 
@@ -26,25 +26,25 @@ var entryDBFields = []string{
 
 // EntryRepository defines the interface for transacting with our Entry data source
 type EntryRepository interface {
-	Insert(ctx context.Context, entry *models.Entry) error
-	Update(ctx context.Context, entry *models.Entry) error
-	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]models.Entry, error)
+	Insert(ctx context.Context, entry *domain.Entry) error
+	Update(ctx context.Context, entry *domain.Entry) error
+	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.Entry, error)
 	ExistsByID(ctx context.Context, id string) error
 }
 
 // EntryDatabaseRepository defines our DB-backed Entry data store
 type EntryDatabaseRepository struct {
-	agent coresql.Agent
+	Agent coresql.Agent
 }
 
 // Insert inserts a new Entry into the database
-func (e EntryDatabaseRepository) Insert(ctx context.Context, entry *models.Entry) error {
+func (e EntryDatabaseRepository) Insert(ctx context.Context, entry *domain.Entry) error {
 	stmt := `INSERT INTO entry (id, ` + getDBFieldsStringFromFields(entryDBFields) + `, created_at)
 					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now().Truncate(time.Second)
 
-	rows, err := e.agent.QueryContext(
+	rows, err := e.Agent.QueryContext(
 		ctx,
 		stmt,
 		entry.ID,
@@ -71,14 +71,14 @@ func (e EntryDatabaseRepository) Insert(ctx context.Context, entry *models.Entry
 }
 
 // Update updates an existing Entry in the database
-func (e EntryDatabaseRepository) Update(ctx context.Context, entry *models.Entry) error {
+func (e EntryDatabaseRepository) Update(ctx context.Context, entry *domain.Entry) error {
 	stmt := `UPDATE entry
 				SET ` + getDBFieldsWithEqualsPlaceholdersStringFromFields(entryDBFields) + `, updated_at = ?
 				WHERE id = ?`
 
 	now := sqltypes.ToNullTime(time.Now().Truncate(time.Second))
 
-	rows, err := e.agent.QueryContext(
+	rows, err := e.Agent.QueryContext(
 		ctx,
 		stmt,
 		entry.ShortCode,
@@ -105,20 +105,20 @@ func (e EntryDatabaseRepository) Update(ctx context.Context, entry *models.Entry
 }
 
 // Select retrieves Entries from our database based on the provided criteria
-func (e EntryDatabaseRepository) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]models.Entry, error) {
+func (e EntryDatabaseRepository) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.Entry, error) {
 	whereStmt, params := dbWhereStmt(criteria, matchAny)
 
 	stmt := `SELECT id, ` + getDBFieldsStringFromFields(entryDBFields) + `, created_at, updated_at FROM entry ` + whereStmt
 
-	rows, err := e.agent.QueryContext(ctx, stmt, params...)
+	rows, err := e.Agent.QueryContext(ctx, stmt, params...)
 	if err != nil {
 		return nil, wrapDBError(err)
 	}
 	defer rows.Close()
 
-	var entries []models.Entry
+	var entries []domain.Entry
 	for rows.Next() {
-		entry := models.Entry{}
+		entry := domain.Entry{}
 
 		if err := rows.Scan(
 			&entry.ID,
@@ -142,7 +142,7 @@ func (e EntryDatabaseRepository) Select(ctx context.Context, criteria map[string
 	}
 
 	if len(entries) == 0 {
-		return nil, MissingDBRecordError{errors.New("no entries found")}
+		return nil, domain.MissingDBRecordError{Err: errors.New("no entries found")}
 	}
 
 	return entries, nil
@@ -152,7 +152,7 @@ func (e EntryDatabaseRepository) Select(ctx context.Context, criteria map[string
 func (e EntryDatabaseRepository) ExistsByID(ctx context.Context, id string) error {
 	stmt := `SELECT COUNT(*) FROM entry WHERE id = ?`
 
-	row := e.agent.QueryRowContext(ctx, stmt, id)
+	row := e.Agent.QueryRowContext(ctx, stmt, id)
 
 	var count int
 	if err := row.Scan(&count); err != nil {
@@ -160,13 +160,8 @@ func (e EntryDatabaseRepository) ExistsByID(ctx context.Context, id string) erro
 	}
 
 	if count == 0 {
-		return MissingDBRecordError{fmt.Errorf("entry id %s: not found", id)}
+		return domain.MissingDBRecordError{Err: fmt.Errorf("entry id %s: not found", id)}
 	}
 
 	return nil
-}
-
-// NewEntryDatabaseRepository instantiates a new EntryDatabaseRepository with the provided DB agent
-func NewEntryDatabaseRepository(db coresql.Agent) EntryDatabaseRepository {
-	return EntryDatabaseRepository{agent: db}
 }

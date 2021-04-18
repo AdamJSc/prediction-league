@@ -7,7 +7,6 @@ import (
 	"log"
 	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 	"strings"
 	"sync"
 	"time"
@@ -19,7 +18,7 @@ const predictionWindowOpenCronSpec = "34 12 * * *"
 
 // newPredictionWindowOpenJob returns a new job that issues emails to entrants
 // when a new Prediction Window has been opened for the provided season
-func newPredictionWindowOpenJob(season models.Season, injector app.DependencyInjector) *job {
+func newPredictionWindowOpenJob(season domain.Season, injector app.DependencyInjector) *job {
 	jobName := strings.ToLower(fmt.Sprintf("prediction-window-open-%s", season.ID))
 
 	entryAgent := domain.EntryAgent{
@@ -79,8 +78,8 @@ func newPredictionWindowOpenJob(season models.Season, injector app.DependencyInj
 // issuePredictionWindowOpenEmails issues a series of prediction window open emails to the provided entries
 func issuePredictionWindowOpenEmails(
 	ctx context.Context,
-	entries []models.Entry,
-	window models.SequencedTimeFrame,
+	entries []domain.Entry,
+	window domain.SequencedTimeFrame,
 	errChan chan error,
 	commsAgent domain.CommunicationsAgent,
 ) {
@@ -93,7 +92,7 @@ func issuePredictionWindowOpenEmails(
 		wg.Add(1)
 		sem <- struct{}{}
 
-		go func(entry models.Entry) {
+		go func(entry domain.Entry) {
 			defer wg.Done()
 			defer func() { <-sem }()
 
@@ -110,10 +109,10 @@ func issuePredictionWindowOpenEmails(
 
 // GenerateTimeFrameForPredictionWindowOpenQuery returns the timeframe required for querying
 // Prediction Windows within the PredictionWindowOpen cron job
-func GenerateTimeFrameForPredictionWindowOpenQuery(t time.Time) models.TimeFrame {
+func GenerateTimeFrameForPredictionWindowOpenQuery(t time.Time) domain.TimeFrame {
 	// from 24 hours prior to base time
 	// until one minute before base time
-	return models.TimeFrame{
+	return domain.TimeFrame{
 		From:  t.Add(-24 * time.Hour),
 		Until: t.Add(-time.Minute),
 	}

@@ -5,7 +5,6 @@ import (
 	"github.com/LUSHDigital/core/rest"
 	"net/http"
 	"prediction-league/service/internal/app/httph"
-	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
 )
 
@@ -32,14 +31,14 @@ func retrieveSeasonHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter
 		}
 
 		// retrieve the season we need
-		season, err := datastore.Seasons.GetByID(seasonID)
+		season, err := domain.SeasonsDataStore.GetByID(seasonID)
 		if err != nil {
 			rest.NotFoundError(fmt.Errorf("invalid season: %s", seasonID)).WriteTo(w)
 			return
 		}
 
 		// get teams that correlate to season's team IDs
-		teams, err := domain.FilterTeamsByIDs(season.TeamIDs, datastore.Teams)
+		teams, err := domain.FilterTeamsByIDs(season.TeamIDs, domain.TeamsDataStore)
 		if err != nil {
 			responseFromError(err).WriteTo(w)
 			return

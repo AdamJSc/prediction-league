@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"prediction-league/service/internal/models"
+	"prediction-league/service/internal/domain"
 )
 
 type createEntryRequest struct {
@@ -11,8 +11,8 @@ type createEntryRequest struct {
 	RealmPIN        string `json:"pin"`
 }
 
-func (r createEntryRequest) ToEntryModel() models.Entry {
-	return models.Entry{
+func (r createEntryRequest) ToEntryModel() domain.Entry {
+	return domain.Entry{
 		EntrantName:     r.EntrantName,
 		EntrantNickname: r.EntrantNickname,
 		EntrantEmail:    r.EntrantEmail,
@@ -32,8 +32,8 @@ type createEntryPredictionRequest struct {
 	RankingIDs     []string `json:"ranking_ids"`
 }
 
-func (r createEntryPredictionRequest) ToEntryPredictionModel() models.EntryPrediction {
-	return models.NewEntryPrediction(r.RankingIDs)
+func (r createEntryPredictionRequest) ToEntryPredictionModel() domain.EntryPrediction {
+	return domain.NewEntryPrediction(r.RankingIDs)
 }
 
 type predictionLoginRequest struct {

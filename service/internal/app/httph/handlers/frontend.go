@@ -6,7 +6,6 @@ import (
 	"github.com/LUSHDigital/core/rest"
 	"net/http"
 	"prediction-league/service/internal/app/httph"
-	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/pages"
 	"time"
@@ -22,7 +21,7 @@ func frontendIndexHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter,
 		defer cancel()
 
 		seasonID := domain.RealmFromContext(ctx).SeasonID
-		season, err := datastore.Seasons.GetByID(seasonID)
+		season, err := domain.SeasonsDataStore.GetByID(seasonID)
 		if err != nil {
 			rest.InternalError(err).WriteTo(w)
 			return
@@ -99,7 +98,7 @@ func frontendJoinHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, 
 		}
 		defer cancel()
 
-		season, err := datastore.Seasons.GetByID(domain.RealmFromContext(ctx).SeasonID)
+		season, err := domain.SeasonsDataStore.GetByID(domain.RealmFromContext(ctx).SeasonID)
 		if err != nil {
 			rest.InternalError(err).WriteTo(w)
 			return

@@ -6,12 +6,28 @@ import (
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
-	"prediction-league/service/internal/datastore"
-	"prediction-league/service/internal/models"
-	"prediction-league/service/internal/repositories"
+	repofac2 "prediction-league/service/internal/repositories/repofac"
 	"sort"
 	"time"
 )
+
+// Standings provides a data type for league standings that have been retrieved from an external data source
+type Standings struct {
+	ID          uuid.UUID         `db:"id"`
+	SeasonID    string            `db:"season_id"`
+	RoundNumber int               `db:"round_number"`
+	Rankings    []RankingWithMeta `db:"rankings"`
+	Finalised   bool              `db:"finalised"`
+	CreatedAt   time.Time         `db:"created_at"`
+	UpdatedAt   sqltypes.NullTime `db:"updated_at"`
+}
+
+// These methods make the Standings struct sortable
+func (s Standings) Len() int      { return len(s.Rankings) }
+func (s Standings) Swap(i, j int) { s.Rankings[i], s.Rankings[j] = s.Rankings[j], s.Rankings[i] }
+func (s Standings) Less(i, j int) bool {
+	return s.Rankings[i].Position < s.Rankings[j].Position
+}
 
 // StandingsAgentInjector defines the dependencies required by our StandingsAgent
 type StandingsAgentInjector interface {
@@ -22,13 +38,13 @@ type StandingsAgentInjector interface {
 type StandingsAgent struct{ StandingsAgentInjector }
 
 // CreateStandings handles the creation of a new Standings in the database
-func (s StandingsAgent) CreateStandings(ctx context.Context, standings models.Standings) (models.Standings, error) {
+func (s StandingsAgent) CreateStandings(ctx context.Context, standings Standings) (Standings, error) {
 	db := s.MySQL()
 
 	// generate a new entry ID
 	id, err := uuid.NewV4()
 	if err != nil {
-		return models.Standings{}, InternalError{err}
+		return Standings{}, InternalError{err}
 	}
 
 	// override these values
@@ -36,64 +52,64 @@ func (s StandingsAgent) CreateStandings(ctx context.Context, standings models.St
 	standings.CreatedAt = time.Now().Truncate(time.Second)
 	standings.UpdatedAt = sqltypes.NullTime{}
 
-	standingsRepo := repositories.NewStandingsDatabaseRepository(db)
+	standingsRepo := repofac2.NewStandingsDatabaseRepository(db)
 
 	// write entry to database
 	if err := standingsRepo.Insert(ctx, &standings); err != nil {
-		return models.Standings{}, domainErrorFromRepositoryError(err)
+		return Standings{}, domainErrorFromRepositoryError(err)
 	}
 
 	return standings, nil
 }
 
 // RetrieveStandingsByID handles the retrieval of an existing Standings in the database by its ID
-func (s StandingsAgent) RetrieveStandingsByID(ctx context.Context, id string) (models.Standings, error) {
-	standingsRepo := repositories.NewStandingsDatabaseRepository(s.MySQL())
+func (s StandingsAgent) RetrieveStandingsByID(ctx context.Context, id string) (Standings, error) {
+	standingsRepo := repofac2.NewStandingsDatabaseRepository(s.MySQL())
 
 	retrievedStandings, err := standingsRepo.Select(ctx, map[string]interface{}{
 		"id": id,
 	}, false)
 	if err != nil {
-		return models.Standings{}, domainErrorFromRepositoryError(err)
+		return Standings{}, domainErrorFromRepositoryError(err)
 	}
 
 	return retrievedStandings[0], nil
 }
 
 // RetrieveStandingsBySeasonAndRoundNumber handles the retrieval of an existing Standings in the database by its Season ID and Round Number
-func (s StandingsAgent) RetrieveStandingsBySeasonAndRoundNumber(ctx context.Context, seasonID string, roundNumber int) (models.Standings, error) {
-	standingsRepo := repositories.NewStandingsDatabaseRepository(s.MySQL())
+func (s StandingsAgent) RetrieveStandingsBySeasonAndRoundNumber(ctx context.Context, seasonID string, roundNumber int) (Standings, error) {
+	standingsRepo := repofac2.NewStandingsDatabaseRepository(s.MySQL())
 
 	retrievedStandings, err := standingsRepo.Select(ctx, map[string]interface{}{
 		"season_id":    seasonID,
 		"round_number": roundNumber,
 	}, false)
 	if err != nil {
-		return models.Standings{}, domainErrorFromRepositoryError(err)
+		return Standings{}, domainErrorFromRepositoryError(err)
 	}
 
 	return retrievedStandings[0], nil
 }
 
 // RetrieveLatestStandingsBySeasonIDAndTimestamp handles the retrieval of the latest Standings in the database by its ID
-func (s StandingsAgent) RetrieveLatestStandingsBySeasonIDAndTimestamp(ctx context.Context, seasonID string, ts time.Time) (models.Standings, error) {
-	standingsRepo := repositories.NewStandingsDatabaseRepository(s.MySQL())
+func (s StandingsAgent) RetrieveLatestStandingsBySeasonIDAndTimestamp(ctx context.Context, seasonID string, ts time.Time) (Standings, error) {
+	standingsRepo := repofac2.NewStandingsDatabaseRepository(s.MySQL())
 
 	retrievedStandings, err := standingsRepo.SelectLatestBySeasonIDAndTimestamp(ctx, seasonID, ts)
 	if err != nil {
-		return models.Standings{}, domainErrorFromRepositoryError(err)
+		return Standings{}, domainErrorFromRepositoryError(err)
 	}
 
 	return retrievedStandings, nil
 }
 
 // UpdateStandings handles the updating of an existing Standings in the database
-func (s StandingsAgent) UpdateStandings(ctx context.Context, standings models.Standings) (models.Standings, error) {
-	standingsRepo := repositories.NewStandingsDatabaseRepository(s.MySQL())
+func (s StandingsAgent) UpdateStandings(ctx context.Context, standings Standings) (Standings, error) {
+	standingsRepo := repofac2.NewStandingsDatabaseRepository(s.MySQL())
 
 	// ensure the entry exists
 	if err := standingsRepo.ExistsByID(ctx, standings.ID.String()); err != nil {
-		return models.Standings{}, domainErrorFromRepositoryError(err)
+		return Standings{}, domainErrorFromRepositoryError(err)
 	}
 
 	// override these values
@@ -101,7 +117,7 @@ func (s StandingsAgent) UpdateStandings(ctx context.Context, standings models.St
 
 	// write to database
 	if err := standingsRepo.Update(ctx, &standings); err != nil {
-		return models.Standings{}, domainErrorFromRepositoryError(err)
+		return Standings{}, domainErrorFromRepositoryError(err)
 	}
 
 	return standings, nil
@@ -113,8 +129,8 @@ func (s StandingsAgent) RetrieveStandingsIfNotFinalised(
 	ctx context.Context,
 	seasonID string,
 	roundNumber int,
-	defaultStandings models.Standings,
-) (models.Standings, error) {
+	defaultStandings Standings,
+) (Standings, error) {
 	standings, err := s.RetrieveStandingsBySeasonAndRoundNumber(
 		ctx,
 		seasonID,
@@ -128,7 +144,7 @@ func (s StandingsAgent) RetrieveStandingsIfNotFinalised(
 			return defaultStandings, nil
 		default:
 			// something went wrong whilst retrieving our previous standings...
-			return models.Standings{}, err
+			return Standings{}, err
 		}
 	}
 
@@ -142,14 +158,14 @@ func (s StandingsAgent) RetrieveStandingsIfNotFinalised(
 }
 
 // ValidateAndSortStandings sorts and validates the provided standings
-func ValidateAndSortStandings(standings *models.Standings) error {
+func ValidateAndSortStandings(standings *Standings) error {
 	if standings == nil {
 		return InternalError{errors.New("standings not provided")}
 	}
 
 	// ensure that all team IDs are valid
 	for _, ranking := range standings.Rankings {
-		if _, err := datastore.Teams.GetByID(ranking.ID); err != nil {
+		if _, err := TeamsDataStore.GetByID(ranking.ID); err != nil {
 			return NotFoundError{err}
 		}
 	}

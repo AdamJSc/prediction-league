@@ -7,7 +7,6 @@ import (
 	"log"
 	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 	"strings"
 	"sync"
 	"time"
@@ -19,7 +18,7 @@ const predictionWindowClosingCronSpec = "48 16 * * *"
 
 // newPredictionWindowClosingJob returns a new job that issues emails to entrants
 // when an active Prediction Window is due to close for the provided season
-func newPredictionWindowClosingJob(season models.Season, injector app.DependencyInjector) *job {
+func newPredictionWindowClosingJob(season domain.Season, injector app.DependencyInjector) *job {
 	jobName := strings.ToLower(fmt.Sprintf("prediction-window-closing-%s", season.ID))
 
 	entryAgent := domain.EntryAgent{
@@ -79,8 +78,8 @@ func newPredictionWindowClosingJob(season models.Season, injector app.Dependency
 // issuePredictionWindowClosingEmails issues a series of prediction window closing emails to the provided entries
 func issuePredictionWindowClosingEmails(
 	ctx context.Context,
-	entries []models.Entry,
-	window models.SequencedTimeFrame,
+	entries []domain.Entry,
+	window domain.SequencedTimeFrame,
 	errChan chan error,
 	commsAgent domain.CommunicationsAgent,
 ) {
@@ -93,7 +92,7 @@ func issuePredictionWindowClosingEmails(
 		wg.Add(1)
 		sem <- struct{}{}
 
-		go func(entry models.Entry) {
+		go func(entry domain.Entry) {
 			defer wg.Done()
 			defer func() { <-sem }()
 
@@ -110,11 +109,11 @@ func issuePredictionWindowClosingEmails(
 
 // GenerateTimeFrameForPredictionWindowClosingQuery returns the timeframe required for querying
 // Prediction Windows within the PredictionWindowClosing cron job
-func GenerateTimeFrameForPredictionWindowClosingQuery(t time.Time) models.TimeFrame {
+func GenerateTimeFrameForPredictionWindowClosingQuery(t time.Time) domain.TimeFrame {
 	// from 12 hours after base time
 	// until 24 hours after from time, less a minute
 	from := t.Add(12 * time.Hour)
-	return models.TimeFrame{
+	return domain.TimeFrame{
 		From:  from,
 		Until: from.Add(24 * time.Hour).Add(-time.Minute),
 	}

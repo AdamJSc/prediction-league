@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"fmt"
+	"prediction-league/service/internal/domain"
 	"strings"
 )
 
@@ -32,10 +33,10 @@ func dbWhereStmt(criteria map[string]interface{}, matchAny bool) (stmt string, p
 	var conditions []string
 
 	for field, value := range criteria {
-		var condition Condition
+		var condition domain.DBQueryCondition
 		switch value.(type) {
-		case Condition:
-			condition = value.(Condition)
+		case domain.DBQueryCondition:
+			condition = value.(domain.DBQueryCondition)
 		default:
 			condition.Operator = "="
 			condition.Operand = value
@@ -62,8 +63,3 @@ func dbWhereStmt(criteria map[string]interface{}, matchAny bool) (stmt string, p
 	return stmt, params
 }
 
-// Condition represents an operator/operand pair
-type Condition struct {
-	Operator string
-	Operand  interface{}
-}

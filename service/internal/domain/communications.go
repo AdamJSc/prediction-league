@@ -6,9 +6,7 @@ import (
 	"errors"
 	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
-	"prediction-league/service/internal/datastore"
-	"prediction-league/service/internal/models"
-	"prediction-league/service/internal/repositories"
+	repofac2 "prediction-league/service/internal/repositories/repofac"
 	"prediction-league/service/internal/views"
 )
 
@@ -23,8 +21,6 @@ const (
 	EmailSubjectPredictionWindowClosingFinal = "Final chance to revise your Prediction this season!"
 )
 
-var ErrCurrentTimeFrameIsMissing = errors.New("current timeframe is missing")
-
 // CommunicationsAgentInjector defines the dependencies required by our CommunicationsAgent
 type CommunicationsAgentInjector interface {
 	Config() Config
@@ -37,7 +33,7 @@ type CommunicationsAgentInjector interface {
 type CommunicationsAgent struct{ CommunicationsAgentInjector }
 
 // IssueNewEntryEmail generates a "new entry" email for the provided Entry and pushes it to the send queue
-func (c CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *models.Entry, paymentDetails *PaymentDetails) error {
+func (c CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *Entry, paymentDetails *PaymentDetails) error {
 	if entry == nil {
 		return InternalError{errors.New("no entry provided")}
 	}
@@ -55,7 +51,7 @@ func (c CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *models
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
 
-	season, err := datastore.Seasons.GetByID(entry.SeasonID)
+	season, err := SeasonsDataStore.GetByID(entry.SeasonID)
 	if err != nil {
 		return NotFoundError{err}
 	}
@@ -82,7 +78,7 @@ func (c CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *models
 }
 
 // IssueRoundCompleteEmail generates a "round complete" email for the provided Scored Entry Prediction and pushes it to the send queue
-func (c CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *models.ScoredEntryPrediction, finalRound bool) error {
+func (c CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *ScoredEntryPrediction, finalRound bool) error {
 	entry, err := getEntryFromScoredEntryPrediction(ctx, sep, c.MySQL())
 	if err != nil {
 		return err
@@ -98,7 +94,7 @@ func (c CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *m
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
 
-	season, err := datastore.Seasons.GetByID(entry.SeasonID)
+	season, err := SeasonsDataStore.GetByID(entry.SeasonID)
 	if err != nil {
 		return NotFoundError{err}
 	}
@@ -136,7 +132,7 @@ func (c CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *m
 }
 
 // IssueShortCodeResetBeginEmail generates a "short code reset begin" email for the provided Entry and pushes it to the send queue
-func (c CommunicationsAgent) IssueShortCodeResetBeginEmail(_ context.Context, entry *models.Entry, resetToken string) error {
+func (c CommunicationsAgent) IssueShortCodeResetBeginEmail(_ context.Context, entry *Entry, resetToken string) error {
 	if entry == nil {
 		return InternalError{errors.New("no entry provided")}
 	}
@@ -146,7 +142,7 @@ func (c CommunicationsAgent) IssueShortCodeResetBeginEmail(_ context.Context, en
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
 
-	season, err := datastore.Seasons.GetByID(entry.SeasonID)
+	season, err := SeasonsDataStore.GetByID(entry.SeasonID)
 	if err != nil {
 		return NotFoundError{err}
 	}
@@ -171,7 +167,7 @@ func (c CommunicationsAgent) IssueShortCodeResetBeginEmail(_ context.Context, en
 }
 
 // IssueShortCodeResetCompleteEmail generates a "short code reset complete" email for the provided Entry and pushes it to the send queue
-func (c CommunicationsAgent) IssueShortCodeResetCompleteEmail(_ context.Context, entry *models.Entry) error {
+func (c CommunicationsAgent) IssueShortCodeResetCompleteEmail(_ context.Context, entry *Entry) error {
 	if entry == nil {
 		return InternalError{errors.New("no entry provided")}
 	}
@@ -181,7 +177,7 @@ func (c CommunicationsAgent) IssueShortCodeResetCompleteEmail(_ context.Context,
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
 
-	season, err := datastore.Seasons.GetByID(entry.SeasonID)
+	season, err := SeasonsDataStore.GetByID(entry.SeasonID)
 	if err != nil {
 		return NotFoundError{err}
 	}
@@ -207,7 +203,7 @@ func (c CommunicationsAgent) IssueShortCodeResetCompleteEmail(_ context.Context,
 }
 
 // IssuePredictionWindowOpenEmail generates a "prediction window open" email for the provided Entry and pushes it to the send queue
-func (c CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, entry *models.Entry, tf models.SequencedTimeFrame) error {
+func (c CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, entry *Entry, tf SequencedTimeFrame) error {
 	if entry == nil {
 		return InternalError{errors.New("no entry provided")}
 	}
@@ -217,7 +213,7 @@ func (c CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, e
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
 
-	season, err := datastore.Seasons.GetByID(entry.SeasonID)
+	season, err := SeasonsDataStore.GetByID(entry.SeasonID)
 	if err != nil {
 		return NotFoundError{err}
 	}
@@ -254,7 +250,7 @@ func (c CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, e
 }
 
 // IssuePredictionWindowClosingEmail generates a "prediction window closing" email for the provided Entry and pushes it to the send queue
-func (c CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Context, entry *models.Entry, tf models.SequencedTimeFrame) error {
+func (c CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Context, entry *Entry, tf SequencedTimeFrame) error {
 	if entry == nil {
 		return InternalError{errors.New("no entry provided")}
 	}
@@ -264,7 +260,7 @@ func (c CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Context
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
 
-	season, err := datastore.Seasons.GetByID(entry.SeasonID)
+	season, err := SeasonsDataStore.GetByID(entry.SeasonID)
 	if err != nil {
 		return NotFoundError{err}
 	}
@@ -301,9 +297,9 @@ func (c CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Context
 }
 
 // getEntryFromScoredEntryPrediction retrieves the relationally-affiliated entry from the provided scored entry prediction
-func getEntryFromScoredEntryPrediction(ctx context.Context, sep *models.ScoredEntryPrediction, db coresql.Agent) (*models.Entry, error) {
-	entryPredictionRepo := repositories.NewEntryPredictionDatabaseRepository(db)
-	entryRepo := repositories.NewEntryDatabaseRepository(db)
+func getEntryFromScoredEntryPrediction(ctx context.Context, sep *ScoredEntryPrediction, db coresql.Agent) (*Entry, error) {
+	entryPredictionRepo := repofac2.NewEntryPredictionDatabaseRepository(db)
+	entryRepo := repofac2.NewEntryDatabaseRepository(db)
 
 	// retrieve entry prediction from scored entry prediction
 	entryPredictions, err := entryPredictionRepo.Select(ctx, map[string]interface{}{
@@ -331,8 +327,8 @@ func getEntryFromScoredEntryPrediction(ctx context.Context, sep *models.ScoredEn
 }
 
 // getStandingsFromScoredEntryPrediction retrieves the relationally-affiliated standings from the provided scored entry prediction
-func getStandingsFromScoredEntryPrediction(ctx context.Context, sep *models.ScoredEntryPrediction, db coresql.Agent) (*models.Standings, error) {
-	standingsRepo := repositories.NewStandingsDatabaseRepository(db)
+func getStandingsFromScoredEntryPrediction(ctx context.Context, sep *ScoredEntryPrediction, db coresql.Agent) (*Standings, error) {
+	standingsRepo := repofac2.NewStandingsDatabaseRepository(db)
 
 	// retrieve standings from scored entry prediction
 	standings, err := standingsRepo.Select(ctx, map[string]interface{}{
@@ -349,7 +345,7 @@ func getStandingsFromScoredEntryPrediction(ctx context.Context, sep *models.Scor
 }
 
 // GenerateWindowDataFromSequencedTimeFrame generates an email WindowData object from the provided SequencedTimeFrame
-func GenerateWindowDataFromSequencedTimeFrame(tf models.SequencedTimeFrame) (*WindowData, error) {
+func GenerateWindowDataFromSequencedTimeFrame(tf SequencedTimeFrame) (*WindowData, error) {
 	var window WindowData
 
 	if tf.Current == nil {

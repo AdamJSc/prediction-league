@@ -4,7 +4,6 @@ import (
 	"github.com/LUSHDigital/core/rest"
 	"net/http"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 	"strings"
 	"time"
 )
@@ -18,11 +17,11 @@ type createEntryResponse struct {
 
 type retrieveSeasonResponse struct {
 	Name  string        `json:"name"`
-	Teams []models.Team `json:"teams"`
+	Teams []domain.Team `json:"teams"`
 }
 
 type retrieveLatestEntryPredictionResponse struct {
-	Teams       []models.Team `json:"teams"`
+	Teams       []domain.Team `json:"teams"`
 	LastUpdated time.Time     `json:"last_updated"`
 }
 
@@ -33,7 +32,7 @@ type retrieveLatestScoredEntryPredictionResponse struct {
 }
 
 type scoredEntryPredictionResponseRanking struct {
-	models.RankingWithScore
+	domain.RankingWithScore
 	MetaPosition int `json:"meta_position"`
 }
 

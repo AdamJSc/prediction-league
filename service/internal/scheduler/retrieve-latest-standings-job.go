@@ -8,14 +8,13 @@ import (
 	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/clients"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 	"strings"
 	"sync"
 	"time"
 )
 
 // newRetrieveLatestStandingsJob returns a new job that retrieves the latest standings, pertaining to the provided season
-func newRetrieveLatestStandingsJob(season models.Season, client clients.FootballDataSource, injector app.DependencyInjector) *job {
+func newRetrieveLatestStandingsJob(season domain.Season, client clients.FootballDataSource, injector app.DependencyInjector) *job {
 	jobName := strings.ToLower(fmt.Sprintf("retrieve-latest-standings-%s", season.ID))
 
 	standingsAgent := domain.StandingsAgent{
@@ -87,7 +86,7 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 			clientStandings.RoundNumber = season.MaxRounds
 		}
 
-		var standings models.Standings
+		var standings domain.Standings
 
 		existingStandings, err := standingsAgent.RetrieveStandingsBySeasonAndRoundNumber(ctx, season.ID, clientStandings.RoundNumber)
 		switch err.(type) {
@@ -125,7 +124,7 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 			return
 		}
 
-		var scoredEntryPredictions []models.ScoredEntryPrediction
+		var scoredEntryPredictions []domain.ScoredEntryPrediction
 
 		// calculate and save ranking scores for each entry prediction based on the standings
 		for _, entryPrediction := range latestEntryPredictions {
@@ -197,10 +196,10 @@ func newRetrieveLatestStandingsJob(season models.Season, client clients.Football
 
 func processExistingStandings(
 	ctx context.Context,
-	existingStandings models.Standings,
-	clientStandings models.Standings,
+	existingStandings domain.Standings,
+	clientStandings domain.Standings,
 	standingsAgent domain.StandingsAgent,
-) (models.Standings, error) {
+) (domain.Standings, error) {
 	// update rankings
 	existingStandings.Rankings = clientStandings.Rankings
 	return standingsAgent.UpdateStandings(ctx, existingStandings)
@@ -208,10 +207,10 @@ func processExistingStandings(
 
 func processNewStandings(
 	ctx context.Context,
-	clientStandings models.Standings,
-	season models.Season,
+	clientStandings domain.Standings,
+	season domain.Season,
 	standingsAgent domain.StandingsAgent,
-) (models.Standings, error) {
+) (domain.Standings, error) {
 	if clientStandings.RoundNumber == 1 {
 		// this is the first time we've scraped our first round
 		// just save it!
@@ -221,7 +220,7 @@ func processNewStandings(
 	// check whether we have a previous round of standings that still needs to be finalised
 	retrievedStandings, err := standingsAgent.RetrieveStandingsIfNotFinalised(ctx, season.ID, clientStandings.RoundNumber-1, clientStandings)
 	if err != nil {
-		return models.Standings{}, err
+		return domain.Standings{}, err
 	}
 
 	if retrievedStandings.RoundNumber != clientStandings.RoundNumber {
@@ -236,7 +235,7 @@ func processNewStandings(
 }
 
 // upsertScoredEntryPrediction creates or updates the provided ScoredEntryPrediction depending on whether or not it already exists
-func upsertScoredEntryPrediction(ctx context.Context, sep *models.ScoredEntryPrediction, sepAgent domain.ScoredEntryPredictionAgent) error {
+func upsertScoredEntryPrediction(ctx context.Context, sep *domain.ScoredEntryPrediction, sepAgent domain.ScoredEntryPredictionAgent) error {
 	// see if we have an existing scored entry prediction that matches our provided sep
 	existingScoredEntryPrediction, err := sepAgent.RetrieveScoredEntryPredictionByIDs(
 		ctx,
@@ -277,7 +276,7 @@ func upsertScoredEntryPrediction(ctx context.Context, sep *models.ScoredEntryPre
 // issueRoundCompleteEmails issues a series of round complete emails to the provided scored entry predictions
 func issueRoundCompleteEmails(
 	ctx context.Context,
-	scoredEntryPredictions []models.ScoredEntryPrediction,
+	scoredEntryPredictions []domain.ScoredEntryPrediction,
 	finalRound bool,
 	errChan chan error,
 	commsAgent domain.CommunicationsAgent,
@@ -291,7 +290,7 @@ func issueRoundCompleteEmails(
 		wg.Add(1)
 		sem <- struct{}{}
 
-		go func(pred models.ScoredEntryPrediction) {
+		go func(pred domain.ScoredEntryPrediction) {
 			defer wg.Done()
 			defer func() { <-sem }()
 
