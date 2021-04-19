@@ -7,7 +7,7 @@ import (
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
-	repofac2 "prediction-league/service/internal/repositories/repofac"
+	"prediction-league/service/internal/repositories/repofac"
 	"strconv"
 	"strings"
 	"time"
@@ -42,13 +42,13 @@ func (s ScoredEntryPredictionAgent) CreateScoredEntryPrediction(ctx context.Cont
 	}
 
 	// ensure that entryPrediction exists
-	entryPredictionRepo := repofac2.NewEntryPredictionDatabaseRepository(db)
+	entryPredictionRepo := repofac.NewEntryPredictionDatabaseRepository(db)
 	if err := entryPredictionRepo.ExistsByID(ctx, scoredEntryPrediction.EntryPredictionID.String()); err != nil {
 		return ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
 
 	// ensure that standings exists
-	standingsRepo := repofac2.NewStandingsDatabaseRepository(db)
+	standingsRepo := repofac.NewStandingsDatabaseRepository(db)
 	if err := standingsRepo.ExistsByID(ctx, scoredEntryPrediction.StandingsID.String()); err != nil {
 		return ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
@@ -57,7 +57,7 @@ func (s ScoredEntryPredictionAgent) CreateScoredEntryPrediction(ctx context.Cont
 	scoredEntryPrediction.CreatedAt = time.Now().Truncate(time.Second)
 	scoredEntryPrediction.UpdatedAt = sqltypes.NullTime{}
 
-	scoredEntryPredictionRepo := repofac2.NewScoredEntryPredictionDatabaseRepository(db)
+	scoredEntryPredictionRepo := repofac.NewScoredEntryPredictionDatabaseRepository(db)
 
 	// write scoredEntryPrediction to database
 	if err := scoredEntryPredictionRepo.Insert(ctx, &scoredEntryPrediction); err != nil {
@@ -69,7 +69,7 @@ func (s ScoredEntryPredictionAgent) CreateScoredEntryPrediction(ctx context.Cont
 
 // RetrieveScoredEntryPredictionByIDs handles the retrieval of an existing ScoredEntryPrediction in the database by its ID
 func (s ScoredEntryPredictionAgent) RetrieveScoredEntryPredictionByIDs(ctx context.Context, entryPredictionID, standingsID string) (ScoredEntryPrediction, error) {
-	scoredEntryPredictionRepo := repofac2.NewScoredEntryPredictionDatabaseRepository(s.MySQL())
+	scoredEntryPredictionRepo := repofac.NewScoredEntryPredictionDatabaseRepository(s.MySQL())
 
 	retrievedScoredEntryPredictions, err := scoredEntryPredictionRepo.Select(ctx, map[string]interface{}{
 		"entry_prediction_id": entryPredictionID,
@@ -85,7 +85,7 @@ func (s ScoredEntryPredictionAgent) RetrieveScoredEntryPredictionByIDs(ctx conte
 // RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber handles the retrieval of
 // the most recently created ScoredEntryPrediction by the provided entry ID and round number
 func (s ScoredEntryPredictionAgent) RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(ctx context.Context, entryID string, roundNumber int) (*ScoredEntryPrediction, error) {
-	scoredEntryPredictionRepo := repofac2.NewScoredEntryPredictionDatabaseRepository(s.MySQL())
+	scoredEntryPredictionRepo := repofac.NewScoredEntryPredictionDatabaseRepository(s.MySQL())
 
 	retrievedScoredEntryPredictions, err := scoredEntryPredictionRepo.SelectByEntryIDAndRoundNumber(ctx, entryID, roundNumber)
 	if err != nil {
@@ -98,7 +98,7 @@ func (s ScoredEntryPredictionAgent) RetrieveLatestScoredEntryPredictionByEntryID
 
 // UpdateScoredEntryPrediction handles the updating of an existing ScoredEntryPrediction in the database
 func (s ScoredEntryPredictionAgent) UpdateScoredEntryPrediction(ctx context.Context, scoredEntryPrediction ScoredEntryPrediction) (ScoredEntryPrediction, error) {
-	scoredEntryPredictionRepo := repofac2.NewScoredEntryPredictionDatabaseRepository(s.MySQL())
+	scoredEntryPredictionRepo := repofac.NewScoredEntryPredictionDatabaseRepository(s.MySQL())
 
 	// ensure the scoredEntryPrediction exists
 	if err := scoredEntryPredictionRepo.Exists(

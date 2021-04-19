@@ -2,4 +2,4 @@ package views
 
 import "html/template"
 
-type Templates struct{ *template.Template }
+type Templates struct { *template.Template }

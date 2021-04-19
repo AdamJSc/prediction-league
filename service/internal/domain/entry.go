@@ -8,7 +8,7 @@ import (
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
 	"math/rand"
-	repofac2 "prediction-league/service/internal/repositories/repofac"
+	"prediction-league/service/internal/repositories/repofac"
 	"regexp"
 	"sort"
 	"strings"
@@ -85,7 +85,7 @@ type EntryAgentInjector interface {
 }
 
 // EntryAgent defines the behaviours for handling Entries
-type EntryAgent struct{ EntryAgentInjector }
+type EntryAgent struct { EntryAgentInjector }
 
 // CreateEntry handles the creation of a new Entry in the database
 func (e EntryAgent) CreateEntry(ctx context.Context, entry Entry, s *Season) (Entry, error) {
@@ -135,7 +135,7 @@ func (e EntryAgent) CreateEntry(ctx context.Context, entry Entry, s *Season) (En
 		return Entry{}, err
 	}
 
-	entryRepo := repofac2.NewEntryDatabaseRepository(db)
+	entryRepo := repofac.NewEntryDatabaseRepository(db)
 
 	// check for existing nickname so that we can return a nice error message if it already exists
 	existingNicknameEntries, err := entryRepo.Select(ctx, map[string]interface{}{
@@ -184,8 +184,8 @@ func (e EntryAgent) CreateEntry(ctx context.Context, entry Entry, s *Season) (En
 
 // RetrieveEntryByID handles the retrieval of an existing Entry in the database by its ID
 func (e EntryAgent) RetrieveEntryByID(ctx context.Context, id string) (Entry, error) {
-	entryRepo := repofac2.NewEntryDatabaseRepository(e.MySQL())
-	entryPredictionRepo := repofac2.NewEntryPredictionDatabaseRepository(e.MySQL())
+	entryRepo := repofac.NewEntryDatabaseRepository(e.MySQL())
+	entryPredictionRepo := repofac.NewEntryPredictionDatabaseRepository(e.MySQL())
 
 	entries, err := entryRepo.Select(ctx, map[string]interface{}{
 		"id": id,
@@ -219,8 +219,8 @@ func (e EntryAgent) RetrieveEntryByID(ctx context.Context, id string) (Entry, er
 
 // RetrieveEntryByEntrantEmail handles the retrieval of an existing Entry in the database by its email
 func (e EntryAgent) RetrieveEntryByEntrantEmail(ctx context.Context, email, seasonID, realmName string) (Entry, error) {
-	entryRepo := repofac2.NewEntryDatabaseRepository(e.MySQL())
-	entryPredictionRepo := repofac2.NewEntryPredictionDatabaseRepository(e.MySQL())
+	entryRepo := repofac.NewEntryDatabaseRepository(e.MySQL())
+	entryPredictionRepo := repofac.NewEntryPredictionDatabaseRepository(e.MySQL())
 
 	entries, err := entryRepo.Select(ctx, map[string]interface{}{
 		"season_id":     seasonID,
@@ -256,8 +256,8 @@ func (e EntryAgent) RetrieveEntryByEntrantEmail(ctx context.Context, email, seas
 
 // RetrieveEntryByEntrantNickname handles the retrieval of an existing Entry in the database by its nickname
 func (e EntryAgent) RetrieveEntryByEntrantNickname(ctx context.Context, nickname, seasonID, realmName string) (Entry, error) {
-	entryRepo := repofac2.NewEntryDatabaseRepository(e.MySQL())
-	entryPredictionRepo := repofac2.NewEntryPredictionDatabaseRepository(e.MySQL())
+	entryRepo := repofac.NewEntryDatabaseRepository(e.MySQL())
+	entryPredictionRepo := repofac.NewEntryPredictionDatabaseRepository(e.MySQL())
 
 	entries, err := entryRepo.Select(ctx, map[string]interface{}{
 		"season_id":        seasonID,
@@ -293,8 +293,8 @@ func (e EntryAgent) RetrieveEntryByEntrantNickname(ctx context.Context, nickname
 
 // RetrieveEntriesBySeasonID handles the retrieval of existing Entries in the database by their Season ID
 func (e EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID string, onlyApproved bool) ([]Entry, error) {
-	entryRepo := repofac2.NewEntryDatabaseRepository(e.MySQL())
-	entryPredictionRepo := repofac2.NewEntryPredictionDatabaseRepository(e.MySQL())
+	entryRepo := repofac.NewEntryDatabaseRepository(e.MySQL())
+	entryPredictionRepo := repofac.NewEntryPredictionDatabaseRepository(e.MySQL())
 
 	criteria := map[string]interface{}{
 		"season_id": seasonID,
@@ -334,7 +334,7 @@ func (e EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID stri
 
 // UpdateEntry handles the updating of an existing Entry in the database
 func (e EntryAgent) UpdateEntry(ctx context.Context, entry Entry) (Entry, error) {
-	entryRepo := repofac2.NewEntryDatabaseRepository(e.MySQL())
+	entryRepo := repofac.NewEntryDatabaseRepository(e.MySQL())
 
 	// ensure that Entry realm matches current realm
 	if RealmFromContext(ctx).Name != entry.RealmName {
@@ -365,8 +365,8 @@ func (e EntryAgent) UpdateEntry(ctx context.Context, entry Entry) (Entry, error)
 
 // AddEntryPredictionToEntry adds the provided EntryPrediction to the provided Entry
 func (e EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPrediction EntryPrediction, entry Entry) (Entry, error) {
-	entryRepo := repofac2.NewEntryDatabaseRepository(e.MySQL())
-	entryPredictionRepo := repofac2.NewEntryPredictionDatabaseRepository(e.MySQL())
+	entryRepo := repofac.NewEntryDatabaseRepository(e.MySQL())
+	entryPredictionRepo := repofac.NewEntryPredictionDatabaseRepository(e.MySQL())
 
 	// check short code is ok
 	if !GuardFromContext(ctx).AttemptMatches(entry.ShortCode) {
@@ -461,7 +461,7 @@ func (e EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPredicti
 
 // UpdateEntryPaymentDetails provides a shortcut to updating the payment details for a provided entryID
 func (e EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, paymentMethod, paymentRef string, acceptsOther bool) (Entry, error) {
-	entryRepo := repofac2.NewEntryDatabaseRepository(e.MySQL())
+	entryRepo := repofac.NewEntryDatabaseRepository(e.MySQL())
 
 	// ensure that payment method is valid
 	if !isValidEntryPaymentMethod(paymentMethod) {
@@ -527,7 +527,7 @@ func (e EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, paym
 
 // ApproveEntryByShortCode provides a shortcut to approving an entry by its short code
 func (e EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode string) (Entry, error) {
-	entryRepo := repofac2.NewEntryDatabaseRepository(e.MySQL())
+	entryRepo := repofac.NewEntryDatabaseRepository(e.MySQL())
 
 	// ensure basic auth has been provided and matches admin credentials
 	if !IsBasicAuthSuccessful(ctx) {
@@ -581,7 +581,7 @@ func (e EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode strin
 
 // RetrieveEntryPredictionByTimestamp returns the entry prediction affiliated with the provided entry id that is valid at the point the provided timestamp occurs
 func (e EntryAgent) RetrieveEntryPredictionByTimestamp(ctx context.Context, entry Entry, ts time.Time) (EntryPrediction, error) {
-	entryPredictionRepo := repofac2.NewEntryPredictionDatabaseRepository(e.MySQL())
+	entryPredictionRepo := repofac.NewEntryPredictionDatabaseRepository(e.MySQL())
 
 	// retrieve entry prediction
 	entryPrediction, err := entryPredictionRepo.SelectByEntryIDAndTimestamp(ctx, entry.ID.String(), ts)
@@ -693,7 +693,7 @@ func sanitiseEntry(entry *Entry) error {
 
 // GenerateUniqueShortCode generates a string that does not already exist as a Lookup Ref
 func GenerateUniqueShortCode(ctx context.Context, db coresql.Agent) (string, error) {
-	entryRepo := repofac2.NewEntryDatabaseRepository(db)
+	entryRepo := repofac.NewEntryDatabaseRepository(db)
 
 	shortCode := generateRandomAlphaNumericString(shortCodeLength)
 

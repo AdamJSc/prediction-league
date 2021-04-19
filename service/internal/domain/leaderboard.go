@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
-	repofac2 "prediction-league/service/internal/repositories/repofac"
+	"prediction-league/service/internal/repositories/repofac"
 	"sort"
 	"time"
 )
@@ -41,7 +41,7 @@ func (l LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context.
 	}
 
 	// retrieve the standings model that pertains to the provided ids
-	standingsRepo := repofac2.NewStandingsDatabaseRepository(l.MySQL())
+	standingsRepo := repofac.NewStandingsDatabaseRepository(l.MySQL())
 	retrievedStandings, err := standingsRepo.Select(ctx, map[string]interface{}{
 		"season_id":    seasonID,
 		"round_number": roundNumber,
@@ -72,7 +72,7 @@ func (l LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context.
 	standings := retrievedStandings[0]
 	realmName := RealmFromContext(ctx).Name
 
-	scoredEntryPredictionRepo := repofac2.NewScoredEntryPredictionDatabaseRepository(l.MySQL())
+	scoredEntryPredictionRepo := repofac.NewScoredEntryPredictionDatabaseRepository(l.MySQL())
 	lbRankings, err := scoredEntryPredictionRepo.SelectEntryCumulativeScoresByRealm(ctx, realmName, seasonID, roundNumber)
 	if err != nil {
 		switch err.(type) {

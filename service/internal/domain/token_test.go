@@ -5,7 +5,7 @@ import (
 	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/repositories"
-	repofac2 "prediction-league/service/internal/repositories/repofac"
+	"prediction-league/service/internal/repositories/repofac"
 	"testing"
 	"time"
 )
@@ -51,7 +51,7 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 		}
 
 		// inserting same token a second time must fail
-		err = repofac2.NewTokenDatabaseRepository(db).Insert(ctx, token)
+		err = repofac.NewTokenDatabaseRepository(db).Insert(ctx, token)
 		if !cmp.ErrorType(err, domain.DuplicateDBRecordError{})().Success() {
 			expectedTypeOfGot(t, domain.DuplicateDBRecordError{}, err)
 		}
@@ -88,7 +88,7 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 		}
 
 		// inserting same token a second time must fail
-		err = repofac2.NewTokenDatabaseRepository(db).Insert(ctx, token)
+		err = repofac.NewTokenDatabaseRepository(db).Insert(ctx, token)
 		if !cmp.ErrorType(err, domain.DuplicateDBRecordError{})().Success() {
 			expectedTypeOfGot(t, domain.DuplicateDBRecordError{}, err)
 		}
@@ -112,7 +112,7 @@ func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 	defer truncate(t)
 
 	token := generateTestToken()
-	tokenRepo := repofac2.NewTokenDatabaseRepository(db)
+	tokenRepo := repofac.NewTokenDatabaseRepository(db)
 	if err := tokenRepo.Insert(context.Background(), token); err != nil {
 		t.Fatal(err)
 	}
@@ -162,7 +162,7 @@ func TestTokenAgent_DeleteToken(t *testing.T) {
 	defer truncate(t)
 
 	token := generateTestToken()
-	tokenRepo := repofac2.NewTokenDatabaseRepository(db)
+	tokenRepo := repofac.NewTokenDatabaseRepository(db)
 	if err := tokenRepo.Insert(context.Background(), token); err != nil {
 		t.Fatal(err)
 	}
@@ -213,7 +213,7 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 		token3,
 	}
 
-	tokenRepo := repofac2.NewTokenDatabaseRepository(db)
+	tokenRepo := repofac.NewTokenDatabaseRepository(db)
 	for _, token := range tokens {
 		if err := tokenRepo.Insert(context.Background(), token); err != nil {
 			t.Fatal(err)

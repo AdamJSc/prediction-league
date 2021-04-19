@@ -15,7 +15,7 @@ import (
 	"log"
 	"os"
 	"prediction-league/service/internal/domain"
-	repofac2 "prediction-league/service/internal/repositories/repofac"
+	"prediction-league/service/internal/repositories/repofac"
 	"prediction-league/service/internal/views"
 	"reflect"
 	"strings"
@@ -216,7 +216,7 @@ func insertStandings(t *testing.T, standings domain.Standings) domain.Standings 
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := repofac2.NewStandingsDatabaseRepository(db).Insert(ctx, &standings); err != nil {
+	if err := repofac.NewStandingsDatabaseRepository(db).Insert(ctx, &standings); err != nil {
 		t.Fatal(err)
 	}
 
@@ -230,7 +230,7 @@ func updateStandings(t *testing.T, standings domain.Standings) domain.Standings 
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := repofac2.NewStandingsDatabaseRepository(db).Update(ctx, &standings); err != nil {
+	if err := repofac.NewStandingsDatabaseRepository(db).Update(ctx, &standings); err != nil {
 		t.Fatal(err)
 	}
 
@@ -279,7 +279,7 @@ func insertEntry(t *testing.T, entry domain.Entry) domain.Entry {
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := repofac2.NewEntryDatabaseRepository(db).Insert(ctx, &entry); err != nil {
+	if err := repofac.NewEntryDatabaseRepository(db).Insert(ctx, &entry); err != nil {
 		t.Fatal(err)
 	}
 
@@ -307,7 +307,7 @@ func insertEntryPrediction(t *testing.T, entryPrediction domain.EntryPrediction)
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := repofac2.NewEntryPredictionDatabaseRepository(db).Insert(ctx, &entryPrediction); err != nil {
+	if err := repofac.NewEntryPredictionDatabaseRepository(db).Insert(ctx, &entryPrediction); err != nil {
 		t.Fatal(err)
 	}
 
@@ -334,7 +334,7 @@ func insertScoredEntryPrediction(t *testing.T, scoredEntryPrediction domain.Scor
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := repofac2.NewScoredEntryPredictionDatabaseRepository(db).Insert(ctx, &scoredEntryPrediction); err != nil {
+	if err := repofac.NewScoredEntryPredictionDatabaseRepository(db).Insert(ctx, &scoredEntryPrediction); err != nil {
 		t.Fatal(err)
 	}
 

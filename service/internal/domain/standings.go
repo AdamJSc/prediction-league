@@ -6,7 +6,7 @@ import (
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
-	repofac2 "prediction-league/service/internal/repositories/repofac"
+	"prediction-league/service/internal/repositories/repofac"
 	"sort"
 	"time"
 )
@@ -35,7 +35,7 @@ type StandingsAgentInjector interface {
 }
 
 // StandingsAgent defines the behaviours for handling Standings
-type StandingsAgent struct{ StandingsAgentInjector }
+type StandingsAgent struct { StandingsAgentInjector }
 
 // CreateStandings handles the creation of a new Standings in the database
 func (s StandingsAgent) CreateStandings(ctx context.Context, standings Standings) (Standings, error) {
@@ -52,7 +52,7 @@ func (s StandingsAgent) CreateStandings(ctx context.Context, standings Standings
 	standings.CreatedAt = time.Now().Truncate(time.Second)
 	standings.UpdatedAt = sqltypes.NullTime{}
 
-	standingsRepo := repofac2.NewStandingsDatabaseRepository(db)
+	standingsRepo := repofac.NewStandingsDatabaseRepository(db)
 
 	// write entry to database
 	if err := standingsRepo.Insert(ctx, &standings); err != nil {
@@ -64,7 +64,7 @@ func (s StandingsAgent) CreateStandings(ctx context.Context, standings Standings
 
 // RetrieveStandingsByID handles the retrieval of an existing Standings in the database by its ID
 func (s StandingsAgent) RetrieveStandingsByID(ctx context.Context, id string) (Standings, error) {
-	standingsRepo := repofac2.NewStandingsDatabaseRepository(s.MySQL())
+	standingsRepo := repofac.NewStandingsDatabaseRepository(s.MySQL())
 
 	retrievedStandings, err := standingsRepo.Select(ctx, map[string]interface{}{
 		"id": id,
@@ -78,7 +78,7 @@ func (s StandingsAgent) RetrieveStandingsByID(ctx context.Context, id string) (S
 
 // RetrieveStandingsBySeasonAndRoundNumber handles the retrieval of an existing Standings in the database by its Season ID and Round Number
 func (s StandingsAgent) RetrieveStandingsBySeasonAndRoundNumber(ctx context.Context, seasonID string, roundNumber int) (Standings, error) {
-	standingsRepo := repofac2.NewStandingsDatabaseRepository(s.MySQL())
+	standingsRepo := repofac.NewStandingsDatabaseRepository(s.MySQL())
 
 	retrievedStandings, err := standingsRepo.Select(ctx, map[string]interface{}{
 		"season_id":    seasonID,
@@ -93,7 +93,7 @@ func (s StandingsAgent) RetrieveStandingsBySeasonAndRoundNumber(ctx context.Cont
 
 // RetrieveLatestStandingsBySeasonIDAndTimestamp handles the retrieval of the latest Standings in the database by its ID
 func (s StandingsAgent) RetrieveLatestStandingsBySeasonIDAndTimestamp(ctx context.Context, seasonID string, ts time.Time) (Standings, error) {
-	standingsRepo := repofac2.NewStandingsDatabaseRepository(s.MySQL())
+	standingsRepo := repofac.NewStandingsDatabaseRepository(s.MySQL())
 
 	retrievedStandings, err := standingsRepo.SelectLatestBySeasonIDAndTimestamp(ctx, seasonID, ts)
 	if err != nil {
@@ -105,7 +105,7 @@ func (s StandingsAgent) RetrieveLatestStandingsBySeasonIDAndTimestamp(ctx contex
 
 // UpdateStandings handles the updating of an existing Standings in the database
 func (s StandingsAgent) UpdateStandings(ctx context.Context, standings Standings) (Standings, error) {
-	standingsRepo := repofac2.NewStandingsDatabaseRepository(s.MySQL())
+	standingsRepo := repofac.NewStandingsDatabaseRepository(s.MySQL())
 
 	// ensure the entry exists
 	if err := standingsRepo.ExistsByID(ctx, standings.ID.String()); err != nil {

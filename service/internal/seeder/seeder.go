@@ -7,7 +7,7 @@ import (
 	"github.com/LUSHDigital/uuid"
 	"log"
 	"prediction-league/service/internal/domain"
-	repofac2 "prediction-league/service/internal/repositories/repofac"
+	"prediction-league/service/internal/repositories/repofac"
 	"time"
 )
 
@@ -326,8 +326,8 @@ var entries = []domain.Entry{
 // MustSeed inserts the existing entries for the 2019/20 Season in the localhost Realm
 func MustSeed(db coresql.Agent) {
 	ctx := context.Background()
-	entryRepo := repofac2.NewEntryDatabaseRepository(db)
-	entryPredictionRepo := repofac2.NewEntryPredictionDatabaseRepository(db)
+	entryRepo := repofac.NewEntryDatabaseRepository(db)
+	entryPredictionRepo := repofac.NewEntryPredictionDatabaseRepository(db)
 
 	seasonID := "FakeSeason"
 	realmName := "localhost"

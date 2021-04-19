@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
-	repofac2 "prediction-league/service/internal/repositories/repofac"
+	"prediction-league/service/internal/repositories/repofac"
 	"prediction-league/service/internal/views"
 )
 
@@ -30,7 +30,7 @@ type CommunicationsAgentInjector interface {
 }
 
 // CommunicationsAgent defines the behaviours for issuing communications
-type CommunicationsAgent struct{ CommunicationsAgentInjector }
+type CommunicationsAgent struct { CommunicationsAgentInjector }
 
 // IssueNewEntryEmail generates a "new entry" email for the provided Entry and pushes it to the send queue
 func (c CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *Entry, paymentDetails *PaymentDetails) error {
@@ -298,8 +298,8 @@ func (c CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Context
 
 // getEntryFromScoredEntryPrediction retrieves the relationally-affiliated entry from the provided scored entry prediction
 func getEntryFromScoredEntryPrediction(ctx context.Context, sep *ScoredEntryPrediction, db coresql.Agent) (*Entry, error) {
-	entryPredictionRepo := repofac2.NewEntryPredictionDatabaseRepository(db)
-	entryRepo := repofac2.NewEntryDatabaseRepository(db)
+	entryPredictionRepo := repofac.NewEntryPredictionDatabaseRepository(db)
+	entryRepo := repofac.NewEntryDatabaseRepository(db)
 
 	// retrieve entry prediction from scored entry prediction
 	entryPredictions, err := entryPredictionRepo.Select(ctx, map[string]interface{}{
@@ -328,7 +328,7 @@ func getEntryFromScoredEntryPrediction(ctx context.Context, sep *ScoredEntryPred
 
 // getStandingsFromScoredEntryPrediction retrieves the relationally-affiliated standings from the provided scored entry prediction
 func getStandingsFromScoredEntryPrediction(ctx context.Context, sep *ScoredEntryPrediction, db coresql.Agent) (*Standings, error) {
-	standingsRepo := repofac2.NewStandingsDatabaseRepository(db)
+	standingsRepo := repofac.NewStandingsDatabaseRepository(db)
 
 	// retrieve standings from scored entry prediction
 	standings, err := standingsRepo.Select(ctx, map[string]interface{}{
