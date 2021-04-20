@@ -21,11 +21,11 @@ const predictionWindowOpenCronSpec = "34 12 * * *"
 func newPredictionWindowOpenJob(season domain.Season, injector app.DependencyInjector) *job {
 	jobName := strings.ToLower(fmt.Sprintf("prediction-window-open-%s", season.ID))
 
-	entryAgent := domain.EntryAgent{
+	entryAgent := &domain.EntryAgent{
 		EntryAgentInjector: injector,
 	}
 
-	commsAgent := domain.CommunicationsAgent{
+	commsAgent := &domain.CommunicationsAgent{
 		CommunicationsAgentInjector: injector,
 	}
 
@@ -81,7 +81,7 @@ func issuePredictionWindowOpenEmails(
 	entries []domain.Entry,
 	window domain.SequencedTimeFrame,
 	errChan chan error,
-	commsAgent domain.CommunicationsAgent,
+	commsAgent *domain.CommunicationsAgent,
 ) {
 	var wg sync.WaitGroup
 	var sem = make(chan struct{}, 10) // send a maximum of 10 concurrent emails

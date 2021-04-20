@@ -17,19 +17,19 @@ import (
 func newRetrieveLatestStandingsJob(season domain.Season, client clients.FootballDataSource, injector app.DependencyInjector) *job {
 	jobName := strings.ToLower(fmt.Sprintf("retrieve-latest-standings-%s", season.ID))
 
-	standingsAgent := domain.StandingsAgent{
+	standingsAgent := &domain.StandingsAgent{
 		StandingsAgentInjector: injector,
 	}
 
-	entryAgent := domain.EntryAgent{
+	entryAgent := &domain.EntryAgent{
 		EntryAgentInjector: injector,
 	}
 
-	sepAgent := domain.ScoredEntryPredictionAgent{
+	sepAgent := &domain.ScoredEntryPredictionAgent{
 		ScoredEntryPredictionAgentInjector: injector,
 	}
 
-	commsAgent := domain.CommunicationsAgent{
+	commsAgent := &domain.CommunicationsAgent{
 		CommunicationsAgentInjector: injector,
 	}
 
@@ -198,7 +198,7 @@ func processExistingStandings(
 	ctx context.Context,
 	existingStandings domain.Standings,
 	clientStandings domain.Standings,
-	standingsAgent domain.StandingsAgent,
+	standingsAgent *domain.StandingsAgent,
 ) (domain.Standings, error) {
 	// update rankings
 	existingStandings.Rankings = clientStandings.Rankings
@@ -209,7 +209,7 @@ func processNewStandings(
 	ctx context.Context,
 	clientStandings domain.Standings,
 	season domain.Season,
-	standingsAgent domain.StandingsAgent,
+	standingsAgent *domain.StandingsAgent,
 ) (domain.Standings, error) {
 	if clientStandings.RoundNumber == 1 {
 		// this is the first time we've scraped our first round
@@ -235,7 +235,7 @@ func processNewStandings(
 }
 
 // upsertScoredEntryPrediction creates or updates the provided ScoredEntryPrediction depending on whether or not it already exists
-func upsertScoredEntryPrediction(ctx context.Context, sep *domain.ScoredEntryPrediction, sepAgent domain.ScoredEntryPredictionAgent) error {
+func upsertScoredEntryPrediction(ctx context.Context, sep *domain.ScoredEntryPrediction, sepAgent *domain.ScoredEntryPredictionAgent) error {
 	// see if we have an existing scored entry prediction that matches our provided sep
 	existingScoredEntryPrediction, err := sepAgent.RetrieveScoredEntryPredictionByIDs(
 		ctx,
@@ -279,7 +279,7 @@ func issueRoundCompleteEmails(
 	scoredEntryPredictions []domain.ScoredEntryPrediction,
 	finalRound bool,
 	errChan chan error,
-	commsAgent domain.CommunicationsAgent,
+	commsAgent *domain.CommunicationsAgent,
 ) {
 	var wg sync.WaitGroup
 	var sem = make(chan struct{}, 10) // send a maximum of 10 concurrent emails

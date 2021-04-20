@@ -13,9 +13,9 @@ import (
 func TestStandingsAgent_CreateStandings(t *testing.T) {
 	defer truncate(t)
 
-	agent := domain.StandingsAgent{
-		StandingsAgentInjector: injector{db: db},
-	}
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
+	agent := &domain.StandingsAgent{StandingsAgentInjector: injector}
 
 	standings := generateTestStandings(t)
 
@@ -63,11 +63,11 @@ func TestStandingsAgent_CreateStandings(t *testing.T) {
 func TestStandingsAgent_UpdateStandings(t *testing.T) {
 	defer truncate(t)
 
-	standings := insertStandings(t, generateTestStandings(t))
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
+	agent := &domain.StandingsAgent{StandingsAgentInjector: injector}
 
-	agent := domain.StandingsAgent{
-		StandingsAgentInjector: injector{db: db},
-	}
+	standings := insertStandings(t, generateTestStandings(t))
 
 	t.Run("update valid standings must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -134,11 +134,11 @@ func TestStandingsAgent_UpdateStandings(t *testing.T) {
 func TestStandingsAgent_RetrieveStandingsByID(t *testing.T) {
 	defer truncate(t)
 
-	standings := insertStandings(t, generateTestStandings(t))
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
+	agent := &domain.StandingsAgent{StandingsAgentInjector: injector}
 
-	agent := domain.StandingsAgent{
-		StandingsAgentInjector: injector{db: db},
-	}
+	standings := insertStandings(t, generateTestStandings(t))
 
 	t.Run("retrieve existent standings must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -191,6 +191,10 @@ func TestStandingsAgent_RetrieveStandingsByID(t *testing.T) {
 func TestStandingsAgent_RetrieveStandingsBySeasonAndRoundNumber(t *testing.T) {
 	defer truncate(t)
 
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
+	agent := &domain.StandingsAgent{StandingsAgentInjector: injector}
+
 	// season ID won't match our method parameters, so this won't be returned
 	standings1 := generateTestStandings(t)
 	standings1.SeasonID = "nnnnnn"
@@ -204,10 +208,6 @@ func TestStandingsAgent_RetrieveStandingsBySeasonAndRoundNumber(t *testing.T) {
 	standings3 := generateTestStandings(t)
 	standings3.RoundNumber = 2
 	standings3 = insertStandings(t, standings3)
-
-	agent := domain.StandingsAgent{
-		StandingsAgentInjector: injector{db: db},
-	}
 
 	t.Run("retrieve existent standings must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -248,6 +248,10 @@ func TestStandingsAgent_RetrieveStandingsBySeasonAndRoundNumber(t *testing.T) {
 func TestStandingsAgent_RetrieveLatestStandingsBySeasonIDAndTimestamp(t *testing.T) {
 	defer truncate(t)
 
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
+	agent := &domain.StandingsAgent{StandingsAgentInjector: injector}
+
 	baseDate := time.Now().Truncate(time.Second)
 
 	// season ID won't match our method parameters, so this won't be returned
@@ -272,10 +276,6 @@ func TestStandingsAgent_RetrieveLatestStandingsBySeasonIDAndTimestamp(t *testing
 	standings3 = insertStandings(t, standings3)
 
 	seasonID := standings2.SeasonID
-
-	agent := domain.StandingsAgent{
-		StandingsAgentInjector: injector{db: db},
-	}
 
 	t.Run("retrieve latest standings by timestamp that occurs before first expected standings created date must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)

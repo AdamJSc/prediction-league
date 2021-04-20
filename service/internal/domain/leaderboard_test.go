@@ -184,9 +184,9 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 	// store season ID arbitrarily from one of the valid entries (they should all belong to the same one, apart from robbie)
 	seasonID := harryEntry.SeasonID
 
-	agent := domain.LeaderBoardAgent{
-		LeaderBoardAgentInjector: injector{db: db},
-	}
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
+	agent := &domain.LeaderBoardAgent{LeaderBoardAgentInjector: injector}
 
 	t.Logf("harry's entry: %s", harryEntry.ID.String())
 	t.Logf("jamie's entry: %s", jamieEntry.ID.String())

@@ -18,22 +18,13 @@ var standingsDBFields = []string{
 	"finalised",
 }
 
-// StandingsRepository defines the interface for transacting with our Standings data source
-type StandingsRepository interface {
-	Insert(ctx context.Context, standings *domain.Standings) error
-	Update(ctx context.Context, standings *domain.Standings) error
-	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.Standings, error)
-	ExistsByID(ctx context.Context, id string) error
-	SelectLatestBySeasonIDAndTimestamp(ctx context.Context, seasonID string, ts time.Time) (domain.Standings, error)
-}
-
 // StandingsDatabaseRepository defines our DB-backed Standings data store
 type StandingsDatabaseRepository struct {
 	Agent coresql.Agent
 }
 
 // Insert inserts a new Standings into the database
-func (s StandingsDatabaseRepository) Insert(ctx context.Context, standings *domain.Standings) error {
+func (s *StandingsDatabaseRepository) Insert(ctx context.Context, standings *domain.Standings) error {
 	stmt := `INSERT INTO standings (id, ` + getDBFieldsStringFromFields(standingsDBFields) + `, created_at)
 					VALUES (?, ?, ?, ?, ?, ?)`
 
@@ -61,7 +52,7 @@ func (s StandingsDatabaseRepository) Insert(ctx context.Context, standings *doma
 }
 
 // Update updates an existing Standings in the database
-func (s StandingsDatabaseRepository) Update(ctx context.Context, standings *domain.Standings) error {
+func (s *StandingsDatabaseRepository) Update(ctx context.Context, standings *domain.Standings) error {
 	stmt := `UPDATE standings
 				SET ` + getDBFieldsWithEqualsPlaceholdersStringFromFields(standingsDBFields) + `, updated_at = ?
 				WHERE id = ?`
@@ -90,7 +81,7 @@ func (s StandingsDatabaseRepository) Update(ctx context.Context, standings *doma
 }
 
 // Select retrieves Standings from our database based on the provided criteria
-func (s StandingsDatabaseRepository) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.Standings, error) {
+func (s *StandingsDatabaseRepository) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.Standings, error) {
 	whereStmt, params := dbWhereStmt(criteria, matchAny)
 
 	stmt := `SELECT id, ` + getDBFieldsStringFromFields(standingsDBFields) + `, created_at, updated_at FROM standings ` + whereStmt
@@ -134,7 +125,7 @@ func (s StandingsDatabaseRepository) Select(ctx context.Context, criteria map[st
 }
 
 // ExistsByID determines whether a Standings with the provided ID exists in the database
-func (s StandingsDatabaseRepository) ExistsByID(ctx context.Context, id string) error {
+func (s *StandingsDatabaseRepository) ExistsByID(ctx context.Context, id string) error {
 	stmt := `SELECT COUNT(*) FROM standings WHERE id = ?`
 
 	row := s.Agent.QueryRowContext(ctx, stmt, id)
@@ -152,7 +143,7 @@ func (s StandingsDatabaseRepository) ExistsByID(ctx context.Context, id string) 
 }
 
 // Select retrieves Standings from our database based on the provided criteria
-func (s StandingsDatabaseRepository) SelectLatestBySeasonIDAndTimestamp(ctx context.Context, seasonID string, ts time.Time) (domain.Standings, error) {
+func (s *StandingsDatabaseRepository) SelectLatestBySeasonIDAndTimestamp(ctx context.Context, seasonID string, ts time.Time) (domain.Standings, error) {
 	stmt := `SELECT id, ` + getDBFieldsStringFromFields(standingsDBFields) + `, created_at, updated_at
 			FROM standings
 			WHERE season_id = ?

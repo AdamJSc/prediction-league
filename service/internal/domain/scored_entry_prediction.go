@@ -4,18 +4,29 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
-	"prediction-league/service/internal/repositories/repofac"
 	"strconv"
 	"strings"
 	"time"
 )
 
+// ScoredEntryPredictionRepository defines the interface for transacting with our ScoredEntryPredictions data source
+type ScoredEntryPredictionRepository interface {
+	Insert(ctx context.Context, scoredEntryPrediction *ScoredEntryPrediction) error
+	Update(ctx context.Context, scoredEntryPrediction *ScoredEntryPrediction) error
+	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]ScoredEntryPrediction, error)
+	Exists(ctx context.Context, entryPredictionID, standingsID string) error
+	SelectEntryCumulativeScoresByRealm(ctx context.Context, realmName string, seasonID string, roundNumber int) ([]LeaderBoardRanking, error)
+	SelectByEntryIDAndRoundNumber(ctx context.Context, entryID string, roundNumber int) ([]ScoredEntryPrediction, error)
+}
+
 // ScoredEntryPredictionAgentInjector defines the dependencies required by our ScoredEntryPredictionAgent
 type ScoredEntryPredictionAgentInjector interface {
-	MySQL() coresql.Agent
+	EntryRepo() EntryRepository
+	EntryPredictionRepo() EntryPredictionRepository
+	StandingsRepo() StandingsRepository
+	ScoredEntryPredictionRepo() ScoredEntryPredictionRepository
 }
 
 // ScoredEntryPredictionAgent defines the behaviours for handling ScoredEntryStandings
@@ -24,9 +35,7 @@ type ScoredEntryPredictionAgent struct {
 }
 
 // CreateScoredEntryPrediction handles the creation of a new ScoredEntryPrediction in the database
-func (s ScoredEntryPredictionAgent) CreateScoredEntryPrediction(ctx context.Context, scoredEntryPrediction ScoredEntryPrediction) (ScoredEntryPrediction, error) {
-	db := s.MySQL()
-
+func (s *ScoredEntryPredictionAgent) CreateScoredEntryPrediction(ctx context.Context, scoredEntryPrediction ScoredEntryPrediction) (ScoredEntryPrediction, error) {
 	var emptyID uuid.UUID
 
 	if scoredEntryPrediction.EntryPredictionID.String() == emptyID.String() {
@@ -42,13 +51,13 @@ func (s ScoredEntryPredictionAgent) CreateScoredEntryPrediction(ctx context.Cont
 	}
 
 	// ensure that entryPrediction exists
-	entryPredictionRepo := repofac.NewEntryPredictionDatabaseRepository(db)
+	entryPredictionRepo := s.EntryPredictionRepo()
 	if err := entryPredictionRepo.ExistsByID(ctx, scoredEntryPrediction.EntryPredictionID.String()); err != nil {
 		return ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
 
 	// ensure that standings exists
-	standingsRepo := repofac.NewStandingsDatabaseRepository(db)
+	standingsRepo := s.StandingsRepo()
 	if err := standingsRepo.ExistsByID(ctx, scoredEntryPrediction.StandingsID.String()); err != nil {
 		return ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
@@ -57,7 +66,7 @@ func (s ScoredEntryPredictionAgent) CreateScoredEntryPrediction(ctx context.Cont
 	scoredEntryPrediction.CreatedAt = time.Now().Truncate(time.Second)
 	scoredEntryPrediction.UpdatedAt = sqltypes.NullTime{}
 
-	scoredEntryPredictionRepo := repofac.NewScoredEntryPredictionDatabaseRepository(db)
+	scoredEntryPredictionRepo := s.ScoredEntryPredictionRepo()
 
 	// write scoredEntryPrediction to database
 	if err := scoredEntryPredictionRepo.Insert(ctx, &scoredEntryPrediction); err != nil {
@@ -68,8 +77,8 @@ func (s ScoredEntryPredictionAgent) CreateScoredEntryPrediction(ctx context.Cont
 }
 
 // RetrieveScoredEntryPredictionByIDs handles the retrieval of an existing ScoredEntryPrediction in the database by its ID
-func (s ScoredEntryPredictionAgent) RetrieveScoredEntryPredictionByIDs(ctx context.Context, entryPredictionID, standingsID string) (ScoredEntryPrediction, error) {
-	scoredEntryPredictionRepo := repofac.NewScoredEntryPredictionDatabaseRepository(s.MySQL())
+func (s *ScoredEntryPredictionAgent) RetrieveScoredEntryPredictionByIDs(ctx context.Context, entryPredictionID, standingsID string) (ScoredEntryPrediction, error) {
+	scoredEntryPredictionRepo := s.ScoredEntryPredictionRepo()
 
 	retrievedScoredEntryPredictions, err := scoredEntryPredictionRepo.Select(ctx, map[string]interface{}{
 		"entry_prediction_id": entryPredictionID,
@@ -84,8 +93,8 @@ func (s ScoredEntryPredictionAgent) RetrieveScoredEntryPredictionByIDs(ctx conte
 
 // RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber handles the retrieval of
 // the most recently created ScoredEntryPrediction by the provided entry ID and round number
-func (s ScoredEntryPredictionAgent) RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(ctx context.Context, entryID string, roundNumber int) (*ScoredEntryPrediction, error) {
-	scoredEntryPredictionRepo := repofac.NewScoredEntryPredictionDatabaseRepository(s.MySQL())
+func (s *ScoredEntryPredictionAgent) RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(ctx context.Context, entryID string, roundNumber int) (*ScoredEntryPrediction, error) {
+	scoredEntryPredictionRepo := s.ScoredEntryPredictionRepo()
 
 	retrievedScoredEntryPredictions, err := scoredEntryPredictionRepo.SelectByEntryIDAndRoundNumber(ctx, entryID, roundNumber)
 	if err != nil {
@@ -97,8 +106,8 @@ func (s ScoredEntryPredictionAgent) RetrieveLatestScoredEntryPredictionByEntryID
 }
 
 // UpdateScoredEntryPrediction handles the updating of an existing ScoredEntryPrediction in the database
-func (s ScoredEntryPredictionAgent) UpdateScoredEntryPrediction(ctx context.Context, scoredEntryPrediction ScoredEntryPrediction) (ScoredEntryPrediction, error) {
-	scoredEntryPredictionRepo := repofac.NewScoredEntryPredictionDatabaseRepository(s.MySQL())
+func (s *ScoredEntryPredictionAgent) UpdateScoredEntryPrediction(ctx context.Context, scoredEntryPrediction ScoredEntryPrediction) (ScoredEntryPrediction, error) {
+	scoredEntryPredictionRepo := s.ScoredEntryPredictionRepo()
 
 	// ensure the scoredEntryPrediction exists
 	if err := scoredEntryPredictionRepo.Exists(

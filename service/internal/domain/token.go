@@ -3,8 +3,6 @@ package domain
 import (
 	"context"
 	"fmt"
-	coresql "github.com/LUSHDigital/core-sql"
-	"prediction-league/service/internal/repositories/repofac"
 	"time"
 )
 
@@ -18,17 +16,26 @@ var TokenValidityDuration = map[int]time.Duration{
 	TokenTypeShortCodeResetToken: time.Minute * 10,
 }
 
+// TokenRepository defines the interface for transacting with our Token data source
+type TokenRepository interface {
+	Insert(ctx context.Context, token *Token) error
+	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]Token, error)
+	ExistsByID(ctx context.Context, id string) error
+	DeleteByID(ctx context.Context, id string) error
+	GenerateUniqueTokenID(ctx context.Context) (string, error)
+}
+
 // TokenAgentInjector defines the dependencies required by our TokenAgent
 type TokenAgentInjector interface {
-	MySQL() coresql.Agent
+	TokenRepo() TokenRepository
 }
 
 // TokenAgent defines the behaviours for handling Tokens
-type TokenAgent struct { TokenAgentInjector }
+type TokenAgent struct{ TokenAgentInjector }
 
 // GenerateToken generates a new unique token
-func (t TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (*Token, error) {
-	tokenRepo := repofac.NewTokenDatabaseRepository(t.MySQL())
+func (t *TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (*Token, error) {
+	tokenRepo := t.TokenRepo()
 
 	id, err := tokenRepo.GenerateUniqueTokenID(ctx)
 	if err != nil {
@@ -58,8 +65,8 @@ func (t TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (*
 }
 
 // RetrieveTokenByID retrieves an existing token by the provided ID
-func (t TokenAgent) RetrieveTokenByID(ctx context.Context, id string) (*Token, error) {
-	tokenRepo := repofac.NewTokenDatabaseRepository(t.MySQL())
+func (t *TokenAgent) RetrieveTokenByID(ctx context.Context, id string) (*Token, error) {
+	tokenRepo := t.TokenRepo()
 
 	tokens, err := tokenRepo.Select(ctx, map[string]interface{}{
 		"id": id,
@@ -76,8 +83,8 @@ func (t TokenAgent) RetrieveTokenByID(ctx context.Context, id string) (*Token, e
 }
 
 // DeleteToken removes the provided token
-func (t TokenAgent) DeleteToken(ctx context.Context, token Token) error {
-	tokenRepo := repofac.NewTokenDatabaseRepository(t.MySQL())
+func (t *TokenAgent) DeleteToken(ctx context.Context, token Token) error {
+	tokenRepo := t.TokenRepo()
 
 	err := tokenRepo.DeleteByID(ctx, token.ID)
 	if err != nil {
@@ -88,8 +95,8 @@ func (t TokenAgent) DeleteToken(ctx context.Context, token Token) error {
 }
 
 // DeleteTokensExpiredAfter removes tokens that have expired since the provide timestamp
-func (t TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp time.Time) error {
-	tokenRepo := repofac.NewTokenDatabaseRepository(t.MySQL())
+func (t *TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp time.Time) error {
+	tokenRepo := t.TokenRepo()
 
 	tokens, err := tokenRepo.Select(ctx, map[string]interface{}{
 		"expires_at": DBQueryCondition{

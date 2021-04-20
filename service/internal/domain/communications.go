@@ -5,8 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	coresql "github.com/LUSHDigital/core-sql"
-	"prediction-league/service/internal/repositories/repofac"
 	"prediction-league/service/internal/views"
 )
 
@@ -24,16 +22,18 @@ const (
 // CommunicationsAgentInjector defines the dependencies required by our CommunicationsAgent
 type CommunicationsAgentInjector interface {
 	Config() Config
-	MySQL() coresql.Agent
+	EntryRepo() EntryRepository
+	EntryPredictionRepo() EntryPredictionRepository
+	StandingsRepo() StandingsRepository
 	EmailQueue() chan Email
 	Template() *views.Templates
 }
 
 // CommunicationsAgent defines the behaviours for issuing communications
-type CommunicationsAgent struct { CommunicationsAgentInjector }
+type CommunicationsAgent struct{ CommunicationsAgentInjector }
 
 // IssueNewEntryEmail generates a "new entry" email for the provided Entry and pushes it to the send queue
-func (c CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *Entry, paymentDetails *PaymentDetails) error {
+func (c *CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *Entry, paymentDetails *PaymentDetails) error {
 	if entry == nil {
 		return InternalError{errors.New("no entry provided")}
 	}
@@ -78,13 +78,13 @@ func (c CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *Entry,
 }
 
 // IssueRoundCompleteEmail generates a "round complete" email for the provided Scored Entry Prediction and pushes it to the send queue
-func (c CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *ScoredEntryPrediction, finalRound bool) error {
-	entry, err := getEntryFromScoredEntryPrediction(ctx, sep, c.MySQL())
+func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *ScoredEntryPrediction, finalRound bool) error {
+	entry, err := c.getEntryFromScoredEntryPrediction(ctx, sep)
 	if err != nil {
 		return err
 	}
 
-	standings, err := getStandingsFromScoredEntryPrediction(ctx, sep, c.MySQL())
+	standings, err := c.getStandingsFromScoredEntryPrediction(ctx, sep)
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (c CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *S
 }
 
 // IssueShortCodeResetBeginEmail generates a "short code reset begin" email for the provided Entry and pushes it to the send queue
-func (c CommunicationsAgent) IssueShortCodeResetBeginEmail(_ context.Context, entry *Entry, resetToken string) error {
+func (c *CommunicationsAgent) IssueShortCodeResetBeginEmail(_ context.Context, entry *Entry, resetToken string) error {
 	if entry == nil {
 		return InternalError{errors.New("no entry provided")}
 	}
@@ -167,7 +167,7 @@ func (c CommunicationsAgent) IssueShortCodeResetBeginEmail(_ context.Context, en
 }
 
 // IssueShortCodeResetCompleteEmail generates a "short code reset complete" email for the provided Entry and pushes it to the send queue
-func (c CommunicationsAgent) IssueShortCodeResetCompleteEmail(_ context.Context, entry *Entry) error {
+func (c *CommunicationsAgent) IssueShortCodeResetCompleteEmail(_ context.Context, entry *Entry) error {
 	if entry == nil {
 		return InternalError{errors.New("no entry provided")}
 	}
@@ -203,7 +203,7 @@ func (c CommunicationsAgent) IssueShortCodeResetCompleteEmail(_ context.Context,
 }
 
 // IssuePredictionWindowOpenEmail generates a "prediction window open" email for the provided Entry and pushes it to the send queue
-func (c CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, entry *Entry, tf SequencedTimeFrame) error {
+func (c *CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, entry *Entry, tf SequencedTimeFrame) error {
 	if entry == nil {
 		return InternalError{errors.New("no entry provided")}
 	}
@@ -250,7 +250,7 @@ func (c CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, e
 }
 
 // IssuePredictionWindowClosingEmail generates a "prediction window closing" email for the provided Entry and pushes it to the send queue
-func (c CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Context, entry *Entry, tf SequencedTimeFrame) error {
+func (c *CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Context, entry *Entry, tf SequencedTimeFrame) error {
 	if entry == nil {
 		return InternalError{errors.New("no entry provided")}
 	}
@@ -297,9 +297,9 @@ func (c CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Context
 }
 
 // getEntryFromScoredEntryPrediction retrieves the relationally-affiliated entry from the provided scored entry prediction
-func getEntryFromScoredEntryPrediction(ctx context.Context, sep *ScoredEntryPrediction, db coresql.Agent) (*Entry, error) {
-	entryPredictionRepo := repofac.NewEntryPredictionDatabaseRepository(db)
-	entryRepo := repofac.NewEntryDatabaseRepository(db)
+func (c *CommunicationsAgent) getEntryFromScoredEntryPrediction(ctx context.Context, sep *ScoredEntryPrediction) (*Entry, error) {
+	entryPredictionRepo := c.EntryPredictionRepo()
+	entryRepo := c.EntryRepo()
 
 	// retrieve entry prediction from scored entry prediction
 	entryPredictions, err := entryPredictionRepo.Select(ctx, map[string]interface{}{
@@ -327,8 +327,8 @@ func getEntryFromScoredEntryPrediction(ctx context.Context, sep *ScoredEntryPred
 }
 
 // getStandingsFromScoredEntryPrediction retrieves the relationally-affiliated standings from the provided scored entry prediction
-func getStandingsFromScoredEntryPrediction(ctx context.Context, sep *ScoredEntryPrediction, db coresql.Agent) (*Standings, error) {
-	standingsRepo := repofac.NewStandingsDatabaseRepository(db)
+func (c *CommunicationsAgent) getStandingsFromScoredEntryPrediction(ctx context.Context, sep *ScoredEntryPrediction) (*Standings, error) {
+	standingsRepo := c.StandingsRepo()
 
 	// retrieve standings from scored entry prediction
 	standings, err := standingsRepo.Select(ctx, map[string]interface{}{

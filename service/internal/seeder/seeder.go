@@ -336,7 +336,7 @@ func MustSeed(db coresql.Agent) {
 	approvedAt := time.Now()
 
 	for _, entry := range entries {
-		shortCode, err := domain.GenerateUniqueShortCode(ctx, db)
+		shortCode, err := entryRepo.GenerateUniqueShortCode(ctx)
 		if err != nil {
 			log.Fatal(err)
 		}

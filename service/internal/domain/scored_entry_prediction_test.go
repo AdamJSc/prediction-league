@@ -14,15 +14,16 @@ import (
 func TestScoredEntryPredictionAgent_CreateScoredEntryPrediction(t *testing.T) {
 	defer truncate(t)
 
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
+	agent := &domain.ScoredEntryPredictionAgent{
+		ScoredEntryPredictionAgentInjector: injector,
+	}
+
 	entry := insertEntry(t, generateTestEntry(t, "Harry Redknapp", "MrHarryR", "harry.redknapp@football.net"))
 	entryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID))
 	standings := insertStandings(t, generateTestStandings(t))
-
 	scoredEntryPrediction := generateTestScoredEntryPrediction(t, entryPrediction.ID, standings.ID)
-
-	agent := domain.ScoredEntryPredictionAgent{
-		ScoredEntryPredictionAgentInjector: injector{db: db},
-	}
 
 	t.Run("create valid scored entry prediction must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -107,15 +108,16 @@ func TestScoredEntryPredictionAgent_CreateScoredEntryPrediction(t *testing.T) {
 func TestScoredEntryPredictionAgent_UpdateScoredEntryPrediction(t *testing.T) {
 	defer truncate(t)
 
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
+	agent := &domain.ScoredEntryPredictionAgent{
+		ScoredEntryPredictionAgentInjector: injector,
+	}
+
 	entry := insertEntry(t, generateTestEntry(t, "Harry Redknapp", "MrHarryR", "harry.redknapp@football.net"))
 	entryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID))
 	standings := insertStandings(t, generateTestStandings(t))
-
 	scoredEntryPrediction := insertScoredEntryPrediction(t, generateTestScoredEntryPrediction(t, entryPrediction.ID, standings.ID))
-
-	agent := domain.ScoredEntryPredictionAgent{
-		ScoredEntryPredictionAgentInjector: injector{db: db},
-	}
 
 	t.Run("update valid scored entry prediction must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -180,6 +182,12 @@ func TestScoredEntryPredictionAgent_UpdateScoredEntryPrediction(t *testing.T) {
 func TestScoredEntryPredictionAgent_RetrieveScoredEntryPredictionByIDs(t *testing.T) {
 	defer truncate(t)
 
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
+	agent := &domain.ScoredEntryPredictionAgent{
+		ScoredEntryPredictionAgentInjector: injector,
+	}
+
 	entry := insertEntry(t, generateTestEntry(t, "Harry Redknapp", "MrHarryR", "harry.redknapp@football.net"))
 	entryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID))
 	standings := insertStandings(t, generateTestStandings(t))
@@ -188,10 +196,6 @@ func TestScoredEntryPredictionAgent_RetrieveScoredEntryPredictionByIDs(t *testin
 	scoredEntryPrediction := generateTestScoredEntryPrediction(t, entryPrediction.ID, standings.ID)
 	scoredEntryPrediction.CreatedAt = now
 	scoredEntryPrediction = insertScoredEntryPrediction(t, scoredEntryPrediction)
-
-	agent := domain.ScoredEntryPredictionAgent{
-		ScoredEntryPredictionAgentInjector: injector{db: db},
-	}
 
 	t.Run("retrieve existent scored entry prediction must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -246,6 +250,12 @@ func TestScoredEntryPredictionAgent_RetrieveScoredEntryPredictionByIDs(t *testin
 func TestScoredEntryPredictionAgent_RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(t *testing.T) {
 	defer truncate(t)
 
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
+	agent := &domain.ScoredEntryPredictionAgent{
+		ScoredEntryPredictionAgentInjector: injector,
+	}
+
 	entry := insertEntry(t, generateTestEntry(t, "Harry Redknapp", "MrHarryR", "harry.redknapp@football.net"))
 	standings := insertStandings(t, generateTestStandings(t))
 	now := time.Now().Truncate(time.Second)
@@ -259,10 +269,6 @@ func TestScoredEntryPredictionAgent_RetrieveLatestScoredEntryPredictionByEntryID
 	mostRecentScoredEntryPrediction := generateTestScoredEntryPrediction(t, differentEntryPrediction.ID, standings.ID)
 	mostRecentScoredEntryPrediction.CreatedAt = now.Add(time.Second) // created most recently
 	mostRecentScoredEntryPrediction = insertScoredEntryPrediction(t, mostRecentScoredEntryPrediction)
-
-	agent := domain.ScoredEntryPredictionAgent{
-		ScoredEntryPredictionAgentInjector: injector{db: db},
-	}
 
 	t.Run("retrieve latest scored entry prediction by existent entry id and round number must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)

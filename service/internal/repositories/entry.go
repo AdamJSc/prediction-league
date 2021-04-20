@@ -6,9 +6,13 @@ import (
 	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"golang.org/x/net/context"
+	"math/rand"
 	"prediction-league/service/internal/domain"
 	"time"
 )
+
+// shortCodeLength represents the number of characters that a short code will contain
+const shortCodeLength = 6
 
 // entryDBFields defines the fields used regularly in Entry-related transactions
 var entryDBFields = []string{
@@ -24,21 +28,13 @@ var entryDBFields = []string{
 	"approved_at",
 }
 
-// EntryRepository defines the interface for transacting with our Entry data source
-type EntryRepository interface {
-	Insert(ctx context.Context, entry *domain.Entry) error
-	Update(ctx context.Context, entry *domain.Entry) error
-	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.Entry, error)
-	ExistsByID(ctx context.Context, id string) error
-}
-
 // EntryDatabaseRepository defines our DB-backed Entry data store
 type EntryDatabaseRepository struct {
 	Agent coresql.Agent
 }
 
 // Insert inserts a new Entry into the database
-func (e EntryDatabaseRepository) Insert(ctx context.Context, entry *domain.Entry) error {
+func (e *EntryDatabaseRepository) Insert(ctx context.Context, entry *domain.Entry) error {
 	stmt := `INSERT INTO entry (id, ` + getDBFieldsStringFromFields(entryDBFields) + `, created_at)
 					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
@@ -71,7 +67,7 @@ func (e EntryDatabaseRepository) Insert(ctx context.Context, entry *domain.Entry
 }
 
 // Update updates an existing Entry in the database
-func (e EntryDatabaseRepository) Update(ctx context.Context, entry *domain.Entry) error {
+func (e *EntryDatabaseRepository) Update(ctx context.Context, entry *domain.Entry) error {
 	stmt := `UPDATE entry
 				SET ` + getDBFieldsWithEqualsPlaceholdersStringFromFields(entryDBFields) + `, updated_at = ?
 				WHERE id = ?`
@@ -105,7 +101,7 @@ func (e EntryDatabaseRepository) Update(ctx context.Context, entry *domain.Entry
 }
 
 // Select retrieves Entries from our database based on the provided criteria
-func (e EntryDatabaseRepository) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.Entry, error) {
+func (e *EntryDatabaseRepository) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.Entry, error) {
 	whereStmt, params := dbWhereStmt(criteria, matchAny)
 
 	stmt := `SELECT id, ` + getDBFieldsStringFromFields(entryDBFields) + `, created_at, updated_at FROM entry ` + whereStmt
@@ -149,7 +145,7 @@ func (e EntryDatabaseRepository) Select(ctx context.Context, criteria map[string
 }
 
 // ExistsByID determines whether an Entry with the provided ID exists in the database
-func (e EntryDatabaseRepository) ExistsByID(ctx context.Context, id string) error {
+func (e *EntryDatabaseRepository) ExistsByID(ctx context.Context, id string) error {
 	stmt := `SELECT COUNT(*) FROM entry WHERE id = ?`
 
 	row := e.Agent.QueryRowContext(ctx, stmt, id)
@@ -164,4 +160,35 @@ func (e EntryDatabaseRepository) ExistsByID(ctx context.Context, id string) erro
 	}
 
 	return nil
+}
+
+// GenerateUniqueShortCode generates a string that does not already exist as a Lookup Ref
+func (e *EntryDatabaseRepository) GenerateUniqueShortCode(ctx context.Context) (string, error) {
+	shortCode := generateRandomAlphaNumericString(shortCodeLength)
+
+	_, err := e.Select(ctx, map[string]interface{}{
+		"short_code": shortCode,
+	}, false)
+	switch err.(type) {
+	case nil:
+		// the short code already exists, so we need to generate a new one
+		return e.GenerateUniqueShortCode(ctx)
+	case domain.MissingDBRecordError:
+		// the lookup ref we have generated is unique, we can return it
+		return shortCode, nil
+	}
+	return "", err
+}
+
+// generateRandomAlphaNumericString returns a randomised string of given length
+func generateRandomAlphaNumericString(length int) string {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	charset := "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[r.Intn(len(charset))]
+	}
+
+	return string(b)
 }

@@ -84,7 +84,7 @@ func retrieveLeaderBoardHandler(c *httph.HTTPAppContainer) func(w http.ResponseW
 		}
 
 		// retrieve leaderboard
-		agent := domain.LeaderBoardAgent{
+		agent := &domain.LeaderBoardAgent{
 			LeaderBoardAgentInjector: c,
 		}
 		lb, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, roundNumber)

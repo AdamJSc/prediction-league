@@ -3,8 +3,6 @@ package domain
 import (
 	"context"
 	"fmt"
-	coresql "github.com/LUSHDigital/core-sql"
-	"prediction-league/service/internal/repositories/repofac"
 	"sort"
 	"time"
 )
@@ -25,7 +23,10 @@ type LeaderBoardRanking struct {
 
 // LeaderBoardAgentInjector defines the dependencies required by our LeaderBoardAgent
 type LeaderBoardAgentInjector interface {
-	MySQL() coresql.Agent
+	EntryRepo() EntryRepository
+	EntryPredictionRepo() EntryPredictionRepository
+	StandingsRepo() StandingsRepository
+	ScoredEntryPredictionRepo() ScoredEntryPredictionRepository
 }
 
 // LeaderBoardAgent defines the behaviours for handling LeaderBoards
@@ -34,14 +35,14 @@ type LeaderBoardAgent struct {
 }
 
 // RetrieveLeaderBoardBySeasonAndRoundNumber handles the inflation of a LeaderBoard based on the provided season ID and round number
-func (l LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context.Context, seasonID string, roundNumber int) (*LeaderBoard, error) {
+func (l *LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context.Context, seasonID string, roundNumber int) (*LeaderBoard, error) {
 	// ensure that provided season exists
 	if _, err := SeasonsDataStore.GetByID(seasonID); err != nil {
 		return nil, NotFoundError{fmt.Errorf("season id %s: not found", seasonID)}
 	}
 
 	// retrieve the standings model that pertains to the provided ids
-	standingsRepo := repofac.NewStandingsDatabaseRepository(l.MySQL())
+	standingsRepo := l.StandingsRepo()
 	retrievedStandings, err := standingsRepo.Select(ctx, map[string]interface{}{
 		"season_id":    seasonID,
 		"round_number": roundNumber,
@@ -72,7 +73,7 @@ func (l LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context.
 	standings := retrievedStandings[0]
 	realmName := RealmFromContext(ctx).Name
 
-	scoredEntryPredictionRepo := repofac.NewScoredEntryPredictionDatabaseRepository(l.MySQL())
+	scoredEntryPredictionRepo := l.ScoredEntryPredictionRepo()
 	lbRankings, err := scoredEntryPredictionRepo.SelectEntryCumulativeScoresByRealm(ctx, realmName, seasonID, roundNumber)
 	if err != nil {
 		switch err.(type) {

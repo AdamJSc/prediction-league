@@ -3,10 +3,8 @@ package domain
 import (
 	"context"
 	"errors"
-	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
-	"prediction-league/service/internal/repositories/repofac"
 	"sort"
 	"time"
 )
@@ -29,18 +27,25 @@ func (s Standings) Less(i, j int) bool {
 	return s.Rankings[i].Position < s.Rankings[j].Position
 }
 
+// StandingsRepository defines the interface for transacting with our Standings data source
+type StandingsRepository interface {
+	Insert(ctx context.Context, standings *Standings) error
+	Update(ctx context.Context, standings *Standings) error
+	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]Standings, error)
+	ExistsByID(ctx context.Context, id string) error
+	SelectLatestBySeasonIDAndTimestamp(ctx context.Context, seasonID string, ts time.Time) (Standings, error)
+}
+
 // StandingsAgentInjector defines the dependencies required by our StandingsAgent
 type StandingsAgentInjector interface {
-	MySQL() coresql.Agent
+	StandingsRepo() StandingsRepository
 }
 
 // StandingsAgent defines the behaviours for handling Standings
-type StandingsAgent struct { StandingsAgentInjector }
+type StandingsAgent struct{ StandingsAgentInjector }
 
 // CreateStandings handles the creation of a new Standings in the database
-func (s StandingsAgent) CreateStandings(ctx context.Context, standings Standings) (Standings, error) {
-	db := s.MySQL()
-
+func (s *StandingsAgent) CreateStandings(ctx context.Context, standings Standings) (Standings, error) {
 	// generate a new entry ID
 	id, err := uuid.NewV4()
 	if err != nil {
@@ -52,7 +57,7 @@ func (s StandingsAgent) CreateStandings(ctx context.Context, standings Standings
 	standings.CreatedAt = time.Now().Truncate(time.Second)
 	standings.UpdatedAt = sqltypes.NullTime{}
 
-	standingsRepo := repofac.NewStandingsDatabaseRepository(db)
+	standingsRepo := s.StandingsRepo()
 
 	// write entry to database
 	if err := standingsRepo.Insert(ctx, &standings); err != nil {
@@ -63,8 +68,8 @@ func (s StandingsAgent) CreateStandings(ctx context.Context, standings Standings
 }
 
 // RetrieveStandingsByID handles the retrieval of an existing Standings in the database by its ID
-func (s StandingsAgent) RetrieveStandingsByID(ctx context.Context, id string) (Standings, error) {
-	standingsRepo := repofac.NewStandingsDatabaseRepository(s.MySQL())
+func (s *StandingsAgent) RetrieveStandingsByID(ctx context.Context, id string) (Standings, error) {
+	standingsRepo := s.StandingsRepo()
 
 	retrievedStandings, err := standingsRepo.Select(ctx, map[string]interface{}{
 		"id": id,
@@ -77,8 +82,8 @@ func (s StandingsAgent) RetrieveStandingsByID(ctx context.Context, id string) (S
 }
 
 // RetrieveStandingsBySeasonAndRoundNumber handles the retrieval of an existing Standings in the database by its Season ID and Round Number
-func (s StandingsAgent) RetrieveStandingsBySeasonAndRoundNumber(ctx context.Context, seasonID string, roundNumber int) (Standings, error) {
-	standingsRepo := repofac.NewStandingsDatabaseRepository(s.MySQL())
+func (s *StandingsAgent) RetrieveStandingsBySeasonAndRoundNumber(ctx context.Context, seasonID string, roundNumber int) (Standings, error) {
+	standingsRepo := s.StandingsRepo()
 
 	retrievedStandings, err := standingsRepo.Select(ctx, map[string]interface{}{
 		"season_id":    seasonID,
@@ -92,8 +97,8 @@ func (s StandingsAgent) RetrieveStandingsBySeasonAndRoundNumber(ctx context.Cont
 }
 
 // RetrieveLatestStandingsBySeasonIDAndTimestamp handles the retrieval of the latest Standings in the database by its ID
-func (s StandingsAgent) RetrieveLatestStandingsBySeasonIDAndTimestamp(ctx context.Context, seasonID string, ts time.Time) (Standings, error) {
-	standingsRepo := repofac.NewStandingsDatabaseRepository(s.MySQL())
+func (s *StandingsAgent) RetrieveLatestStandingsBySeasonIDAndTimestamp(ctx context.Context, seasonID string, ts time.Time) (Standings, error) {
+	standingsRepo := s.StandingsRepo()
 
 	retrievedStandings, err := standingsRepo.SelectLatestBySeasonIDAndTimestamp(ctx, seasonID, ts)
 	if err != nil {
@@ -104,8 +109,8 @@ func (s StandingsAgent) RetrieveLatestStandingsBySeasonIDAndTimestamp(ctx contex
 }
 
 // UpdateStandings handles the updating of an existing Standings in the database
-func (s StandingsAgent) UpdateStandings(ctx context.Context, standings Standings) (Standings, error) {
-	standingsRepo := repofac.NewStandingsDatabaseRepository(s.MySQL())
+func (s *StandingsAgent) UpdateStandings(ctx context.Context, standings Standings) (Standings, error) {
+	standingsRepo := s.StandingsRepo()
 
 	// ensure the entry exists
 	if err := standingsRepo.ExistsByID(ctx, standings.ID.String()); err != nil {
@@ -125,7 +130,7 @@ func (s StandingsAgent) UpdateStandings(ctx context.Context, standings Standings
 
 // RetrieveStandingsIfNotFinalised provides a helpful wrapper method to return the standings represented by the provided
 // season ID and round number if not finalised, otherwise returns the provided default standings
-func (s StandingsAgent) RetrieveStandingsIfNotFinalised(
+func (s *StandingsAgent) RetrieveStandingsIfNotFinalised(
 	ctx context.Context,
 	seasonID string,
 	roundNumber int,

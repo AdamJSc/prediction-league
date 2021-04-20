@@ -539,7 +539,7 @@ func MustInflate() {
 	}
 
 	// define fake season
-	fakeSeasonKey := "202021_1"
+	fakeSeasonKey := "201920_1"
 
 	SeasonsDataStore[FakeSeasonID] = Season{
 		ID:       FakeSeasonID,

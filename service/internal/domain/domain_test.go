@@ -36,13 +36,6 @@ const (
 	testRealmPIN  = "1234"
 )
 
-// injector can be passed to Agents as our AgentInjectors for testing
-type injector struct {
-	db coresql.Agent
-}
-
-func (i injector) MySQL() coresql.Agent { return i.db }
-
 // TestMain provides a testing bootstrap
 func TestMain(m *testing.M) {
 	var err error
@@ -155,33 +148,6 @@ func testContextWithGuardAttempt(t *testing.T, attempt string) (context.Context,
 	return ctx, cancel
 }
 
-// testRealm provides a realm to use for testing
-func testRealm(t *testing.T) domain.Realm {
-	t.Helper()
-
-	realm := domain.Realm{
-		Name:     "TEST_REALM",
-		Origin:   "http://test_realm.org",
-		PIN:      "12345",
-		SeasonID: testSeason.ID,
-		EntryFee: domain.RealmEntryFee{
-			Amount: 12.34,
-			Label:  "£12.34",
-			Breakdown: []string{
-				"£12.33 charge",
-				"£0.01 processing fee",
-			},
-		},
-	}
-
-	realm.Contact.Name = "Harry R and the PL Team"
-	realm.Contact.EmailProper = "hello@world.net"
-	realm.Contact.EmailSanitised = "hello (at) world (dot) net"
-	realm.Contact.EmailDoNotReply = "do_not_reply@world.net"
-
-	return realm
-}
-
 // generateTestStandings generates a new Standings entity for use within the testsuite
 func generateTestStandings(t *testing.T) domain.Standings {
 	t.Helper()
@@ -249,7 +215,8 @@ func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail 
 		t.Fatal(err)
 	}
 
-	shortCode, err := domain.GenerateUniqueShortCode(ctx, db)
+	entryRepo := repofac.NewEntryDatabaseRepository(db)
+	shortCode, err := entryRepo.GenerateUniqueShortCode(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -339,4 +306,79 @@ func insertScoredEntryPrediction(t *testing.T, scoredEntryPrediction domain.Scor
 	}
 
 	return scoredEntryPrediction
+}
+
+type testInjector struct {
+	config    domain.Config
+	queue     chan domain.Email
+	templates *views.Templates
+	er        domain.EntryRepository
+	epr       domain.EntryPredictionRepository
+	sr        domain.StandingsRepository
+	sepr      domain.ScoredEntryPredictionRepository
+	tr        domain.TokenRepository
+}
+
+func (t *testInjector) Config() domain.Config             { return t.config }
+func (t *testInjector) EntryRepo() domain.EntryRepository { return t.er }
+func (t *testInjector) EntryPredictionRepo() domain.EntryPredictionRepository {
+	return t.epr
+}
+func (t *testInjector) StandingsRepo() domain.StandingsRepository { return t.sr }
+func (t *testInjector) ScoredEntryPredictionRepo() domain.ScoredEntryPredictionRepository {
+	return t.sepr
+}
+func (t *testInjector) TokenRepo() domain.TokenRepository {
+	return t.tr
+}
+func (t *testInjector) EmailQueue() chan domain.Email { return t.queue }
+func (t *testInjector) Template() *views.Templates    { return t.templates }
+
+func newTestInjector(t *testing.T, r domain.Realm, tpl *views.Templates, db coresql.Agent) *testInjector {
+	return &testInjector{
+		config:    newTestConfig(t, r),
+		queue:     make(chan domain.Email, 1),
+		templates: tpl,
+		er:        repofac.NewEntryDatabaseRepository(db),
+		epr:       repofac.NewEntryPredictionDatabaseRepository(db),
+		sr:        repofac.NewStandingsDatabaseRepository(db),
+		sepr:      repofac.NewScoredEntryPredictionDatabaseRepository(db),
+		tr:        repofac.NewTokenDatabaseRepository(db),
+	}
+}
+
+func newTestConfig(t *testing.T, r domain.Realm) domain.Config {
+	t.Helper()
+
+	return domain.Config{
+		Realms: map[string]domain.Realm{
+			r.Name: r,
+		},
+	}
+}
+
+func newTestRealm(t *testing.T) domain.Realm {
+	t.Helper()
+
+	realm := domain.Realm{
+		Name:     "TEST_REALM",
+		Origin:   "http://test_realm.org",
+		PIN:      "12345",
+		SeasonID: testSeason.ID,
+		EntryFee: domain.RealmEntryFee{
+			Amount: 12.34,
+			Label:  "£12.34",
+			Breakdown: []string{
+				"£12.33 charge",
+				"£0.01 processing fee",
+			},
+		},
+	}
+
+	realm.Contact.Name = "Harry R and the PL Team"
+	realm.Contact.EmailProper = "hello@world.net"
+	realm.Contact.EmailSanitised = "hello (at) world (dot) net"
+	realm.Contact.EmailDoNotReply = "do_not_reply@world.net"
+
+	return realm
 }

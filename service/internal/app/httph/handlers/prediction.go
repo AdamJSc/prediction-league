@@ -13,8 +13,8 @@ import (
 )
 
 func predictionLoginHandler(c *httph.HTTPAppContainer) func(http.ResponseWriter, *http.Request) {
-	entryAgent := domain.EntryAgent{EntryAgentInjector: c}
-	tokenAgent := domain.TokenAgent{TokenAgentInjector: c}
+	entryAgent := &domain.EntryAgent{EntryAgentInjector: c}
+	tokenAgent := &domain.TokenAgent{TokenAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		var input predictionLoginRequest
@@ -81,7 +81,7 @@ func predictionLoginHandler(c *httph.HTTPAppContainer) func(http.ResponseWriter,
 	}
 }
 
-func getPredictionPageData(ctx context.Context, authToken string, entryAgent domain.EntryAgent, tokenAgent domain.TokenAgent) pages.PredictionPageData {
+func getPredictionPageData(ctx context.Context, authToken string, entryAgent *domain.EntryAgent, tokenAgent *domain.TokenAgent) pages.PredictionPageData {
 	var data pages.PredictionPageData
 
 	// retrieve season and determine its current state

@@ -12,6 +12,8 @@ import (
 	"prediction-league/service/internal/clients"
 	"prediction-league/service/internal/clients/mailgun"
 	"prediction-league/service/internal/domain"
+	"prediction-league/service/internal/repositories"
+	"prediction-league/service/internal/repositories/repofac"
 	"prediction-league/service/internal/scheduler"
 	"prediction-league/service/internal/seeder"
 	"prediction-league/service/internal/views"
@@ -54,13 +56,18 @@ func main() {
 
 	// setup server
 	httpAppContainer := httph.NewHTTPAppContainer(dependencies{
-		config:         config,
-		mysql:          db,
-		emailClient:    mailgun.NewClient(config.MailgunAPIKey),
-		emailQueue:     make(chan domain.Email),
-		router:         mux.NewRouter(),
-		templates:      domain.MustParseTemplates("./service/views"),
-		debugTimestamp: parseTimeString(ts),
+		config:                    config,
+		mysql:                     db,
+		emailClient:               mailgun.NewClient(config.MailgunAPIKey),
+		emailQueue:                make(chan domain.Email),
+		router:                    mux.NewRouter(),
+		templates:                 domain.MustParseTemplates("./service/views"),
+		debugTimestamp:            parseTimeString(ts),
+		standingsRepo:             repofac.NewStandingsDatabaseRepository(db),
+		entryRepo:                 repofac.NewEntryDatabaseRepository(db),
+		entryPredictionRepo:       repofac.NewEntryPredictionDatabaseRepository(db),
+		scoredEntryPredictionRepo: repofac.NewScoredEntryPredictionDatabaseRepository(db),
+		tokenRepo:                 repofac.NewTokenDatabaseRepository(db),
 	})
 	handlers.RegisterRoutes(httpAppContainer)
 
@@ -91,22 +98,37 @@ func main() {
 }
 
 type dependencies struct {
-	config         domain.Config
-	mysql          coresql.Agent
-	emailClient    clients.EmailClient
-	emailQueue     chan domain.Email
-	router         *mux.Router
-	templates      *views.Templates
-	debugTimestamp *time.Time
+	config                    domain.Config
+	mysql                     coresql.Agent
+	emailClient               clients.EmailClient
+	emailQueue                chan domain.Email
+	router                    *mux.Router
+	templates                 *views.Templates
+	debugTimestamp            *time.Time
+	standingsRepo             *repositories.StandingsDatabaseRepository
+	entryRepo                 *repositories.EntryDatabaseRepository
+	entryPredictionRepo       *repositories.EntryPredictionDatabaseRepository
+	scoredEntryPredictionRepo *repositories.ScoredEntryPredictionDatabaseRepository
+	tokenRepo                 *repositories.TokenDatabaseRepository
 }
 
 func (d dependencies) Config() domain.Config            { return d.config }
-func (d dependencies) MySQL() coresql.Agent             { return d.mysql }
 func (d dependencies) EmailClient() clients.EmailClient { return d.emailClient }
 func (d dependencies) EmailQueue() chan domain.Email    { return d.emailQueue }
 func (d dependencies) Router() *mux.Router              { return d.router }
 func (d dependencies) Template() *views.Templates       { return d.templates }
 func (d dependencies) DebugTimestamp() *time.Time       { return d.debugTimestamp }
+func (d dependencies) StandingsRepo() domain.StandingsRepository {
+	return d.standingsRepo
+}
+func (d dependencies) EntryRepo() domain.EntryRepository { return d.entryRepo }
+func (d dependencies) EntryPredictionRepo() domain.EntryPredictionRepository {
+	return d.entryPredictionRepo
+}
+func (d dependencies) ScoredEntryPredictionRepo() domain.ScoredEntryPredictionRepository {
+	return d.scoredEntryPredictionRepo
+}
+func (d dependencies) TokenRepo() domain.TokenRepository { return d.tokenRepo }
 
 func parseTimeString(t *string) *time.Time {
 	if t == nil {

@@ -13,9 +13,9 @@ import (
 func TestTokenAgent_GenerateToken(t *testing.T) {
 	defer truncate(t)
 
-	agent := domain.TokenAgent{
-		TokenAgentInjector: injector{db: db},
-	}
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
+	agent := &domain.TokenAgent{TokenAgentInjector: injector}
 
 	// arbitrary timestamp that isn't the current moment
 	ts := time.Now().Add(-24 * time.Hour)
@@ -111,14 +111,14 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 	defer truncate(t)
 
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
+	agent := &domain.TokenAgent{TokenAgentInjector: injector}
+
 	token := generateTestToken()
 	tokenRepo := repofac.NewTokenDatabaseRepository(db)
 	if err := tokenRepo.Insert(context.Background(), token); err != nil {
 		t.Fatal(err)
-	}
-
-	agent := domain.TokenAgent{
-		TokenAgentInjector: injector{db: db},
 	}
 
 	t.Run("retrieve an existing token must succeed", func(t *testing.T) {
@@ -161,14 +161,14 @@ func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 func TestTokenAgent_DeleteToken(t *testing.T) {
 	defer truncate(t)
 
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
+	agent := &domain.TokenAgent{TokenAgentInjector: injector}
+
 	token := generateTestToken()
 	tokenRepo := repofac.NewTokenDatabaseRepository(db)
 	if err := tokenRepo.Insert(context.Background(), token); err != nil {
 		t.Fatal(err)
-	}
-
-	agent := domain.TokenAgent{
-		TokenAgentInjector: injector{db: db},
 	}
 
 	t.Run("delete an existing token must succeed", func(t *testing.T) {
@@ -189,6 +189,10 @@ func TestTokenAgent_DeleteToken(t *testing.T) {
 
 func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 	defer truncate(t)
+
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
+	agent := &domain.TokenAgent{TokenAgentInjector: injector}
 
 	now := time.Now().Truncate(time.Second)
 
@@ -218,10 +222,6 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 		if err := tokenRepo.Insert(context.Background(), token); err != nil {
 			t.Fatal(err)
 		}
-	}
-
-	agent := domain.TokenAgent{
-		TokenAgentInjector: injector{db: db},
 	}
 
 	t.Run("delete tokens expired after valid timestamp must succeed", func(t *testing.T) {

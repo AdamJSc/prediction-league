@@ -8,6 +8,6 @@ type HTTPAppContainer struct {
 }
 
 // NewHTTPAppContainer returns a new instance of the http app container.
-func NewHTTPAppContainer(dependencies app.DependencyInjector) *HTTPAppContainer {
-	return &HTTPAppContainer{DependencyInjector: dependencies}
+func NewHTTPAppContainer(deps app.DependencyInjector) *HTTPAppContainer {
+	return &HTTPAppContainer{DependencyInjector: deps}
 }

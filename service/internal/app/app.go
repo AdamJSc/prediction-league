@@ -6,24 +6,41 @@ import (
 	"prediction-league/service/internal/views"
 	"time"
 
-	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/gorilla/mux"
 )
 
 type DependencyInjector interface {
 	ConfigInjector
-	MySQLInjector
 	EmailClientInjector
 	EmailQueueInjector
 	RouterInjector
 	TemplateInjector
 	DebugTimestampInjector
+	StandingsRepoInjector
+	EntryRepoInjector
+	EntryPredictionRepoInjector
+	ScoredEntryPredictionRepoInjector
+	TokenRepoInjector
 }
 
 type ConfigInjector interface{ Config() domain.Config }
-type MySQLInjector interface{ MySQL() coresql.Agent }
 type EmailClientInjector interface{ EmailClient() clients.EmailClient }
 type EmailQueueInjector interface{ EmailQueue() chan domain.Email }
 type RouterInjector interface{ Router() *mux.Router }
 type TemplateInjector interface{ Template() *views.Templates }
 type DebugTimestampInjector interface{ DebugTimestamp() *time.Time }
+type StandingsRepoInjector interface {
+	StandingsRepo() domain.StandingsRepository
+}
+type EntryRepoInjector interface {
+	EntryRepo() domain.EntryRepository
+}
+type EntryPredictionRepoInjector interface {
+	EntryPredictionRepo() domain.EntryPredictionRepository
+}
+type ScoredEntryPredictionRepoInjector interface {
+	ScoredEntryPredictionRepo() domain.ScoredEntryPredictionRepository
+}
+type TokenRepoInjector interface {
+	TokenRepo() domain.TokenRepository
+}

@@ -57,9 +57,9 @@ func frontendLeaderBoardHandler(c *httph.HTTPAppContainer) func(w http.ResponseW
 
 		data := getLeaderBoardPageData(
 			ctx,
-			domain.EntryAgent{EntryAgentInjector: c},
-			domain.StandingsAgent{StandingsAgentInjector: c},
-			domain.LeaderBoardAgent{LeaderBoardAgentInjector: c},
+			&domain.EntryAgent{EntryAgentInjector: c},
+			&domain.StandingsAgent{StandingsAgentInjector: c},
+			&domain.LeaderBoardAgent{LeaderBoardAgentInjector: c},
 		)
 
 		writeResponse(data)
@@ -147,8 +147,8 @@ func frontendPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWr
 		data := getPredictionPageData(
 			ctx,
 			getAuthCookieValue(r),
-			domain.EntryAgent{EntryAgentInjector: c},
-			domain.TokenAgent{TokenAgentInjector: c},
+			&domain.EntryAgent{EntryAgentInjector: c},
+			&domain.TokenAgent{TokenAgentInjector: c},
 		)
 
 		writeResponse(data)
@@ -156,9 +156,9 @@ func frontendPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWr
 }
 
 func frontendShortCodeResetBeginHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	entryAgent := domain.EntryAgent{EntryAgentInjector: c}
-	tokenAgent := domain.TokenAgent{TokenAgentInjector: c}
-	commsAgent := domain.CommunicationsAgent{CommunicationsAgentInjector: c}
+	entryAgent := &domain.EntryAgent{EntryAgentInjector: c}
+	tokenAgent := &domain.TokenAgent{TokenAgentInjector: c}
+	commsAgent := &domain.CommunicationsAgent{CommunicationsAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		var writeResponse = func(data pages.ShortCodeResetBeginPageData) {
@@ -237,9 +237,9 @@ func frontendShortCodeResetBeginHandler(c *httph.HTTPAppContainer) func(w http.R
 }
 
 func frontendShortCodeResetCompleteHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	entryAgent := domain.EntryAgent{EntryAgentInjector: c}
-	tokenAgent := domain.TokenAgent{TokenAgentInjector: c}
-	commsAgent := domain.CommunicationsAgent{CommunicationsAgentInjector: c}
+	entryAgent := &domain.EntryAgent{EntryAgentInjector: c}
+	tokenAgent := &domain.TokenAgent{TokenAgentInjector: c}
+	commsAgent := &domain.CommunicationsAgent{CommunicationsAgentInjector: c}
 
 	invalidTokenErr := errors.New("oh no! looks like your token is invalid :'( please try resetting your short code again")
 
@@ -306,7 +306,7 @@ func frontendShortCodeResetCompleteHandler(c *httph.HTTPAppContainer) func(w htt
 
 		// we've made it this far!
 		// now generate a new short code
-		newShortCode, err := domain.GenerateUniqueShortCode(ctx, c.MySQL())
+		newShortCode, err := entryAgent.GenerateUniqueShortCode(ctx)
 		if err != nil {
 			writeResponse(pages.ShortCodeResetCompletePageData{Err: err})
 			return

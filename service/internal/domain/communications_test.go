@@ -3,7 +3,6 @@ package domain_test
 import (
 	"bytes"
 	"fmt"
-	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/uuid"
 	gocmp "github.com/google/go-cmp/cmp"
 	"gotest.tools/assert/cmp"
@@ -13,26 +12,11 @@ import (
 	"time"
 )
 
-type testCommsAgentInjector struct {
-	config    domain.Config
-	db        coresql.Agent
-	queue     chan domain.Email
-	templates *views.Templates
-}
-
-func (t testCommsAgentInjector) Config() domain.Config         { return t.config }
-func (t testCommsAgentInjector) MySQL() coresql.Agent          { return t.db }
-func (t testCommsAgentInjector) EmailQueue() chan domain.Email { return t.queue }
-func (t testCommsAgentInjector) Template() *views.Templates    { return t.templates }
-
 func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 	defer truncate(t)
 
-	testConfig := domain.Config{
-		Realms: make(map[string]domain.Realm),
-	}
-	testRealm := testRealm(t)
-	testConfig.Realms[testRealm.Name] = testRealm
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
 
 	testPaymentDetails := domain.PaymentDetails{
 		Amount:       "£12.34",
@@ -40,13 +24,7 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 		MerchantName: "MERCHANT_NAME",
 	}
 
-	injector := testCommsAgentInjector{
-		config:    testConfig,
-		queue:     make(chan domain.Email, 1),
-		templates: templates,
-	}
-
-	agent := domain.CommunicationsAgent{
+	agent := &domain.CommunicationsAgent{
 		CommunicationsAgentInjector: injector,
 	}
 
@@ -217,11 +195,8 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 	defer truncate(t)
 
-	testConfig := domain.Config{
-		Realms: make(map[string]domain.Realm),
-	}
-	testRealm := testRealm(t)
-	testConfig.Realms[testRealm.Name] = testRealm
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
 
 	entry := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
@@ -232,16 +207,9 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 	standings := insertStandings(t, generateTestStandings(t))
 	scoredEntryPrediction := insertScoredEntryPrediction(t, generateTestScoredEntryPrediction(t, entryPrediction.ID, standings.ID))
 
-	injector := testCommsAgentInjector{
-		config:    testConfig,
-		db:        db,
-		queue:     make(chan domain.Email, 1),
-		templates: templates,
-	}
-
 	defer close(injector.queue)
 
-	agent := domain.CommunicationsAgent{
+	agent := &domain.CommunicationsAgent{
 		CommunicationsAgentInjector: injector,
 	}
 
@@ -464,19 +432,10 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 	defer truncate(t)
 
-	testConfig := domain.Config{
-		Realms: make(map[string]domain.Realm),
-	}
-	testRealm := testRealm(t)
-	testConfig.Realms[testRealm.Name] = testRealm
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
 
-	injector := testCommsAgentInjector{
-		config:    testConfig,
-		queue:     make(chan domain.Email, 1),
-		templates: templates,
-	}
-
-	agent := domain.CommunicationsAgent{
+	agent := &domain.CommunicationsAgent{
 		CommunicationsAgentInjector: injector,
 	}
 
@@ -597,19 +556,10 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 	defer truncate(t)
 
-	testConfig := domain.Config{
-		Realms: make(map[string]domain.Realm),
-	}
-	testRealm := testRealm(t)
-	testConfig.Realms[testRealm.Name] = testRealm
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
 
-	injector := testCommsAgentInjector{
-		config:    testConfig,
-		queue:     make(chan domain.Email, 1),
-		templates: templates,
-	}
-
-	agent := domain.CommunicationsAgent{
+	agent := &domain.CommunicationsAgent{
 		CommunicationsAgentInjector: injector,
 	}
 
@@ -729,24 +679,15 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 	defer truncate(t)
 
-	testConfig := domain.Config{
-		Realms: make(map[string]domain.Realm),
-	}
-	testRealm := testRealm(t)
-	testConfig.Realms[testRealm.Name] = testRealm
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
 
 	loc, err := time.LoadLocation("Europe/London")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	injector := testCommsAgentInjector{
-		config:    testConfig,
-		queue:     make(chan domain.Email, 1),
-		templates: templates,
-	}
-
-	agent := domain.CommunicationsAgent{
+	agent := &domain.CommunicationsAgent{
 		CommunicationsAgentInjector: injector,
 	}
 
@@ -988,24 +929,15 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 	defer truncate(t)
 
-	testConfig := domain.Config{
-		Realms: make(map[string]domain.Realm),
-	}
-	testRealm := testRealm(t)
-	testConfig.Realms[testRealm.Name] = testRealm
+	testRealm := newTestRealm(t)
+	injector := newTestInjector(t, testRealm, templates, db)
 
 	loc, err := time.LoadLocation("Europe/London")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	injector := testCommsAgentInjector{
-		config:    testConfig,
-		queue:     make(chan domain.Email, 1),
-		templates: templates,
-	}
-
-	agent := domain.CommunicationsAgent{
+	agent := &domain.CommunicationsAgent{
 		CommunicationsAgentInjector: injector,
 	}
 

@@ -7,7 +7,7 @@ import (
 	"prediction-league/service/internal/pages"
 )
 
-func getLeaderBoardPageData(ctx context.Context, entryAgent domain.EntryAgent, standingsAgent domain.StandingsAgent, leaderBoardAgent domain.LeaderBoardAgent) pages.LeaderBoardPageData {
+func getLeaderBoardPageData(ctx context.Context, entryAgent *domain.EntryAgent, standingsAgent *domain.StandingsAgent, leaderBoardAgent *domain.LeaderBoardAgent) pages.LeaderBoardPageData {
 	var data pages.LeaderBoardPageData
 
 	ctxRealm := domain.RealmFromContext(ctx)

@@ -11,7 +11,7 @@ import (
 )
 
 func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	agent := domain.EntryAgent{EntryAgentInjector: c}
+	agent := &domain.EntryAgent{EntryAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		var input createEntryRequest
@@ -82,8 +82,8 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 }
 
 func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	entryAgent := domain.EntryAgent{EntryAgentInjector: c}
-	commsAgent := domain.CommunicationsAgent{CommunicationsAgentInjector: c}
+	entryAgent := &domain.EntryAgent{EntryAgentInjector: c}
+	commsAgent := &domain.CommunicationsAgent{CommunicationsAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		var input updateEntryPaymentDetailsRequest
@@ -146,7 +146,7 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 }
 
 func createEntryPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	agent := domain.EntryAgent{EntryAgentInjector: c}
+	agent := &domain.EntryAgent{EntryAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		var input createEntryPredictionRequest
@@ -203,7 +203,7 @@ func createEntryPredictionHandler(c *httph.HTTPAppContainer) func(w http.Respons
 }
 
 func retrieveLatestEntryPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	agent := domain.EntryAgent{EntryAgentInjector: c}
+	agent := &domain.EntryAgent{EntryAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// parse entry ID from route
@@ -253,7 +253,7 @@ func retrieveLatestEntryPredictionHandler(c *httph.HTTPAppContainer) func(w http
 }
 
 func approveEntryByShortCodeHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	agent := domain.EntryAgent{EntryAgentInjector: c}
+	agent := &domain.EntryAgent{EntryAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// parse entry short code from route
@@ -306,7 +306,7 @@ func retrieveLatestScoredEntryPrediction(c *httph.HTTPAppContainer) func(w http.
 		defer cancel()
 
 		// get latest scored entry prediction by entry id and round number
-		scoredEntryPredictionAgent := domain.ScoredEntryPredictionAgent{
+		scoredEntryPredictionAgent := &domain.ScoredEntryPredictionAgent{
 			ScoredEntryPredictionAgentInjector: c,
 		}
 		scoredEntryPredictions, err := scoredEntryPredictionAgent.RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(ctx, entryID, roundNumber)
@@ -316,7 +316,7 @@ func retrieveLatestScoredEntryPrediction(c *httph.HTTPAppContainer) func(w http.
 		}
 
 		// get corresponding standings
-		standingsAgent := domain.StandingsAgent{
+		standingsAgent := &domain.StandingsAgent{
 			StandingsAgentInjector: c,
 		}
 		standings, err := standingsAgent.RetrieveStandingsByID(ctx, scoredEntryPredictions.StandingsID.String())
