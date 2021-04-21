@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/pages"
+	"prediction-league/service/internal/view"
 	"time"
 )
 
@@ -40,7 +40,7 @@ func frontendIndexHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter,
 
 func frontendLeaderBoardHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var writeResponse = func(data pages.LeaderBoardPageData) {
+		var writeResponse = func(data view.LeaderBoardPageData) {
 			p := newPage(r, c, "Leaderboard", "leaderboard", "Leaderboard", data)
 
 			if err := c.Template().ExecuteTemplate(w, "leaderboard", p); err != nil {
@@ -50,7 +50,7 @@ func frontendLeaderBoardHandler(c *httph.HTTPAppContainer) func(w http.ResponseW
 
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			writeResponse(pages.LeaderBoardPageData{Err: err})
+			writeResponse(view.LeaderBoardPageData{Err: err})
 			return
 		}
 		defer cancel()
@@ -68,7 +68,7 @@ func frontendLeaderBoardHandler(c *httph.HTTPAppContainer) func(w http.ResponseW
 
 func frontendFAQHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var writeResponse = func(data pages.FAQPageData) {
+		var writeResponse = func(data view.FAQPageData) {
 			p := newPage(r, c, "FAQ", "faq", "FAQ", data)
 
 			if err := c.Template().ExecuteTemplate(w, "faq", p); err != nil {
@@ -108,7 +108,7 @@ func frontendJoinHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, 
 		entriesOpen := season.EntriesAccepted.HasBegunBy(now) && !season.EntriesAccepted.HasElapsedBy(now)
 		entriesClosed := season.EntriesAccepted.HasElapsedBy(now)
 
-		data := pages.JoinPageData{
+		data := view.JoinPageData{
 			EntriesOpen:     entriesOpen,
 			EntriesOpenTS:   season.EntriesAccepted.From,
 			EntriesClosed:   entriesClosed,
@@ -129,7 +129,7 @@ func frontendJoinHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, 
 
 func frontendPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var writeResponse = func(data pages.PredictionPageData) {
+		var writeResponse = func(data view.PredictionPageData) {
 			p := newPage(r, c, "Update My Prediction", "prediction", "Update My Prediction", data)
 
 			if err := c.Template().ExecuteTemplate(w, "prediction", p); err != nil {
@@ -139,7 +139,7 @@ func frontendPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWr
 
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			writeResponse(pages.PredictionPageData{Err: err})
+			writeResponse(view.PredictionPageData{Err: err})
 			return
 		}
 		defer cancel()
@@ -161,7 +161,7 @@ func frontendShortCodeResetBeginHandler(c *httph.HTTPAppContainer) func(w http.R
 	commsAgent := &domain.CommunicationsAgent{CommunicationsAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		var writeResponse = func(data pages.ShortCodeResetBeginPageData) {
+		var writeResponse = func(data view.ShortCodeResetBeginPageData) {
 			p := newPage(r, c, "Reset my Short Code", "", "Reset my Short Code", data)
 
 			if err := c.Template().ExecuteTemplate(w, "short-code-reset-begin", p); err != nil {
@@ -171,7 +171,7 @@ func frontendShortCodeResetBeginHandler(c *httph.HTTPAppContainer) func(w http.R
 
 		// parse request body (standard form)
 		if err := r.ParseForm(); err != nil {
-			writeResponse(pages.ShortCodeResetBeginPageData{Err: err})
+			writeResponse(view.ShortCodeResetBeginPageData{Err: err})
 			return
 		}
 		var input shortCodeResetRequest
@@ -183,14 +183,14 @@ func frontendShortCodeResetBeginHandler(c *httph.HTTPAppContainer) func(w http.R
 
 		// check that input is valid
 		if input.EmailNickname == "" {
-			writeResponse(pages.ShortCodeResetBeginPageData{Err: errors.New("invalid request")})
+			writeResponse(view.ShortCodeResetBeginPageData{Err: errors.New("invalid request")})
 			return
 		}
 
 		// get context from request
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			writeResponse(pages.ShortCodeResetBeginPageData{Err: err})
+			writeResponse(view.ShortCodeResetBeginPageData{Err: err})
 			return
 		}
 		defer cancel()
@@ -205,34 +205,34 @@ func frontendShortCodeResetBeginHandler(c *httph.HTTPAppContainer) func(w http.R
 			case domain.NotFoundError:
 				// we can't find an existing entry, but we don't want to let the user know
 				// just pretend everything is ok...
-				writeResponse(pages.ShortCodeResetBeginPageData{EmailNickname: input.EmailNickname})
+				writeResponse(view.ShortCodeResetBeginPageData{EmailNickname: input.EmailNickname})
 				return
 			}
-			writeResponse(pages.ShortCodeResetBeginPageData{Err: err})
+			writeResponse(view.ShortCodeResetBeginPageData{Err: err})
 			return
 		}
 
 		// does realm name match our entry?
 		if domain.RealmFromContext(ctx).Name != entry.RealmName {
-			writeResponse(pages.ShortCodeResetBeginPageData{Err: errors.New("invalid realm")})
+			writeResponse(view.ShortCodeResetBeginPageData{Err: errors.New("invalid realm")})
 			return
 		}
 
 		// generate short code reset token
 		token, err := tokenAgent.GenerateToken(ctx, domain.TokenTypeShortCodeResetToken, entry.ID.String())
 		if err != nil {
-			writeResponse(pages.ShortCodeResetBeginPageData{Err: err})
+			writeResponse(view.ShortCodeResetBeginPageData{Err: err})
 			return
 		}
 
 		// issue email with short code reset link
 		if err := commsAgent.IssueShortCodeResetBeginEmail(nil, entry, token.ID); err != nil {
-			writeResponse(pages.ShortCodeResetBeginPageData{Err: err})
+			writeResponse(view.ShortCodeResetBeginPageData{Err: err})
 			return
 		}
 
 		// all good!
-		writeResponse(pages.ShortCodeResetBeginPageData{EmailNickname: input.EmailNickname})
+		writeResponse(view.ShortCodeResetBeginPageData{EmailNickname: input.EmailNickname})
 	}
 }
 
@@ -244,7 +244,7 @@ func frontendShortCodeResetCompleteHandler(c *httph.HTTPAppContainer) func(w htt
 	invalidTokenErr := errors.New("oh no! looks like your token is invalid :'( please try resetting your short code again")
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		var writeResponse = func(data pages.ShortCodeResetCompletePageData) {
+		var writeResponse = func(data view.ShortCodeResetCompletePageData) {
 			p := newPage(r, c, "Reset my Short Code", "", "Reset my Short Code", data)
 
 			if err := c.Template().ExecuteTemplate(w, "short-code-reset-complete", p); err != nil {
@@ -255,14 +255,14 @@ func frontendShortCodeResetCompleteHandler(c *httph.HTTPAppContainer) func(w htt
 		// parse reset token from route
 		var resetToken string
 		if err := getRouteParam(r, "reset_token", &resetToken); err != nil {
-			writeResponse(pages.ShortCodeResetCompletePageData{Err: err})
+			writeResponse(view.ShortCodeResetCompletePageData{Err: err})
 			return
 		}
 
 		// get context from request
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			writeResponse(pages.ShortCodeResetCompletePageData{Err: err})
+			writeResponse(view.ShortCodeResetCompletePageData{Err: err})
 			return
 		}
 		defer cancel()
@@ -272,35 +272,35 @@ func frontendShortCodeResetCompleteHandler(c *httph.HTTPAppContainer) func(w htt
 		if err != nil {
 			switch err.(type) {
 			case domain.NotFoundError:
-				writeResponse(pages.ShortCodeResetCompletePageData{Err: invalidTokenErr})
+				writeResponse(view.ShortCodeResetCompletePageData{Err: invalidTokenErr})
 				return
 			}
-			writeResponse(pages.ShortCodeResetCompletePageData{Err: err})
+			writeResponse(view.ShortCodeResetCompletePageData{Err: err})
 			return
 		}
 
 		// has token expired?
 		if token.ExpiresAt.Before(domain.TimestampFromContext(ctx)) {
-			writeResponse(pages.ShortCodeResetCompletePageData{Err: invalidTokenErr})
+			writeResponse(view.ShortCodeResetCompletePageData{Err: invalidTokenErr})
 			return
 		}
 
 		// is token a short code refresh token?
 		if token.Type != domain.TokenTypeShortCodeResetToken {
-			writeResponse(pages.ShortCodeResetCompletePageData{Err: invalidTokenErr})
+			writeResponse(view.ShortCodeResetCompletePageData{Err: invalidTokenErr})
 			return
 		}
 
 		// retrieve entry
 		entry, err := entryAgent.RetrieveEntryByID(ctx, token.Value)
 		if err != nil {
-			writeResponse(pages.ShortCodeResetCompletePageData{Err: err})
+			writeResponse(view.ShortCodeResetCompletePageData{Err: err})
 			return
 		}
 
 		// does realm name match our entry?
 		if domain.RealmFromContext(ctx).Name != entry.RealmName {
-			writeResponse(pages.ShortCodeResetCompletePageData{Err: errors.New("invalid realm")})
+			writeResponse(view.ShortCodeResetCompletePageData{Err: errors.New("invalid realm")})
 			return
 		}
 
@@ -308,7 +308,7 @@ func frontendShortCodeResetCompleteHandler(c *httph.HTTPAppContainer) func(w htt
 		// now generate a new short code
 		newShortCode, err := entryAgent.GenerateUniqueShortCode(ctx)
 		if err != nil {
-			writeResponse(pages.ShortCodeResetCompletePageData{Err: err})
+			writeResponse(view.ShortCodeResetCompletePageData{Err: err})
 			return
 		}
 
@@ -316,23 +316,23 @@ func frontendShortCodeResetCompleteHandler(c *httph.HTTPAppContainer) func(w htt
 		entry.ShortCode = newShortCode
 		entry, err = entryAgent.UpdateEntry(ctx, entry)
 		if err != nil {
-			writeResponse(pages.ShortCodeResetCompletePageData{Err: err})
+			writeResponse(view.ShortCodeResetCompletePageData{Err: err})
 			return
 		}
 
 		// delete short code reset token
 		if err := tokenAgent.DeleteToken(ctx, *token); err != nil {
-			writeResponse(pages.ShortCodeResetCompletePageData{Err: err})
+			writeResponse(view.ShortCodeResetCompletePageData{Err: err})
 			return
 		}
 
 		// issue email confirming short code reset
 		if err := commsAgent.IssueShortCodeResetCompleteEmail(nil, &entry); err != nil {
-			writeResponse(pages.ShortCodeResetCompletePageData{Err: err})
+			writeResponse(view.ShortCodeResetCompletePageData{Err: err})
 			return
 		}
 
 		// all good!
-		writeResponse(pages.ShortCodeResetCompletePageData{ShortCode: newShortCode})
+		writeResponse(view.ShortCodeResetCompletePageData{ShortCode: newShortCode})
 	}
 }

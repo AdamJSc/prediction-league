@@ -1,4 +1,4 @@
-package pages
+package view
 
 import (
 	"html/template"

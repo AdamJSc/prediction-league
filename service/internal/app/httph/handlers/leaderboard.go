@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/pages"
+	"prediction-league/service/internal/view"
 )
 
-func getLeaderBoardPageData(ctx context.Context, entryAgent *domain.EntryAgent, standingsAgent *domain.StandingsAgent, leaderBoardAgent *domain.LeaderBoardAgent) pages.LeaderBoardPageData {
-	var data pages.LeaderBoardPageData
+func getLeaderBoardPageData(ctx context.Context, entryAgent *domain.EntryAgent, standingsAgent *domain.StandingsAgent, leaderBoardAgent *domain.LeaderBoardAgent) view.LeaderBoardPageData {
+	var data view.LeaderBoardPageData
 
 	ctxRealm := domain.RealmFromContext(ctx)
 

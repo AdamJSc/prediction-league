@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/pages"
+	"prediction-league/service/internal/view"
 )
 
 func predictionLoginHandler(c *httph.HTTPAppContainer) func(http.ResponseWriter, *http.Request) {
@@ -81,8 +81,8 @@ func predictionLoginHandler(c *httph.HTTPAppContainer) func(http.ResponseWriter,
 	}
 }
 
-func getPredictionPageData(ctx context.Context, authToken string, entryAgent *domain.EntryAgent, tokenAgent *domain.TokenAgent) pages.PredictionPageData {
-	var data pages.PredictionPageData
+func getPredictionPageData(ctx context.Context, authToken string, entryAgent *domain.EntryAgent, tokenAgent *domain.TokenAgent) view.PredictionPageData {
+	var data view.PredictionPageData
 
 	// retrieve season and determine its current state
 	seasonID := domain.RealmFromContext(ctx).SeasonID

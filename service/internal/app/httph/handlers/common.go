@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/pages"
+	"prediction-league/service/internal/view"
 	"strconv"
 	"strings"
 	"time"
@@ -127,7 +127,7 @@ func isLoggedIn(r *http.Request) bool {
 }
 
 // newPage creates a new base page from the provided arguments
-func newPage(r *http.Request, c *httph.HTTPAppContainer, title, activePage, bannerTitle string, data interface{}) *pages.Base {
+func newPage(r *http.Request, c *httph.HTTPAppContainer, title, activePage, bannerTitle string, data interface{}) *view.Base {
 	// ignore error because if the realm doesn't exist the other agent methods will prevent core functionality anyway
 	// we only need the realm for populating a couple of trivial attributes which will be the least of our worries if any issues...
 	ctx, cancel, _ := contextFromRequest(r, c)
@@ -135,7 +135,7 @@ func newPage(r *http.Request, c *httph.HTTPAppContainer, title, activePage, bann
 
 	realm := domain.RealmFromContext(ctx)
 
-	return &pages.Base{
+	return &view.Base{
 		Title:                 title,
 		BannerTitle:           template.HTML(bannerTitle),
 		ActivePage:            activePage,

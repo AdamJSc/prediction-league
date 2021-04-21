@@ -6,11 +6,11 @@ import (
 	"gopkg.in/yaml.v2"
 	"html/template"
 	"io/ioutil"
-	"prediction-league/service/internal/pages"
+	"prediction-league/service/internal/view"
 )
 
-func getFAQPageData(realmName string) pages.FAQPageData {
-	var data pages.FAQPageData
+func getFAQPageData(realmName string) view.FAQPageData {
+	var data view.FAQPageData
 
 	// read faq for provided realm
 	contents, err := ioutil.ReadFile(fmt.Sprintf("./data/faq-by-realm/%s.yml", realmName))
@@ -20,7 +20,7 @@ func getFAQPageData(realmName string) pages.FAQPageData {
 	}
 
 	// parse faqs
-	var faqs []pages.FAQItem
+	var faqs []view.FAQItem
 	if err := yaml.Unmarshal(contents, &faqs); err != nil {
 		data.Err = err
 		return data
