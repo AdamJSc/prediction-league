@@ -1,4 +1,4 @@
-package football_data_org
+package footballdataorg
 
 import (
 	"context"

@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"prediction-league/service/internal/adapters/mailgun"
 	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/app/httph/handlers"
-	"prediction-league/service/internal/clients"
-	"prediction-league/service/internal/clients/mailgun"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/repositories"
 	"prediction-league/service/internal/repositories/repofac"
@@ -100,7 +99,7 @@ func main() {
 type dependencies struct {
 	config                    domain.Config
 	mysql                     coresql.Agent
-	emailClient               clients.EmailClient
+	emailClient               domain.EmailClient
 	emailQueue                chan domain.Email
 	router                    *mux.Router
 	templates                 *views.Templates
@@ -112,9 +111,9 @@ type dependencies struct {
 	tokenRepo                 *repositories.TokenDatabaseRepository
 }
 
-func (d dependencies) Config() domain.Config            { return d.config }
-func (d dependencies) EmailClient() clients.EmailClient { return d.emailClient }
-func (d dependencies) EmailQueue() chan domain.Email    { return d.emailQueue }
+func (d dependencies) Config() domain.Config           { return d.config }
+func (d dependencies) EmailClient() domain.EmailClient { return d.emailClient }
+func (d dependencies) EmailQueue() chan domain.Email   { return d.emailQueue }
 func (d dependencies) Router() *mux.Router              { return d.router }
 func (d dependencies) Template() *views.Templates       { return d.templates }
 func (d dependencies) DebugTimestamp() *time.Time       { return d.debugTimestamp }

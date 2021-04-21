@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"prediction-league/service/internal/domain"
 
-	"github.com/mailgun/mailgun-go/v3"
+	mggo "github.com/mailgun/mailgun-go/v3"
 )
 
 const mailgunSuccessMessage = "Queued. Thank you."
@@ -18,8 +18,8 @@ type Client struct {
 
 // SendEmail implements this method on the clients.EmailClient interface
 func (c *Client) SendEmail(ctx context.Context, msg domain.Email) error {
-	mg := mailgun.NewMailgun(msg.SenderDomain, c.apiKey)
-	mg.SetAPIBase(mailgun.APIBaseEU)
+	mg := mggo.NewMailgun(msg.SenderDomain, c.apiKey)
+	mg.SetAPIBase(mggo.APIBaseEU)
 
 	mgMsg := mg.NewMessage(
 		fmt.Sprintf("%s <%s>", msg.From.Name, msg.From.Address),

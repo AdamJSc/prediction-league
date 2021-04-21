@@ -3,8 +3,8 @@ package scheduler
 import (
 	"github.com/robfig/cron/v3"
 	"log"
+	"prediction-league/service/internal/adapters/footballdataorg"
 	"prediction-league/service/internal/app/httph"
-	footballdata "prediction-league/service/internal/clients/football-data-org"
 	"prediction-league/service/internal/domain"
 )
 
@@ -63,7 +63,7 @@ func mustGenerateRetrieveLatestStandingsJobs(container *httph.HTTPAppContainer) 
 
 		jobs = append(jobs, newRetrieveLatestStandingsJob(
 			season,
-			footballdata.NewClient(config.FootballDataAPIToken),
+			footballdataorg.NewClient(config.FootballDataAPIToken),
 			container,
 		))
 	}

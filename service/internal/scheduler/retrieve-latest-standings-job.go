@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 	"log"
 	"prediction-league/service/internal/app"
-	"prediction-league/service/internal/clients"
 	"prediction-league/service/internal/domain"
 	"strings"
 	"sync"
@@ -14,7 +13,7 @@ import (
 )
 
 // newRetrieveLatestStandingsJob returns a new job that retrieves the latest standings, pertaining to the provided season
-func newRetrieveLatestStandingsJob(season domain.Season, client clients.FootballDataSource, injector app.DependencyInjector) *job {
+func newRetrieveLatestStandingsJob(season domain.Season, client domain.FootballDataSource, injector app.DependencyInjector) *job {
 	jobName := strings.ToLower(fmt.Sprintf("retrieve-latest-standings-%s", season.ID))
 
 	standingsAgent := &domain.StandingsAgent{
