@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"prediction-league/service/internal/views"
 )
 
 const (
@@ -26,7 +25,7 @@ type CommunicationsAgentInjector interface {
 	EntryPredictionRepo() EntryPredictionRepository
 	StandingsRepo() StandingsRepository
 	EmailQueue() chan Email
-	Template() *views.Templates
+	Template() *Templates
 }
 
 // CommunicationsAgent defines the behaviours for issuing communications

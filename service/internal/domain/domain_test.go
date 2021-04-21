@@ -16,7 +16,6 @@ import (
 	"os"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/repositories/repofac"
-	"prediction-league/service/internal/views"
 	"reflect"
 	"strings"
 	"testing"
@@ -27,7 +26,7 @@ var (
 	db         *coresql.DB
 	truncator  sqltest.Truncator
 	utc        *time.Location
-	templates  *views.Templates
+	templates  *domain.Templates
 	testSeason domain.Season
 )
 
@@ -311,7 +310,7 @@ func insertScoredEntryPrediction(t *testing.T, scoredEntryPrediction domain.Scor
 type testInjector struct {
 	config    domain.Config
 	queue     chan domain.Email
-	templates *views.Templates
+	templates *domain.Templates
 	er        domain.EntryRepository
 	epr       domain.EntryPredictionRepository
 	sr        domain.StandingsRepository
@@ -332,9 +331,9 @@ func (t *testInjector) TokenRepo() domain.TokenRepository {
 	return t.tr
 }
 func (t *testInjector) EmailQueue() chan domain.Email { return t.queue }
-func (t *testInjector) Template() *views.Templates    { return t.templates }
+func (t *testInjector) Template() *domain.Templates   { return t.templates }
 
-func newTestInjector(t *testing.T, r domain.Realm, tpl *views.Templates, db coresql.Agent) *testInjector {
+func newTestInjector(t *testing.T, r domain.Realm, tpl *domain.Templates, db coresql.Agent) *testInjector {
 	return &testInjector{
 		config:    newTestConfig(t, r),
 		queue:     make(chan domain.Email, 1),

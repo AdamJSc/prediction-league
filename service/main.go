@@ -15,7 +15,6 @@ import (
 	"prediction-league/service/internal/repositories/repofac"
 	"prediction-league/service/internal/scheduler"
 	"prediction-league/service/internal/seeder"
-	"prediction-league/service/internal/views"
 	"time"
 
 	"github.com/LUSHDigital/core"
@@ -102,7 +101,7 @@ type dependencies struct {
 	emailClient               domain.EmailClient
 	emailQueue                chan domain.Email
 	router                    *mux.Router
-	templates                 *views.Templates
+	templates                 *domain.Templates
 	debugTimestamp            *time.Time
 	standingsRepo             *repositories.StandingsDatabaseRepository
 	entryRepo                 *repositories.EntryDatabaseRepository
@@ -114,9 +113,9 @@ type dependencies struct {
 func (d dependencies) Config() domain.Config           { return d.config }
 func (d dependencies) EmailClient() domain.EmailClient { return d.emailClient }
 func (d dependencies) EmailQueue() chan domain.Email   { return d.emailQueue }
-func (d dependencies) Router() *mux.Router              { return d.router }
-func (d dependencies) Template() *views.Templates       { return d.templates }
-func (d dependencies) DebugTimestamp() *time.Time       { return d.debugTimestamp }
+func (d dependencies) Router() *mux.Router         { return d.router }
+func (d dependencies) Template() *domain.Templates { return d.templates }
+func (d dependencies) DebugTimestamp() *time.Time  { return d.debugTimestamp }
 func (d dependencies) StandingsRepo() domain.StandingsRepository {
 	return d.standingsRepo
 }

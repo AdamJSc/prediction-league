@@ -10,9 +10,10 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"prediction-league/service/internal/views"
 	"time"
 )
+
+type Templates struct{ *template.Template }
 
 var templateFunctions = template.FuncMap{
 	"timestamp_as_unix": func(ts time.Time) int64 {
@@ -37,7 +38,7 @@ var templateFunctions = template.FuncMap{
 }
 
 // MustParseTemplates parses our HTML templates and returns them collectively for use
-func MustParseTemplates(viewsPath string) *views.Templates {
+func MustParseTemplates(viewsPath string) *Templates {
 	// prepare the templates
 	tpl := template.New("prediction-league").Funcs(templateFunctions)
 
@@ -45,7 +46,7 @@ func MustParseTemplates(viewsPath string) *views.Templates {
 	mustWalkPathAndParseTemplates(tpl, fmt.Sprintf("%s/email", viewsPath))
 
 	// return our wrapped template struct
-	return &views.Templates{Template: tpl}
+	return &Templates{Template: tpl}
 }
 
 // mustWalkPathAndParseTemplates recursively parses templates within a given top-level directory

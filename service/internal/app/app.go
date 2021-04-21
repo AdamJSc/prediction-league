@@ -2,7 +2,6 @@ package app
 
 import (
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/views"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -26,7 +25,7 @@ type ConfigInjector interface{ Config() domain.Config }
 type EmailClientInjector interface{ EmailClient() domain.EmailClient }
 type EmailQueueInjector interface{ EmailQueue() chan domain.Email }
 type RouterInjector interface{ Router() *mux.Router }
-type TemplateInjector interface{ Template() *views.Templates }
+type TemplateInjector interface{ Template() *domain.Templates }
 type DebugTimestampInjector interface{ DebugTimestamp() *time.Time }
 type StandingsRepoInjector interface {
 	StandingsRepo() domain.StandingsRepository

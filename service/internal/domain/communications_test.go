@@ -7,7 +7,6 @@ import (
 	gocmp "github.com/google/go-cmp/cmp"
 	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/views"
 	"testing"
 	"time"
 )
@@ -1267,7 +1266,7 @@ func TestGenerateWindowDataFromSequencedTimeFrame(t *testing.T) {
 }
 
 // mustExecuteTemplate executes the provided template name with the provided template data or produces a test failure on error
-func mustExecuteTemplate(t *testing.T, templates *views.Templates, templateName string, templateData interface{}) string {
+func mustExecuteTemplate(t *testing.T, templates *domain.Templates, templateName string, templateData interface{}) string {
 	t.Helper()
 
 	buf := bytes.NewBuffer(nil)
