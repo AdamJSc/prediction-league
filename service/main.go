@@ -60,7 +60,7 @@ func main() {
 		debugTimestamp:            parseTimeString(ts),
 		standingsRepo:             mysqldb.NewStandingsRepo(db),
 		entryRepo:                 repofac.NewEntryDatabaseRepository(db),
-		entryPredictionRepo:       repofac.NewEntryPredictionDatabaseRepository(db),
+		entryPredictionRepo:       mysqldb.NewEntryPredictionRepo(db),
 		scoredEntryPredictionRepo: mysqldb.NewScoredEntryPredictionRepo(db),
 		tokenRepo:                 mysqldb.NewTokenRepo(db),
 	})
@@ -116,7 +116,7 @@ type dependencies struct {
 	debugTimestamp            *time.Time
 	standingsRepo             *mysqldb.StandingsRepo
 	entryRepo                 *repositories.EntryDatabaseRepository
-	entryPredictionRepo       *repositories.EntryPredictionDatabaseRepository
+	entryPredictionRepo       *mysqldb.EntryPredictionRepo
 	scoredEntryPredictionRepo *mysqldb.ScoredEntryPredictionRepo
 	tokenRepo                 *mysqldb.TokenRepo
 }

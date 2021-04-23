@@ -1,4 +1,4 @@
-package repositories
+package mysqldb
 
 import (
 	"encoding/json"
@@ -16,13 +16,13 @@ var entryPredictionDBFields = []string{
 	"rankings",
 }
 
-// EntryPredictionDatabaseRepository defines our DB-backed EntryPredictions data store
-type EntryPredictionDatabaseRepository struct {
-	Agent coresql.Agent
+// EntryPredictionRepo defines our DB-backed EntryPredictions data store
+type EntryPredictionRepo struct {
+	db coresql.Agent
 }
 
 // Insert inserts a new EntryPrediction into the database
-func (e *EntryPredictionDatabaseRepository) Insert(ctx context.Context, entryPrediction *domain.EntryPrediction) error {
+func (e *EntryPredictionRepo) Insert(ctx context.Context, entryPrediction *domain.EntryPrediction) error {
 	stmt := `INSERT INTO entry_prediction (id, ` + getDBFieldsStringFromFields(entryPredictionDBFields) + `, created_at)
 					VALUES (?, ?, ?, ?)`
 
@@ -38,7 +38,7 @@ func (e *EntryPredictionDatabaseRepository) Insert(ctx context.Context, entryPre
 		return err
 	}
 
-	rows, err := e.Agent.QueryContext(
+	rows, err := e.db.QueryContext(
 		ctx,
 		stmt,
 		entryPrediction.ID,
@@ -55,12 +55,12 @@ func (e *EntryPredictionDatabaseRepository) Insert(ctx context.Context, entryPre
 }
 
 // Select retrieves EntryPredictions from our database based on the provided criteria
-func (e *EntryPredictionDatabaseRepository) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.EntryPrediction, error) {
+func (e *EntryPredictionRepo) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.EntryPrediction, error) {
 	whereStmt, params := dbWhereStmt(criteria, matchAny)
 
 	stmt := `SELECT id, ` + getDBFieldsStringFromFields(entryPredictionDBFields) + `, created_at FROM entry_prediction ` + whereStmt
 
-	rows, err := e.Agent.QueryContext(ctx, stmt, params...)
+	rows, err := e.db.QueryContext(ctx, stmt, params...)
 	if err != nil {
 		return nil, wrapDBError(err)
 	}
@@ -96,10 +96,10 @@ func (e *EntryPredictionDatabaseRepository) Select(ctx context.Context, criteria
 }
 
 // ExistsByID determines whether an EntryPrediction with the provided ID exists in the database
-func (e *EntryPredictionDatabaseRepository) ExistsByID(ctx context.Context, id string) error {
+func (e *EntryPredictionRepo) ExistsByID(ctx context.Context, id string) error {
 	stmt := `SELECT COUNT(*) FROM entry_prediction WHERE id = ?`
 
-	row := e.Agent.QueryRowContext(ctx, stmt, id)
+	row := e.db.QueryRowContext(ctx, stmt, id)
 
 	var count int
 	if err := row.Scan(&count); err != nil {
@@ -114,14 +114,14 @@ func (e *EntryPredictionDatabaseRepository) ExistsByID(ctx context.Context, id s
 }
 
 // SelectByIDAndTimestamp retrieves the most recent EntryPrediction that exists for the provided entry ID and timestamp
-func (e *EntryPredictionDatabaseRepository) SelectByEntryIDAndTimestamp(ctx context.Context, entryID string, ts time.Time) (domain.EntryPrediction, error) {
+func (e *EntryPredictionRepo) SelectByEntryIDAndTimestamp(ctx context.Context, entryID string, ts time.Time) (domain.EntryPrediction, error) {
 	stmt := `SELECT id, ` + getDBFieldsStringFromFields(entryPredictionDBFields) + `, created_at FROM entry_prediction
 			WHERE entry_id = ?
 			AND created_at <= ?
 			ORDER BY created_at DESC
 			LIMIT 1`
 
-	row := e.Agent.QueryRowContext(ctx, stmt, entryID, ts)
+	row := e.db.QueryRowContext(ctx, stmt, entryID, ts)
 
 	var entryPrediction domain.EntryPrediction
 	var rawRankings []byte
@@ -140,4 +140,9 @@ func (e *EntryPredictionDatabaseRepository) SelectByEntryIDAndTimestamp(ctx cont
 	}
 
 	return entryPrediction, nil
+}
+
+// NewEntryPredictionRepo instantiates a new EntryPredictionRepo with the provided DB agent
+func NewEntryPredictionRepo(db coresql.Agent) *EntryPredictionRepo {
+	return &EntryPredictionRepo{db: db}
 }
