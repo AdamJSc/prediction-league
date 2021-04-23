@@ -69,6 +69,17 @@ func getDBFieldsStringFromFields(fields []string) string {
 	return strings.Join(fields, ", ")
 }
 
+// getDBFieldsWithEqualsPlaceholdersStringFromFields returns a statement-ready string of fields names with "equals value" placeholders
+func getDBFieldsWithEqualsPlaceholdersStringFromFields(fields []string) string {
+	var fieldsWithEqualsPlaceholders []string
+
+	for _, field := range fields {
+		fieldsWithEqualsPlaceholders = append(fieldsWithEqualsPlaceholders, fmt.Sprintf("%s = ?", field))
+	}
+
+	return strings.Join(fieldsWithEqualsPlaceholders, ", ")
+}
+
 // wrapDBError wraps an error from an SQL agent according to its nature as per the representations above
 func wrapDBError(err error) error {
 	if e, ok := err.(*mysql.MySQLError); ok {

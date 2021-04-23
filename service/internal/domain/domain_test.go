@@ -182,7 +182,7 @@ func insertStandings(t *testing.T, standings domain.Standings) domain.Standings 
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := repofac.NewStandingsDatabaseRepository(db).Insert(ctx, &standings); err != nil {
+	if err := mysqldb.NewStandingsRepo(db).Insert(ctx, &standings); err != nil {
 		t.Fatal(err)
 	}
 
@@ -196,7 +196,7 @@ func updateStandings(t *testing.T, standings domain.Standings) domain.Standings 
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := repofac.NewStandingsDatabaseRepository(db).Update(ctx, &standings); err != nil {
+	if err := mysqldb.NewStandingsRepo(db).Update(ctx, &standings); err != nil {
 		t.Fatal(err)
 	}
 
@@ -341,7 +341,7 @@ func newTestInjector(t *testing.T, r domain.Realm, tpl *domain.Templates, db cor
 		templates: tpl,
 		er:        repofac.NewEntryDatabaseRepository(db),
 		epr:       repofac.NewEntryPredictionDatabaseRepository(db),
-		sr:        repofac.NewStandingsDatabaseRepository(db),
+		sr:        mysqldb.NewStandingsRepo(db),
 		sepr:      repofac.NewScoredEntryPredictionDatabaseRepository(db),
 		tr:        mysqldb.NewTokenRepo(db),
 	}

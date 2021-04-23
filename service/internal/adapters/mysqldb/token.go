@@ -18,7 +18,7 @@ var tokenDBFields = []string{
 
 // TokenRepo defines our DB-backed Token data store
 type TokenRepo struct {
-	Agent coresql.Agent
+	db coresql.Agent
 }
 
 // Insert inserts a new Token into the database
@@ -26,7 +26,7 @@ func (t *TokenRepo) Insert(ctx context.Context, token *domain.Token) error {
 	stmt := `INSERT INTO token (id, ` + getDBFieldsStringFromFields(tokenDBFields) + `)
 					VALUES (?, ?, ?, ?, ?)`
 
-	rows, err := t.Agent.QueryContext(
+	rows, err := t.db.QueryContext(
 		ctx,
 		stmt,
 		token.ID,
@@ -49,7 +49,7 @@ func (t *TokenRepo) Select(ctx context.Context, criteria map[string]interface{},
 
 	stmt := `SELECT id, ` + getDBFieldsStringFromFields(tokenDBFields) + ` FROM token ` + whereStmt
 
-	rows, err := t.Agent.QueryContext(ctx, stmt, params...)
+	rows, err := t.db.QueryContext(ctx, stmt, params...)
 	if err != nil {
 		return nil, wrapDBError(err)
 	}
@@ -83,7 +83,7 @@ func (t *TokenRepo) Select(ctx context.Context, criteria map[string]interface{},
 func (t *TokenRepo) ExistsByID(ctx context.Context, id string) error {
 	stmt := `SELECT COUNT(*) FROM token WHERE id = ?`
 
-	row := t.Agent.QueryRowContext(ctx, stmt, id)
+	row := t.db.QueryRowContext(ctx, stmt, id)
 
 	var count int
 	if err := row.Scan(&count); err != nil {
@@ -101,7 +101,7 @@ func (t *TokenRepo) ExistsByID(ctx context.Context, id string) error {
 func (t *TokenRepo) DeleteByID(ctx context.Context, id string) error {
 	stmt := `DELETE FROM token WHERE id = ?`
 
-	rows, err := t.Agent.QueryContext(ctx, stmt, id)
+	rows, err := t.db.QueryContext(ctx, stmt, id)
 	if err != nil {
 		return wrapDBError(err)
 	}
@@ -128,5 +128,5 @@ func (t *TokenRepo) GenerateUniqueTokenID(ctx context.Context) (string, error) {
 
 // NewTokenRepo instantiates a new TokenRepo with the provided DB agent
 func NewTokenRepo(db coresql.Agent) *TokenRepo {
-	return &TokenRepo{Agent: db}
+	return &TokenRepo{db: db}
 }

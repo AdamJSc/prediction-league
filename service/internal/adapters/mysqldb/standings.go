@@ -1,4 +1,4 @@
-package repositories
+package mysqldb
 
 import (
 	"encoding/json"
@@ -18,13 +18,13 @@ var standingsDBFields = []string{
 	"finalised",
 }
 
-// StandingsDatabaseRepository defines our DB-backed Standings data store
-type StandingsDatabaseRepository struct {
-	Agent coresql.Agent
+// StandingsRepo defines our DB-backed Standings data store
+type StandingsRepo struct {
+	db coresql.Agent
 }
 
 // Insert inserts a new Standings into the database
-func (s *StandingsDatabaseRepository) Insert(ctx context.Context, standings *domain.Standings) error {
+func (s *StandingsRepo) Insert(ctx context.Context, standings *domain.Standings) error {
 	stmt := `INSERT INTO standings (id, ` + getDBFieldsStringFromFields(standingsDBFields) + `, created_at)
 					VALUES (?, ?, ?, ?, ?, ?)`
 
@@ -33,7 +33,7 @@ func (s *StandingsDatabaseRepository) Insert(ctx context.Context, standings *dom
 		return err
 	}
 
-	rows, err := s.Agent.QueryContext(
+	rows, err := s.db.QueryContext(
 		ctx,
 		stmt,
 		standings.ID,
@@ -52,7 +52,7 @@ func (s *StandingsDatabaseRepository) Insert(ctx context.Context, standings *dom
 }
 
 // Update updates an existing Standings in the database
-func (s *StandingsDatabaseRepository) Update(ctx context.Context, standings *domain.Standings) error {
+func (s *StandingsRepo) Update(ctx context.Context, standings *domain.Standings) error {
 	stmt := `UPDATE standings
 				SET ` + getDBFieldsWithEqualsPlaceholdersStringFromFields(standingsDBFields) + `, updated_at = ?
 				WHERE id = ?`
@@ -62,7 +62,7 @@ func (s *StandingsDatabaseRepository) Update(ctx context.Context, standings *dom
 		return err
 	}
 
-	rows, err := s.Agent.QueryContext(
+	rows, err := s.db.QueryContext(
 		ctx,
 		stmt,
 		standings.SeasonID,
@@ -81,12 +81,12 @@ func (s *StandingsDatabaseRepository) Update(ctx context.Context, standings *dom
 }
 
 // Select retrieves Standings from our database based on the provided criteria
-func (s *StandingsDatabaseRepository) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.Standings, error) {
+func (s *StandingsRepo) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.Standings, error) {
 	whereStmt, params := dbWhereStmt(criteria, matchAny)
 
 	stmt := `SELECT id, ` + getDBFieldsStringFromFields(standingsDBFields) + `, created_at, updated_at FROM standings ` + whereStmt
 
-	rows, err := s.Agent.QueryContext(ctx, stmt, params...)
+	rows, err := s.db.QueryContext(ctx, stmt, params...)
 	if err != nil {
 		return nil, wrapDBError(err)
 	}
@@ -125,10 +125,10 @@ func (s *StandingsDatabaseRepository) Select(ctx context.Context, criteria map[s
 }
 
 // ExistsByID determines whether a Standings with the provided ID exists in the database
-func (s *StandingsDatabaseRepository) ExistsByID(ctx context.Context, id string) error {
+func (s *StandingsRepo) ExistsByID(ctx context.Context, id string) error {
 	stmt := `SELECT COUNT(*) FROM standings WHERE id = ?`
 
-	row := s.Agent.QueryRowContext(ctx, stmt, id)
+	row := s.db.QueryRowContext(ctx, stmt, id)
 
 	var count int
 	if err := row.Scan(&count); err != nil {
@@ -143,7 +143,7 @@ func (s *StandingsDatabaseRepository) ExistsByID(ctx context.Context, id string)
 }
 
 // Select retrieves Standings from our database based on the provided criteria
-func (s *StandingsDatabaseRepository) SelectLatestBySeasonIDAndTimestamp(ctx context.Context, seasonID string, ts time.Time) (domain.Standings, error) {
+func (s *StandingsRepo) SelectLatestBySeasonIDAndTimestamp(ctx context.Context, seasonID string, ts time.Time) (domain.Standings, error) {
 	stmt := `SELECT id, ` + getDBFieldsStringFromFields(standingsDBFields) + `, created_at, updated_at
 			FROM standings
 			WHERE season_id = ?
@@ -151,7 +151,7 @@ func (s *StandingsDatabaseRepository) SelectLatestBySeasonIDAndTimestamp(ctx con
 			ORDER BY created_at DESC
 			LIMIT 1`
 
-	row := s.Agent.QueryRowContext(ctx, stmt, seasonID, ts)
+	row := s.db.QueryRowContext(ctx, stmt, seasonID, ts)
 
 	var retrievedStandings domain.Standings
 	var rankings []byte
@@ -173,4 +173,9 @@ func (s *StandingsDatabaseRepository) SelectLatestBySeasonIDAndTimestamp(ctx con
 	}
 
 	return retrievedStandings, nil
+}
+
+// NewStandingsRepo instantiates a new StandingsRepo with the provided DB agent
+func NewStandingsRepo(db coresql.Agent) *StandingsRepo {
+	return &StandingsRepo{db: db}
 }

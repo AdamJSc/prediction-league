@@ -58,7 +58,7 @@ func main() {
 		router:                    mux.NewRouter(),
 		templates:                 domain.MustParseTemplates("./service/views"),
 		debugTimestamp:            parseTimeString(ts),
-		standingsRepo:             repofac.NewStandingsDatabaseRepository(db),
+		standingsRepo:             mysqldb.NewStandingsRepo(db),
 		entryRepo:                 repofac.NewEntryDatabaseRepository(db),
 		entryPredictionRepo:       repofac.NewEntryPredictionDatabaseRepository(db),
 		scoredEntryPredictionRepo: repofac.NewScoredEntryPredictionDatabaseRepository(db),
@@ -114,7 +114,7 @@ type dependencies struct {
 	router                    *mux.Router
 	templates                 *domain.Templates
 	debugTimestamp            *time.Time
-	standingsRepo             *repositories.StandingsDatabaseRepository
+	standingsRepo             *mysqldb.StandingsRepo
 	entryRepo                 *repositories.EntryDatabaseRepository
 	entryPredictionRepo       *repositories.EntryPredictionDatabaseRepository
 	scoredEntryPredictionRepo *repositories.ScoredEntryPredictionDatabaseRepository

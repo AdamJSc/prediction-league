@@ -5,11 +5,6 @@ import (
 	"prediction-league/service/internal/repositories"
 )
 
-// NewStandingsDatabaseRepository instantiates a new StandingsDatabaseRepository with the provided DB agent
-func NewStandingsDatabaseRepository(db coresql.Agent) *repositories.StandingsDatabaseRepository {
-	return &repositories.StandingsDatabaseRepository{Agent: db}
-}
-
 // NewEntryPredictionDatabaseRepository instantiates a new EntryPredictionDatabaseRepository with the provided DB agent
 func NewEntryPredictionDatabaseRepository(db coresql.Agent) *repositories.EntryPredictionDatabaseRepository {
 	return &repositories.EntryPredictionDatabaseRepository{Agent: db}
