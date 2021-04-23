@@ -10,10 +10,10 @@ import (
 	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/app/httph/handlers"
+	"prediction-league/service/internal/app/scheduler"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/repositories"
 	"prediction-league/service/internal/repositories/repofac"
-	"prediction-league/service/internal/scheduler"
 	"time"
 
 	"github.com/LUSHDigital/core"

@@ -1,8 +1,8 @@
 package scheduler_test
 
 import (
+	"prediction-league/service/internal/app/scheduler"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/scheduler"
 	"testing"
 	"time"
 )
