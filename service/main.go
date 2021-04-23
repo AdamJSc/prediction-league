@@ -13,8 +13,6 @@ import (
 	"prediction-league/service/internal/app/httph/handlers"
 	"prediction-league/service/internal/app/scheduler"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/repositories"
-	"prediction-league/service/internal/repositories/repofac"
 	"time"
 
 	"github.com/LUSHDigital/core"
@@ -59,7 +57,7 @@ func main() {
 		templates:                 domain.MustParseTemplates("./service/views"),
 		debugTimestamp:            parseTimeString(ts),
 		standingsRepo:             mysqldb.NewStandingsRepo(db),
-		entryRepo:                 repofac.NewEntryDatabaseRepository(db),
+		entryRepo:                 mysqldb.NewEntryRepo(db),
 		entryPredictionRepo:       mysqldb.NewEntryPredictionRepo(db),
 		scoredEntryPredictionRepo: mysqldb.NewScoredEntryPredictionRepo(db),
 		tokenRepo:                 mysqldb.NewTokenRepo(db),
@@ -115,7 +113,7 @@ type dependencies struct {
 	templates                 *domain.Templates
 	debugTimestamp            *time.Time
 	standingsRepo             *mysqldb.StandingsRepo
-	entryRepo                 *repositories.EntryDatabaseRepository
+	entryRepo                 *mysqldb.EntryRepo
 	entryPredictionRepo       *mysqldb.EntryPredictionRepo
 	scoredEntryPredictionRepo *mysqldb.ScoredEntryPredictionRepo
 	tokenRepo                 *mysqldb.TokenRepo

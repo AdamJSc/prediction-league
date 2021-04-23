@@ -1,4 +1,4 @@
-package repositories
+package mysqldb
 
 import (
 	"errors"
@@ -28,19 +28,19 @@ var entryDBFields = []string{
 	"approved_at",
 }
 
-// EntryDatabaseRepository defines our DB-backed Entry data store
-type EntryDatabaseRepository struct {
-	Agent coresql.Agent
+// EntryRepo defines our DB-backed Entry data store
+type EntryRepo struct {
+	db coresql.Agent
 }
 
 // Insert inserts a new Entry into the database
-func (e *EntryDatabaseRepository) Insert(ctx context.Context, entry *domain.Entry) error {
+func (e *EntryRepo) Insert(ctx context.Context, entry *domain.Entry) error {
 	stmt := `INSERT INTO entry (id, ` + getDBFieldsStringFromFields(entryDBFields) + `, created_at)
 					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now().Truncate(time.Second)
 
-	rows, err := e.Agent.QueryContext(
+	rows, err := e.db.QueryContext(
 		ctx,
 		stmt,
 		entry.ID,
@@ -67,14 +67,14 @@ func (e *EntryDatabaseRepository) Insert(ctx context.Context, entry *domain.Entr
 }
 
 // Update updates an existing Entry in the database
-func (e *EntryDatabaseRepository) Update(ctx context.Context, entry *domain.Entry) error {
+func (e *EntryRepo) Update(ctx context.Context, entry *domain.Entry) error {
 	stmt := `UPDATE entry
 				SET ` + getDBFieldsWithEqualsPlaceholdersStringFromFields(entryDBFields) + `, updated_at = ?
 				WHERE id = ?`
 
 	now := sqltypes.ToNullTime(time.Now().Truncate(time.Second))
 
-	rows, err := e.Agent.QueryContext(
+	rows, err := e.db.QueryContext(
 		ctx,
 		stmt,
 		entry.ShortCode,
@@ -101,12 +101,12 @@ func (e *EntryDatabaseRepository) Update(ctx context.Context, entry *domain.Entr
 }
 
 // Select retrieves Entries from our database based on the provided criteria
-func (e *EntryDatabaseRepository) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.Entry, error) {
+func (e *EntryRepo) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.Entry, error) {
 	whereStmt, params := dbWhereStmt(criteria, matchAny)
 
 	stmt := `SELECT id, ` + getDBFieldsStringFromFields(entryDBFields) + `, created_at, updated_at FROM entry ` + whereStmt
 
-	rows, err := e.Agent.QueryContext(ctx, stmt, params...)
+	rows, err := e.db.QueryContext(ctx, stmt, params...)
 	if err != nil {
 		return nil, wrapDBError(err)
 	}
@@ -145,10 +145,10 @@ func (e *EntryDatabaseRepository) Select(ctx context.Context, criteria map[strin
 }
 
 // ExistsByID determines whether an Entry with the provided ID exists in the database
-func (e *EntryDatabaseRepository) ExistsByID(ctx context.Context, id string) error {
+func (e *EntryRepo) ExistsByID(ctx context.Context, id string) error {
 	stmt := `SELECT COUNT(*) FROM entry WHERE id = ?`
 
-	row := e.Agent.QueryRowContext(ctx, stmt, id)
+	row := e.db.QueryRowContext(ctx, stmt, id)
 
 	var count int
 	if err := row.Scan(&count); err != nil {
@@ -163,7 +163,7 @@ func (e *EntryDatabaseRepository) ExistsByID(ctx context.Context, id string) err
 }
 
 // GenerateUniqueShortCode generates a string that does not already exist as a Lookup Ref
-func (e *EntryDatabaseRepository) GenerateUniqueShortCode(ctx context.Context) (string, error) {
+func (e *EntryRepo) GenerateUniqueShortCode(ctx context.Context) (string, error) {
 	shortCode := generateRandomAlphaNumericString(shortCodeLength)
 
 	_, err := e.Select(ctx, map[string]interface{}{
@@ -191,4 +191,9 @@ func generateRandomAlphaNumericString(length int) string {
 	}
 
 	return string(b)
+}
+
+// NewEntryRepo instantiates a new EntryRepo with the provided DB agent
+func NewEntryRepo(db coresql.Agent) *EntryRepo {
+	return &EntryRepo{db: db}
 }

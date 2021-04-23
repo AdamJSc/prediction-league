@@ -16,7 +16,6 @@ import (
 	"os"
 	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/repositories/repofac"
 	"reflect"
 	"strings"
 	"testing"
@@ -215,7 +214,7 @@ func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail 
 		t.Fatal(err)
 	}
 
-	entryRepo := repofac.NewEntryDatabaseRepository(db)
+	entryRepo := mysqldb.NewEntryRepo(db)
 	shortCode, err := entryRepo.GenerateUniqueShortCode(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -246,7 +245,7 @@ func insertEntry(t *testing.T, entry domain.Entry) domain.Entry {
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := repofac.NewEntryDatabaseRepository(db).Insert(ctx, &entry); err != nil {
+	if err := mysqldb.NewEntryRepo(db).Insert(ctx, &entry); err != nil {
 		t.Fatal(err)
 	}
 
@@ -339,7 +338,7 @@ func newTestInjector(t *testing.T, r domain.Realm, tpl *domain.Templates, db cor
 		config:    newTestConfig(t, r),
 		queue:     make(chan domain.Email, 1),
 		templates: tpl,
-		er:        repofac.NewEntryDatabaseRepository(db),
+		er:        mysqldb.NewEntryRepo(db),
 		epr:       mysqldb.NewEntryPredictionRepo(db),
 		sr:        mysqldb.NewStandingsRepo(db),
 		sepr:      mysqldb.NewScoredEntryPredictionRepo(db),
