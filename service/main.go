@@ -61,7 +61,7 @@ func main() {
 		standingsRepo:             mysqldb.NewStandingsRepo(db),
 		entryRepo:                 repofac.NewEntryDatabaseRepository(db),
 		entryPredictionRepo:       repofac.NewEntryPredictionDatabaseRepository(db),
-		scoredEntryPredictionRepo: repofac.NewScoredEntryPredictionDatabaseRepository(db),
+		scoredEntryPredictionRepo: mysqldb.NewScoredEntryPredictionRepo(db),
 		tokenRepo:                 mysqldb.NewTokenRepo(db),
 	})
 
@@ -117,7 +117,7 @@ type dependencies struct {
 	standingsRepo             *mysqldb.StandingsRepo
 	entryRepo                 *repositories.EntryDatabaseRepository
 	entryPredictionRepo       *repositories.EntryPredictionDatabaseRepository
-	scoredEntryPredictionRepo *repositories.ScoredEntryPredictionDatabaseRepository
+	scoredEntryPredictionRepo *mysqldb.ScoredEntryPredictionRepo
 	tokenRepo                 *mysqldb.TokenRepo
 }
 

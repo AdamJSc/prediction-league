@@ -15,7 +15,3 @@ func NewEntryDatabaseRepository(db coresql.Agent) *repositories.EntryDatabaseRep
 	return &repositories.EntryDatabaseRepository{Agent: db}
 }
 
-// NewScoredEntryPredictionDatabaseRepository instantiates a new ScoredEntryPredictionDatabaseRepository with the provided DB agent
-func NewScoredEntryPredictionDatabaseRepository(db coresql.Agent) *repositories.ScoredEntryPredictionDatabaseRepository {
-	return &repositories.ScoredEntryPredictionDatabaseRepository{Agent: db}
-}

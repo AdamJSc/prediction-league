@@ -301,7 +301,7 @@ func insertScoredEntryPrediction(t *testing.T, scoredEntryPrediction domain.Scor
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := repofac.NewScoredEntryPredictionDatabaseRepository(db).Insert(ctx, &scoredEntryPrediction); err != nil {
+	if err := mysqldb.NewScoredEntryPredictionRepo(db).Insert(ctx, &scoredEntryPrediction); err != nil {
 		t.Fatal(err)
 	}
 
@@ -342,7 +342,7 @@ func newTestInjector(t *testing.T, r domain.Realm, tpl *domain.Templates, db cor
 		er:        repofac.NewEntryDatabaseRepository(db),
 		epr:       repofac.NewEntryPredictionDatabaseRepository(db),
 		sr:        mysqldb.NewStandingsRepo(db),
-		sepr:      repofac.NewScoredEntryPredictionDatabaseRepository(db),
+		sepr:      mysqldb.NewScoredEntryPredictionRepo(db),
 		tr:        mysqldb.NewTokenRepo(db),
 	}
 }

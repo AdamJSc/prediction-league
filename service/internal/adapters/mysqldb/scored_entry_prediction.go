@@ -1,4 +1,4 @@
-package repositories
+package mysqldb
 
 import (
 	"encoding/json"
@@ -106,13 +106,13 @@ var scoredEntryPredictionDBFields = []string{
 	"score",
 }
 
-// ScoredEntryPredictionDatabaseRepository defines our DB-backed ScoredEntryPredictions data store
-type ScoredEntryPredictionDatabaseRepository struct {
-	Agent coresql.Agent
+// ScoredEntryPredictionRepo defines our DB-backed ScoredEntryPredictions data store
+type ScoredEntryPredictionRepo struct {
+	db coresql.Agent
 }
 
 // Insert inserts a new ScoredEntryPrediction into the database
-func (s *ScoredEntryPredictionDatabaseRepository) Insert(ctx context.Context, scoredEntryPrediction *domain.ScoredEntryPrediction) error {
+func (s *ScoredEntryPredictionRepo) Insert(ctx context.Context, scoredEntryPrediction *domain.ScoredEntryPrediction) error {
 	stmt := `INSERT INTO scored_entry_prediction (entry_prediction_id, standings_id,` + getDBFieldsStringFromFields(scoredEntryPredictionDBFields) + `, created_at)
 					VALUES (?, ?, ?, ?, ?)`
 
@@ -121,7 +121,7 @@ func (s *ScoredEntryPredictionDatabaseRepository) Insert(ctx context.Context, sc
 		return err
 	}
 
-	rows, err := s.Agent.QueryContext(
+	rows, err := s.db.QueryContext(
 		ctx,
 		stmt,
 		scoredEntryPrediction.EntryPredictionID,
@@ -139,7 +139,7 @@ func (s *ScoredEntryPredictionDatabaseRepository) Insert(ctx context.Context, sc
 }
 
 // Update updates an existing ScoredEntryPrediction in the database
-func (s *ScoredEntryPredictionDatabaseRepository) Update(ctx context.Context, scoredEntryPrediction *domain.ScoredEntryPrediction) error {
+func (s *ScoredEntryPredictionRepo) Update(ctx context.Context, scoredEntryPrediction *domain.ScoredEntryPrediction) error {
 	stmt := `UPDATE scored_entry_prediction
 				SET ` + getDBFieldsWithEqualsPlaceholdersStringFromFields(scoredEntryPredictionDBFields) + `, updated_at = ?
 				WHERE entry_prediction_id = ? AND standings_id = ?`
@@ -149,7 +149,7 @@ func (s *ScoredEntryPredictionDatabaseRepository) Update(ctx context.Context, sc
 		return err
 	}
 
-	rows, err := s.Agent.QueryContext(
+	rows, err := s.db.QueryContext(
 		ctx,
 		stmt,
 		rawRankings,
@@ -167,13 +167,13 @@ func (s *ScoredEntryPredictionDatabaseRepository) Update(ctx context.Context, sc
 }
 
 // Select retrieves ScoredEntryPredictions from our database based on the provided criteria
-func (s *ScoredEntryPredictionDatabaseRepository) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.ScoredEntryPrediction, error) {
+func (s *ScoredEntryPredictionRepo) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.ScoredEntryPrediction, error) {
 	whereStmt, params := dbWhereStmt(criteria, matchAny)
 
 	stmt := `SELECT entry_prediction_id, standings_id, ` + getDBFieldsStringFromFields(scoredEntryPredictionDBFields) + `, created_at, updated_at
 				FROM scored_entry_prediction ` + whereStmt
 
-	rows, err := s.Agent.QueryContext(ctx, stmt, params...)
+	rows, err := s.db.QueryContext(ctx, stmt, params...)
 	if err != nil {
 		return nil, wrapDBError(err)
 	}
@@ -211,10 +211,10 @@ func (s *ScoredEntryPredictionDatabaseRepository) Select(ctx context.Context, cr
 }
 
 // Exists determines whether a ScoredEntryPrediction with the provided ID exists in the database
-func (s *ScoredEntryPredictionDatabaseRepository) Exists(ctx context.Context, entryPredictionID, standingsID string) error {
+func (s *ScoredEntryPredictionRepo) Exists(ctx context.Context, entryPredictionID, standingsID string) error {
 	stmt := `SELECT COUNT(*) FROM scored_entry_prediction WHERE entry_prediction_id = ? AND standings_id = ?`
 
-	row := s.Agent.QueryRowContext(ctx, stmt, entryPredictionID, standingsID)
+	row := s.db.QueryRowContext(ctx, stmt, entryPredictionID, standingsID)
 
 	var count int
 	if err := row.Scan(&count); err != nil {
@@ -230,7 +230,7 @@ func (s *ScoredEntryPredictionDatabaseRepository) Exists(ctx context.Context, en
 
 // SelectEntryCumulativeScoresByRealm retrieves the current score, total score and minimum score for each entry ID
 // based on the provided realm name, season ID and round number
-func (s *ScoredEntryPredictionDatabaseRepository) SelectEntryCumulativeScoresByRealm(ctx context.Context, realmName string, seasonID string, roundNumber int) ([]domain.LeaderBoardRanking, error) {
+func (s *ScoredEntryPredictionRepo) SelectEntryCumulativeScoresByRealm(ctx context.Context, realmName string, seasonID string, roundNumber int) ([]domain.LeaderBoardRanking, error) {
 	// compose main statement from provided partials
 	// note that partials are ordering their scored entry predictions subqueries
 	// by created_at date descending rather than updated_at date
@@ -277,7 +277,7 @@ func (s *ScoredEntryPredictionDatabaseRepository) SelectEntryCumulativeScoresByR
 		roundNumber,
 	}
 
-	rows, err := s.Agent.QueryContext(ctx, stmt, params...)
+	rows, err := s.db.QueryContext(ctx, stmt, params...)
 	if err != nil {
 		return nil, wrapDBError(err)
 	}
@@ -325,7 +325,7 @@ func (s *ScoredEntryPredictionDatabaseRepository) SelectEntryCumulativeScoresByR
 
 // SelectByEntryIDAndRoundNumber retrieves ScoredEntryPredictions from our database based on the provided entry ID and round number
 // ordered by their created_at date descending
-func (s *ScoredEntryPredictionDatabaseRepository) SelectByEntryIDAndRoundNumber(ctx context.Context, entryID string, roundNumber int) ([]domain.ScoredEntryPrediction, error) {
+func (s *ScoredEntryPredictionRepo) SelectByEntryIDAndRoundNumber(ctx context.Context, entryID string, roundNumber int) ([]domain.ScoredEntryPrediction, error) {
 	stmt := `SELECT sep.entry_prediction_id, sep.standings_id, 
 			` + getDBFieldsStringFromFieldsWithTablePrefix(scoredEntryPredictionDBFields, "sep") + `,
 				sep.created_at, sep.updated_at
@@ -335,7 +335,7 @@ func (s *ScoredEntryPredictionDatabaseRepository) SelectByEntryIDAndRoundNumber(
 			WHERE ep.entry_id = ? AND s.round_number = ?
 			ORDER BY sep.created_at DESC`
 
-	rows, err := s.Agent.QueryContext(ctx, stmt, entryID, roundNumber)
+	rows, err := s.db.QueryContext(ctx, stmt, entryID, roundNumber)
 	if err != nil {
 		return nil, wrapDBError(err)
 	}
@@ -370,4 +370,9 @@ func (s *ScoredEntryPredictionDatabaseRepository) SelectByEntryIDAndRoundNumber(
 	}
 
 	return scoredEntryPredictions, nil
+}
+
+// NewScoredEntryPredictionRepo instantiates a new ScoredEntryPredictionRepo with the provided DB agent
+func NewScoredEntryPredictionRepo(db coresql.Agent) *ScoredEntryPredictionRepo {
+	return &ScoredEntryPredictionRepo{db: db}
 }

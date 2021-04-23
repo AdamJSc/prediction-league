@@ -69,6 +69,11 @@ func getDBFieldsStringFromFields(fields []string) string {
 	return strings.Join(fields, ", ")
 }
 
+// getDBFieldsStringFromFieldsWithTablePrefix returns a statement-ready string of fields names with table prefix
+func getDBFieldsStringFromFieldsWithTablePrefix(fields []string, tablePrefix string) string {
+	return fmt.Sprintf("%s.%s", tablePrefix, strings.Join(fields, fmt.Sprintf(", %s.", tablePrefix)))
+}
+
 // getDBFieldsWithEqualsPlaceholdersStringFromFields returns a statement-ready string of fields names with "equals value" placeholders
 func getDBFieldsWithEqualsPlaceholdersStringFromFields(fields []string) string {
 	var fieldsWithEqualsPlaceholders []string
