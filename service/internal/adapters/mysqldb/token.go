@@ -3,7 +3,6 @@ package mysqldb
 import (
 	"errors"
 	"fmt"
-	coresql "github.com/LUSHDigital/core-sql"
 	"golang.org/x/net/context"
 	"prediction-league/service/internal/domain"
 )
@@ -18,7 +17,7 @@ var tokenDBFields = []string{
 
 // TokenRepo defines our DB-backed Token data store
 type TokenRepo struct {
-	db coresql.Agent
+	db DBAgent
 }
 
 // Insert inserts a new Token into the database
@@ -127,6 +126,6 @@ func (t *TokenRepo) GenerateUniqueTokenID(ctx context.Context) (string, error) {
 }
 
 // NewTokenRepo instantiates a new TokenRepo with the provided DB agent
-func NewTokenRepo(db coresql.Agent) *TokenRepo {
+func NewTokenRepo(db DBAgent) *TokenRepo {
 	return &TokenRepo{db: db}
 }

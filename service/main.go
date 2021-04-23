@@ -50,7 +50,6 @@ func main() {
 	// setup server
 	httpAppContainer := httph.NewHTTPAppContainer(dependencies{
 		config:                    config,
-		mysql:                     db,
 		emailClient:               mailgun.NewClient(config.MailgunAPIKey),
 		emailQueue:                make(chan domain.Email),
 		router:                    mux.NewRouter(),
@@ -106,7 +105,6 @@ func main() {
 
 type dependencies struct {
 	config                    domain.Config
-	mysql                     coresql.Agent
 	emailClient               domain.EmailClient
 	emailQueue                chan domain.Email
 	router                    *mux.Router

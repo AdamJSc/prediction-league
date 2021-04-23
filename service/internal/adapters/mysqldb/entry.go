@@ -3,7 +3,6 @@ package mysqldb
 import (
 	"errors"
 	"fmt"
-	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"golang.org/x/net/context"
 	"math/rand"
@@ -30,7 +29,7 @@ var entryDBFields = []string{
 
 // EntryRepo defines our DB-backed Entry data store
 type EntryRepo struct {
-	db coresql.Agent
+	db DBAgent
 }
 
 // Insert inserts a new Entry into the database
@@ -194,6 +193,6 @@ func generateRandomAlphaNumericString(length int) string {
 }
 
 // NewEntryRepo instantiates a new EntryRepo with the provided DB agent
-func NewEntryRepo(db coresql.Agent) *EntryRepo {
+func NewEntryRepo(db DBAgent) *EntryRepo {
 	return &EntryRepo{db: db}
 }

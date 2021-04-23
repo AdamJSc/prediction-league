@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	coresql "github.com/LUSHDigital/core-sql"
 	"golang.org/x/net/context"
 	"prediction-league/service/internal/domain"
 )
@@ -108,7 +107,7 @@ var scoredEntryPredictionDBFields = []string{
 
 // ScoredEntryPredictionRepo defines our DB-backed ScoredEntryPredictions data store
 type ScoredEntryPredictionRepo struct {
-	db coresql.Agent
+	db DBAgent
 }
 
 // Insert inserts a new ScoredEntryPrediction into the database
@@ -373,6 +372,6 @@ func (s *ScoredEntryPredictionRepo) SelectByEntryIDAndRoundNumber(ctx context.Co
 }
 
 // NewScoredEntryPredictionRepo instantiates a new ScoredEntryPredictionRepo with the provided DB agent
-func NewScoredEntryPredictionRepo(db coresql.Agent) *ScoredEntryPredictionRepo {
+func NewScoredEntryPredictionRepo(db DBAgent) *ScoredEntryPredictionRepo {
 	return &ScoredEntryPredictionRepo{db: db}
 }

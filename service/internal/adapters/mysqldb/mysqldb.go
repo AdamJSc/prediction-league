@@ -1,6 +1,7 @@
 package mysqldb
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -10,6 +11,12 @@ import (
 	"strings"
 	"time"
 )
+
+// Agent defines the methods required by a mysql agent
+type DBAgent interface {
+	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
+	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
+}
 
 // dbWhereStmt returns the WHERE clause portion of an SQL statement as a string, plus the parameters to
 // pass to the operation, from a given map of criteria to query on

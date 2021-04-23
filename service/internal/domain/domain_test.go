@@ -333,7 +333,7 @@ func (t *testInjector) TokenRepo() domain.TokenRepository {
 func (t *testInjector) EmailQueue() chan domain.Email { return t.queue }
 func (t *testInjector) Template() *domain.Templates   { return t.templates }
 
-func newTestInjector(t *testing.T, r domain.Realm, tpl *domain.Templates, db coresql.Agent) *testInjector {
+func newTestInjector(t *testing.T, r domain.Realm, tpl *domain.Templates, db mysqldb.DBAgent) *testInjector {
 	return &testInjector{
 		config:    newTestConfig(t, r),
 		queue:     make(chan domain.Email, 1),

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	coresql "github.com/LUSHDigital/core-sql"
 	"golang.org/x/net/context"
 	"prediction-league/service/internal/domain"
 	"time"
@@ -20,7 +19,7 @@ var standingsDBFields = []string{
 
 // StandingsRepo defines our DB-backed Standings data store
 type StandingsRepo struct {
-	db coresql.Agent
+	db DBAgent
 }
 
 // Insert inserts a new Standings into the database
@@ -176,6 +175,6 @@ func (s *StandingsRepo) SelectLatestBySeasonIDAndTimestamp(ctx context.Context, 
 }
 
 // NewStandingsRepo instantiates a new StandingsRepo with the provided DB agent
-func NewStandingsRepo(db coresql.Agent) *StandingsRepo {
+func NewStandingsRepo(db DBAgent) *StandingsRepo {
 	return &StandingsRepo{db: db}
 }

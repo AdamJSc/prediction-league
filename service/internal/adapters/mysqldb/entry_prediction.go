@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	coresql "github.com/LUSHDigital/core-sql"
 	"golang.org/x/net/context"
 	"prediction-league/service/internal/domain"
 	"time"
@@ -18,7 +17,7 @@ var entryPredictionDBFields = []string{
 
 // EntryPredictionRepo defines our DB-backed EntryPredictions data store
 type EntryPredictionRepo struct {
-	db coresql.Agent
+	db DBAgent
 }
 
 // Insert inserts a new EntryPrediction into the database
@@ -143,6 +142,6 @@ func (e *EntryPredictionRepo) SelectByEntryIDAndTimestamp(ctx context.Context, e
 }
 
 // NewEntryPredictionRepo instantiates a new EntryPredictionRepo with the provided DB agent
-func NewEntryPredictionRepo(db coresql.Agent) *EntryPredictionRepo {
+func NewEntryPredictionRepo(db DBAgent) *EntryPredictionRepo {
 	return &EntryPredictionRepo{db: db}
 }
