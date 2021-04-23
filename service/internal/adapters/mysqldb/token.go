@@ -1,16 +1,12 @@
-package repositories
+package mysqldb
 
 import (
 	"errors"
 	"fmt"
 	coresql "github.com/LUSHDigital/core-sql"
 	"golang.org/x/net/context"
-	"math/rand"
 	"prediction-league/service/internal/domain"
-	"time"
 )
-
-const TokenLength = 32
 
 // tokenDBFields defines the fields used regularly in Token-related transactions
 var tokenDBFields = []string{
@@ -20,13 +16,13 @@ var tokenDBFields = []string{
 	"expires_at",
 }
 
-// TokenDatabaseRepository defines our DB-backed Token data store
-type TokenDatabaseRepository struct {
+// TokenRepo defines our DB-backed Token data store
+type TokenRepo struct {
 	Agent coresql.Agent
 }
 
 // Insert inserts a new Token into the database
-func (t *TokenDatabaseRepository) Insert(ctx context.Context, token *domain.Token) error {
+func (t *TokenRepo) Insert(ctx context.Context, token *domain.Token) error {
 	stmt := `INSERT INTO token (id, ` + getDBFieldsStringFromFields(tokenDBFields) + `)
 					VALUES (?, ?, ?, ?, ?)`
 
@@ -48,7 +44,7 @@ func (t *TokenDatabaseRepository) Insert(ctx context.Context, token *domain.Toke
 }
 
 // Select retrieves Tokens from our database based on the provided criteria
-func (t *TokenDatabaseRepository) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.Token, error) {
+func (t *TokenRepo) Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]domain.Token, error) {
 	whereStmt, params := dbWhereStmt(criteria, matchAny)
 
 	stmt := `SELECT id, ` + getDBFieldsStringFromFields(tokenDBFields) + ` FROM token ` + whereStmt
@@ -84,7 +80,7 @@ func (t *TokenDatabaseRepository) Select(ctx context.Context, criteria map[strin
 }
 
 // ExistsByID determines whether a Token with the provided ID exists in the database
-func (t *TokenDatabaseRepository) ExistsByID(ctx context.Context, id string) error {
+func (t *TokenRepo) ExistsByID(ctx context.Context, id string) error {
 	stmt := `SELECT COUNT(*) FROM token WHERE id = ?`
 
 	row := t.Agent.QueryRowContext(ctx, stmt, id)
@@ -102,7 +98,7 @@ func (t *TokenDatabaseRepository) ExistsByID(ctx context.Context, id string) err
 }
 
 // DeleteByID removes the Token with the provided ID from the database
-func (t *TokenDatabaseRepository) DeleteByID(ctx context.Context, id string) error {
+func (t *TokenRepo) DeleteByID(ctx context.Context, id string) error {
 	stmt := `DELETE FROM token WHERE id = ?`
 
 	rows, err := t.Agent.QueryContext(ctx, stmt, id)
@@ -115,8 +111,8 @@ func (t *TokenDatabaseRepository) DeleteByID(ctx context.Context, id string) err
 }
 
 // GenerateUniqueTokenID returns a string representing a unique token ID
-func (t *TokenDatabaseRepository) GenerateUniqueTokenID(ctx context.Context) (string, error) {
-	id := generateAlphaNumericString(TokenLength)
+func (t *TokenRepo) GenerateUniqueTokenID(ctx context.Context) (string, error) {
+	id := generateAlphaNumericString(domain.TokenLength)
 
 	if err := t.ExistsByID(ctx, id); err != nil {
 		switch err.(type) {
@@ -130,19 +126,7 @@ func (t *TokenDatabaseRepository) GenerateUniqueTokenID(ctx context.Context) (st
 	return t.GenerateUniqueTokenID(ctx)
 }
 
-// generateAlphaNumericString generates an alphanumeric string to the provided length
-func generateAlphaNumericString(length int) string {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	source := "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz"
-	var generated string
-
-	sourceLen := len(source)
-
-	for i := 0; i < length; i++ {
-		randInt := r.Int63n(int64(sourceLen))
-		randByte := []byte(source)[randInt]
-		generated += string(randByte)
-	}
-
-	return generated
+// NewTokenRepo instantiates a new TokenRepo with the provided DB agent
+func NewTokenRepo(db coresql.Agent) *TokenRepo {
+	return &TokenRepo{Agent: db}
 }

@@ -3,9 +3,8 @@ package domain_test
 import (
 	"context"
 	"gotest.tools/assert/cmp"
+	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/repositories"
-	"prediction-league/service/internal/repositories/repofac"
 	"testing"
 	"time"
 )
@@ -33,8 +32,8 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(token.ID) != repositories.TokenLength {
-			expectedGot(t, repositories.TokenLength, len(token.ID))
+		if len(token.ID) != domain.TokenLength {
+			expectedGot(t, domain.TokenLength, len(token.ID))
 		}
 		if token.Type != expectedType {
 			expectedGot(t, expectedType, token.Type)
@@ -51,7 +50,7 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 		}
 
 		// inserting same token a second time must fail
-		err = repofac.NewTokenDatabaseRepository(db).Insert(ctx, token)
+		err = mysqldb.NewTokenRepo(db).Insert(ctx, token)
 		if !cmp.ErrorType(err, domain.DuplicateDBRecordError{})().Success() {
 			expectedTypeOfGot(t, domain.DuplicateDBRecordError{}, err)
 		}
@@ -70,8 +69,8 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(token.ID) != repositories.TokenLength {
-			expectedGot(t, repositories.TokenLength, len(token.ID))
+		if len(token.ID) != domain.TokenLength {
+			expectedGot(t, domain.TokenLength, len(token.ID))
 		}
 		if token.Type != expectedType {
 			expectedGot(t, expectedType, token.Type)
@@ -88,7 +87,7 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 		}
 
 		// inserting same token a second time must fail
-		err = repofac.NewTokenDatabaseRepository(db).Insert(ctx, token)
+		err = mysqldb.NewTokenRepo(db).Insert(ctx, token)
 		if !cmp.ErrorType(err, domain.DuplicateDBRecordError{})().Success() {
 			expectedTypeOfGot(t, domain.DuplicateDBRecordError{}, err)
 		}
@@ -116,7 +115,7 @@ func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 	agent := &domain.TokenAgent{TokenAgentInjector: injector}
 
 	token := generateTestToken()
-	tokenRepo := repofac.NewTokenDatabaseRepository(db)
+	tokenRepo := mysqldb.NewTokenRepo(db)
 	if err := tokenRepo.Insert(context.Background(), token); err != nil {
 		t.Fatal(err)
 	}
@@ -166,7 +165,7 @@ func TestTokenAgent_DeleteToken(t *testing.T) {
 	agent := &domain.TokenAgent{TokenAgentInjector: injector}
 
 	token := generateTestToken()
-	tokenRepo := repofac.NewTokenDatabaseRepository(db)
+	tokenRepo := mysqldb.NewTokenRepo(db)
 	if err := tokenRepo.Insert(context.Background(), token); err != nil {
 		t.Fatal(err)
 	}
@@ -217,7 +216,7 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 		token3,
 	}
 
-	tokenRepo := repofac.NewTokenDatabaseRepository(db)
+	tokenRepo := mysqldb.NewTokenRepo(db)
 	for _, token := range tokens {
 		if err := tokenRepo.Insert(context.Background(), token); err != nil {
 			t.Fatal(err)

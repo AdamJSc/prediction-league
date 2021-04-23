@@ -14,6 +14,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"log"
 	"os"
+	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/repositories/repofac"
 	"reflect"
@@ -342,7 +343,7 @@ func newTestInjector(t *testing.T, r domain.Realm, tpl *domain.Templates, db cor
 		epr:       repofac.NewEntryPredictionDatabaseRepository(db),
 		sr:        repofac.NewStandingsDatabaseRepository(db),
 		sepr:      repofac.NewScoredEntryPredictionDatabaseRepository(db),
-		tr:        repofac.NewTokenDatabaseRepository(db),
+		tr:        mysqldb.NewTokenRepo(db),
 	}
 }
 

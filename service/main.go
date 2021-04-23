@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"prediction-league/service/internal/adapters/mailgun"
+	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/app/httph/handlers"
@@ -61,7 +62,7 @@ func main() {
 		entryRepo:                 repofac.NewEntryDatabaseRepository(db),
 		entryPredictionRepo:       repofac.NewEntryPredictionDatabaseRepository(db),
 		scoredEntryPredictionRepo: repofac.NewScoredEntryPredictionDatabaseRepository(db),
-		tokenRepo:                 repofac.NewTokenDatabaseRepository(db),
+		tokenRepo:                 mysqldb.NewTokenRepo(db),
 	})
 
 	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -117,7 +118,7 @@ type dependencies struct {
 	entryRepo                 *repositories.EntryDatabaseRepository
 	entryPredictionRepo       *repositories.EntryPredictionDatabaseRepository
 	scoredEntryPredictionRepo *repositories.ScoredEntryPredictionDatabaseRepository
-	tokenRepo                 *repositories.TokenDatabaseRepository
+	tokenRepo                 *mysqldb.TokenRepo
 }
 
 func (d dependencies) Config() domain.Config           { return d.config }
