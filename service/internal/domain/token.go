@@ -16,6 +16,15 @@ var TokenValidityDuration = map[int]time.Duration{
 	TokenTypeShortCodeResetToken: time.Minute * 10,
 }
 
+// Token defines a token model
+type Token struct {
+	ID        string    `db:"id"`
+	Type      int       `db:"type"`
+	Value     string    `db:"value"`
+	IssuedAt  time.Time `db:"issued_at"`
+	ExpiresAt time.Time `db:"expires_at"`
+}
+
 // TokenRepository defines the interface for transacting with our Token data source
 type TokenRepository interface {
 	Insert(ctx context.Context, token *Token) error
