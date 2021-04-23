@@ -644,6 +644,39 @@ func (e *EntryAgent) GenerateUniqueShortCode(ctx context.Context) (string, error
 	return e.EntryRepo().GenerateUniqueShortCode(ctx)
 }
 
+func (e *EntryAgent) SeedEntries(ctx context.Context, entries []Entry) error {
+	for _, entry := range entries {
+		shortCode, err := e.EntryRepo().GenerateUniqueShortCode(ctx)
+		if err != nil {
+			return fmt.Errorf("cannot generate short code: %w", err)
+		}
+
+		entry.ShortCode = shortCode
+
+		if err := e.EntryRepo().Insert(ctx, &entry); err != nil {
+			switch err.(type) {
+			case DuplicateDBRecordError:
+				// already seeded, so we can fail silently
+				continue
+			}
+			return fmt.Errorf("cannot seed entry: %w", err)
+		}
+
+		for _, ep := range entry.EntryPredictions {
+			if err := e.EntryPredictionRepo().Insert(context.Background(), &ep); err != nil {
+				switch err.(type) {
+				case DuplicateDBRecordError:
+					// already seeded, so we can fail silently
+					continue
+				}
+				return fmt.Errorf("cannot seed entry prediction: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
 // sanitiseEntry sanitises and validates an Entry
 func sanitiseEntry(entry *Entry) error {
 	// only permit alphanumeric characters withing entrant nickname

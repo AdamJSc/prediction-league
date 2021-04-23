@@ -14,7 +14,6 @@ import (
 	"prediction-league/service/internal/repositories"
 	"prediction-league/service/internal/repositories/repofac"
 	"prediction-league/service/internal/scheduler"
-	"prediction-league/service/internal/seeder"
 	"time"
 
 	"github.com/LUSHDigital/core"
@@ -44,9 +43,6 @@ func main() {
 		log.Fatal(fmt.Errorf("cannot open sql connection: %w", err))
 	}
 	coresql.MustMigrateUp(mig)
-	seeder.MustSeed(db)
-
-	domain.MustInflate()
 
 	// permit flag that provides a debug mode by overriding timestamp for time-sensitive operations
 	ts := flag.String("ts", "", "override timestamp used by time-sensitive operations, in the format yyyymmddhhmmss")
@@ -67,6 +63,20 @@ func main() {
 		scoredEntryPredictionRepo: repofac.NewScoredEntryPredictionDatabaseRepository(db),
 		tokenRepo:                 repofac.NewTokenDatabaseRepository(db),
 	})
+
+	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	entryAgent := &domain.EntryAgent{EntryAgentInjector: httpAppContainer}
+	seeds, err := domain.GenerateSeedEntries()
+	if err != nil {
+		log.Fatal(fmt.Errorf("cannot generate entries to seed: %w", err))
+	}
+	if err := entryAgent.SeedEntries(ctxWithTimeout, seeds); err != nil {
+		log.Fatal(fmt.Errorf("cannot seed entries: %w", err))
+	}
+
+	domain.MustInflate()
+
 	handlers.RegisterRoutes(httpAppContainer)
 
 	// start cron
@@ -113,9 +123,9 @@ type dependencies struct {
 func (d dependencies) Config() domain.Config           { return d.config }
 func (d dependencies) EmailClient() domain.EmailClient { return d.emailClient }
 func (d dependencies) EmailQueue() chan domain.Email   { return d.emailQueue }
-func (d dependencies) Router() *mux.Router         { return d.router }
-func (d dependencies) Template() *domain.Templates { return d.templates }
-func (d dependencies) DebugTimestamp() *time.Time  { return d.debugTimestamp }
+func (d dependencies) Router() *mux.Router             { return d.router }
+func (d dependencies) Template() *domain.Templates     { return d.templates }
+func (d dependencies) DebugTimestamp() *time.Time      { return d.debugTimestamp }
 func (d dependencies) StandingsRepo() domain.StandingsRepository {
 	return d.standingsRepo
 }
