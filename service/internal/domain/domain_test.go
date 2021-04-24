@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/LUSHDigital/core-mage/env"
-	"github.com/LUSHDigital/core-sql/sqltest"
 	"github.com/LUSHDigital/uuid"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang-migrate/migrate/v4"
@@ -25,7 +24,6 @@ import (
 
 var (
 	db         *sql.DB
-	truncator  sqltest.Truncator
 	utc        *time.Location
 	templates  *domain.Templates
 	testSeason domain.Season
