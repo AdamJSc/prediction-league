@@ -14,7 +14,6 @@ import (
 	"prediction-league/service/internal/adapters/mailgun"
 	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/app"
-	"prediction-league/service/internal/app/httph/handlers"
 	"prediction-league/service/internal/app/scheduler"
 	"prediction-league/service/internal/domain"
 	"time"
@@ -76,7 +75,7 @@ func main() {
 
 	domain.MustInflate()
 
-	handlers.RegisterRoutes(httpAppContainer)
+	app.RegisterRoutes(httpAppContainer)
 
 	// start cron
 	scheduler.LoadCron(httpAppContainer).Start()

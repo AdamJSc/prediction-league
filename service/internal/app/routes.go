@@ -1,12 +1,11 @@
-package handlers
+package app
 
 import (
 	"net/http"
-	"prediction-league/service/internal/app"
 )
 
 // RegisterRoutes attaches all routes to the router
-func RegisterRoutes(c *app.HTTPAppContainer) {
+func RegisterRoutes(c *HTTPAppContainer) {
 	// api endpoints
 	api := c.Router().PathPrefix("/api").Subrouter()
 	api.HandleFunc("/prediction/login", predictionLoginHandler(c)).Methods(http.MethodPost)

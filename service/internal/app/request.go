@@ -1,4 +1,4 @@
-package handlers
+package app
 
 import (
 	"prediction-league/service/internal/domain"

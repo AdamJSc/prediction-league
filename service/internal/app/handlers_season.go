@@ -1,14 +1,13 @@
-package handlers
+package app
 
 import (
 	"fmt"
 	"github.com/LUSHDigital/core/rest"
 	"net/http"
-	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/domain"
 )
 
-func retrieveSeasonHandler(c *app.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func retrieveSeasonHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// parse season ID from route
 		var seasonID string
@@ -54,7 +53,7 @@ func retrieveSeasonHandler(c *app.HTTPAppContainer) func(w http.ResponseWriter, 
 	}
 }
 
-func retrieveLeaderBoardHandler(c *app.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func retrieveLeaderBoardHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// parse season ID from route
 		var seasonID string
