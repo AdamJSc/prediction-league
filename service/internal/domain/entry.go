@@ -28,15 +28,15 @@ const (
 
 // Entry defines a user's entry into the prediction league
 type Entry struct {
-	ID               uuid.UUID           `db:"id" v:"func:notEmpty"`
-	ShortCode        string              `db:"short_code" v:"func:notEmpty"`
-	SeasonID         string              `db:"season_id" v:"func:notEmpty"`
-	RealmName        string              `db:"realm_name" v:"func:notEmpty"`
-	EntrantName      string              `db:"entrant_name" v:"func:notEmpty"`
-	EntrantNickname  string              `db:"entrant_nickname" v:"func:notEmpty"`
-	EntrantEmail     string              `db:"entrant_email" v:"func:email"`
-	Status           string              `db:"status" v:"func:isValidEntryStatus"`
-	PaymentMethod    sqltypes.NullString `db:"payment_method" v:"func:isValidEntryPaymentMethod"`
+	ID               uuid.UUID           `db:"id"`
+	ShortCode        string              `db:"short_code"`
+	SeasonID         string              `db:"season_id"`
+	RealmName        string              `db:"realm_name"`
+	EntrantName      string              `db:"entrant_name"`
+	EntrantNickname  string              `db:"entrant_nickname"`
+	EntrantEmail     string              `db:"entrant_email"`
+	Status           string              `db:"status"`
+	PaymentMethod    sqltypes.NullString `db:"payment_method"`
 	PaymentRef       sqltypes.NullString `db:"payment_ref"`
 	EntryPredictions []EntryPrediction
 	ApprovedAt       sqltypes.NullTime `db:"approved_at"`
