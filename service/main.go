@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
@@ -18,10 +19,6 @@ import (
 	"prediction-league/service/internal/app/scheduler"
 	"prediction-league/service/internal/domain"
 	"time"
-
-	"github.com/LUSHDigital/core"
-	"github.com/LUSHDigital/core/workers/httpsrv"
-	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -86,7 +83,7 @@ func main() {
 	scheduler.LoadCron(httpAppContainer).Start()
 
 	// setup http server process
-	httpServer := httpsrv.New(&http.Server{
+	httpServer := app.NewServer(&http.Server{
 		Addr:    fmt.Sprintf(":%s", config.ServicePort),
 		Handler: httpAppContainer.Router(),
 	})
@@ -97,7 +94,7 @@ func main() {
 	}
 
 	// run service
-	svc := &core.Service{
+	svc := &app.Service{
 		Name: "prediction-league",
 		Type: "service",
 	}

@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/LUSHDigital/core v0.23.1
+	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/golang-migrate/migrate/v4 v4.2.5
 	github.com/gomarkdown/markdown v0.0.0-20200609195525-3f9352745725
