@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/LUSHDigital/uuid"
+	"github.com/google/uuid"
 	"prediction-league/service/internal/adapters/mysqldb/sqltypes"
 	"regexp"
 	"sort"
@@ -117,7 +117,7 @@ func (e *EntryAgent) CreateEntry(ctx context.Context, entry Entry, s *Season) (E
 	}
 
 	// generate a new entry ID
-	id, err := uuid.NewV4()
+	id, err := uuid.NewRandom()
 	if err != nil {
 		return Entry{}, InternalError{err}
 	}
@@ -452,7 +452,7 @@ func (e *EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPredict
 	}
 
 	// generate a new entry ID
-	id, err := uuid.NewV4()
+	id, err := uuid.NewRandom()
 	if err != nil {
 		return Entry{}, InternalError{err}
 	}

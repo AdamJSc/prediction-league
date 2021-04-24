@@ -3,8 +3,8 @@ package domain_test
 import (
 	"bytes"
 	"fmt"
-	"github.com/LUSHDigital/uuid"
 	gocmp "github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
 	"testing"
@@ -340,7 +340,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		invalidUUID, err := uuid.NewV4()
+		invalidUUID, err := uuid.NewRandom()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -358,7 +358,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		invalidUUID, err := uuid.NewV4()
+		invalidUUID, err := uuid.NewRandom()
 		if err != nil {
 			t.Fatal(err)
 		}

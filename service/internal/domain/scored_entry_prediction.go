@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/LUSHDigital/uuid"
+	"github.com/google/uuid"
 	"prediction-league/service/internal/adapters/mysqldb/sqltypes"
 	"strconv"
 	"strings"

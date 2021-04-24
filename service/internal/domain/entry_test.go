@@ -3,8 +3,8 @@ package domain_test
 import (
 	"context"
 	"fmt"
-	"github.com/LUSHDigital/uuid"
 	gocmp "github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/adapters/mysqldb/sqltypes"
 	"prediction-league/service/internal/domain"
@@ -37,6 +37,10 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	paymentMethod := "entry_payment_method"
 	paymentRef := "entry_payment_ref"
 
+	entryID, err := uuid.NewRandom()
+	if err != nil {
+		t.Fatal(err)
+	}
 	entry := domain.Entry{
 		// these values should be populated
 		EntrantName:     "Harry Redknapp",
@@ -44,7 +48,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		EntrantEmail:    "harry.redknapp@football.net",
 
 		// these values should be overridden
-		ID:            uuid.Must(uuid.NewV4()),
+		ID:            entryID,
 		ShortCode:     "entry_short_code",
 		SeasonID:      "entry_season_id",
 		RealmName:     "entry_realm_name",
@@ -332,7 +336,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 
 		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
 
-		nonExistentEntryID, err := uuid.NewV4()
+		nonExistentEntryID, err := uuid.NewRandom()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -954,7 +958,12 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		_, err := agent.UpdateEntry(ctx, domain.Entry{ID: uuid.Must(uuid.NewV4()), RealmName: entry.RealmName})
+		entryID, err := uuid.NewRandom()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		_, err = agent.UpdateEntry(ctx, domain.Entry{ID: entryID, RealmName: entry.RealmName})
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}

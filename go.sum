@@ -12,7 +12,6 @@ github.com/LUSHDigital/core v0.23.1 h1:HE2GzrNDlgV7W/1FYPsQIQniOdFNq02R+wbMP5zn0
 github.com/LUSHDigital/core v0.23.1/go.mod h1:rB/KryiplCC3/7uHqfWInm1c3puGKGPLJX4+474f+gw=
 github.com/LUSHDigital/core-mage v0.9.14 h1:3MaOdf+E6Ng6SXTZLNVt905v9okWKoLS2dG3k95ecmw=
 github.com/LUSHDigital/core-mage v0.9.14/go.mod h1:bGdUI0RPvzaPj9cNx3J6lVh8L2/nAn3SXDbB+0Vual0=
-github.com/LUSHDigital/uuid v0.2.0 h1:PvzIi7N3/D/5jIo/fosdbMtbrtbgFnzIIGFJqXFU+uo=
 github.com/LUSHDigital/uuid v0.2.0/go.mod h1:IMGJZDFFeAvaKmV3Ztg7lFlUaGgmY4PNr727EdzI3qY=
 github.com/Masterminds/goutils v1.1.0/go.mod h1:8cTjp+g8YejhMuvIA5y2vz3BpJxksy863GQaJW2MFNU=
 github.com/Masterminds/semver v1.5.0/go.mod h1:MB6lktGJrhw8PrUyiEoblNEGEQ+RzHPF078ddwwvV3Y=
@@ -115,6 +114,7 @@ github.com/google/go-github v17.0.0+incompatible/go.mod h1:zLgOLi98H3fifZn+44m+u
 github.com/google/go-querystring v1.0.0/go.mod h1:odCYkC5MyYFN7vkCjXpyrEuKhc/BUO6wN/zVPAxq5ck=
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
 github.com/google/martian v2.1.0+incompatible/go.mod h1:9I4somxYTbIHy5NJKHRl3wXiIaQGbYVAs8BPL6v8lEs=
+github.com/google/uuid v1.1.1 h1:Gkbcsh/GbpXz7lPftLA3P6TYMwjCLYm83jiFQZF/3gY=
 github.com/google/uuid v1.1.1/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/googleapis/gax-go v2.0.0+incompatible/go.mod h1:SFVmujtThgffbyetf+mdk2eWhX2bMyUtNHzFKcPA9HY=
 github.com/gopherjs/gopherjs v0.0.0-20181004151105-1babbf986f6f/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=

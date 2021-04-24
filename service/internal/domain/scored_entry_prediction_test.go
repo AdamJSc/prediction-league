@@ -1,14 +1,13 @@
 package domain_test
 
 import (
+	gocmp "github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/LUSHDigital/uuid"
-	gocmp "github.com/google/go-cmp/cmp"
 )
 
 func TestScoredEntryPredictionAgent_CreateScoredEntryPrediction(t *testing.T) {
@@ -84,7 +83,7 @@ func TestScoredEntryPredictionAgent_CreateScoredEntryPrediction(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		nonExistentID, err := uuid.NewV4()
+		nonExistentID, err := uuid.NewRandom()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -156,7 +155,7 @@ func TestScoredEntryPredictionAgent_UpdateScoredEntryPrediction(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		nonExistentID, err := uuid.NewV4()
+		nonExistentID, err := uuid.NewRandom()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -230,7 +229,7 @@ func TestScoredEntryPredictionAgent_RetrieveScoredEntryPredictionByIDs(t *testin
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		nonExistentID, err := uuid.NewV4()
+		nonExistentID, err := uuid.NewRandom()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -307,7 +306,7 @@ func TestScoredEntryPredictionAgent_RetrieveLatestScoredEntryPredictionByEntryID
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		nonExistentID, err := uuid.NewV4()
+		nonExistentID, err := uuid.NewRandom()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -322,7 +321,7 @@ func TestScoredEntryPredictionAgent_RetrieveLatestScoredEntryPredictionByEntryID
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		nonExistentID, err := uuid.NewV4()
+		nonExistentID, err := uuid.NewRandom()
 		if err != nil {
 			t.Fatal(err)
 		}

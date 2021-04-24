@@ -3,7 +3,7 @@ package domain
 import (
 	"context"
 	"errors"
-	"github.com/LUSHDigital/uuid"
+	"github.com/google/uuid"
 	"prediction-league/service/internal/adapters/mysqldb/sqltypes"
 	"sort"
 	"time"
@@ -47,7 +47,7 @@ type StandingsAgent struct{ StandingsAgentInjector }
 // CreateStandings handles the creation of a new Standings in the database
 func (s *StandingsAgent) CreateStandings(ctx context.Context, standings Standings) (Standings, error) {
 	// generate a new entry ID
-	id, err := uuid.NewV4()
+	id, err := uuid.NewRandom()
 	if err != nil {
 		return Standings{}, InternalError{err}
 	}

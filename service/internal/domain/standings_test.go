@@ -1,8 +1,8 @@
 package domain_test
 
 import (
-	"github.com/LUSHDigital/uuid"
 	gocmp "github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/adapters/mysqldb/sqltypes"
 	"prediction-league/service/internal/domain"
@@ -113,7 +113,7 @@ func TestStandingsAgent_UpdateStandings(t *testing.T) {
 
 		changedStandings := standings
 
-		id, err := uuid.NewV4()
+		id, err := uuid.NewRandom()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -176,7 +176,7 @@ func TestStandingsAgent_RetrieveStandingsByID(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		nonExistentID, err := uuid.NewV4()
+		nonExistentID, err := uuid.NewRandom()
 		if err != nil {
 			t.Fatal(err)
 		}

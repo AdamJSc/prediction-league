@@ -2,7 +2,7 @@ package domain
 
 import (
 	"fmt"
-	"github.com/LUSHDigital/uuid"
+	"github.com/google/uuid"
 	"prediction-league/service/internal/adapters/mysqldb/sqltypes"
 	"time"
 )
@@ -327,11 +327,11 @@ func GenerateSeedEntries() ([]Entry, error) {
 	approvedAt := time.Now()
 
 	for i := range entries {
-		entryID, err := uuid.NewV4()
+		entryID, err := uuid.NewRandom()
 		if err != nil {
 			return nil, fmt.Errorf("cannot generate uuid: %w", err)
 		}
-		entryPredictionID, err := uuid.NewV4()
+		entryPredictionID, err := uuid.NewRandom()
 		if err != nil {
 			return nil, fmt.Errorf("cannot generate uuid: %w", err)
 		}

@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/LUSHDigital/core-mage/env"
-	"github.com/LUSHDigital/uuid"
+	"github.com/google/uuid"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/kelseyhightower/envconfig"
@@ -157,7 +157,7 @@ func generateTestStandings(t *testing.T) domain.Standings {
 	t.Helper()
 
 	// generate random ID
-	standingsID, err := uuid.NewV4()
+	standingsID, err := uuid.NewRandom()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -214,7 +214,7 @@ func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail 
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	id, err := uuid.NewV4()
+	id, err := uuid.NewRandom()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -259,7 +259,7 @@ func insertEntry(t *testing.T, entry domain.Entry) domain.Entry {
 
 // generateTestEntryPrediction generates a new EntryPrediction entity for use within the testsuite
 func generateTestEntryPrediction(t *testing.T, entryID uuid.UUID) domain.EntryPrediction {
-	id, err := uuid.NewV4()
+	id, err := uuid.NewRandom()
 	if err != nil {
 		t.Fatal(err)
 	}
