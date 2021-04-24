@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/LUSHDigital/core/rest"
 	"io/ioutil"
 	"net/http"
 	"prediction-league/service/internal/domain"
@@ -21,21 +20,21 @@ func predictionLoginHandler(c *HTTPAppContainer) func(http.ResponseWriter, *http
 		// read request body
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			rest.InternalError(err).WriteTo(w)
+			internalError(err).writeTo(w)
 			return
 		}
 		defer closeBody(r)
 
 		// parse request body
 		if err := json.Unmarshal(body, &input); err != nil {
-			responseFromError(domain.BadRequestError{Err: err}).WriteTo(w)
+			responseFromError(domain.BadRequestError{Err: err}).writeTo(w)
 			return
 		}
 
 		// get context from request
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 		defer cancel()
@@ -49,34 +48,34 @@ func predictionLoginHandler(c *HTTPAppContainer) func(http.ResponseWriter, *http
 			switch err.(type) {
 			case domain.NotFoundError:
 				// credentials are invalid so convert to an unauthorized error
-				rest.UnauthorizedError().WriteTo(w)
+				unauthorizedError().writeTo(w)
 				return
 			}
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// does realm name match our entry?
 		if domain.RealmFromContext(ctx).Name != entry.RealmName {
-			rest.UnauthorizedError().WriteTo(w)
+			unauthorizedError().writeTo(w)
 			return
 		}
 
 		// does short code match our entry?
 		if entry.ShortCode != input.ShortCode {
-			rest.UnauthorizedError().WriteTo(w)
+			unauthorizedError().writeTo(w)
 			return
 		}
 
 		// generate a new auth token for our entry, and set it as a cookie
 		token, err := tokenAgent.GenerateToken(ctx, domain.TokenTypeAuth, entry.ID.String())
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 		setAuthCookieValue(token.ID, w, r)
 
-		rest.OKResponse(nil, nil).WriteTo(w)
+		okResponse(nil).writeTo(w)
 	}
 }
 

@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"github.com/LUSHDigital/core/rest"
 	"github.com/dustin/go-humanize"
 	"log"
 	"net"
@@ -126,10 +125,10 @@ func healthHandler(now func() time.Time) http.HandlerFunc {
 		runtime.ReadMemStats(&mem)
 
 		latency := time.Since(start).Nanoseconds() / (1 * 1000 * 1000) // Milliseconds
-		res := &rest.Response{
+		res := &response{
 			Code:    http.StatusOK,
 			Message: http.StatusText(http.StatusOK),
-			Data: &rest.Data{
+			Data: &data{
 				Type: "health",
 				Content: healthResponse{
 					Latency:       fmt.Sprintf("%d ms", latency),
@@ -140,7 +139,7 @@ func healthHandler(now func() time.Time) http.HandlerFunc {
 				},
 			},
 		}
-		res.WriteTo(w)
+		res.writeTo(w)
 	}
 }
 

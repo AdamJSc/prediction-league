@@ -111,7 +111,7 @@ func loadTestEnvFromPaths(paths ...string) {
 	for _, fpath := range paths {
 		fullpath := filepath.Join(dir, fpath)
 		if err := godotenv.Load(fullpath); err != nil {
-			log.Printf("could not load environment file: %s: skipping...\n", fullpath)
+			log.Printf("could not load environment file: %s: skipping...", fullpath)
 		}
 	}
 }

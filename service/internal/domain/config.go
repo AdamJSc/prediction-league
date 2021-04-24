@@ -44,7 +44,7 @@ func MustLoadConfigFromEnvPaths(l Logger, paths ...string) Config {
 func loadEnvFromPaths(l Logger, paths ...string) {
 	for _, fpath := range paths {
 		if err := godotenv.Load(fpath); err != nil {
-			l.Infof("could not load environment file: %s: skipping...\n", fpath)
+			l.Infof("could not load environment file: %s: skipping...", fpath)
 		}
 	}
 }

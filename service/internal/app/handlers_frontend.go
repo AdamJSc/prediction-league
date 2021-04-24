@@ -3,7 +3,6 @@ package app
 import (
 	"errors"
 	"fmt"
-	"github.com/LUSHDigital/core/rest"
 	"net/http"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/view"
@@ -14,7 +13,7 @@ func frontendIndexHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *ht
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			rest.InternalError(err).WriteTo(w)
+			internalError(err).writeTo(w)
 			return
 		}
 		defer cancel()
@@ -22,7 +21,7 @@ func frontendIndexHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *ht
 		seasonID := domain.RealmFromContext(ctx).SeasonID
 		season, err := domain.SeasonsDataStore.GetByID(seasonID)
 		if err != nil {
-			rest.InternalError(err).WriteTo(w)
+			internalError(err).writeTo(w)
 			return
 		}
 
@@ -31,7 +30,7 @@ func frontendIndexHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *ht
 		p := newPage(r, c, "Home", "home", bannerTitle, nil)
 
 		if err := c.Template().ExecuteTemplate(w, "index", p); err != nil {
-			rest.InternalError(err).WriteTo(w)
+			internalError(err).writeTo(w)
 			return
 		}
 	}
@@ -43,7 +42,7 @@ func frontendLeaderBoardHandler(c *HTTPAppContainer) func(w http.ResponseWriter,
 			p := newPage(r, c, "Leaderboard", "leaderboard", "Leaderboard", data)
 
 			if err := c.Template().ExecuteTemplate(w, "leaderboard", p); err != nil {
-				rest.InternalError(err).WriteTo(w)
+				internalError(err).writeTo(w)
 			}
 		}
 
@@ -71,13 +70,13 @@ func frontendFAQHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http
 			p := newPage(r, c, "FAQ", "faq", "FAQ", data)
 
 			if err := c.Template().ExecuteTemplate(w, "faq", p); err != nil {
-				rest.InternalError(err).WriteTo(w)
+				internalError(err).writeTo(w)
 			}
 		}
 
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			rest.InternalError(err).WriteTo(w)
+			internalError(err).writeTo(w)
 			return
 		}
 		defer cancel()
@@ -92,14 +91,14 @@ func frontendJoinHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *htt
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			rest.InternalError(err).WriteTo(w)
+			internalError(err).writeTo(w)
 			return
 		}
 		defer cancel()
 
 		season, err := domain.SeasonsDataStore.GetByID(domain.RealmFromContext(ctx).SeasonID)
 		if err != nil {
-			rest.InternalError(err).WriteTo(w)
+			internalError(err).writeTo(w)
 			return
 		}
 
@@ -120,7 +119,7 @@ func frontendJoinHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *htt
 		p := newPage(r, c, "Join", "join", "Join", data)
 
 		if err := c.Template().ExecuteTemplate(w, "join", p); err != nil {
-			rest.InternalError(err).WriteTo(w)
+			internalError(err).writeTo(w)
 			return
 		}
 	}
@@ -132,7 +131,7 @@ func frontendPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWriter, 
 			p := newPage(r, c, "Update My Prediction", "prediction", "Update My Prediction", data)
 
 			if err := c.Template().ExecuteTemplate(w, "prediction", p); err != nil {
-				rest.InternalError(err).WriteTo(w)
+				internalError(err).writeTo(w)
 			}
 		}
 
@@ -164,7 +163,7 @@ func frontendShortCodeResetBeginHandler(c *HTTPAppContainer) func(w http.Respons
 			p := newPage(r, c, "Reset my Short Code", "", "Reset my Short Code", data)
 
 			if err := c.Template().ExecuteTemplate(w, "short-code-reset-begin", p); err != nil {
-				rest.InternalError(err).WriteTo(w)
+				internalError(err).writeTo(w)
 			}
 		}
 
@@ -247,7 +246,7 @@ func frontendShortCodeResetCompleteHandler(c *HTTPAppContainer) func(w http.Resp
 			p := newPage(r, c, "Reset my Short Code", "", "Reset my Short Code", data)
 
 			if err := c.Template().ExecuteTemplate(w, "short-code-reset-complete", p); err != nil {
-				rest.InternalError(err).WriteTo(w)
+				internalError(err).writeTo(w)
 			}
 		}
 

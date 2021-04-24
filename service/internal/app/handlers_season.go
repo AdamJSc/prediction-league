@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"github.com/LUSHDigital/core/rest"
 	"net/http"
 	"prediction-league/service/internal/domain"
 )
@@ -12,14 +11,14 @@ func retrieveSeasonHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *h
 		// parse season ID from route
 		var seasonID string
 		if err := getRouteParam(r, "season_id", &seasonID); err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// get context from request
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 		defer cancel()
@@ -32,24 +31,24 @@ func retrieveSeasonHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *h
 		// retrieve the season we need
 		season, err := domain.SeasonsDataStore.GetByID(seasonID)
 		if err != nil {
-			rest.NotFoundError(fmt.Errorf("invalid season: %s", seasonID)).WriteTo(w)
+			notFoundError(fmt.Errorf("invalid season: %s", seasonID)).writeTo(w)
 			return
 		}
 
 		// get teams that correlate to season's team IDs
 		teams, err := domain.FilterTeamsByIDs(season.TeamIDs, domain.TeamsDataStore)
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
-		rest.OKResponse(&rest.Data{
+		okResponse(&data{
 			Type: "season",
 			Content: retrieveSeasonResponse{
 				Name:  season.Name,
 				Teams: teams,
 			},
-		}, nil).WriteTo(w)
+		}).writeTo(w)
 	}
 }
 
@@ -58,21 +57,21 @@ func retrieveLeaderBoardHandler(c *HTTPAppContainer) func(w http.ResponseWriter,
 		// parse season ID from route
 		var seasonID string
 		if err := getRouteParam(r, "season_id", &seasonID); err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// parse round number from route
 		var roundNumber int
 		if err := getRouteParam(r, "round_number", &roundNumber); err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// get context from request
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 		defer cancel()
@@ -88,13 +87,13 @@ func retrieveLeaderBoardHandler(c *HTTPAppContainer) func(w http.ResponseWriter,
 		}
 		lb, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, roundNumber)
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
-		rest.OKResponse(&rest.Data{
+		okResponse(&data{
 			Type:    "leaderboard",
 			Content: lb,
-		}, nil).WriteTo(w)
+		}).writeTo(w)
 	}
 }

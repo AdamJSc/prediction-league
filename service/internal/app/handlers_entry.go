@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/LUSHDigital/core/rest"
 	"io/ioutil"
 	"net/http"
 	"prediction-league/service/internal/domain"
@@ -18,14 +17,14 @@ func createEntryHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http
 		// read request body
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			rest.InternalError(err).WriteTo(w)
+			internalError(err).writeTo(w)
 			return
 		}
 		defer closeBody(r)
 
 		// parse request body
 		if err := json.Unmarshal(body, &input); err != nil {
-			responseFromError(domain.BadRequestError{Err: err}).WriteTo(w)
+			responseFromError(domain.BadRequestError{Err: err}).writeTo(w)
 			return
 		}
 
@@ -35,14 +34,14 @@ func createEntryHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http
 		// parse season ID from route
 		var seasonID string
 		if err := getRouteParam(r, "season_id", &seasonID); err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// get context from request
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 		defer cancel()
@@ -55,7 +54,7 @@ func createEntryHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http
 		// retrieve the season we need
 		season, err := domain.SeasonsDataStore.GetByID(seasonID)
 		if err != nil {
-			rest.NotFoundError(fmt.Errorf("invalid season: %s", seasonID)).WriteTo(w)
+			notFoundError(fmt.Errorf("invalid season: %s", seasonID)).writeTo(w)
 			return
 		}
 
@@ -64,11 +63,11 @@ func createEntryHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http
 		// create entry
 		createdEntry, err := agent.CreateEntry(ctx, entry, &season)
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
-		rest.CreatedResponse(&rest.Data{
+		createdResponse(&data{
 			Type: "entry",
 			Content: createEntryResponse{
 				ID:           createdEntry.ID.String(),
@@ -76,7 +75,7 @@ func createEntryHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http
 				ShortCode:    createdEntry.ShortCode,
 				NeedsPayment: c.Config().PayPalClientID != "",
 			},
-		}, nil).WriteTo(w)
+		}).writeTo(w)
 	}
 }
 
@@ -90,28 +89,28 @@ func updateEntryPaymentDetailsHandler(c *HTTPAppContainer) func(w http.ResponseW
 		// read request body
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			rest.InternalError(err).WriteTo(w)
+			internalError(err).writeTo(w)
 			return
 		}
 		defer closeBody(r)
 
 		// parse request body
 		if err := json.Unmarshal(body, &input); err != nil {
-			responseFromError(domain.BadRequestError{Err: err}).WriteTo(w)
+			responseFromError(domain.BadRequestError{Err: err}).writeTo(w)
 			return
 		}
 
 		// parse entry ID from route
 		var entryID string
 		if err := getRouteParam(r, "entry_id", &entryID); err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// get context from request
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 		defer cancel()
@@ -129,18 +128,18 @@ func updateEntryPaymentDetailsHandler(c *HTTPAppContainer) func(w http.ResponseW
 		// update payment details for entry
 		entry, err := entryAgent.UpdateEntryPaymentDetails(ctx, entryID, input.PaymentMethod, input.PaymentRef, isPayPalConfigMissing)
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// issue new entry email
 		if err := commsAgent.IssueNewEntryEmail(ctx, &entry, &paymentDetails); err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// success!
-		rest.OKResponse(nil, nil).WriteTo(w)
+		okResponse(nil).writeTo(w)
 	}
 }
 
@@ -153,28 +152,28 @@ func createEntryPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWrite
 		// read request body
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			rest.InternalError(err).WriteTo(w)
+			internalError(err).writeTo(w)
 			return
 		}
 		defer closeBody(r)
 
 		// parse request body
 		if err := json.Unmarshal(body, &input); err != nil {
-			responseFromError(domain.BadRequestError{Err: err}).WriteTo(w)
+			responseFromError(domain.BadRequestError{Err: err}).writeTo(w)
 			return
 		}
 
 		// parse entry ID from route
 		var entryID string
 		if err := getRouteParam(r, "entry_id", &entryID); err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// get context from request
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 		defer cancel()
@@ -182,7 +181,7 @@ func createEntryPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWrite
 		// get entry
 		entry, err := agent.RetrieveEntryByID(ctx, entryID)
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
@@ -192,12 +191,12 @@ func createEntryPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWrite
 
 		// create entry prediction for entry
 		if _, err := agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry); err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// success!
-		rest.OKResponse(nil, nil).WriteTo(w)
+		okResponse(nil).writeTo(w)
 	}
 }
 
@@ -208,14 +207,14 @@ func retrieveLatestEntryPredictionHandler(c *HTTPAppContainer) func(w http.Respo
 		// parse entry ID from route
 		var entryID string
 		if err := getRouteParam(r, "entry_id", &entryID); err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// get context from request
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 		defer cancel()
@@ -223,31 +222,31 @@ func retrieveLatestEntryPredictionHandler(c *HTTPAppContainer) func(w http.Respo
 		// get entry
 		entry, err := agent.RetrieveEntryByID(ctx, entryID)
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// get entry prediction that pertains to context timestamp
 		entryPrediction, err := agent.RetrieveEntryPredictionByTimestamp(ctx, entry, domain.TimestampFromContext(ctx))
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// get teams that correlate to entry prediction's ranking IDs
 		teams, err := domain.FilterTeamsByIDs(entryPrediction.Rankings.GetIDs(), domain.TeamsDataStore)
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
-		rest.OKResponse(&rest.Data{
+		okResponse(&data{
 			Type: "entry_prediction",
 			Content: retrieveLatestEntryPredictionResponse{
 				Teams:       teams,
 				LastUpdated: entryPrediction.CreatedAt,
 			},
-		}, nil).WriteTo(w)
+		}).writeTo(w)
 	}
 }
 
@@ -258,25 +257,25 @@ func approveEntryByShortCodeHandler(c *HTTPAppContainer) func(w http.ResponseWri
 		// parse entry short code from route
 		var entryShortCode string
 		if err := getRouteParam(r, "entry_short_code", &entryShortCode); err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 		defer cancel()
 
 		// approve entry
 		if _, err := agent.ApproveEntryByShortCode(ctx, entryShortCode); err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// success!
-		rest.OKResponse(nil, nil).WriteTo(w)
+		okResponse(nil).writeTo(w)
 	}
 }
 
@@ -285,21 +284,21 @@ func retrieveLatestScoredEntryPrediction(c *HTTPAppContainer) func(w http.Respon
 		// parse entry ID from route
 		var entryID string
 		if err := getRouteParam(r, "entry_id", &entryID); err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// parse round number from route
 		var roundNumber int
 		if err := getRouteParam(r, "round_number", &roundNumber); err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// get context from request
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 		defer cancel()
@@ -310,7 +309,7 @@ func retrieveLatestScoredEntryPrediction(c *HTTPAppContainer) func(w http.Respon
 		}
 		scoredEntryPredictions, err := scoredEntryPredictionAgent.RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(ctx, entryID, roundNumber)
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
@@ -320,13 +319,13 @@ func retrieveLatestScoredEntryPrediction(c *HTTPAppContainer) func(w http.Respon
 		}
 		standings, err := standingsAgent.RetrieveStandingsByID(ctx, scoredEntryPredictions.StandingsID.String())
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
 		responseRankings, err := getResponseRankingsFromStandingsRankings(scoredEntryPredictions.Rankings, standings.Rankings)
 		if err != nil {
-			responseFromError(err).WriteTo(w)
+			responseFromError(err).writeTo(w)
 			return
 		}
 
@@ -334,14 +333,14 @@ func retrieveLatestScoredEntryPrediction(c *HTTPAppContainer) func(w http.Respon
 		if standings.UpdatedAt.Valid {
 			lastUpdated = standings.UpdatedAt.Time
 		}
-		rest.OKResponse(&rest.Data{
+		okResponse(&data{
 			Type: "scored",
 			Content: retrieveLatestScoredEntryPredictionResponse{
 				LastUpdated: lastUpdated,
 				RoundScore:  scoredEntryPredictions.Score,
 				Rankings:    responseRankings,
 			},
-		}, nil).WriteTo(w)
+		}).writeTo(w)
 	}
 }
 
