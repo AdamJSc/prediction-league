@@ -26,6 +26,7 @@ func (l *logger) Infof(msg string, a ...interface{}) {
 
 // NewLogger returns a new Logger using the provided writer
 func NewLogger(w io.Writer) (*logger, error) {
+	// TODO - add timestamp to logged message
 	if w == nil {
 		return nil, fmt.Errorf("writer: %w", domain.ErrIsNil)
 	}
@@ -34,5 +35,5 @@ func NewLogger(w io.Writer) (*logger, error) {
 
 func prefixMsgArgs(prefix, msg string, a ...interface{}) string {
 	msgWithArgs := fmt.Sprintf(msg, a...)
-	return fmt.Sprintf("%s: %s", prefix, msgWithArgs)
+	return fmt.Sprintf("%s: %s\n", prefix, msgWithArgs)
 }

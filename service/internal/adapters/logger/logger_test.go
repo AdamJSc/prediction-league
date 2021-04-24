@@ -30,7 +30,21 @@ func TestLogger_Info(t *testing.T) {
 
 	l.Info("hello world")
 
-	want := "INFO: hello world"
+	want := "INFO: hello world\n"
+	got := wr.buf.String()
+
+	if got != want {
+		t.Fatalf("want %s, got %s", want, got)
+	}
+}
+
+func TestLogger_Infof(t *testing.T) {
+	wr := &mockWriter{buf: &bytes.Buffer{}}
+	l, _ := logger.NewLogger(wr)
+
+	l.Infof("hello %d", 123)
+
+	want := "INFO: hello 123\n"
 	got := wr.buf.String()
 
 	if got != want {

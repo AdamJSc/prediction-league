@@ -2,7 +2,7 @@ package domain
 
 import (
 	"fmt"
-	"github.com/LUSHDigital/core-mage/env"
+	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"log"
 )
@@ -22,11 +22,9 @@ type Config struct {
 }
 
 // MustLoadConfigFromEnvPaths loads provided env paths and instantiates a new default config
-func MustLoadConfigFromEnvPaths(paths ...string) Config {
+func MustLoadConfigFromEnvPaths(l Logger, paths ...string) Config {
 	// attempt to load all provided env paths
-	for _, path := range paths {
-		env.Load(path)
-	}
+	loadEnvFromPaths(l, paths...)
 
 	// ensure that config parses correctly
 	var config Config
@@ -41,4 +39,12 @@ func MustLoadConfigFromEnvPaths(paths ...string) Config {
 	}
 
 	return config
+}
+
+func loadEnvFromPaths(l Logger, paths ...string) {
+	for _, fpath := range paths {
+		if err := godotenv.Load(fpath); err != nil {
+			l.Infof("could not load environment file: %s: skipping...\n", fpath)
+		}
+	}
 }

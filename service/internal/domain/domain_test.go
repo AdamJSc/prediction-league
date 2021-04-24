@@ -5,13 +5,15 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/LUSHDigital/core-mage/env"
-	"github.com/google/uuid"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/google/uuid"
+	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
+	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"prediction-league/service/internal/adapters/logger"
 	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/adapters/mysqldb/sqltypes"
@@ -45,7 +47,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// setup env
-	env.LoadTest(m, "infra/test.env")
+	loadTestEnvFromPaths("infra/test.env")
 
 	// load config
 	var config struct {
@@ -94,6 +96,58 @@ func TestMain(m *testing.M) {
 
 	// run test
 	os.Exit(m.Run())
+}
+
+// loadTestEnvFromPaths tries to load given env files, leaving current environment variables intact.
+func loadTestEnvFromPaths(paths ...string) {
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("cannot get working directory: %s", err.Error())
+	}
+	dir, err := backtrack(wd, "go.mod")
+	if err != nil {
+		log.Fatalf("cannot find module path: %s", err.Error())
+	}
+	for _, fpath := range paths {
+		fullpath := filepath.Join(dir, fpath)
+		if err := godotenv.Load(fullpath); err != nil {
+			log.Printf("could not load environment file: %s: skipping...\n", fullpath)
+		}
+	}
+}
+
+func backtrack(dir, fname string) (string, error) {
+	var search = func(dir, fname string) (bool, error) {
+		files, err := ioutil.ReadDir(dir)
+		if err != nil {
+			return false, err
+		}
+		for _, f := range files {
+			if f.IsDir() || f.Name() != fname {
+				continue
+			}
+			return true, nil
+		}
+		return false, nil
+	}
+
+	if !filepath.IsAbs(dir) {
+		return dir, fmt.Errorf("dir must be an absolute file path")
+	}
+	for {
+		found, err := search(dir, fname)
+		if err != nil {
+			return dir, err
+		}
+		if !found {
+			if dir == "/" {
+				return dir, fmt.Errorf("cannot find the file %q in any subsequent directories", fname)
+			}
+			dir = filepath.Dir(dir)
+			continue
+		}
+		return dir, nil
+	}
 }
 
 // truncate clears our test tables of all previous data between tests

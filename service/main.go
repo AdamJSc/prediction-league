@@ -27,14 +27,14 @@ import (
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	// setup env and config
-	config := domain.MustLoadConfigFromEnvPaths(".env", "infra/app.env")
-
 	// setup logger
 	l, err := logger.NewLogger(os.Stdout)
 	if err != nil {
 		log.Fatalf("cannot instantiate new logger: %s", err.Error())
 	}
+
+	// setup env and config
+	config := domain.MustLoadConfigFromEnvPaths(l, ".env", "infra/app.env")
 
 	// setup db connection
 	db, err := mysqldb.ConnectAndMigrate(config.MySQLURL, config.MigrationsURL, l)
