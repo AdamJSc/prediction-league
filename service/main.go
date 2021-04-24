@@ -23,7 +23,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// setup logger
-	l, err := logger.NewLogger(os.Stdout)
+	l, err := logger.NewLogger(os.Stdout, &logger.RealClock{})
 	if err != nil {
 		log.Fatalf("cannot instantiate new logger: %s", err.Error())
 	}
