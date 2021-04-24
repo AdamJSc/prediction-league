@@ -1,13 +1,11 @@
-package httph
-
-import "prediction-league/service/internal/app"
+package app
 
 // HTTPAppContainer defines the http application dependencies
 type HTTPAppContainer struct {
-	app.DependencyInjector
+	DependencyInjector
 }
 
 // NewHTTPAppContainer returns a new instance of the http app container.
-func NewHTTPAppContainer(deps app.DependencyInjector) *HTTPAppContainer {
+func NewHTTPAppContainer(deps DependencyInjector) *HTTPAppContainer {
 	return &HTTPAppContainer{DependencyInjector: deps}
 }

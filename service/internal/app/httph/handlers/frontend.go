@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"github.com/LUSHDigital/core/rest"
 	"net/http"
-	"prediction-league/service/internal/app/httph"
+	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/view"
 	"time"
 )
 
-func frontendIndexHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendIndexHandler(c *app.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
@@ -38,7 +38,7 @@ func frontendIndexHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter,
 	}
 }
 
-func frontendLeaderBoardHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendLeaderBoardHandler(c *app.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var writeResponse = func(data view.LeaderBoardPageData) {
 			p := newPage(r, c, "Leaderboard", "leaderboard", "Leaderboard", data)
@@ -66,7 +66,7 @@ func frontendLeaderBoardHandler(c *httph.HTTPAppContainer) func(w http.ResponseW
 	}
 }
 
-func frontendFAQHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendFAQHandler(c *app.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var writeResponse = func(data view.FAQPageData) {
 			p := newPage(r, c, "FAQ", "faq", "FAQ", data)
@@ -89,7 +89,7 @@ func frontendFAQHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 	}
 }
 
-func frontendJoinHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendJoinHandler(c *app.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
@@ -127,7 +127,7 @@ func frontendJoinHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, 
 	}
 }
 
-func frontendPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendPredictionHandler(c *app.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var writeResponse = func(data view.PredictionPageData) {
 			p := newPage(r, c, "Update My Prediction", "prediction", "Update My Prediction", data)
@@ -155,7 +155,7 @@ func frontendPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWr
 	}
 }
 
-func frontendShortCodeResetBeginHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendShortCodeResetBeginHandler(c *app.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	entryAgent := &domain.EntryAgent{EntryAgentInjector: c}
 	tokenAgent := &domain.TokenAgent{TokenAgentInjector: c}
 	commsAgent := &domain.CommunicationsAgent{CommunicationsAgentInjector: c}
@@ -236,7 +236,7 @@ func frontendShortCodeResetBeginHandler(c *httph.HTTPAppContainer) func(w http.R
 	}
 }
 
-func frontendShortCodeResetCompleteHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendShortCodeResetCompleteHandler(c *app.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	entryAgent := &domain.EntryAgent{EntryAgentInjector: c}
 	tokenAgent := &domain.TokenAgent{TokenAgentInjector: c}
 	commsAgent := &domain.CommunicationsAgent{CommunicationsAgentInjector: c}

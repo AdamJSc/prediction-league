@@ -6,11 +6,11 @@ import (
 	"github.com/LUSHDigital/core/rest"
 	"io/ioutil"
 	"net/http"
-	"prediction-league/service/internal/app/httph"
+	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/domain"
 )
 
-func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func createEntryHandler(c *app.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	agent := &domain.EntryAgent{EntryAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +81,7 @@ func createEntryHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r
 	}
 }
 
-func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func updateEntryPaymentDetailsHandler(c *app.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	entryAgent := &domain.EntryAgent{EntryAgentInjector: c}
 	commsAgent := &domain.CommunicationsAgent{CommunicationsAgentInjector: c}
 
@@ -145,7 +145,7 @@ func updateEntryPaymentDetailsHandler(c *httph.HTTPAppContainer) func(w http.Res
 	}
 }
 
-func createEntryPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func createEntryPredictionHandler(c *app.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	agent := &domain.EntryAgent{EntryAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -202,7 +202,7 @@ func createEntryPredictionHandler(c *httph.HTTPAppContainer) func(w http.Respons
 	}
 }
 
-func retrieveLatestEntryPredictionHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func retrieveLatestEntryPredictionHandler(c *app.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	agent := &domain.EntryAgent{EntryAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -252,7 +252,7 @@ func retrieveLatestEntryPredictionHandler(c *httph.HTTPAppContainer) func(w http
 	}
 }
 
-func approveEntryByShortCodeHandler(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func approveEntryByShortCodeHandler(c *app.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	agent := &domain.EntryAgent{EntryAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -281,7 +281,7 @@ func approveEntryByShortCodeHandler(c *httph.HTTPAppContainer) func(w http.Respo
 	}
 }
 
-func retrieveLatestScoredEntryPrediction(c *httph.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func retrieveLatestScoredEntryPrediction(c *app.HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// parse entry ID from route
 		var entryID string

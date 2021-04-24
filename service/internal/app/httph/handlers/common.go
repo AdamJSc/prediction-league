@@ -9,7 +9,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"prediction-league/service/internal/app/httph"
+	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/view"
 	"strconv"
@@ -49,7 +49,7 @@ func getRouteParam(r *http.Request, name string, value interface{}) error {
 }
 
 // contextFromRequest extracts data from a given request object and returns an inflated context
-func contextFromRequest(r *http.Request, c *httph.HTTPAppContainer) (context.Context, context.CancelFunc, error) {
+func contextFromRequest(r *http.Request, c *app.HTTPAppContainer) (context.Context, context.CancelFunc, error) {
 	ctx, cancel := domain.NewContext()
 
 	config := c.Config()
@@ -127,7 +127,7 @@ func isLoggedIn(r *http.Request) bool {
 }
 
 // newPage creates a new base page from the provided arguments
-func newPage(r *http.Request, c *httph.HTTPAppContainer, title, activePage, bannerTitle string, data interface{}) *view.Base {
+func newPage(r *http.Request, c *app.HTTPAppContainer, title, activePage, bannerTitle string, data interface{}) *view.Base {
 	// ignore error because if the realm doesn't exist the other agent methods will prevent core functionality anyway
 	// we only need the realm for populating a couple of trivial attributes which will be the least of our worries if any issues...
 	ctx, cancel, _ := contextFromRequest(r, c)

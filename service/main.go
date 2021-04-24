@@ -14,7 +14,6 @@ import (
 	"prediction-league/service/internal/adapters/mailgun"
 	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/app"
-	"prediction-league/service/internal/app/httph"
 	"prediction-league/service/internal/app/httph/handlers"
 	"prediction-league/service/internal/app/scheduler"
 	"prediction-league/service/internal/domain"
@@ -50,7 +49,7 @@ func main() {
 	flag.Parse()
 
 	// setup server
-	httpAppContainer := httph.NewHTTPAppContainer(dependencies{
+	httpAppContainer := app.NewHTTPAppContainer(dependencies{
 		config:                    config,
 		emailClient:               mailgun.NewClient(config.MailgunAPIKey),
 		emailQueue:                make(chan domain.Email),

@@ -4,12 +4,12 @@ import (
 	"github.com/robfig/cron/v3"
 	"log"
 	"prediction-league/service/internal/adapters/footballdataorg"
-	"prediction-league/service/internal/app/httph"
+	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/domain"
 )
 
 // LoadCron returns our populated cron
-func LoadCron(container *httph.HTTPAppContainer) *cron.Cron {
+func LoadCron(container *app.HTTPAppContainer) *cron.Cron {
 	c := cron.New()
 
 	for _, j := range mustGeneratePredictionWindowOpenJobs(container) {
@@ -39,7 +39,7 @@ type job struct {
 }
 
 // mustGenerateRetrieveLatestStandingsJobs generates the RetrieveLatestStandings jobs to be used by the cron
-func mustGenerateRetrieveLatestStandingsJobs(container *httph.HTTPAppContainer) []*job {
+func mustGenerateRetrieveLatestStandingsJobs(container *app.HTTPAppContainer) []*job {
 	config := container.Config()
 
 	// get the current season ID for all realms
@@ -72,7 +72,7 @@ func mustGenerateRetrieveLatestStandingsJobs(container *httph.HTTPAppContainer) 
 }
 
 // mustGeneratePredictionWindowOpenJobs generates the PredictionWindowOpen jobs to be used by the cron
-func mustGeneratePredictionWindowOpenJobs(container *httph.HTTPAppContainer) []*job {
+func mustGeneratePredictionWindowOpenJobs(container *app.HTTPAppContainer) []*job {
 	config := container.Config()
 
 	// get the current season ID for all realms
@@ -99,7 +99,7 @@ func mustGeneratePredictionWindowOpenJobs(container *httph.HTTPAppContainer) []*
 }
 
 // mustGeneratePredictionWindowClosingJobs generates the PredictionWindowClosing jobs to be used by the cron
-func mustGeneratePredictionWindowClosingJobs(container *httph.HTTPAppContainer) []*job {
+func mustGeneratePredictionWindowClosingJobs(container *app.HTTPAppContainer) []*job {
 	config := container.Config()
 
 	// get the current season ID for all realms

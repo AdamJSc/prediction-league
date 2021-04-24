@@ -7,12 +7,12 @@ import (
 	"github.com/LUSHDigital/core/rest"
 	"io/ioutil"
 	"net/http"
-	"prediction-league/service/internal/app/httph"
+	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/view"
 )
 
-func predictionLoginHandler(c *httph.HTTPAppContainer) func(http.ResponseWriter, *http.Request) {
+func predictionLoginHandler(c *app.HTTPAppContainer) func(http.ResponseWriter, *http.Request) {
 	entryAgent := &domain.EntryAgent{EntryAgentInjector: c}
 	tokenAgent := &domain.TokenAgent{TokenAgentInjector: c}
 
