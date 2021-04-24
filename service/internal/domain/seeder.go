@@ -2,8 +2,8 @@ package domain
 
 import (
 	"fmt"
-	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
+	"prediction-league/service/internal/adapters/mysqldb/sqltypes"
 	"time"
 )
 

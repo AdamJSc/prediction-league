@@ -3,10 +3,10 @@ package domain_test
 import (
 	"context"
 	"fmt"
-	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
 	gocmp "github.com/google/go-cmp/cmp"
 	"gotest.tools/assert/cmp"
+	"prediction-league/service/internal/adapters/mysqldb/sqltypes"
 	"prediction-league/service/internal/domain"
 	"sort"
 	"testing"

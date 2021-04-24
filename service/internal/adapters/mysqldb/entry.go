@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/LUSHDigital/core-sql/sqltypes"
 	"golang.org/x/net/context"
 	"math/rand"
+	"prediction-league/service/internal/adapters/mysqldb/sqltypes"
 	"prediction-league/service/internal/domain"
 	"time"
 )

@@ -3,8 +3,8 @@ package domain
 import (
 	"context"
 	"errors"
-	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
+	"prediction-league/service/internal/adapters/mysqldb/sqltypes"
 	"sort"
 	"time"
 )
