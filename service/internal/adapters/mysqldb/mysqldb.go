@@ -1,21 +1,50 @@
 package mysqldb
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/go-sql-driver/mysql"
 	"math/rand"
 	"prediction-league/service/internal/domain"
 	"strings"
 	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/golang-migrate/migrate/v4"
+	migmysql "github.com/golang-migrate/migrate/v4/database/mysql"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-// Agent defines the methods required by a mysql agent
-type DBAgent interface {
-	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
-	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
+// ConnectAndMigrate returns a MySQL database connection from the provided connection URLs
+func ConnectAndMigrate(mysqlURL, migURL string, l domain.Logger) (*sql.DB, error) {
+	db, err := sql.Open("mysql", mysqlURL)
+	if err != nil {
+		return nil, fmt.Errorf("cannot open db connection: %w", err)
+	}
+	driver, err := migmysql.WithInstance(db, &migmysql.Config{})
+	if err != nil {
+		return nil, fmt.Errorf("cannot open mysql driver instance: %w", err)
+	}
+	mig, err := migrate.NewWithDatabaseInstance(
+		migURL,
+		"mysql",
+		driver,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("cannot open migration instance: %w", err)
+	}
+
+	if err := mig.Up(); err != nil {
+		switch err {
+		case migrate.ErrNoChange:
+			l.Infof("database migrations: no change")
+			return db, nil
+		default:
+			return nil, fmt.Errorf("cannot run migration up: %w", err)
+		}
+	}
+
+	return db, nil
 }
 
 // dbWhereStmt returns the WHERE clause portion of an SQL statement as a string, plus the parameters to

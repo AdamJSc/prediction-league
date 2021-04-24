@@ -1,6 +1,7 @@
 package mysqldb
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/LUSHDigital/core-sql/sqltypes"
@@ -29,7 +30,7 @@ var entryDBFields = []string{
 
 // EntryRepo defines our DB-backed Entry data store
 type EntryRepo struct {
-	db DBAgent
+	db *sql.DB
 }
 
 // Insert inserts a new Entry into the database
@@ -193,6 +194,6 @@ func generateRandomAlphaNumericString(length int) string {
 }
 
 // NewEntryRepo instantiates a new EntryRepo with the provided DB agent
-func NewEntryRepo(db DBAgent) *EntryRepo {
+func NewEntryRepo(db *sql.DB) *EntryRepo {
 	return &EntryRepo{db: db}
 }

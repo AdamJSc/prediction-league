@@ -2,18 +2,19 @@ package domain_test
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/LUSHDigital/core-mage/env"
-	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core-sql/sqltest"
 	"github.com/LUSHDigital/core-sql/sqltypes"
 	"github.com/LUSHDigital/uuid"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/kelseyhightower/envconfig"
 	"log"
 	"os"
+	"prediction-league/service/internal/adapters/logger"
 	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/domain"
 	"reflect"
@@ -23,7 +24,7 @@ import (
 )
 
 var (
-	db         *coresql.DB
+	db         *sql.DB
 	truncator  sqltest.Truncator
 	utc        *time.Location
 	templates  *domain.Templates
@@ -62,15 +63,21 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
+	l, err := logger.NewLogger(os.Stdout)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// setup db connection
-	db = coresql.MustOpen("mysql", config.MySQLURL)
-	driver, _ := mysql.WithInstance(db.DB, &mysql.Config{})
-	mig, _ := migrate.NewWithDatabaseInstance(
-		config.MigrationsURL,
-		"mysql",
-		driver,
-	)
-	coresql.MustMigrateUp(mig)
+	db, err = mysqldb.ConnectAndMigrate(config.MySQLURL, config.MigrationsURL, l)
+	if err != nil {
+		switch {
+		case errors.Is(err, migrate.ErrNoChange):
+			log.Println("database migration: no changes")
+		default:
+			log.Fatalf("failed to connect and migrate database: %s", err.Error())
+		}
+	}
 
 	domain.MustInflate()
 
@@ -333,7 +340,7 @@ func (t *testInjector) TokenRepo() domain.TokenRepository {
 func (t *testInjector) EmailQueue() chan domain.Email { return t.queue }
 func (t *testInjector) Template() *domain.Templates   { return t.templates }
 
-func newTestInjector(t *testing.T, r domain.Realm, tpl *domain.Templates, db mysqldb.DBAgent) *testInjector {
+func newTestInjector(t *testing.T, r domain.Realm, tpl *domain.Templates, db *sql.DB) *testInjector {
 	return &testInjector{
 		config:    newTestConfig(t, r),
 		queue:     make(chan domain.Email, 1),

@@ -1,6 +1,7 @@
 package mysqldb
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -107,7 +108,7 @@ var scoredEntryPredictionDBFields = []string{
 
 // ScoredEntryPredictionRepo defines our DB-backed ScoredEntryPredictions data store
 type ScoredEntryPredictionRepo struct {
-	db DBAgent
+	db *sql.DB
 }
 
 // Insert inserts a new ScoredEntryPrediction into the database
@@ -372,6 +373,6 @@ func (s *ScoredEntryPredictionRepo) SelectByEntryIDAndRoundNumber(ctx context.Co
 }
 
 // NewScoredEntryPredictionRepo instantiates a new ScoredEntryPredictionRepo with the provided DB agent
-func NewScoredEntryPredictionRepo(db DBAgent) *ScoredEntryPredictionRepo {
+func NewScoredEntryPredictionRepo(db *sql.DB) *ScoredEntryPredictionRepo {
 	return &ScoredEntryPredictionRepo{db: db}
 }

@@ -1,6 +1,7 @@
 package mysqldb
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,7 +20,7 @@ var standingsDBFields = []string{
 
 // StandingsRepo defines our DB-backed Standings data store
 type StandingsRepo struct {
-	db DBAgent
+	db *sql.DB
 }
 
 // Insert inserts a new Standings into the database
@@ -175,6 +176,6 @@ func (s *StandingsRepo) SelectLatestBySeasonIDAndTimestamp(ctx context.Context, 
 }
 
 // NewStandingsRepo instantiates a new StandingsRepo with the provided DB agent
-func NewStandingsRepo(db DBAgent) *StandingsRepo {
+func NewStandingsRepo(db *sql.DB) *StandingsRepo {
 	return &StandingsRepo{db: db}
 }

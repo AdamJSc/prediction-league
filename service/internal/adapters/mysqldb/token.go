@@ -1,6 +1,7 @@
 package mysqldb
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"golang.org/x/net/context"
@@ -17,7 +18,7 @@ var tokenDBFields = []string{
 
 // TokenRepo defines our DB-backed Token data store
 type TokenRepo struct {
-	db DBAgent
+	db *sql.DB
 }
 
 // Insert inserts a new Token into the database
@@ -126,6 +127,6 @@ func (t *TokenRepo) GenerateUniqueTokenID(ctx context.Context) (string, error) {
 }
 
 // NewTokenRepo instantiates a new TokenRepo with the provided DB agent
-func NewTokenRepo(db DBAgent) *TokenRepo {
+func NewTokenRepo(db *sql.DB) *TokenRepo {
 	return &TokenRepo{db: db}
 }

@@ -1,6 +1,7 @@
 package mysqldb
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,7 +18,7 @@ var entryPredictionDBFields = []string{
 
 // EntryPredictionRepo defines our DB-backed EntryPredictions data store
 type EntryPredictionRepo struct {
-	db DBAgent
+	db *sql.DB
 }
 
 // Insert inserts a new EntryPrediction into the database
@@ -142,6 +143,6 @@ func (e *EntryPredictionRepo) SelectByEntryIDAndTimestamp(ctx context.Context, e
 }
 
 // NewEntryPredictionRepo instantiates a new EntryPredictionRepo with the provided DB agent
-func NewEntryPredictionRepo(db DBAgent) *EntryPredictionRepo {
+func NewEntryPredictionRepo(db *sql.DB) *EntryPredictionRepo {
 	return &EntryPredictionRepo{db: db}
 }

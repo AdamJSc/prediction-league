@@ -2,10 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
+	"github.com/golang-migrate/migrate/v4"
 	"log"
 	"net/http"
+	"os"
+	"prediction-league/service/internal/adapters/logger"
 	"prediction-league/service/internal/adapters/mailgun"
 	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/app"
@@ -16,11 +20,7 @@ import (
 	"time"
 
 	"github.com/LUSHDigital/core"
-	coresql "github.com/LUSHDigital/core-sql"
 	"github.com/LUSHDigital/core/workers/httpsrv"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/gorilla/mux"
 )
 
@@ -30,18 +30,23 @@ func main() {
 	// setup env and config
 	config := domain.MustLoadConfigFromEnvPaths(".env", "infra/app.env")
 
-	// setup db connection
-	db := coresql.MustOpen("mysql", config.MySQLURL)
-	driver, _ := mysql.WithInstance(db.DB, &mysql.Config{})
-	mig, err := migrate.NewWithDatabaseInstance(
-		config.MigrationsURL,
-		"mysql",
-		driver,
-	)
+	// setup logger
+	l, err := logger.NewLogger(os.Stdout)
 	if err != nil {
-		log.Fatal(fmt.Errorf("cannot open sql connection: %w", err))
+		log.Fatalf("cannot instantiate new logger: %s", err.Error())
 	}
-	coresql.MustMigrateUp(mig)
+
+	// setup db connection
+	db, err := mysqldb.ConnectAndMigrate(config.MySQLURL, config.MigrationsURL, l)
+	if err != nil {
+		switch {
+		case errors.Is(err, migrate.ErrNoChange):
+			log.Println("database migration: no changes")
+		default:
+			log.Fatalf("failed to connect and migrate database: %s", err.Error())
+		}
+	}
+	defer db.Close()
 
 	// permit flag that provides a debug mode by overriding timestamp for time-sensitive operations
 	ts := flag.String("ts", "", "override timestamp used by time-sensitive operations, in the format yyyymmddhhmmss")
@@ -67,10 +72,10 @@ func main() {
 	entryAgent := &domain.EntryAgent{EntryAgentInjector: httpAppContainer}
 	seeds, err := domain.GenerateSeedEntries()
 	if err != nil {
-		log.Fatal(fmt.Errorf("cannot generate entries to seed: %w", err))
+		log.Fatalf("cannot generate entries to seed: %s", err.Error())
 	}
 	if err := entryAgent.SeedEntries(ctxWithTimeout, seeds); err != nil {
-		log.Fatal(fmt.Errorf("cannot seed entries: %w", err))
+		log.Fatalf("cannot seed entries: %s", err.Error())
 	}
 
 	domain.MustInflate()
