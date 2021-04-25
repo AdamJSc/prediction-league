@@ -135,6 +135,12 @@ func frontendPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWriter, 
 			}
 		}
 
+		// setup agents
+		tokenAgent, err := domain.NewTokenAgent(c.TokenRepo())
+		if err != nil {
+			internalError(err).writeTo(w)
+		}
+
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
 			writeResponse(view.PredictionPageData{Err: err})
@@ -146,7 +152,7 @@ func frontendPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWriter, 
 			ctx,
 			getAuthCookieValue(r),
 			&domain.EntryAgent{EntryAgentInjector: c},
-			&domain.TokenAgent{TokenAgentInjector: c},
+			tokenAgent,
 		)
 
 		writeResponse(data)
@@ -155,7 +161,6 @@ func frontendPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWriter, 
 
 func frontendShortCodeResetBeginHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	entryAgent := &domain.EntryAgent{EntryAgentInjector: c}
-	tokenAgent := &domain.TokenAgent{TokenAgentInjector: c}
 	commsAgent := &domain.CommunicationsAgent{CommunicationsAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -165,6 +170,12 @@ func frontendShortCodeResetBeginHandler(c *HTTPAppContainer) func(w http.Respons
 			if err := c.Template().ExecuteTemplate(w, "short-code-reset-begin", p); err != nil {
 				internalError(err).writeTo(w)
 			}
+		}
+
+		// setup agents
+		tokenAgent, err := domain.NewTokenAgent(c.TokenRepo())
+		if err != nil {
+			internalError(err).writeTo(w)
 		}
 
 		// parse request body (standard form)
@@ -236,7 +247,6 @@ func frontendShortCodeResetBeginHandler(c *HTTPAppContainer) func(w http.Respons
 
 func frontendShortCodeResetCompleteHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	entryAgent := &domain.EntryAgent{EntryAgentInjector: c}
-	tokenAgent := &domain.TokenAgent{TokenAgentInjector: c}
 	commsAgent := &domain.CommunicationsAgent{CommunicationsAgentInjector: c}
 
 	invalidTokenErr := errors.New("oh no! looks like your token is invalid :'( please try resetting your short code again")
@@ -248,6 +258,12 @@ func frontendShortCodeResetCompleteHandler(c *HTTPAppContainer) func(w http.Resp
 			if err := c.Template().ExecuteTemplate(w, "short-code-reset-complete", p); err != nil {
 				internalError(err).writeTo(w)
 			}
+		}
+
+		// setup agents
+		tokenAgent, err := domain.NewTokenAgent(c.TokenRepo())
+		if err != nil {
+			internalError(err).writeTo(w)
 		}
 
 		// parse reset token from route

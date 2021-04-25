@@ -35,19 +35,14 @@ type TokenRepository interface {
 	GenerateUniqueTokenID(ctx context.Context) (string, error)
 }
 
-// TokenAgentInjector defines the dependencies required by our TokenAgent
-type TokenAgentInjector interface {
-	TokenRepo() TokenRepository
-}
-
 // TokenAgent defines the behaviours for handling Tokens
-type TokenAgent struct{ TokenAgentInjector }
+type TokenAgent struct {
+	tr TokenRepository
+}
 
 // GenerateToken generates a new unique token
 func (t *TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (*Token, error) {
-	tokenRepo := t.TokenRepo()
-
-	id, err := tokenRepo.GenerateUniqueTokenID(ctx)
+	id, err := t.tr.GenerateUniqueTokenID(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +62,7 @@ func (t *TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (
 		ExpiresAt: now.Add(tokenDur),
 	}
 
-	if err := tokenRepo.Insert(ctx, &token); err != nil {
+	if err := t.tr.Insert(ctx, &token); err != nil {
 		return nil, domainErrorFromRepositoryError(err)
 	}
 
@@ -76,9 +71,7 @@ func (t *TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (
 
 // RetrieveTokenByID retrieves an existing token by the provided ID
 func (t *TokenAgent) RetrieveTokenByID(ctx context.Context, id string) (*Token, error) {
-	tokenRepo := t.TokenRepo()
-
-	tokens, err := tokenRepo.Select(ctx, map[string]interface{}{
+	tokens, err := t.tr.Select(ctx, map[string]interface{}{
 		"id": id,
 	}, false)
 	if err != nil {
@@ -94,9 +87,7 @@ func (t *TokenAgent) RetrieveTokenByID(ctx context.Context, id string) (*Token, 
 
 // DeleteToken removes the provided token
 func (t *TokenAgent) DeleteToken(ctx context.Context, token Token) error {
-	tokenRepo := t.TokenRepo()
-
-	err := tokenRepo.DeleteByID(ctx, token.ID)
+	err := t.tr.DeleteByID(ctx, token.ID)
 	if err != nil {
 		return domainErrorFromRepositoryError(err)
 	}
@@ -106,9 +97,7 @@ func (t *TokenAgent) DeleteToken(ctx context.Context, token Token) error {
 
 // DeleteTokensExpiredAfter removes tokens that have expired since the provide timestamp
 func (t *TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp time.Time) error {
-	tokenRepo := t.TokenRepo()
-
-	tokens, err := tokenRepo.Select(ctx, map[string]interface{}{
+	tokens, err := t.tr.Select(ctx, map[string]interface{}{
 		"expires_at": DBQueryCondition{
 			Operator: "<=",
 			Operand:  timestamp,
@@ -119,10 +108,17 @@ func (t *TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp tim
 	}
 
 	for _, token := range tokens {
-		if err := tokenRepo.DeleteByID(ctx, token.ID); err != nil {
+		if err := t.tr.DeleteByID(ctx, token.ID); err != nil {
 			return domainErrorFromRepositoryError(err)
 		}
 	}
 
 	return nil
+}
+
+func NewTokenAgent(tr TokenRepository) (*TokenAgent, error) {
+	if tr == nil {
+		return nil, fmt.Errorf("token repository: %w", ErrIsNil)
+	}
+	return &TokenAgent{tr: tr}, nil
 }

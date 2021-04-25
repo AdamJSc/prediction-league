@@ -2,18 +2,29 @@ package domain_test
 
 import (
 	"context"
+	"errors"
 	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
 	"testing"
 	"time"
 )
 
+func TestNewTokenAgent(t *testing.T) {
+	t.Run("passing nil must return expected error", func(t *testing.T) {
+		_, gotErr := domain.NewTokenAgent(nil)
+		if !errors.Is(gotErr, domain.ErrIsNil) {
+			t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+		}
+	})
+}
+
 func TestTokenAgent_GenerateToken(t *testing.T) {
 	defer truncate(t)
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.TokenAgent{TokenAgentInjector: injector}
+	agent, err := domain.NewTokenAgent(tr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// arbitrary timestamp that isn't the current moment
 	ts := time.Now().Add(-24 * time.Hour)
@@ -109,9 +120,10 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 	defer truncate(t)
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.TokenAgent{TokenAgentInjector: injector}
+	agent, err := domain.NewTokenAgent(tr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	token := generateTestToken()
 	if err := tr.Insert(context.Background(), token); err != nil {
@@ -158,9 +170,10 @@ func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 func TestTokenAgent_DeleteToken(t *testing.T) {
 	defer truncate(t)
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.TokenAgent{TokenAgentInjector: injector}
+	agent, err := domain.NewTokenAgent(tr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	token := generateTestToken()
 	if err := tr.Insert(context.Background(), token); err != nil {
@@ -186,9 +199,10 @@ func TestTokenAgent_DeleteToken(t *testing.T) {
 func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 	defer truncate(t)
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.TokenAgent{TokenAgentInjector: injector}
+	agent, err := domain.NewTokenAgent(tr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	now := time.Now().Truncate(time.Second)
 
