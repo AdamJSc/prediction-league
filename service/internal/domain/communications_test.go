@@ -15,7 +15,7 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 	defer truncate(t)
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 
 	testPaymentDetails := domain.PaymentDetails{
 		Amount:       "£12.34",
@@ -195,7 +195,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 	defer truncate(t)
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 
 	entry := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
@@ -432,7 +432,7 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 	defer truncate(t)
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 
 	agent := &domain.CommunicationsAgent{
 		CommunicationsAgentInjector: injector,
@@ -556,7 +556,7 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 	defer truncate(t)
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 
 	agent := &domain.CommunicationsAgent{
 		CommunicationsAgentInjector: injector,
@@ -679,7 +679,7 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 	defer truncate(t)
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 
 	loc, err := time.LoadLocation("Europe/London")
 	if err != nil {
@@ -929,7 +929,7 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 	defer truncate(t)
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 
 	loc, err := time.LoadLocation("Europe/London")
 	if err != nil {

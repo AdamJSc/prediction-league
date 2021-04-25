@@ -3,7 +3,6 @@ package domain_test
 import (
 	"context"
 	"gotest.tools/assert/cmp"
-	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/domain"
 	"testing"
 	"time"
@@ -13,7 +12,7 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 	defer truncate(t)
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 	agent := &domain.TokenAgent{TokenAgentInjector: injector}
 
 	// arbitrary timestamp that isn't the current moment
@@ -50,7 +49,7 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 		}
 
 		// inserting same token a second time must fail
-		err = mysqldb.NewTokenRepo(db).Insert(ctx, token)
+		err = tr.Insert(ctx, token)
 		if !cmp.ErrorType(err, domain.DuplicateDBRecordError{})().Success() {
 			expectedTypeOfGot(t, domain.DuplicateDBRecordError{}, err)
 		}
@@ -87,7 +86,7 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 		}
 
 		// inserting same token a second time must fail
-		err = mysqldb.NewTokenRepo(db).Insert(ctx, token)
+		err = tr.Insert(ctx, token)
 		if !cmp.ErrorType(err, domain.DuplicateDBRecordError{})().Success() {
 			expectedTypeOfGot(t, domain.DuplicateDBRecordError{}, err)
 		}
@@ -111,12 +110,11 @@ func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 	defer truncate(t)
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 	agent := &domain.TokenAgent{TokenAgentInjector: injector}
 
 	token := generateTestToken()
-	tokenRepo := mysqldb.NewTokenRepo(db)
-	if err := tokenRepo.Insert(context.Background(), token); err != nil {
+	if err := tr.Insert(context.Background(), token); err != nil {
 		t.Fatal(err)
 	}
 
@@ -161,12 +159,11 @@ func TestTokenAgent_DeleteToken(t *testing.T) {
 	defer truncate(t)
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 	agent := &domain.TokenAgent{TokenAgentInjector: injector}
 
 	token := generateTestToken()
-	tokenRepo := mysqldb.NewTokenRepo(db)
-	if err := tokenRepo.Insert(context.Background(), token); err != nil {
+	if err := tr.Insert(context.Background(), token); err != nil {
 		t.Fatal(err)
 	}
 
@@ -179,7 +176,7 @@ func TestTokenAgent_DeleteToken(t *testing.T) {
 		}
 
 		// token must have been deleted
-		err := tokenRepo.ExistsByID(ctx, token.ID)
+		err := tr.ExistsByID(ctx, token.ID)
 		if !cmp.ErrorType(err, domain.MissingDBRecordError{})().Success() {
 			expectedTypeOfGot(t, domain.MissingDBRecordError{}, err)
 		}
@@ -190,7 +187,7 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 	defer truncate(t)
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 	agent := &domain.TokenAgent{TokenAgentInjector: injector}
 
 	now := time.Now().Truncate(time.Second)
@@ -216,9 +213,8 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 		token3,
 	}
 
-	tokenRepo := mysqldb.NewTokenRepo(db)
 	for _, token := range tokens {
-		if err := tokenRepo.Insert(context.Background(), token); err != nil {
+		if err := tr.Insert(context.Background(), token); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -232,19 +228,19 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 		}
 
 		// token 1 must have been deleted
-		err := tokenRepo.ExistsByID(ctx, token1.ID)
+		err := tr.ExistsByID(ctx, token1.ID)
 		if !cmp.ErrorType(err, domain.MissingDBRecordError{})().Success() {
 			expectedTypeOfGot(t, domain.MissingDBRecordError{}, err)
 		}
 
 		// token 2 must have been deleted
-		err = tokenRepo.ExistsByID(ctx, token2.ID)
+		err = tr.ExistsByID(ctx, token2.ID)
 		if !cmp.ErrorType(err, domain.MissingDBRecordError{})().Success() {
 			expectedTypeOfGot(t, domain.MissingDBRecordError{}, err)
 		}
 
 		// token 3 must have been deleted
-		if err := tokenRepo.ExistsByID(ctx, token3.ID); err != nil {
+		if err := tr.ExistsByID(ctx, token3.ID); err != nil {
 			t.Fatal(err)
 		}
 	})

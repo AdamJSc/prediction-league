@@ -127,6 +127,9 @@ func (t *TokenRepo) GenerateUniqueTokenID(ctx context.Context) (string, error) {
 }
 
 // NewTokenRepo instantiates a new TokenRepo with the provided DB agent
-func NewTokenRepo(db *sql.DB) *TokenRepo {
-	return &TokenRepo{db: db}
+func NewTokenRepo(db *sql.DB) (*TokenRepo, error) {
+	if db == nil {
+		return nil, fmt.Errorf("db: %w", domain.ErrIsNil)
+	}
+	return &TokenRepo{db: db}, nil
 }

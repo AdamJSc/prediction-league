@@ -47,6 +47,27 @@ func main() {
 	ts := flag.String("ts", "", "override timestamp used by time-sensitive operations, in the format yyyymmddhhmmss")
 	flag.Parse()
 
+	er, err := mysqldb.NewEntryRepo(db)
+	if err != nil {
+		log.Fatalf("cannot instantiate entry repo: %s", err.Error())
+	}
+	epr, err := mysqldb.NewEntryPredictionRepo(db)
+	if err != nil {
+		log.Fatalf("cannot instantiate entry prediction repo: %s", err.Error())
+	}
+	sepr, err := mysqldb.NewScoredEntryPredictionRepo(db)
+	if err != nil {
+		log.Fatalf("cannot instantiate score entry prediction repo: %s", err.Error())
+	}
+	sr, err := mysqldb.NewStandingsRepo(db)
+	if err != nil {
+		log.Fatalf("cannot instantiate standings repo: %s", err.Error())
+	}
+	tr, err := mysqldb.NewTokenRepo(db)
+	if err != nil {
+		log.Fatalf("cannot instantiate token repo: %s", err.Error())
+	}
+
 	// setup server
 	httpAppContainer := app.NewHTTPAppContainer(dependencies{
 		config:                    config,
@@ -55,11 +76,11 @@ func main() {
 		router:                    mux.NewRouter(),
 		templates:                 domain.MustParseTemplates("./service/views"),
 		debugTimestamp:            parseTimeString(ts),
-		standingsRepo:             mysqldb.NewStandingsRepo(db),
-		entryRepo:                 mysqldb.NewEntryRepo(db),
-		entryPredictionRepo:       mysqldb.NewEntryPredictionRepo(db),
-		scoredEntryPredictionRepo: mysqldb.NewScoredEntryPredictionRepo(db),
-		tokenRepo:                 mysqldb.NewTokenRepo(db),
+		standingsRepo:             sr,
+		entryRepo:                 er,
+		entryPredictionRepo:       epr,
+		scoredEntryPredictionRepo: sepr,
+		tokenRepo:                 tr,
 	})
 
 	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)

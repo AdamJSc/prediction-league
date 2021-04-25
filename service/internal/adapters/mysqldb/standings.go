@@ -176,6 +176,9 @@ func (s *StandingsRepo) SelectLatestBySeasonIDAndTimestamp(ctx context.Context, 
 }
 
 // NewStandingsRepo instantiates a new StandingsRepo with the provided DB agent
-func NewStandingsRepo(db *sql.DB) *StandingsRepo {
-	return &StandingsRepo{db: db}
+func NewStandingsRepo(db *sql.DB) (*StandingsRepo, error) {
+	if db == nil {
+		return nil, fmt.Errorf("db: %w", domain.ErrIsNil)
+	}
+	return &StandingsRepo{db: db}, nil
 }

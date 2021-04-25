@@ -14,7 +14,7 @@ func TestStandingsAgent_CreateStandings(t *testing.T) {
 	defer truncate(t)
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 	agent := &domain.StandingsAgent{StandingsAgentInjector: injector}
 
 	standings := generateTestStandings(t)
@@ -64,7 +64,7 @@ func TestStandingsAgent_UpdateStandings(t *testing.T) {
 	defer truncate(t)
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 	agent := &domain.StandingsAgent{StandingsAgentInjector: injector}
 
 	standings := insertStandings(t, generateTestStandings(t))
@@ -135,7 +135,7 @@ func TestStandingsAgent_RetrieveStandingsByID(t *testing.T) {
 	defer truncate(t)
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 	agent := &domain.StandingsAgent{StandingsAgentInjector: injector}
 
 	standings := insertStandings(t, generateTestStandings(t))
@@ -192,7 +192,7 @@ func TestStandingsAgent_RetrieveStandingsBySeasonAndRoundNumber(t *testing.T) {
 	defer truncate(t)
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 	agent := &domain.StandingsAgent{StandingsAgentInjector: injector}
 
 	// season ID won't match our method parameters, so this won't be returned
@@ -249,7 +249,7 @@ func TestStandingsAgent_RetrieveLatestStandingsBySeasonIDAndTimestamp(t *testing
 	defer truncate(t)
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 	agent := &domain.StandingsAgent{StandingsAgentInjector: injector}
 
 	baseDate := time.Now().Truncate(time.Second)

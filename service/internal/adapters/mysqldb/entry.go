@@ -194,6 +194,9 @@ func generateRandomAlphaNumericString(length int) string {
 }
 
 // NewEntryRepo instantiates a new EntryRepo with the provided DB agent
-func NewEntryRepo(db *sql.DB) *EntryRepo {
-	return &EntryRepo{db: db}
+func NewEntryRepo(db *sql.DB) (*EntryRepo, error) {
+	if db == nil {
+		return nil, fmt.Errorf("db: %w", domain.ErrIsNil)
+	}
+	return &EntryRepo{db: db}, nil
 }

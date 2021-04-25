@@ -26,6 +26,11 @@ import (
 
 var (
 	db         *sql.DB
+	er         domain.EntryRepository
+	epr        domain.EntryPredictionRepository
+	sepr       domain.ScoredEntryPredictionRepository
+	sr         domain.StandingsRepository
+	tr         domain.TokenRepository
 	utc        *time.Location
 	templates  *domain.Templates
 	testSeason domain.Season
@@ -77,6 +82,31 @@ func TestMain(m *testing.M) {
 		default:
 			log.Fatalf("failed to connect and migrate database: %s", err.Error())
 		}
+	}
+
+	er, err = mysqldb.NewEntryRepo(db)
+	if err != nil {
+		log.Fatalf("cannot instantiate new entry repo: %s", err.Error())
+	}
+
+	epr, err = mysqldb.NewEntryPredictionRepo(db)
+	if err != nil {
+		log.Fatalf("cannot instantiate new entry prediction repo: %s", err.Error())
+	}
+
+	sepr, err = mysqldb.NewScoredEntryPredictionRepo(db)
+	if err != nil {
+		log.Fatalf("cannot instantiate new scored entry prediction repo: %s", err.Error())
+	}
+
+	sr, err = mysqldb.NewStandingsRepo(db)
+	if err != nil {
+		log.Fatalf("cannot instantiate new standings repo: %s", err.Error())
+	}
+
+	tr, err = mysqldb.NewTokenRepo(db)
+	if err != nil {
+		log.Fatalf("cannot instantiate new token repo: %s", err.Error())
 	}
 
 	domain.MustInflate()
@@ -240,7 +270,7 @@ func insertStandings(t *testing.T, standings domain.Standings) domain.Standings 
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := mysqldb.NewStandingsRepo(db).Insert(ctx, &standings); err != nil {
+	if err := sr.Insert(ctx, &standings); err != nil {
 		t.Fatal(err)
 	}
 
@@ -254,7 +284,7 @@ func updateStandings(t *testing.T, standings domain.Standings) domain.Standings 
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := mysqldb.NewStandingsRepo(db).Update(ctx, &standings); err != nil {
+	if err := sr.Update(ctx, &standings); err != nil {
 		t.Fatal(err)
 	}
 
@@ -273,8 +303,7 @@ func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail 
 		t.Fatal(err)
 	}
 
-	entryRepo := mysqldb.NewEntryRepo(db)
-	shortCode, err := entryRepo.GenerateUniqueShortCode(ctx)
+	shortCode, err := er.GenerateUniqueShortCode(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -304,7 +333,12 @@ func insertEntry(t *testing.T, entry domain.Entry) domain.Entry {
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := mysqldb.NewEntryRepo(db).Insert(ctx, &entry); err != nil {
+	er, err := mysqldb.NewEntryRepo(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := er.Insert(ctx, &entry); err != nil {
 		t.Fatal(err)
 	}
 
@@ -332,7 +366,7 @@ func insertEntryPrediction(t *testing.T, entryPrediction domain.EntryPrediction)
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := mysqldb.NewEntryPredictionRepo(db).Insert(ctx, &entryPrediction); err != nil {
+	if err := epr.Insert(ctx, &entryPrediction); err != nil {
 		t.Fatal(err)
 	}
 
@@ -359,7 +393,7 @@ func insertScoredEntryPrediction(t *testing.T, scoredEntryPrediction domain.Scor
 	ctx, cancel := testContextDefault(t)
 	defer cancel()
 
-	if err := mysqldb.NewScoredEntryPredictionRepo(db).Insert(ctx, &scoredEntryPrediction); err != nil {
+	if err := sepr.Insert(ctx, &scoredEntryPrediction); err != nil {
 		t.Fatal(err)
 	}
 
@@ -392,16 +426,17 @@ func (t *testInjector) TokenRepo() domain.TokenRepository {
 func (t *testInjector) EmailQueue() chan domain.Email { return t.queue }
 func (t *testInjector) Template() *domain.Templates   { return t.templates }
 
-func newTestInjector(t *testing.T, r domain.Realm, tpl *domain.Templates, db *sql.DB) *testInjector {
+func newTestInjector(t *testing.T, r domain.Realm, tpl *domain.Templates) *testInjector {
+	t.Helper()
 	return &testInjector{
 		config:    newTestConfig(t, r),
 		queue:     make(chan domain.Email, 1),
 		templates: tpl,
-		er:        mysqldb.NewEntryRepo(db),
-		epr:       mysqldb.NewEntryPredictionRepo(db),
-		sr:        mysqldb.NewStandingsRepo(db),
-		sepr:      mysqldb.NewScoredEntryPredictionRepo(db),
-		tr:        mysqldb.NewTokenRepo(db),
+		er:        er,
+		epr:       epr,
+		sr:        sr,
+		sepr:      sepr,
+		tr:        tr,
 	}
 }
 

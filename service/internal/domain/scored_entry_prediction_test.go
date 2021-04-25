@@ -14,7 +14,7 @@ func TestScoredEntryPredictionAgent_CreateScoredEntryPrediction(t *testing.T) {
 	defer truncate(t)
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 	agent := &domain.ScoredEntryPredictionAgent{
 		ScoredEntryPredictionAgentInjector: injector,
 	}
@@ -108,7 +108,7 @@ func TestScoredEntryPredictionAgent_UpdateScoredEntryPrediction(t *testing.T) {
 	defer truncate(t)
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 	agent := &domain.ScoredEntryPredictionAgent{
 		ScoredEntryPredictionAgentInjector: injector,
 	}
@@ -182,7 +182,7 @@ func TestScoredEntryPredictionAgent_RetrieveScoredEntryPredictionByIDs(t *testin
 	defer truncate(t)
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 	agent := &domain.ScoredEntryPredictionAgent{
 		ScoredEntryPredictionAgentInjector: injector,
 	}
@@ -250,7 +250,7 @@ func TestScoredEntryPredictionAgent_RetrieveLatestScoredEntryPredictionByEntryID
 	defer truncate(t)
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 	agent := &domain.ScoredEntryPredictionAgent{
 		ScoredEntryPredictionAgentInjector: injector,
 	}

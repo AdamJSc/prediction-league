@@ -143,6 +143,9 @@ func (e *EntryPredictionRepo) SelectByEntryIDAndTimestamp(ctx context.Context, e
 }
 
 // NewEntryPredictionRepo instantiates a new EntryPredictionRepo with the provided DB agent
-func NewEntryPredictionRepo(db *sql.DB) *EntryPredictionRepo {
-	return &EntryPredictionRepo{db: db}
+func NewEntryPredictionRepo(db *sql.DB) (*EntryPredictionRepo, error) {
+	if db == nil {
+		return nil, fmt.Errorf("db: %w", domain.ErrIsNil)
+	}
+	return &EntryPredictionRepo{db: db}, nil
 }

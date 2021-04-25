@@ -373,6 +373,9 @@ func (s *ScoredEntryPredictionRepo) SelectByEntryIDAndRoundNumber(ctx context.Co
 }
 
 // NewScoredEntryPredictionRepo instantiates a new ScoredEntryPredictionRepo with the provided DB agent
-func NewScoredEntryPredictionRepo(db *sql.DB) *ScoredEntryPredictionRepo {
-	return &ScoredEntryPredictionRepo{db: db}
+func NewScoredEntryPredictionRepo(db *sql.DB) (*ScoredEntryPredictionRepo, error) {
+	if db == nil {
+		return nil, fmt.Errorf("db: %w", domain.ErrIsNil)
+	}
+	return &ScoredEntryPredictionRepo{db: db}, nil
 }

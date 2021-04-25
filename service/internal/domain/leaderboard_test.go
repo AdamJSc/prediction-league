@@ -185,7 +185,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 	seasonID := harryEntry.SeasonID
 
 	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates, db)
+	injector := newTestInjector(t, testRealm, templates)
 	agent := &domain.LeaderBoardAgent{LeaderBoardAgentInjector: injector}
 
 	t.Logf("harry's entry: %s", harryEntry.ID.String())
