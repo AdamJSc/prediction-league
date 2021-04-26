@@ -16,6 +16,11 @@ import (
 func newRetrieveLatestStandingsJob(season domain.Season, client domain.FootballDataSource, injector app.DependencyInjector) (*job, error) {
 	jobName := strings.ToLower(fmt.Sprintf("retrieve-latest-standings-%s", season.ID))
 
+	entryAgent, err := domain.NewEntryAgent(injector.EntryRepo(), injector.EntryPredictionRepo())
+	if err != nil {
+		return nil, fmt.Errorf("cannot instantiate entry agent: %w", err)
+	}
+
 	standingsAgent, err := domain.NewStandingsAgent(injector.StandingsRepo())
 	if err != nil {
 		return nil, fmt.Errorf("cannot instantiate standings agent: %w", err)
@@ -28,11 +33,7 @@ func newRetrieveLatestStandingsJob(season domain.Season, client domain.FootballD
 		injector.ScoredEntryPredictionRepo(),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("cannot instantiate standings agent: %w", err)
-	}
-
-	entryAgent := &domain.EntryAgent{
-		EntryAgentInjector: injector,
+		return nil, fmt.Errorf("cannot instantiate scored entry prediction agent: %w", err)
 	}
 
 	commsAgent := &domain.CommunicationsAgent{

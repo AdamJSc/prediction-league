@@ -2,6 +2,7 @@ package domain_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	gocmp "github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
@@ -13,12 +14,32 @@ import (
 	"time"
 )
 
+func TestNewEntryAgent(t *testing.T) {
+	t.Run("passing nil must return expected error", func(t *testing.T) {
+		tt := []struct {
+			er  domain.EntryRepository
+			epr domain.EntryPredictionRepository
+		}{
+			{nil, epr},
+			{er, nil},
+		}
+
+		for _, tc := range tt {
+			_, gotErr := domain.NewEntryAgent(tc.er, tc.epr)
+			if !errors.Is(gotErr, domain.ErrIsNil) {
+				t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+			}
+		}
+	})
+}
+
 func TestEntryAgent_CreateEntry(t *testing.T) {
 	defer truncate(t)
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.EntryAgent{EntryAgentInjector: injector}
+	agent, err := domain.NewEntryAgent(er, epr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	now := time.Now()
 
@@ -268,9 +289,10 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		"harry.redknapp@football.net",
 	))
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.EntryAgent{EntryAgentInjector: injector}
+	agent, err := domain.NewEntryAgent(er, epr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("add an entry prediction to an existing entry with valid guard value must succeed", func(t *testing.T) {
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
@@ -479,9 +501,10 @@ func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
 		entry.EntryPredictions = append(entry.EntryPredictions, insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID)))
 	}
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.EntryAgent{EntryAgentInjector: injector}
+	agent, err := domain.NewEntryAgent(er, epr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("retrieve an existent entry with valid credentials must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -574,9 +597,10 @@ func TestEntryAgent_RetrieveEntryByEntrantEmail(t *testing.T) {
 		entry.EntryPredictions = append(entry.EntryPredictions, insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID)))
 	}
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.EntryAgent{EntryAgentInjector: injector}
+	agent, err := domain.NewEntryAgent(er, epr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("retrieve an existent entry with valid credentials must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -679,9 +703,10 @@ func TestEntryAgent_RetrieveEntryByEntrantNickname(t *testing.T) {
 		entry.EntryPredictions = append(entry.EntryPredictions, insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID)))
 	}
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.EntryAgent{EntryAgentInjector: injector}
+	agent, err := domain.NewEntryAgent(er, epr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("retrieve an existent entry with valid credentials must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -806,9 +831,10 @@ func TestEntryAgent_RetrieveEntriesBySeasonID(t *testing.T) {
 		entries = append(entries, insertEntry(t, entry))
 	}
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.EntryAgent{EntryAgentInjector: injector}
+	agent, err := domain.NewEntryAgent(er, epr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("retrieve existing entries with valid credentials must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -876,9 +902,10 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		"harry.redknapp@football.net",
 	))
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.EntryAgent{EntryAgentInjector: injector}
+	agent, err := domain.NewEntryAgent(er, epr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("update an existent entry with a valid alternative entry must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -1068,9 +1095,10 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 		"harry.redknapp@football.net",
 	))
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.EntryAgent{EntryAgentInjector: injector}
+	agent, err := domain.NewEntryAgent(er, epr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	paymentRef := "ABCD1234"
 
@@ -1247,9 +1275,10 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 	entryWithReadyStatus.Status = domain.EntryStatusReady
 	entryWithReadyStatus = insertEntry(t, entryWithReadyStatus)
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.EntryAgent{EntryAgentInjector: injector}
+	agent, err := domain.NewEntryAgent(er, epr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("approve existent entry short code with valid credentials must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -1361,9 +1390,10 @@ func TestEntryAgent_GetEntryPredictionByTimestamp(t *testing.T) {
 		entryPredictions = append(entryPredictions, entryPrediction)
 	}
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.EntryAgent{EntryAgentInjector: injector}
+	agent, err := domain.NewEntryAgent(er, epr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("retrieve entry prediction by timestamp that occurs before earliest prediction must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)

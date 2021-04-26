@@ -47,6 +47,11 @@ func frontendLeaderBoardHandler(c *HTTPAppContainer) func(w http.ResponseWriter,
 		}
 
 		// setup agents
+		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		if err != nil {
+			internalError(err).writeTo(w)
+			return
+		}
 		standingsAgent, err := domain.NewStandingsAgent(c.StandingsRepo())
 		if err != nil {
 			internalError(err).writeTo(w)
@@ -61,7 +66,7 @@ func frontendLeaderBoardHandler(c *HTTPAppContainer) func(w http.ResponseWriter,
 
 		data := getLeaderBoardPageData(
 			ctx,
-			&domain.EntryAgent{EntryAgentInjector: c},
+			entryAgent,
 			standingsAgent,
 			&domain.LeaderBoardAgent{LeaderBoardAgentInjector: c},
 		)
@@ -142,6 +147,11 @@ func frontendPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWriter, 
 		}
 
 		// setup agents
+		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		if err != nil {
+			internalError(err).writeTo(w)
+			return
+		}
 		tokenAgent, err := domain.NewTokenAgent(c.TokenRepo())
 		if err != nil {
 			internalError(err).writeTo(w)
@@ -157,7 +167,7 @@ func frontendPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWriter, 
 		data := getPredictionPageData(
 			ctx,
 			getAuthCookieValue(r),
-			&domain.EntryAgent{EntryAgentInjector: c},
+			entryAgent,
 			tokenAgent,
 		)
 
@@ -166,7 +176,6 @@ func frontendPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWriter, 
 }
 
 func frontendShortCodeResetBeginHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	entryAgent := &domain.EntryAgent{EntryAgentInjector: c}
 	commsAgent := &domain.CommunicationsAgent{CommunicationsAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -179,6 +188,11 @@ func frontendShortCodeResetBeginHandler(c *HTTPAppContainer) func(w http.Respons
 		}
 
 		// setup agents
+		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		if err != nil {
+			internalError(err).writeTo(w)
+			return
+		}
 		tokenAgent, err := domain.NewTokenAgent(c.TokenRepo())
 		if err != nil {
 			internalError(err).writeTo(w)
@@ -252,7 +266,6 @@ func frontendShortCodeResetBeginHandler(c *HTTPAppContainer) func(w http.Respons
 }
 
 func frontendShortCodeResetCompleteHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	entryAgent := &domain.EntryAgent{EntryAgentInjector: c}
 	commsAgent := &domain.CommunicationsAgent{CommunicationsAgentInjector: c}
 
 	invalidTokenErr := errors.New("oh no! looks like your token is invalid :'( please try resetting your short code again")
@@ -267,6 +280,11 @@ func frontendShortCodeResetCompleteHandler(c *HTTPAppContainer) func(w http.Resp
 		}
 
 		// setup agents
+		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		if err != nil {
+			internalError(err).writeTo(w)
+			return
+		}
 		tokenAgent, err := domain.NewTokenAgent(c.TokenRepo())
 		if err != nil {
 			internalError(err).writeTo(w)

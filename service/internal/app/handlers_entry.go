@@ -9,10 +9,15 @@ import (
 )
 
 func createEntryHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	agent := &domain.EntryAgent{EntryAgentInjector: c}
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		var input createEntryRequest
+
+		// setup agents
+		agent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		if err != nil {
+			internalError(err).writeTo(w)
+			return
+		}
 
 		// read request body
 		body, err := ioutil.ReadAll(r.Body)
@@ -80,11 +85,16 @@ func createEntryHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http
 }
 
 func updateEntryPaymentDetailsHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	entryAgent := &domain.EntryAgent{EntryAgentInjector: c}
 	commsAgent := &domain.CommunicationsAgent{CommunicationsAgentInjector: c}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		var input updateEntryPaymentDetailsRequest
+
+		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		if err != nil {
+			internalError(err).writeTo(w)
+			return
+		}
 
 		// read request body
 		body, err := ioutil.ReadAll(r.Body)
@@ -144,10 +154,14 @@ func updateEntryPaymentDetailsHandler(c *HTTPAppContainer) func(w http.ResponseW
 }
 
 func createEntryPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	agent := &domain.EntryAgent{EntryAgentInjector: c}
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		var input createEntryPredictionRequest
+
+		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		if err != nil {
+			internalError(err).writeTo(w)
+			return
+		}
 
 		// read request body
 		body, err := ioutil.ReadAll(r.Body)
@@ -179,7 +193,7 @@ func createEntryPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWrite
 		defer cancel()
 
 		// get entry
-		entry, err := agent.RetrieveEntryByID(ctx, entryID)
+		entry, err := entryAgent.RetrieveEntryByID(ctx, entryID)
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return
@@ -190,7 +204,7 @@ func createEntryPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWrite
 		domain.GuardFromContext(ctx).SetAttempt(input.EntryShortCode)
 
 		// create entry prediction for entry
-		if _, err := agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry); err != nil {
+		if _, err := entryAgent.AddEntryPredictionToEntry(ctx, entryPrediction, entry); err != nil {
 			responseFromError(err).writeTo(w)
 			return
 		}
@@ -201,9 +215,13 @@ func createEntryPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWrite
 }
 
 func retrieveLatestEntryPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	agent := &domain.EntryAgent{EntryAgentInjector: c}
-
 	return func(w http.ResponseWriter, r *http.Request) {
+		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		if err != nil {
+			internalError(err).writeTo(w)
+			return
+		}
+
 		// parse entry ID from route
 		var entryID string
 		if err := getRouteParam(r, "entry_id", &entryID); err != nil {
@@ -220,14 +238,14 @@ func retrieveLatestEntryPredictionHandler(c *HTTPAppContainer) func(w http.Respo
 		defer cancel()
 
 		// get entry
-		entry, err := agent.RetrieveEntryByID(ctx, entryID)
+		entry, err := entryAgent.RetrieveEntryByID(ctx, entryID)
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// get entry prediction that pertains to context timestamp
-		entryPrediction, err := agent.RetrieveEntryPredictionByTimestamp(ctx, entry, domain.TimestampFromContext(ctx))
+		entryPrediction, err := entryAgent.RetrieveEntryPredictionByTimestamp(ctx, entry, domain.TimestampFromContext(ctx))
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return
@@ -251,9 +269,13 @@ func retrieveLatestEntryPredictionHandler(c *HTTPAppContainer) func(w http.Respo
 }
 
 func approveEntryByShortCodeHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	agent := &domain.EntryAgent{EntryAgentInjector: c}
-
 	return func(w http.ResponseWriter, r *http.Request) {
+		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		if err != nil {
+			internalError(err).writeTo(w)
+			return
+		}
+
 		// parse entry short code from route
 		var entryShortCode string
 		if err := getRouteParam(r, "entry_short_code", &entryShortCode); err != nil {
@@ -269,7 +291,7 @@ func approveEntryByShortCodeHandler(c *HTTPAppContainer) func(w http.ResponseWri
 		defer cancel()
 
 		// approve entry
-		if _, err := agent.ApproveEntryByShortCode(ctx, entryShortCode); err != nil {
+		if _, err := entryAgent.ApproveEntryByShortCode(ctx, entryShortCode); err != nil {
 			responseFromError(err).writeTo(w)
 			return
 		}

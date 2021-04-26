@@ -11,12 +11,15 @@ import (
 )
 
 func predictionLoginHandler(c *HTTPAppContainer) func(http.ResponseWriter, *http.Request) {
-	entryAgent := &domain.EntryAgent{EntryAgentInjector: c}
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		var input predictionLoginRequest
 
 		// setup agents
+		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		if err != nil {
+			internalError(err).writeTo(w)
+			return
+		}
 		tokenAgent, err := domain.NewTokenAgent(c.TokenRepo())
 		if err != nil {
 			internalError(err).writeTo(w)

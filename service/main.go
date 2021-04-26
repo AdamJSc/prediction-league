@@ -85,11 +85,15 @@ func main() {
 
 	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	entryAgent := &domain.EntryAgent{EntryAgentInjector: httpAppContainer}
 	seeds, err := domain.GenerateSeedEntries()
 	if err != nil {
 		log.Fatalf("cannot generate entries to seed: %s", err.Error())
 	}
+	entryAgent, err := domain.NewEntryAgent(er, epr)
+	if err != nil {
+		log.Fatalf("cannot instantiate entry agent: %s", err.Error())
+	}
+
 	if err := entryAgent.SeedEntries(ctxWithTimeout, seeds); err != nil {
 		log.Fatalf("cannot seed entries: %s", err.Error())
 	}

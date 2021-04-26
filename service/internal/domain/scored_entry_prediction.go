@@ -11,6 +11,16 @@ import (
 	"time"
 )
 
+// ScoredEntryPrediction provides a data type for an EntryPrediction that has been scored against a Standings
+type ScoredEntryPrediction struct {
+	EntryPredictionID uuid.UUID          `db:"entry_prediction_id"`
+	StandingsID       uuid.UUID          `db:"standings_id"`
+	Rankings          []RankingWithScore `db:"rankings"`
+	Score             int                `db:"score"`
+	CreatedAt         time.Time          `db:"created_at"`
+	UpdatedAt         sqltypes.NullTime  `db:"updated_at"`
+}
+
 // ScoredEntryPredictionRepository defines the interface for transacting with our ScoredEntryPredictions data source
 type ScoredEntryPredictionRepository interface {
 	Insert(ctx context.Context, scoredEntryPrediction *ScoredEntryPrediction) error

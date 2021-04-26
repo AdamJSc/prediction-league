@@ -61,7 +61,7 @@ func mustGenerateRetrieveLatestStandingsJobs(container *app.HTTPAppContainer) []
 			continue
 		}
 
-		stndJob, err := newRetrieveLatestStandingsJob(
+		job, err := newRetrieveLatestStandingsJob(
 			season,
 			footballdataorg.NewClient(config.FootballDataAPIToken),
 			container,
@@ -70,7 +70,7 @@ func mustGenerateRetrieveLatestStandingsJobs(container *app.HTTPAppContainer) []
 			log.Fatalf("cannot instantiate retrieve latest standings job: %s", err.Error())
 		}
 
-		jobs = append(jobs, stndJob)
+		jobs = append(jobs, job)
 	}
 
 	return jobs
@@ -94,10 +94,15 @@ func mustGeneratePredictionWindowOpenJobs(container *app.HTTPAppContainer) []*jo
 			log.Fatal(err)
 		}
 
-		jobs = append(jobs, newPredictionWindowOpenJob(
+		job, err := newPredictionWindowOpenJob(
 			season,
 			container,
-		))
+		)
+		if err != nil {
+			log.Fatalf("cannot instantiate prediction window open job: %s", err.Error())
+		}
+
+		jobs = append(jobs, job)
 	}
 
 	return jobs
@@ -121,10 +126,15 @@ func mustGeneratePredictionWindowClosingJobs(container *app.HTTPAppContainer) []
 			log.Fatal(err)
 		}
 
-		jobs = append(jobs, newPredictionWindowClosingJob(
+		job, err := newPredictionWindowClosingJob(
 			season,
 			container,
-		))
+		)
+		if err != nil {
+			log.Fatalf("cannot instantiate prediction window closing job: %s", err.Error())
+		}
+
+		jobs = append(jobs, job)
 	}
 
 	return jobs

@@ -63,16 +63,6 @@ func NewEntryPrediction(ids []string) EntryPrediction {
 	}
 }
 
-// ScoredEntryPrediction provides a data type for an EntryPrediction that has been scored against a Standings
-type ScoredEntryPrediction struct {
-	EntryPredictionID uuid.UUID          `db:"entry_prediction_id"`
-	StandingsID       uuid.UUID          `db:"standings_id"`
-	Rankings          []RankingWithScore `db:"rankings"`
-	Score             int                `db:"score"`
-	CreatedAt         time.Time          `db:"created_at"`
-	UpdatedAt         sqltypes.NullTime  `db:"updated_at"`
-}
-
 // EntryRepository defines the interface for transacting with our Entry data source
 type EntryRepository interface {
 	Insert(ctx context.Context, entry *Entry) error
@@ -90,14 +80,11 @@ type EntryPredictionRepository interface {
 	ExistsByID(ctx context.Context, id string) error
 }
 
-// EntryAgentInjector defines the dependencies required by our EntryAgent
-type EntryAgentInjector interface {
-	EntryRepo() EntryRepository
-	EntryPredictionRepo() EntryPredictionRepository
-}
-
 // EntryAgent defines the behaviours for handling Entries
-type EntryAgent struct{ EntryAgentInjector }
+type EntryAgent struct {
+	er  EntryRepository
+	epr EntryPredictionRepository
+}
 
 // CreateEntry handles the creation of a new Entry in the database
 func (e *EntryAgent) CreateEntry(ctx context.Context, entry Entry, s *Season) (Entry, error) {
@@ -134,10 +121,8 @@ func (e *EntryAgent) CreateEntry(ctx context.Context, entry Entry, s *Season) (E
 	entry.CreatedAt = time.Time{}
 	entry.UpdatedAt = sqltypes.NullTime{}
 
-	entryRepo := e.EntryRepo()
-
 	// generate a unique lookup ref
-	entry.ShortCode, err = entryRepo.GenerateUniqueShortCode(ctx)
+	entry.ShortCode, err = e.er.GenerateUniqueShortCode(ctx)
 	if err != nil {
 		return Entry{}, domainErrorFromRepositoryError(err)
 	}
@@ -148,7 +133,7 @@ func (e *EntryAgent) CreateEntry(ctx context.Context, entry Entry, s *Season) (E
 	}
 
 	// check for existing nickname so that we can return a nice error message if it already exists
-	existingNicknameEntries, err := entryRepo.Select(ctx, map[string]interface{}{
+	existingNicknameEntries, err := e.er.Select(ctx, map[string]interface{}{
 		"season_id":        entry.SeasonID,
 		"realm_name":       entry.RealmName,
 		"entrant_nickname": entry.EntrantNickname,
@@ -164,7 +149,7 @@ func (e *EntryAgent) CreateEntry(ctx context.Context, entry Entry, s *Season) (E
 	}
 
 	// check for existing email so that we can return a nice error message if it already exists
-	existingEmailEntries, err := entryRepo.Select(ctx, map[string]interface{}{
+	existingEmailEntries, err := e.er.Select(ctx, map[string]interface{}{
 		"season_id":     entry.SeasonID,
 		"realm_name":    entry.RealmName,
 		"entrant_email": entry.EntrantEmail,
@@ -185,7 +170,7 @@ func (e *EntryAgent) CreateEntry(ctx context.Context, entry Entry, s *Season) (E
 	}
 
 	// write entry to database
-	if err := entryRepo.Insert(ctx, &entry); err != nil {
+	if err := e.er.Insert(ctx, &entry); err != nil {
 		return Entry{}, domainErrorFromRepositoryError(err)
 	}
 
@@ -194,10 +179,7 @@ func (e *EntryAgent) CreateEntry(ctx context.Context, entry Entry, s *Season) (E
 
 // RetrieveEntryByID handles the retrieval of an existing Entry in the database by its ID
 func (e *EntryAgent) RetrieveEntryByID(ctx context.Context, id string) (Entry, error) {
-	entryRepo := e.EntryRepo()
-	entryPredictionRepo := e.EntryPredictionRepo()
-
-	entries, err := entryRepo.Select(ctx, map[string]interface{}{
+	entries, err := e.er.Select(ctx, map[string]interface{}{
 		"id": id,
 	}, false)
 	if err != nil {
@@ -211,7 +193,7 @@ func (e *EntryAgent) RetrieveEntryByID(ctx context.Context, id string) (Entry, e
 	}
 
 	// retrieve and inflate all entry predictions
-	entry.EntryPredictions, err = entryPredictionRepo.Select(ctx, map[string]interface{}{
+	entry.EntryPredictions, err = e.epr.Select(ctx, map[string]interface{}{
 		"entry_id": entry.ID,
 	}, false)
 	if err != nil {
@@ -229,10 +211,7 @@ func (e *EntryAgent) RetrieveEntryByID(ctx context.Context, id string) (Entry, e
 
 // RetrieveEntryByEntrantEmail handles the retrieval of an existing Entry in the database by its email
 func (e *EntryAgent) RetrieveEntryByEntrantEmail(ctx context.Context, email, seasonID, realmName string) (Entry, error) {
-	entryRepo := e.EntryRepo()
-	entryPredictionRepo := e.EntryPredictionRepo()
-
-	entries, err := entryRepo.Select(ctx, map[string]interface{}{
+	entries, err := e.er.Select(ctx, map[string]interface{}{
 		"season_id":     seasonID,
 		"realm_name":    realmName,
 		"entrant_email": email,
@@ -248,7 +227,7 @@ func (e *EntryAgent) RetrieveEntryByEntrantEmail(ctx context.Context, email, sea
 	}
 
 	// retrieve and inflate all entry predictions
-	entry.EntryPredictions, err = entryPredictionRepo.Select(ctx, map[string]interface{}{
+	entry.EntryPredictions, err = e.epr.Select(ctx, map[string]interface{}{
 		"entry_id": entry.ID,
 	}, false)
 	if err != nil {
@@ -266,10 +245,7 @@ func (e *EntryAgent) RetrieveEntryByEntrantEmail(ctx context.Context, email, sea
 
 // RetrieveEntryByEntrantNickname handles the retrieval of an existing Entry in the database by its nickname
 func (e *EntryAgent) RetrieveEntryByEntrantNickname(ctx context.Context, nickname, seasonID, realmName string) (Entry, error) {
-	entryRepo := e.EntryRepo()
-	entryPredictionRepo := e.EntryPredictionRepo()
-
-	entries, err := entryRepo.Select(ctx, map[string]interface{}{
+	entries, err := e.er.Select(ctx, map[string]interface{}{
 		"season_id":        seasonID,
 		"realm_name":       realmName,
 		"entrant_nickname": nickname,
@@ -285,7 +261,7 @@ func (e *EntryAgent) RetrieveEntryByEntrantNickname(ctx context.Context, nicknam
 	}
 
 	// retrieve and inflate all entry predictions
-	entry.EntryPredictions, err = entryPredictionRepo.Select(ctx, map[string]interface{}{
+	entry.EntryPredictions, err = e.epr.Select(ctx, map[string]interface{}{
 		"entry_id": entry.ID,
 	}, false)
 	if err != nil {
@@ -303,9 +279,6 @@ func (e *EntryAgent) RetrieveEntryByEntrantNickname(ctx context.Context, nicknam
 
 // RetrieveEntriesBySeasonID handles the retrieval of existing Entries in the database by their Season ID
 func (e *EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID string, onlyApproved bool) ([]Entry, error) {
-	entryRepo := e.EntryRepo()
-	entryPredictionRepo := e.EntryPredictionRepo()
-
 	criteria := map[string]interface{}{
 		"season_id": seasonID,
 	}
@@ -316,7 +289,7 @@ func (e *EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID str
 		}
 	}
 
-	entries, err := entryRepo.Select(ctx, criteria, false)
+	entries, err := e.er.Select(ctx, criteria, false)
 	if err != nil {
 		return nil, domainErrorFromRepositoryError(err)
 	}
@@ -325,7 +298,7 @@ func (e *EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID str
 		entry := &entries[idx]
 
 		// retrieve and inflate all entry predictions
-		entry.EntryPredictions, err = entryPredictionRepo.Select(ctx, map[string]interface{}{
+		entry.EntryPredictions, err = e.epr.Select(ctx, map[string]interface{}{
 			"entry_id": entry.ID,
 		}, false)
 		if err != nil {
@@ -344,15 +317,13 @@ func (e *EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID str
 
 // UpdateEntry handles the updating of an existing Entry in the database
 func (e *EntryAgent) UpdateEntry(ctx context.Context, entry Entry) (Entry, error) {
-	entryRepo := e.EntryRepo()
-
 	// ensure that Entry realm matches current realm
 	if RealmFromContext(ctx).Name != entry.RealmName {
 		return Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
 	// ensure the entry exists
-	if err := entryRepo.ExistsByID(ctx, entry.ID.String()); err != nil {
+	if err := e.er.ExistsByID(ctx, entry.ID.String()); err != nil {
 		return Entry{}, domainErrorFromRepositoryError(err)
 	}
 
@@ -366,7 +337,7 @@ func (e *EntryAgent) UpdateEntry(ctx context.Context, entry Entry) (Entry, error
 	// there is a db constraint on these two fields anyway, so any values that have changed will be flagged when writing to the db
 
 	// write to database
-	if err := entryRepo.Update(ctx, &entry); err != nil {
+	if err := e.er.Update(ctx, &entry); err != nil {
 		return Entry{}, domainErrorFromRepositoryError(err)
 	}
 
@@ -375,9 +346,6 @@ func (e *EntryAgent) UpdateEntry(ctx context.Context, entry Entry) (Entry, error
 
 // AddEntryPredictionToEntry adds the provided EntryPrediction to the provided Entry
 func (e *EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPrediction EntryPrediction, entry Entry) (Entry, error) {
-	entryRepo := e.EntryRepo()
-	entryPredictionRepo := e.EntryPredictionRepo()
-
 	// check short code is ok
 	if !GuardFromContext(ctx).AttemptMatches(entry.ShortCode) {
 		return Entry{}, UnauthorizedError{errors.New("invalid short code")}
@@ -389,7 +357,7 @@ func (e *EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPredict
 	}
 
 	// ensure the entry exists
-	if err := entryRepo.ExistsByID(ctx, entry.ID.String()); err != nil {
+	if err := e.er.ExistsByID(ctx, entry.ID.String()); err != nil {
 		return Entry{}, domainErrorFromRepositoryError(err)
 	}
 
@@ -460,7 +428,7 @@ func (e *EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPredict
 	entryPrediction.ID = id
 	entryPrediction.EntryID = entry.ID
 
-	if err := entryPredictionRepo.Insert(ctx, &entryPrediction); err != nil {
+	if err := e.epr.Insert(ctx, &entryPrediction); err != nil {
 		return Entry{}, domainErrorFromRepositoryError(err)
 	}
 
@@ -471,8 +439,6 @@ func (e *EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPredict
 
 // UpdateEntryPaymentDetails provides a shortcut to updating the payment details for a provided entryID
 func (e *EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, paymentMethod, paymentRef string, acceptsOther bool) (Entry, error) {
-	entryRepo := e.EntryRepo()
-
 	// ensure that payment method is valid
 	if !isValidEntryPaymentMethod(paymentMethod) {
 		return Entry{}, ValidationError{
@@ -493,7 +459,7 @@ func (e *EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, pay
 	}
 
 	// retrieve entry
-	entries, err := entryRepo.Select(ctx, map[string]interface{}{
+	entries, err := e.er.Select(ctx, map[string]interface{}{
 		"id": entryID,
 	}, false)
 	if err != nil {
@@ -528,7 +494,7 @@ func (e *EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, pay
 	entry.Status = EntryStatusPaid
 
 	// write to database
-	if err := entryRepo.Update(ctx, &entry); err != nil {
+	if err := e.er.Update(ctx, &entry); err != nil {
 		return Entry{}, domainErrorFromRepositoryError(err)
 	}
 
@@ -537,15 +503,13 @@ func (e *EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, pay
 
 // ApproveEntryByShortCode provides a shortcut to approving an entry by its short code
 func (e *EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode string) (Entry, error) {
-	entryRepo := e.EntryRepo()
-
 	// ensure basic auth has been provided and matches admin credentials
 	if !IsBasicAuthSuccessful(ctx) {
 		return Entry{}, UnauthorizedError{}
 	}
 
 	// retrieve entry
-	entries, err := entryRepo.Select(ctx, map[string]interface{}{
+	entries, err := e.er.Select(ctx, map[string]interface{}{
 		"short_code": shortCode,
 	}, false)
 	if err != nil {
@@ -582,7 +546,7 @@ func (e *EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode stri
 	entry.ApprovedAt = sqltypes.ToNullTime(TimestampFromContext(ctx).Truncate(time.Second))
 
 	// write to database
-	if err := entryRepo.Update(ctx, &entry); err != nil {
+	if err := e.er.Update(ctx, &entry); err != nil {
 		return Entry{}, domainErrorFromRepositoryError(err)
 	}
 
@@ -591,10 +555,8 @@ func (e *EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode stri
 
 // RetrieveEntryPredictionByTimestamp returns the entry prediction affiliated with the provided entry id that is valid at the point the provided timestamp occurs
 func (e *EntryAgent) RetrieveEntryPredictionByTimestamp(ctx context.Context, entry Entry, ts time.Time) (EntryPrediction, error) {
-	entryPredictionRepo := e.EntryPredictionRepo()
-
 	// retrieve entry prediction
-	entryPrediction, err := entryPredictionRepo.SelectByEntryIDAndTimestamp(ctx, entry.ID.String(), ts)
+	entryPrediction, err := e.epr.SelectByEntryIDAndTimestamp(ctx, entry.ID.String(), ts)
 	if err != nil {
 		return EntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
@@ -641,19 +603,19 @@ func (e *EntryAgent) RetrieveEntryPredictionsForActiveSeasonByTimestamp(
 }
 
 func (e *EntryAgent) GenerateUniqueShortCode(ctx context.Context) (string, error) {
-	return e.EntryRepo().GenerateUniqueShortCode(ctx)
+	return e.er.GenerateUniqueShortCode(ctx)
 }
 
 func (e *EntryAgent) SeedEntries(ctx context.Context, entries []Entry) error {
 	for _, entry := range entries {
-		shortCode, err := e.EntryRepo().GenerateUniqueShortCode(ctx)
+		shortCode, err := e.GenerateUniqueShortCode(ctx)
 		if err != nil {
 			return fmt.Errorf("cannot generate short code: %w", err)
 		}
 
 		entry.ShortCode = shortCode
 
-		if err := e.EntryRepo().Insert(ctx, &entry); err != nil {
+		if err := e.er.Insert(ctx, &entry); err != nil {
 			switch err.(type) {
 			case DuplicateDBRecordError:
 				// already seeded, so we can fail silently
@@ -663,7 +625,7 @@ func (e *EntryAgent) SeedEntries(ctx context.Context, entries []Entry) error {
 		}
 
 		for _, ep := range entry.EntryPredictions {
-			if err := e.EntryPredictionRepo().Insert(context.Background(), &ep); err != nil {
+			if err := e.epr.Insert(context.Background(), &ep); err != nil {
 				switch err.(type) {
 				case DuplicateDBRecordError:
 					// already seeded, so we can fail silently
@@ -675,6 +637,21 @@ func (e *EntryAgent) SeedEntries(ctx context.Context, entries []Entry) error {
 	}
 
 	return nil
+}
+
+// NewEntryAgent returns a new EntryAgent using the provided repository
+func NewEntryAgent(er EntryRepository, epr EntryPredictionRepository) (*EntryAgent, error) {
+	switch {
+	case er == nil:
+		return nil, fmt.Errorf("entry repository: %w", ErrIsNil)
+	case epr == nil:
+		return nil, fmt.Errorf("entry prediction repository: %w", ErrIsNil)
+	}
+
+	return &EntryAgent{
+		er:  er,
+		epr: epr,
+	}, nil
 }
 
 // sanitiseEntry sanitises and validates an Entry

@@ -18,11 +18,12 @@ const predictionWindowOpenCronSpec = "34 12 * * *"
 
 // newPredictionWindowOpenJob returns a new job that issues emails to entrants
 // when a new Prediction Window has been opened for the provided season
-func newPredictionWindowOpenJob(season domain.Season, injector app.DependencyInjector) *job {
+func newPredictionWindowOpenJob(season domain.Season, injector app.DependencyInjector) (*job, error) {
 	jobName := strings.ToLower(fmt.Sprintf("prediction-window-open-%s", season.ID))
 
-	entryAgent := &domain.EntryAgent{
-		EntryAgentInjector: injector,
+	entryAgent, err := domain.NewEntryAgent(injector.EntryRepo(), injector.EntryPredictionRepo())
+	if err != nil {
+		return nil, fmt.Errorf("cannot instantiate entry agent: %w", err)
 	}
 
 	commsAgent := &domain.CommunicationsAgent{
@@ -72,7 +73,7 @@ func newPredictionWindowOpenJob(season domain.Season, injector app.DependencyInj
 	return &job{
 		spec: predictionWindowOpenCronSpec,
 		task: task,
-	}
+	}, nil
 }
 
 // issuePredictionWindowOpenEmails issues a series of prediction window open emails to the provided entries

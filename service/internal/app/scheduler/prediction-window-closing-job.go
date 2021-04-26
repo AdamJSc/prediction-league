@@ -18,11 +18,12 @@ const predictionWindowClosingCronSpec = "48 16 * * *"
 
 // newPredictionWindowClosingJob returns a new job that issues emails to entrants
 // when an active Prediction Window is due to close for the provided season
-func newPredictionWindowClosingJob(season domain.Season, injector app.DependencyInjector) *job {
+func newPredictionWindowClosingJob(season domain.Season, injector app.DependencyInjector) (*job, error) {
 	jobName := strings.ToLower(fmt.Sprintf("prediction-window-closing-%s", season.ID))
 
-	entryAgent := &domain.EntryAgent{
-		EntryAgentInjector: injector,
+	entryAgent, err := domain.NewEntryAgent(injector.EntryRepo(), injector.EntryPredictionRepo())
+	if err != nil {
+		return nil, fmt.Errorf("cannot instantiate entry agent: %w", err)
 	}
 
 	commsAgent := &domain.CommunicationsAgent{
@@ -72,7 +73,7 @@ func newPredictionWindowClosingJob(season domain.Season, injector app.Dependency
 	return &job{
 		spec: predictionWindowClosingCronSpec,
 		task: task,
-	}
+	}, nil
 }
 
 // issuePredictionWindowClosingEmails issues a series of prediction window closing emails to the provided entries
