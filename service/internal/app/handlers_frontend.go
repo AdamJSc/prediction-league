@@ -46,6 +46,12 @@ func frontendLeaderBoardHandler(c *HTTPAppContainer) func(w http.ResponseWriter,
 			}
 		}
 
+		// setup agents
+		standingsAgent, err := domain.NewStandingsAgent(c.StandingsRepo())
+		if err != nil {
+			internalError(err).writeTo(w)
+		}
+
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
 			writeResponse(view.LeaderBoardPageData{Err: err})
@@ -56,7 +62,7 @@ func frontendLeaderBoardHandler(c *HTTPAppContainer) func(w http.ResponseWriter,
 		data := getLeaderBoardPageData(
 			ctx,
 			&domain.EntryAgent{EntryAgentInjector: c},
-			&domain.StandingsAgent{StandingsAgentInjector: c},
+			standingsAgent,
 			&domain.LeaderBoardAgent{LeaderBoardAgentInjector: c},
 		)
 

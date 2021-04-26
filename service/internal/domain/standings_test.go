@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"errors"
 	gocmp "github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"gotest.tools/assert/cmp"
@@ -10,12 +11,22 @@ import (
 	"time"
 )
 
+func TestNewStandingsAgent(t *testing.T) {
+	t.Run("passing nil must return expected error", func(t *testing.T) {
+		_, gotErr := domain.NewStandingsAgent(nil)
+		if !errors.Is(gotErr, domain.ErrIsNil) {
+			t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+		}
+	})
+}
+
 func TestStandingsAgent_CreateStandings(t *testing.T) {
 	defer truncate(t)
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.StandingsAgent{StandingsAgentInjector: injector}
+	agent, err := domain.NewStandingsAgent(sr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	standings := generateTestStandings(t)
 
@@ -63,9 +74,10 @@ func TestStandingsAgent_CreateStandings(t *testing.T) {
 func TestStandingsAgent_UpdateStandings(t *testing.T) {
 	defer truncate(t)
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.StandingsAgent{StandingsAgentInjector: injector}
+	agent, err := domain.NewStandingsAgent(sr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	standings := insertStandings(t, generateTestStandings(t))
 
@@ -134,9 +146,10 @@ func TestStandingsAgent_UpdateStandings(t *testing.T) {
 func TestStandingsAgent_RetrieveStandingsByID(t *testing.T) {
 	defer truncate(t)
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.StandingsAgent{StandingsAgentInjector: injector}
+	agent, err := domain.NewStandingsAgent(sr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	standings := insertStandings(t, generateTestStandings(t))
 
@@ -191,9 +204,10 @@ func TestStandingsAgent_RetrieveStandingsByID(t *testing.T) {
 func TestStandingsAgent_RetrieveStandingsBySeasonAndRoundNumber(t *testing.T) {
 	defer truncate(t)
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.StandingsAgent{StandingsAgentInjector: injector}
+	agent, err := domain.NewStandingsAgent(sr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// season ID won't match our method parameters, so this won't be returned
 	standings1 := generateTestStandings(t)
@@ -248,9 +262,10 @@ func TestStandingsAgent_RetrieveStandingsBySeasonAndRoundNumber(t *testing.T) {
 func TestStandingsAgent_RetrieveLatestStandingsBySeasonIDAndTimestamp(t *testing.T) {
 	defer truncate(t)
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.StandingsAgent{StandingsAgentInjector: injector}
+	agent, err := domain.NewStandingsAgent(sr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	baseDate := time.Now().Truncate(time.Second)
 

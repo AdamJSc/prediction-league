@@ -116,6 +116,7 @@ func (t *TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp tim
 	return nil
 }
 
+// NewTokenAgent returns a new TokenAgent using the provided repository
 func NewTokenAgent(tr TokenRepository) (*TokenAgent, error) {
 	if tr == nil {
 		return nil, fmt.Errorf("token repository: %w", ErrIsNil)

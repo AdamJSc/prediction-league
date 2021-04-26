@@ -61,11 +61,16 @@ func mustGenerateRetrieveLatestStandingsJobs(container *app.HTTPAppContainer) []
 			continue
 		}
 
-		jobs = append(jobs, newRetrieveLatestStandingsJob(
+		stndJob, err := newRetrieveLatestStandingsJob(
 			season,
 			footballdataorg.NewClient(config.FootballDataAPIToken),
 			container,
-		))
+		)
+		if err != nil {
+			log.Fatalf("cannot instantiate retrieve latest standings job: %s", err.Error())
+		}
+
+		jobs = append(jobs, stndJob)
 	}
 
 	return jobs

@@ -281,6 +281,13 @@ func approveEntryByShortCodeHandler(c *HTTPAppContainer) func(w http.ResponseWri
 
 func retrieveLatestScoredEntryPrediction(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// setup agents
+		standingsAgent, err := domain.NewStandingsAgent(c.StandingsRepo())
+		if err != nil {
+			internalError(err).writeTo(w)
+			return
+		}
+
 		// parse entry ID from route
 		var entryID string
 		if err := getRouteParam(r, "entry_id", &entryID); err != nil {
@@ -314,9 +321,6 @@ func retrieveLatestScoredEntryPrediction(c *HTTPAppContainer) func(w http.Respon
 		}
 
 		// get corresponding standings
-		standingsAgent := &domain.StandingsAgent{
-			StandingsAgentInjector: c,
-		}
 		standings, err := standingsAgent.RetrieveStandingsByID(ctx, scoredEntryPredictions.StandingsID.String())
 		if err != nil {
 			responseFromError(err).writeTo(w)

@@ -13,11 +13,12 @@ import (
 )
 
 // newRetrieveLatestStandingsJob returns a new job that retrieves the latest standings, pertaining to the provided season
-func newRetrieveLatestStandingsJob(season domain.Season, client domain.FootballDataSource, injector app.DependencyInjector) *job {
+func newRetrieveLatestStandingsJob(season domain.Season, client domain.FootballDataSource, injector app.DependencyInjector) (*job, error) {
 	jobName := strings.ToLower(fmt.Sprintf("retrieve-latest-standings-%s", season.ID))
 
-	standingsAgent := &domain.StandingsAgent{
-		StandingsAgentInjector: injector,
+	standingsAgent, err := domain.NewStandingsAgent(injector.StandingsRepo())
+	if err != nil {
+		return nil, fmt.Errorf("cannot instantiate standings agent: %w", err)
 	}
 
 	entryAgent := &domain.EntryAgent{
@@ -190,7 +191,7 @@ func newRetrieveLatestStandingsJob(season domain.Season, client domain.FootballD
 	return &job{
 		spec: "@every 0h15m",
 		task: task,
-	}
+	}, nil
 }
 
 func processExistingStandings(

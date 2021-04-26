@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/google/uuid"
 	"prediction-league/service/internal/adapters/mysqldb/sqltypes"
 	"sort"
@@ -36,13 +37,10 @@ type StandingsRepository interface {
 	SelectLatestBySeasonIDAndTimestamp(ctx context.Context, seasonID string, ts time.Time) (Standings, error)
 }
 
-// StandingsAgentInjector defines the dependencies required by our StandingsAgent
-type StandingsAgentInjector interface {
-	StandingsRepo() StandingsRepository
-}
-
 // StandingsAgent defines the behaviours for handling Standings
-type StandingsAgent struct{ StandingsAgentInjector }
+type StandingsAgent struct {
+	sr StandingsRepository
+}
 
 // CreateStandings handles the creation of a new Standings in the database
 func (s *StandingsAgent) CreateStandings(ctx context.Context, standings Standings) (Standings, error) {
@@ -57,10 +55,8 @@ func (s *StandingsAgent) CreateStandings(ctx context.Context, standings Standing
 	standings.CreatedAt = time.Now().Truncate(time.Second)
 	standings.UpdatedAt = sqltypes.NullTime{}
 
-	standingsRepo := s.StandingsRepo()
-
 	// write entry to database
-	if err := standingsRepo.Insert(ctx, &standings); err != nil {
+	if err := s.sr.Insert(ctx, &standings); err != nil {
 		return Standings{}, domainErrorFromRepositoryError(err)
 	}
 
@@ -69,9 +65,7 @@ func (s *StandingsAgent) CreateStandings(ctx context.Context, standings Standing
 
 // RetrieveStandingsByID handles the retrieval of an existing Standings in the database by its ID
 func (s *StandingsAgent) RetrieveStandingsByID(ctx context.Context, id string) (Standings, error) {
-	standingsRepo := s.StandingsRepo()
-
-	retrievedStandings, err := standingsRepo.Select(ctx, map[string]interface{}{
+	retrievedStandings, err := s.sr.Select(ctx, map[string]interface{}{
 		"id": id,
 	}, false)
 	if err != nil {
@@ -83,9 +77,7 @@ func (s *StandingsAgent) RetrieveStandingsByID(ctx context.Context, id string) (
 
 // RetrieveStandingsBySeasonAndRoundNumber handles the retrieval of an existing Standings in the database by its Season ID and Round Number
 func (s *StandingsAgent) RetrieveStandingsBySeasonAndRoundNumber(ctx context.Context, seasonID string, roundNumber int) (Standings, error) {
-	standingsRepo := s.StandingsRepo()
-
-	retrievedStandings, err := standingsRepo.Select(ctx, map[string]interface{}{
+	retrievedStandings, err := s.sr.Select(ctx, map[string]interface{}{
 		"season_id":    seasonID,
 		"round_number": roundNumber,
 	}, false)
@@ -98,9 +90,7 @@ func (s *StandingsAgent) RetrieveStandingsBySeasonAndRoundNumber(ctx context.Con
 
 // RetrieveLatestStandingsBySeasonIDAndTimestamp handles the retrieval of the latest Standings in the database by its ID
 func (s *StandingsAgent) RetrieveLatestStandingsBySeasonIDAndTimestamp(ctx context.Context, seasonID string, ts time.Time) (Standings, error) {
-	standingsRepo := s.StandingsRepo()
-
-	retrievedStandings, err := standingsRepo.SelectLatestBySeasonIDAndTimestamp(ctx, seasonID, ts)
+	retrievedStandings, err := s.sr.SelectLatestBySeasonIDAndTimestamp(ctx, seasonID, ts)
 	if err != nil {
 		return Standings{}, domainErrorFromRepositoryError(err)
 	}
@@ -110,10 +100,8 @@ func (s *StandingsAgent) RetrieveLatestStandingsBySeasonIDAndTimestamp(ctx conte
 
 // UpdateStandings handles the updating of an existing Standings in the database
 func (s *StandingsAgent) UpdateStandings(ctx context.Context, standings Standings) (Standings, error) {
-	standingsRepo := s.StandingsRepo()
-
 	// ensure the entry exists
-	if err := standingsRepo.ExistsByID(ctx, standings.ID.String()); err != nil {
+	if err := s.sr.ExistsByID(ctx, standings.ID.String()); err != nil {
 		return Standings{}, domainErrorFromRepositoryError(err)
 	}
 
@@ -121,7 +109,7 @@ func (s *StandingsAgent) UpdateStandings(ctx context.Context, standings Standing
 	standings.UpdatedAt = sqltypes.ToNullTime(time.Now().Truncate(time.Second))
 
 	// write to database
-	if err := standingsRepo.Update(ctx, &standings); err != nil {
+	if err := s.sr.Update(ctx, &standings); err != nil {
 		return Standings{}, domainErrorFromRepositoryError(err)
 	}
 
@@ -160,6 +148,14 @@ func (s *StandingsAgent) RetrieveStandingsIfNotFinalised(
 
 	// fallback to default standings
 	return defaultStandings, nil
+}
+
+// NewStandingsAgent returns a new StandingsAgent using the provided repository
+func NewStandingsAgent(sr StandingsRepository) (*StandingsAgent, error) {
+	if sr == nil {
+		return nil, fmt.Errorf("standings repository: %w", ErrIsNil)
+	}
+	return &StandingsAgent{sr: sr}, nil
 }
 
 // ValidateAndSortStandings sorts and validates the provided standings
