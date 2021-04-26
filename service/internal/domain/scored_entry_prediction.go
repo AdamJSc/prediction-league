@@ -21,17 +21,12 @@ type ScoredEntryPredictionRepository interface {
 	SelectByEntryIDAndRoundNumber(ctx context.Context, entryID string, roundNumber int) ([]ScoredEntryPrediction, error)
 }
 
-// ScoredEntryPredictionAgentInjector defines the dependencies required by our ScoredEntryPredictionAgent
-type ScoredEntryPredictionAgentInjector interface {
-	EntryRepo() EntryRepository
-	EntryPredictionRepo() EntryPredictionRepository
-	StandingsRepo() StandingsRepository
-	ScoredEntryPredictionRepo() ScoredEntryPredictionRepository
-}
-
 // ScoredEntryPredictionAgent defines the behaviours for handling ScoredEntryStandings
 type ScoredEntryPredictionAgent struct {
-	ScoredEntryPredictionAgentInjector
+	er   EntryRepository
+	epr  EntryPredictionRepository
+	sr   StandingsRepository
+	sepr ScoredEntryPredictionRepository
 }
 
 // CreateScoredEntryPrediction handles the creation of a new ScoredEntryPrediction in the database
@@ -51,14 +46,12 @@ func (s *ScoredEntryPredictionAgent) CreateScoredEntryPrediction(ctx context.Con
 	}
 
 	// ensure that entryPrediction exists
-	entryPredictionRepo := s.EntryPredictionRepo()
-	if err := entryPredictionRepo.ExistsByID(ctx, scoredEntryPrediction.EntryPredictionID.String()); err != nil {
+	if err := s.epr.ExistsByID(ctx, scoredEntryPrediction.EntryPredictionID.String()); err != nil {
 		return ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
 
 	// ensure that standings exists
-	standingsRepo := s.StandingsRepo()
-	if err := standingsRepo.ExistsByID(ctx, scoredEntryPrediction.StandingsID.String()); err != nil {
+	if err := s.sr.ExistsByID(ctx, scoredEntryPrediction.StandingsID.String()); err != nil {
 		return ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
 
@@ -66,10 +59,8 @@ func (s *ScoredEntryPredictionAgent) CreateScoredEntryPrediction(ctx context.Con
 	scoredEntryPrediction.CreatedAt = time.Now().Truncate(time.Second)
 	scoredEntryPrediction.UpdatedAt = sqltypes.NullTime{}
 
-	scoredEntryPredictionRepo := s.ScoredEntryPredictionRepo()
-
 	// write scoredEntryPrediction to database
-	if err := scoredEntryPredictionRepo.Insert(ctx, &scoredEntryPrediction); err != nil {
+	if err := s.sepr.Insert(ctx, &scoredEntryPrediction); err != nil {
 		return ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
 
@@ -78,9 +69,7 @@ func (s *ScoredEntryPredictionAgent) CreateScoredEntryPrediction(ctx context.Con
 
 // RetrieveScoredEntryPredictionByIDs handles the retrieval of an existing ScoredEntryPrediction in the database by its ID
 func (s *ScoredEntryPredictionAgent) RetrieveScoredEntryPredictionByIDs(ctx context.Context, entryPredictionID, standingsID string) (ScoredEntryPrediction, error) {
-	scoredEntryPredictionRepo := s.ScoredEntryPredictionRepo()
-
-	retrievedScoredEntryPredictions, err := scoredEntryPredictionRepo.Select(ctx, map[string]interface{}{
+	retrievedScoredEntryPredictions, err := s.sepr.Select(ctx, map[string]interface{}{
 		"entry_prediction_id": entryPredictionID,
 		"standings_id":        standingsID,
 	}, false)
@@ -94,9 +83,7 @@ func (s *ScoredEntryPredictionAgent) RetrieveScoredEntryPredictionByIDs(ctx cont
 // RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber handles the retrieval of
 // the most recently created ScoredEntryPrediction by the provided entry ID and round number
 func (s *ScoredEntryPredictionAgent) RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(ctx context.Context, entryID string, roundNumber int) (*ScoredEntryPrediction, error) {
-	scoredEntryPredictionRepo := s.ScoredEntryPredictionRepo()
-
-	retrievedScoredEntryPredictions, err := scoredEntryPredictionRepo.SelectByEntryIDAndRoundNumber(ctx, entryID, roundNumber)
+	retrievedScoredEntryPredictions, err := s.sepr.SelectByEntryIDAndRoundNumber(ctx, entryID, roundNumber)
 	if err != nil {
 		return nil, domainErrorFromRepositoryError(err)
 	}
@@ -107,10 +94,8 @@ func (s *ScoredEntryPredictionAgent) RetrieveLatestScoredEntryPredictionByEntryI
 
 // UpdateScoredEntryPrediction handles the updating of an existing ScoredEntryPrediction in the database
 func (s *ScoredEntryPredictionAgent) UpdateScoredEntryPrediction(ctx context.Context, scoredEntryPrediction ScoredEntryPrediction) (ScoredEntryPrediction, error) {
-	scoredEntryPredictionRepo := s.ScoredEntryPredictionRepo()
-
 	// ensure the scoredEntryPrediction exists
-	if err := scoredEntryPredictionRepo.Exists(
+	if err := s.sepr.Exists(
 		ctx,
 		scoredEntryPrediction.EntryPredictionID.String(),
 		scoredEntryPrediction.StandingsID.String(),
@@ -122,11 +107,32 @@ func (s *ScoredEntryPredictionAgent) UpdateScoredEntryPrediction(ctx context.Con
 	scoredEntryPrediction.UpdatedAt = sqltypes.ToNullTime(time.Now().Truncate(time.Second))
 
 	// write to database
-	if err := scoredEntryPredictionRepo.Update(ctx, &scoredEntryPrediction); err != nil {
+	if err := s.sepr.Update(ctx, &scoredEntryPrediction); err != nil {
 		return ScoredEntryPrediction{}, domainErrorFromRepositoryError(err)
 	}
 
 	return scoredEntryPrediction, nil
+}
+
+// NewScoredEntryPredictionAgent returns a new ScoredEntryPredictionAgent using the provided repository
+func NewScoredEntryPredictionAgent(er EntryRepository, epr EntryPredictionRepository, sr StandingsRepository, sepr ScoredEntryPredictionRepository) (*ScoredEntryPredictionAgent, error) {
+	switch {
+	case er == nil:
+		return nil, fmt.Errorf("entry repository: %w", ErrIsNil)
+	case epr == nil:
+		return nil, fmt.Errorf("entry prediction repository: %w", ErrIsNil)
+	case sr == nil:
+		return nil, fmt.Errorf("standings repository: %w", ErrIsNil)
+	case sepr == nil:
+		return nil, fmt.Errorf("scored entry prediction repository: %w", ErrIsNil)
+	}
+
+	return &ScoredEntryPredictionAgent{
+		er:   er,
+		epr:  epr,
+		sr:   sr,
+		sepr: sepr,
+	}, nil
 }
 
 // ScoreEntryPredictionBasedOnStandings generates a scored entry prediction from the provided entry prediction and standings

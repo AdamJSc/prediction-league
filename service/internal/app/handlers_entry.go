@@ -287,6 +287,16 @@ func retrieveLatestScoredEntryPrediction(c *HTTPAppContainer) func(w http.Respon
 			internalError(err).writeTo(w)
 			return
 		}
+		sepAgent, err := domain.NewScoredEntryPredictionAgent(
+			c.EntryRepo(),
+			c.EntryPredictionRepo(),
+			c.StandingsRepo(),
+			c.ScoredEntryPredictionRepo(),
+		)
+		if err != nil {
+			internalError(err).writeTo(w)
+			return
+		}
 
 		// parse entry ID from route
 		var entryID string
@@ -311,10 +321,7 @@ func retrieveLatestScoredEntryPrediction(c *HTTPAppContainer) func(w http.Respon
 		defer cancel()
 
 		// get latest scored entry prediction by entry id and round number
-		scoredEntryPredictionAgent := &domain.ScoredEntryPredictionAgent{
-			ScoredEntryPredictionAgentInjector: c,
-		}
-		scoredEntryPredictions, err := scoredEntryPredictionAgent.RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(ctx, entryID, roundNumber)
+		scoredEntryPredictions, err := sepAgent.RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(ctx, entryID, roundNumber)
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return

@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"errors"
 	gocmp "github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"gotest.tools/assert/cmp"
@@ -10,13 +11,35 @@ import (
 	"time"
 )
 
+func TestNewScoredEntryPredictionAgent(t *testing.T) {
+	t.Run("passing nil must return expected error", func(t *testing.T) {
+		tt := []struct {
+			er   domain.EntryRepository
+			epr  domain.EntryPredictionRepository
+			sr   domain.StandingsRepository
+			sepr domain.ScoredEntryPredictionRepository
+		}{
+			{nil, epr, sr, sepr},
+			{er, nil, sr, sepr},
+			{er, epr, nil, sepr},
+			{er, epr, sr, nil},
+		}
+
+		for _, tc := range tt {
+			_, gotErr := domain.NewScoredEntryPredictionAgent(tc.er, tc.epr, tc.sr, tc.sepr)
+			if !errors.Is(gotErr, domain.ErrIsNil) {
+				t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+			}
+		}
+	})
+}
+
 func TestScoredEntryPredictionAgent_CreateScoredEntryPrediction(t *testing.T) {
 	defer truncate(t)
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.ScoredEntryPredictionAgent{
-		ScoredEntryPredictionAgentInjector: injector,
+	agent, err := domain.NewScoredEntryPredictionAgent(er, epr, sr, sepr)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	entry := insertEntry(t, generateTestEntry(t, "Harry Redknapp", "MrHarryR", "harry.redknapp@football.net"))
@@ -107,10 +130,9 @@ func TestScoredEntryPredictionAgent_CreateScoredEntryPrediction(t *testing.T) {
 func TestScoredEntryPredictionAgent_UpdateScoredEntryPrediction(t *testing.T) {
 	defer truncate(t)
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.ScoredEntryPredictionAgent{
-		ScoredEntryPredictionAgentInjector: injector,
+	agent, err := domain.NewScoredEntryPredictionAgent(er, epr, sr, sepr)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	entry := insertEntry(t, generateTestEntry(t, "Harry Redknapp", "MrHarryR", "harry.redknapp@football.net"))
@@ -181,10 +203,9 @@ func TestScoredEntryPredictionAgent_UpdateScoredEntryPrediction(t *testing.T) {
 func TestScoredEntryPredictionAgent_RetrieveScoredEntryPredictionByIDs(t *testing.T) {
 	defer truncate(t)
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.ScoredEntryPredictionAgent{
-		ScoredEntryPredictionAgentInjector: injector,
+	agent, err := domain.NewScoredEntryPredictionAgent(er, epr, sr, sepr)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	entry := insertEntry(t, generateTestEntry(t, "Harry Redknapp", "MrHarryR", "harry.redknapp@football.net"))
@@ -249,10 +270,9 @@ func TestScoredEntryPredictionAgent_RetrieveScoredEntryPredictionByIDs(t *testin
 func TestScoredEntryPredictionAgent_RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(t *testing.T) {
 	defer truncate(t)
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.ScoredEntryPredictionAgent{
-		ScoredEntryPredictionAgentInjector: injector,
+	agent, err := domain.NewScoredEntryPredictionAgent(er, epr, sr, sepr)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	entry := insertEntry(t, generateTestEntry(t, "Harry Redknapp", "MrHarryR", "harry.redknapp@football.net"))

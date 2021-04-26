@@ -21,12 +21,18 @@ func newRetrieveLatestStandingsJob(season domain.Season, client domain.FootballD
 		return nil, fmt.Errorf("cannot instantiate standings agent: %w", err)
 	}
 
-	entryAgent := &domain.EntryAgent{
-		EntryAgentInjector: injector,
+	sepAgent, err := domain.NewScoredEntryPredictionAgent(
+		injector.EntryRepo(),
+		injector.EntryPredictionRepo(),
+		injector.StandingsRepo(),
+		injector.ScoredEntryPredictionRepo(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("cannot instantiate standings agent: %w", err)
 	}
 
-	sepAgent := &domain.ScoredEntryPredictionAgent{
-		ScoredEntryPredictionAgentInjector: injector,
+	entryAgent := &domain.EntryAgent{
+		EntryAgentInjector: injector,
 	}
 
 	commsAgent := &domain.CommunicationsAgent{
