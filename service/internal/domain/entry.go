@@ -68,6 +68,7 @@ type EntryRepository interface {
 	Insert(ctx context.Context, entry *Entry) error
 	Update(ctx context.Context, entry *Entry) error
 	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]Entry, error)
+	SelectBySeasonIDAndApproved(ctx context.Context, seasonID string, approved bool) ([]Entry, error)
 	ExistsByID(ctx context.Context, id string) error
 	GenerateUniqueShortCode(ctx context.Context) (string, error)
 }
@@ -639,7 +640,7 @@ func (e *EntryAgent) SeedEntries(ctx context.Context, entries []Entry) error {
 	return nil
 }
 
-// NewEntryAgent returns a new EntryAgent using the provided repository
+// NewEntryAgent returns a new EntryAgent using the provided repositories
 func NewEntryAgent(er EntryRepository, epr EntryPredictionRepository) (*EntryAgent, error) {
 	switch {
 	case er == nil:

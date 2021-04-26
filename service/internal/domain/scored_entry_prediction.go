@@ -124,7 +124,7 @@ func (s *ScoredEntryPredictionAgent) UpdateScoredEntryPrediction(ctx context.Con
 	return scoredEntryPrediction, nil
 }
 
-// NewScoredEntryPredictionAgent returns a new ScoredEntryPredictionAgent using the provided repository
+// NewScoredEntryPredictionAgent returns a new ScoredEntryPredictionAgent using the provided repositories
 func NewScoredEntryPredictionAgent(er EntryRepository, epr EntryPredictionRepository, sr StandingsRepository, sepr ScoredEntryPredictionRepository) (*ScoredEntryPredictionAgent, error) {
 	switch {
 	case er == nil:

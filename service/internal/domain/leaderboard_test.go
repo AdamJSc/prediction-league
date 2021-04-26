@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"errors"
 	"prediction-league/service/internal/domain"
 	"testing"
 	"time"
@@ -8,6 +9,29 @@ import (
 	gocmp "github.com/google/go-cmp/cmp"
 	"gotest.tools/assert/cmp"
 )
+
+func TestNewLeaderBoardAgent(t *testing.T) {
+	t.Run("passing nil must return expected error", func(t *testing.T) {
+		tt := []struct {
+			er   domain.EntryRepository
+			epr  domain.EntryPredictionRepository
+			sr   domain.StandingsRepository
+			sepr domain.ScoredEntryPredictionRepository
+		}{
+			{nil, epr, sr, sepr},
+			{er, nil, sr, sepr},
+			{er, epr, nil, sepr},
+			{er, epr, sr, nil},
+		}
+
+		for _, tc := range tt {
+			_, gotErr := domain.NewLeaderBoardAgent(tc.er, tc.epr, tc.sr, tc.sepr)
+			if !errors.Is(gotErr, domain.ErrIsNil) {
+				t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+			}
+		}
+	})
+}
 
 func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T) {
 	defer truncate(t)
@@ -184,9 +208,10 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 	// store season ID arbitrarily from one of the valid entries (they should all belong to the same one, apart from robbie)
 	seasonID := harryEntry.SeasonID
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-	agent := &domain.LeaderBoardAgent{LeaderBoardAgentInjector: injector}
+	lbAgent, err := domain.NewLeaderBoardAgent(er, epr, sr, sepr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Logf("harry's entry: %s", harryEntry.ID.String())
 	t.Logf("jamie's entry: %s", jamieEntry.ID.String())
@@ -209,7 +234,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 			},
 		}
 
-		actualLeaderBoard, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 1)
+		actualLeaderBoard, err := lbAgent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 1)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -237,7 +262,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 			LastUpdated: &lastUpdated,
 		}
 
-		actualLeaderBoard, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 2)
+		actualLeaderBoard, err := lbAgent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 2)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -265,7 +290,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 			LastUpdated: &lastUpdated,
 		}
 
-		actualLeaderBoard, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 3)
+		actualLeaderBoard, err := lbAgent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 3)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -293,7 +318,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 			LastUpdated: &lastUpdated,
 		}
 
-		actualLeaderBoard, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 4)
+		actualLeaderBoard, err := lbAgent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 4)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -307,7 +332,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		_, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 5)
+		_, err := lbAgent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 5)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -317,7 +342,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		_, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, "not_a_real_season_id", 2)
+		_, err := lbAgent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, "not_a_real_season_id", 2)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}

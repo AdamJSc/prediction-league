@@ -21,17 +21,12 @@ type LeaderBoardRanking struct {
 	TotalScore int `json:"total_score"`
 }
 
-// LeaderBoardAgentInjector defines the dependencies required by our LeaderBoardAgent
-type LeaderBoardAgentInjector interface {
-	EntryRepo() EntryRepository
-	EntryPredictionRepo() EntryPredictionRepository
-	StandingsRepo() StandingsRepository
-	ScoredEntryPredictionRepo() ScoredEntryPredictionRepository
-}
-
 // LeaderBoardAgent defines the behaviours for handling LeaderBoards
 type LeaderBoardAgent struct {
-	LeaderBoardAgentInjector
+	er   EntryRepository
+	epr  EntryPredictionRepository
+	sr   StandingsRepository
+	sepr ScoredEntryPredictionRepository
 }
 
 // RetrieveLeaderBoardBySeasonAndRoundNumber handles the inflation of a LeaderBoard based on the provided season ID and round number
@@ -42,8 +37,7 @@ func (l *LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context
 	}
 
 	// retrieve the standings model that pertains to the provided ids
-	standingsRepo := l.StandingsRepo()
-	retrievedStandings, err := standingsRepo.Select(ctx, map[string]interface{}{
+	retrievedStandings, err := l.sr.Select(ctx, map[string]interface{}{
 		"season_id":    seasonID,
 		"round_number": roundNumber,
 	}, false)
@@ -56,9 +50,13 @@ func (l *LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context
 			if roundNumber != 1 {
 				return nil, domainErrorFromRepositoryError(err)
 			}
-			lb, err := l.generateEmptyLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, roundNumber)
+			entries, err := l.er.SelectBySeasonIDAndApproved(ctx, seasonID, true)
 			if err != nil {
-				return nil, err
+				return nil, domainErrorFromRepositoryError(err)
+			}
+			lb, err := l.generateEmptyLeaderBoard(ctx, roundNumber, entries)
+			if err != nil {
+				return nil, fmt.Errorf("cannot generate empty leaderboard: %w", err)
 			}
 			return lb, nil
 		}
@@ -73,8 +71,7 @@ func (l *LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context
 	standings := retrievedStandings[0]
 	realmName := RealmFromContext(ctx).Name
 
-	scoredEntryPredictionRepo := l.ScoredEntryPredictionRepo()
-	lbRankings, err := scoredEntryPredictionRepo.SelectEntryCumulativeScoresByRealm(ctx, realmName, seasonID, roundNumber)
+	lbRankings, err := l.sepr.SelectEntryCumulativeScoresByRealm(ctx, realmName, seasonID, roundNumber)
 	if err != nil {
 		switch err.(type) {
 		case MissingDBRecordError:
@@ -84,9 +81,13 @@ func (l *LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context
 			if roundNumber != 1 {
 				return nil, domainErrorFromRepositoryError(err)
 			}
-			lb, err := l.generateEmptyLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, roundNumber)
+			entries, err := l.er.SelectBySeasonIDAndApproved(ctx, seasonID, true)
 			if err != nil {
-				return nil, err
+				return nil, domainErrorFromRepositoryError(err)
+			}
+			lb, err := l.generateEmptyLeaderBoard(ctx, roundNumber, entries)
+			if err != nil {
+				return nil, fmt.Errorf("cannot generate empty leaderboard: %w", err)
 			}
 			return lb, nil
 		}
@@ -105,20 +106,8 @@ func (l *LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context
 	}, nil
 }
 
-// generateEmptyLeaderBoardBySeasonAndRoundNumber returns a leaderboard that comprises all entries belonging to
-// the provided season ID and realm name of the provided context, which are all scored with a 0
-func (l *LeaderBoardAgent) generateEmptyLeaderBoardBySeasonAndRoundNumber(ctx context.Context, seasonID string, roundNumber int) (*LeaderBoard, error) {
-	// setup agent
-	entryAgent, err := NewEntryAgent(l.EntryRepo(), l.EntryPredictionRepo())
-	if err != nil {
-		return nil, fmt.Errorf("cannot instantiate entry agent: %w", err)
-	}
-
-	entries, err := entryAgent.RetrieveEntriesBySeasonID(ctx, seasonID, true)
-	if err != nil {
-		return nil, err
-	}
-
+// generateEmptyLeaderBoard returns a leaderboard that comprises all of the provided entries scored with a 0
+func (l *LeaderBoardAgent) generateEmptyLeaderBoard(ctx context.Context, roundNumber int, entries []Entry) (*LeaderBoard, error) {
 	lb := LeaderBoard{
 		RoundNumber: roundNumber,
 	}
@@ -147,4 +136,25 @@ func (l *LeaderBoardAgent) generateEmptyLeaderBoardBySeasonAndRoundNumber(ctx co
 	}
 
 	return &lb, nil
+}
+
+// NewLeaderBoardAgent returns a new LeaderBoardAgent using the provided repositories
+func NewLeaderBoardAgent(er EntryRepository, epr EntryPredictionRepository, sr StandingsRepository, sepr ScoredEntryPredictionRepository) (*LeaderBoardAgent, error) {
+	switch {
+	case er == nil:
+		return nil, fmt.Errorf("entry repository: %w", ErrIsNil)
+	case epr == nil:
+		return nil, fmt.Errorf("entry prediction repository: %w", ErrIsNil)
+	case sr == nil:
+		return nil, fmt.Errorf("standings repository: %w", ErrIsNil)
+	case sepr == nil:
+		return nil, fmt.Errorf("scored entry prediction repository: %w", ErrIsNil)
+	}
+
+	return &LeaderBoardAgent{
+		er:   er,
+		epr:  epr,
+		sr:   sr,
+		sepr: sepr,
+	}, nil
 }

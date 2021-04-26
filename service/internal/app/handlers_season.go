@@ -82,10 +82,12 @@ func retrieveLeaderBoardHandler(c *HTTPAppContainer) func(w http.ResponseWriter,
 		}
 
 		// retrieve leaderboard
-		agent := &domain.LeaderBoardAgent{
-			LeaderBoardAgentInjector: c,
+		lbAgent, err := domain.NewLeaderBoardAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.ScoredEntryPredictionRepo())
+		if err != nil {
+			internalError(err).writeTo(w)
+			return
 		}
-		lb, err := agent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, roundNumber)
+		lb, err := lbAgent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, roundNumber)
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return

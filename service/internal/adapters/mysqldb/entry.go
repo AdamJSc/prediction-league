@@ -144,6 +144,24 @@ func (e *EntryRepo) Select(ctx context.Context, criteria map[string]interface{},
 	return entries, nil
 }
 
+// SelectBySeasonIDAndApproved retrieves Entries that match the provided criteria
+func (e *EntryRepo) SelectBySeasonIDAndApproved(ctx context.Context, seasonID string, approved bool) ([]domain.Entry, error) {
+	// retrieve entries by season and round number
+	criteria := map[string]interface{}{
+		"season_id": seasonID,
+	}
+	if approved {
+		criteria["approved_at"] = domain.DBQueryCondition{
+			Operator: "IS NOT NULL",
+		}
+	} else {
+		criteria["approved_at"] = domain.DBQueryCondition{
+			Operator: "IS NULL",
+		}
+	}
+	return e.Select(ctx, criteria, false)
+}
+
 // ExistsByID determines whether an Entry with the provided ID exists in the database
 func (e *EntryRepo) ExistsByID(ctx context.Context, id string) error {
 	stmt := `SELECT COUNT(*) FROM entry WHERE id = ?`
