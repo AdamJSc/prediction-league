@@ -26,8 +26,16 @@ func newPredictionWindowOpenJob(season domain.Season, injector app.DependencyInj
 		return nil, fmt.Errorf("cannot instantiate entry agent: %w", err)
 	}
 
-	commsAgent := &domain.CommunicationsAgent{
-		CommunicationsAgentInjector: injector,
+	commsAgent, err := domain.NewCommunicationsAgent(
+		injector.Config(),
+		injector.EntryRepo(),
+		injector.EntryPredictionRepo(),
+		injector.StandingsRepo(),
+		injector.EmailQueue(),
+		injector.Template(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("cannot instantiate communications agent: %w", err)
 	}
 
 	var task = func() {

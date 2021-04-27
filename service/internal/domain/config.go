@@ -22,13 +22,13 @@ type Config struct {
 }
 
 // MustLoadConfigFromEnvPaths loads provided env paths and instantiates a new default config
-func MustLoadConfigFromEnvPaths(l Logger, paths ...string) Config {
+func MustLoadConfigFromEnvPaths(l Logger, paths ...string) *Config {
 	// attempt to load all provided env paths
 	loadEnvFromPaths(l, paths...)
 
 	// ensure that config parses correctly
-	var config Config
-	if err := envconfig.Process("", &config); err != nil {
+	config := &Config{}
+	if err := envconfig.Process("", config); err != nil {
 		log.Fatal(err)
 	}
 

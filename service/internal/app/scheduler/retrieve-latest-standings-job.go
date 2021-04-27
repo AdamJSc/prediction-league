@@ -36,8 +36,16 @@ func newRetrieveLatestStandingsJob(season domain.Season, client domain.FootballD
 		return nil, fmt.Errorf("cannot instantiate scored entry prediction agent: %w", err)
 	}
 
-	commsAgent := &domain.CommunicationsAgent{
-		CommunicationsAgentInjector: injector,
+	commsAgent, err := domain.NewCommunicationsAgent(
+		injector.Config(),
+		injector.EntryRepo(),
+		injector.EntryPredictionRepo(),
+		injector.StandingsRepo(),
+		injector.EmailQueue(),
+		injector.Template(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("cannot instantiate communications agent: %w", err)
 	}
 
 	var task = func() {

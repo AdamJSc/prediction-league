@@ -85,12 +85,16 @@ func createEntryHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http
 }
 
 func updateEntryPaymentDetailsHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	commsAgent := &domain.CommunicationsAgent{CommunicationsAgentInjector: c}
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		var input updateEntryPaymentDetailsRequest
 
+		// setup agents
 		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		if err != nil {
+			internalError(err).writeTo(w)
+			return
+		}
+		commsAgent, err := domain.NewCommunicationsAgent(c.Config(), c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return

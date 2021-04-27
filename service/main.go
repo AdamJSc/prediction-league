@@ -129,7 +129,7 @@ func main() {
 }
 
 type dependencies struct {
-	config                    domain.Config
+	config                    *domain.Config
 	emailClient               domain.EmailClient
 	emailQueue                chan domain.Email
 	router                    *mux.Router
@@ -142,7 +142,7 @@ type dependencies struct {
 	tokenRepo                 *mysqldb.TokenRepo
 }
 
-func (d dependencies) Config() domain.Config           { return d.config }
+func (d dependencies) Config() *domain.Config          { return d.config }
 func (d dependencies) EmailClient() domain.EmailClient { return d.emailClient }
 func (d dependencies) EmailQueue() chan domain.Email   { return d.emailQueue }
 func (d dependencies) Router() *mux.Router             { return d.router }

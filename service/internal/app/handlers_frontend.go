@@ -180,8 +180,6 @@ func frontendPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWriter, 
 }
 
 func frontendShortCodeResetBeginHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	commsAgent := &domain.CommunicationsAgent{CommunicationsAgentInjector: c}
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		var writeResponse = func(data view.ShortCodeResetBeginPageData) {
 			p := newPage(r, c, "Reset my Short Code", "", "Reset my Short Code", data)
@@ -200,6 +198,11 @@ func frontendShortCodeResetBeginHandler(c *HTTPAppContainer) func(w http.Respons
 		tokenAgent, err := domain.NewTokenAgent(c.TokenRepo())
 		if err != nil {
 			internalError(err).writeTo(w)
+		}
+		commsAgent, err := domain.NewCommunicationsAgent(c.Config(), c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template())
+		if err != nil {
+			internalError(err).writeTo(w)
+			return
 		}
 
 		// parse request body (standard form)
@@ -270,8 +273,6 @@ func frontendShortCodeResetBeginHandler(c *HTTPAppContainer) func(w http.Respons
 }
 
 func frontendShortCodeResetCompleteHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
-	commsAgent := &domain.CommunicationsAgent{CommunicationsAgentInjector: c}
-
 	invalidTokenErr := errors.New("oh no! looks like your token is invalid :'( please try resetting your short code again")
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -292,6 +293,11 @@ func frontendShortCodeResetCompleteHandler(c *HTTPAppContainer) func(w http.Resp
 		tokenAgent, err := domain.NewTokenAgent(c.TokenRepo())
 		if err != nil {
 			internalError(err).writeTo(w)
+		}
+		commsAgent, err := domain.NewCommunicationsAgent(c.Config(), c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template())
+		if err != nil {
+			internalError(err).writeTo(w)
+			return
 		}
 
 		// parse reset token from route

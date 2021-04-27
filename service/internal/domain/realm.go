@@ -8,19 +8,22 @@ import (
 
 // Realm represents a realm in which the system has been configured to run
 type Realm struct {
-	Name         string
-	Origin       string `yaml:"origin"`
-	SenderDomain string `yaml:"sender_domain"`
-	Contact      struct {
-		Name            string `yaml:"name"`
-		EmailProper     string `yaml:"email_proper"`
-		EmailSanitised  string `yaml:"email_sanitised"`
-		EmailDoNotReply string `yaml:"email_do_not_reply"`
-	} `yaml:"contact"`
+	Name          string
+	Origin        string        `yaml:"origin"`
+	SenderDomain  string        `yaml:"sender_domain"`
+	Contact       RealmContact  `yaml:"contact"`
 	PIN           string        `yaml:"pin"`
 	SeasonID      string        `yaml:"season_id"`
 	EntryFee      RealmEntryFee `yaml:"entry_fee"`
 	AnalyticsCode string        `yaml:"analytics_code"`
+}
+
+// RealmContact represents the contact details of a realm
+type RealmContact struct {
+	Name            string `yaml:"name"`
+	EmailProper     string `yaml:"email_proper"`
+	EmailSanitised  string `yaml:"email_sanitised"`
+	EmailDoNotReply string `yaml:"email_do_not_reply"`
 }
 
 // RealmEntryFee represents the entry fee settings for a realm

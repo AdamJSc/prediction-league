@@ -2,6 +2,7 @@ package domain_test
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	gocmp "github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
@@ -11,20 +12,42 @@ import (
 	"time"
 )
 
+func TestNewCommunicationsAgent(t *testing.T) {
+	t.Run("passing nil must return expected error", func(t *testing.T) {
+		eml := make(chan domain.Email, 1)
+
+		tt := []struct {
+			cfg *domain.Config
+			er  domain.EntryRepository
+			epr domain.EntryPredictionRepository
+			sr  domain.StandingsRepository
+			eml chan domain.Email
+			tpl *domain.Templates
+		}{
+			{nil, er, epr, sr, eml, tpl},
+			{cfg, nil, epr, sr, eml, tpl},
+			{cfg, er, nil, sr, eml, tpl},
+			{cfg, er, epr, nil, eml, tpl},
+			{cfg, er, epr, sr, nil, tpl},
+			{cfg, er, epr, sr, eml, nil},
+		}
+
+		for _, tc := range tt {
+			_, gotErr := domain.NewCommunicationsAgent(tc.cfg, tc.er, tc.epr, tc.sr, tc.eml, tc.tpl)
+			if !errors.Is(gotErr, domain.ErrIsNil) {
+				t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+			}
+		}
+	})
+}
+
 func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 	defer truncate(t)
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-
-	testPaymentDetails := domain.PaymentDetails{
+	payment := domain.PaymentDetails{
 		Amount:       "£12.34",
 		Reference:    "PAYMENT_REFERENCE",
 		MerchantName: "MERCHANT_NAME",
-	}
-
-	agent := &domain.CommunicationsAgent{
-		CommunicationsAgentInjector: injector,
 	}
 
 	t.Run("issue new entry email with a valid entry must succeed", func(t *testing.T) {
@@ -38,11 +61,17 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 			"harry.redknapp@football.net",
 		)
 
-		if err := agent.IssueNewEntryEmail(ctx, &entry, &testPaymentDetails); err != nil {
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
 			t.Fatal(err)
 		}
 
-		queue := agent.EmailQueue()
+		if err := agent.IssueNewEntryEmail(ctx, &entry, &payment); err != nil {
+			t.Fatal(err)
+		}
+
 		close(queue)
 
 		if len(queue) != 1 {
@@ -53,24 +82,24 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 
 		expectedSubject := domain.EmailSubjectNewEntry
 
-		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_new_entry", domain.NewEntryEmailData{
+		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_new_entry", domain.NewEntryEmailData{
 			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
-				SignOff:      testRealm.Contact.Name,
-				URL:          testRealm.Origin,
-				SupportEmail: testRealm.Contact.EmailProper,
+				SignOff:      rlm.Contact.Name,
+				URL:          rlm.Origin,
+				SupportEmail: rlm.Contact.EmailProper,
 			},
-			PaymentDetails: testPaymentDetails,
-			PredictionsURL: fmt.Sprintf("%s/prediction", testRealm.Origin),
+			PaymentDetails: payment,
+			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
 			ShortCode:      entry.ShortCode,
 		})
 
-		if email.From.Name != testRealm.Contact.Name {
-			expectedGot(t, testRealm.Contact.Name, email.From.Name)
+		if email.From.Name != rlm.Contact.Name {
+			expectedGot(t, rlm.Contact.Name, email.From.Name)
 		}
-		if email.From.Address != testRealm.Contact.EmailDoNotReply {
-			expectedGot(t, testRealm.Contact.EmailDoNotReply, email.From.Address)
+		if email.From.Address != rlm.Contact.EmailDoNotReply {
+			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
 		}
 		if email.To.Name != entry.EntrantName {
 			expectedGot(t, entry.EntrantName, email.To.Name)
@@ -78,11 +107,11 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 		if email.To.Address != entry.EntrantEmail {
 			expectedGot(t, entry.EntrantEmail, email.To.Address)
 		}
-		if email.ReplyTo.Name != testRealm.Contact.Name {
-			expectedGot(t, testRealm.Contact.Name, email.ReplyTo.Name)
+		if email.ReplyTo.Name != rlm.Contact.Name {
+			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
 		}
-		if email.ReplyTo.Address != testRealm.Contact.EmailProper {
-			expectedGot(t, testRealm.Contact.EmailProper, email.ReplyTo.Address)
+		if email.ReplyTo.Address != rlm.Contact.EmailProper {
+			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
 		}
 		if email.Subject != expectedSubject {
 			expectedGot(t, expectedSubject, email.Subject)
@@ -96,7 +125,14 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		err := agent.IssueNewEntryEmail(ctx, nil, &testPaymentDetails)
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssueNewEntryEmail(ctx, nil, &payment)
 		if !cmp.ErrorType(err, domain.InternalError{})().Success() {
 			expectedTypeOfGot(t, domain.InternalError{}, err)
 		}
@@ -113,7 +149,14 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 			"harry.redknapp@football.net",
 		)
 
-		err := agent.IssueNewEntryEmail(ctx, &entry, nil)
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssueNewEntryEmail(ctx, &entry, nil)
 		if !cmp.ErrorType(err, domain.InternalError{})().Success() {
 			expectedTypeOfGot(t, domain.InternalError{}, err)
 		}
@@ -130,21 +173,29 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 			"harry.redknapp@football.net",
 		)
 
-		missingAmount := testPaymentDetails
+		missingAmount := payment
 		missingAmount.Amount = ""
-		err := agent.IssueNewEntryEmail(ctx, &entry, &missingAmount)
+
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssueNewEntryEmail(ctx, &entry, &missingAmount)
 		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
 			expectedTypeOfGot(t, domain.ValidationError{}, err)
 		}
 
-		missingReference := testPaymentDetails
+		missingReference := payment
 		missingReference.Reference = ""
 		err = agent.IssueNewEntryEmail(ctx, &entry, &missingReference)
 		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
 			expectedTypeOfGot(t, domain.ValidationError{}, err)
 		}
 
-		missingMerchantName := testPaymentDetails
+		missingMerchantName := payment
 		missingMerchantName.MerchantName = ""
 		err = agent.IssueNewEntryEmail(ctx, &entry, &missingMerchantName)
 		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
@@ -165,7 +216,14 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 
 		entry.RealmName = "not_a_valid_realm"
 
-		err := agent.IssueNewEntryEmail(ctx, &entry, &testPaymentDetails)
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssueNewEntryEmail(ctx, &entry, &payment)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -184,7 +242,14 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 
 		entry.SeasonID = "not_a_valid_season"
 
-		err := agent.IssueNewEntryEmail(ctx, &entry, &testPaymentDetails)
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssueNewEntryEmail(ctx, &entry, &payment)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -194,23 +259,15 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 	defer truncate(t)
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-
 	entry := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
 		"MrHarryR",
 		"harry.redknapp@football.net",
 	))
+
 	entryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID))
 	standings := insertStandings(t, generateTestStandings(t))
 	scoredEntryPrediction := insertScoredEntryPrediction(t, generateTestScoredEntryPrediction(t, entryPrediction.ID, standings.ID))
-
-	defer close(injector.queue)
-
-	agent := &domain.CommunicationsAgent{
-		CommunicationsAgentInjector: injector,
-	}
 
 	t.Run("issue round complete email with a valid scored entry prediction must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -223,24 +280,29 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 
 		expectedSubject := fmt.Sprintf(domain.EmailSubjectRoundComplete, standings.RoundNumber)
 
-		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_round_complete", domain.RoundCompleteEmailData{
+		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_round_complete", domain.RoundCompleteEmailData{
 			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
-				SignOff:      testRealm.Contact.Name,
-				URL:          testRealm.Origin,
-				SupportEmail: testRealm.Contact.EmailProper,
+				SignOff:      rlm.Contact.Name,
+				URL:          rlm.Origin,
+				SupportEmail: rlm.Contact.EmailProper,
 			},
 			RoundNumber:       standings.RoundNumber,
 			RankingsAsStrings: expectedRankingStrings,
-			LeaderBoardURL:    fmt.Sprintf("%s/leaderboard", testRealm.Origin),
+			LeaderBoardURL:    fmt.Sprintf("%s/leaderboard", rlm.Origin),
 		})
+
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		if err := agent.IssueRoundCompleteEmail(ctx, &scoredEntryPrediction, false); err != nil {
 			t.Fatal(err)
 		}
-
-		queue := agent.EmailQueue()
 
 		if len(queue) != 1 {
 			expectedGot(t, 1, queue)
@@ -248,11 +310,11 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 
 		email := <-queue
 
-		if email.From.Name != testRealm.Contact.Name {
-			expectedGot(t, testRealm.Contact.Name, email.From.Name)
+		if email.From.Name != rlm.Contact.Name {
+			expectedGot(t, rlm.Contact.Name, email.From.Name)
 		}
-		if email.From.Address != testRealm.Contact.EmailDoNotReply {
-			expectedGot(t, testRealm.Contact.EmailDoNotReply, email.From.Address)
+		if email.From.Address != rlm.Contact.EmailDoNotReply {
+			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
 		}
 		if email.To.Name != entry.EntrantName {
 			expectedGot(t, entry.EntrantName, email.To.Name)
@@ -260,11 +322,11 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		if email.To.Address != entry.EntrantEmail {
 			expectedGot(t, entry.EntrantEmail, email.To.Address)
 		}
-		if email.ReplyTo.Name != testRealm.Contact.Name {
-			expectedGot(t, testRealm.Contact.Name, email.ReplyTo.Name)
+		if email.ReplyTo.Name != rlm.Contact.Name {
+			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
 		}
-		if email.ReplyTo.Address != testRealm.Contact.EmailProper {
-			expectedGot(t, testRealm.Contact.EmailProper, email.ReplyTo.Address)
+		if email.ReplyTo.Address != rlm.Contact.EmailProper {
+			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
 		}
 		if email.Subject != expectedSubject {
 			expectedGot(t, expectedSubject, email.Subject)
@@ -285,24 +347,29 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 
 		expectedSubject := fmt.Sprintf(domain.EmailSubjectRoundComplete, standings.RoundNumber)
 
-		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_final_round_complete", domain.RoundCompleteEmailData{
+		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_final_round_complete", domain.RoundCompleteEmailData{
 			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
-				SignOff:      testRealm.Contact.Name,
-				URL:          testRealm.Origin,
-				SupportEmail: testRealm.Contact.EmailProper,
+				SignOff:      rlm.Contact.Name,
+				URL:          rlm.Origin,
+				SupportEmail: rlm.Contact.EmailProper,
 			},
 			RoundNumber:       standings.RoundNumber,
 			RankingsAsStrings: expectedRankingStrings,
-			LeaderBoardURL:    fmt.Sprintf("%s/leaderboard", testRealm.Origin),
+			LeaderBoardURL:    fmt.Sprintf("%s/leaderboard", rlm.Origin),
 		})
+
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		if err := agent.IssueRoundCompleteEmail(ctx, &scoredEntryPrediction, true); err != nil {
 			t.Fatal(err)
 		}
-
-		queue := agent.EmailQueue()
 
 		if len(queue) != 1 {
 			expectedGot(t, 1, queue)
@@ -310,11 +377,11 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 
 		email := <-queue
 
-		if email.From.Name != testRealm.Contact.Name {
-			expectedGot(t, testRealm.Contact.Name, email.From.Name)
+		if email.From.Name != rlm.Contact.Name {
+			expectedGot(t, rlm.Contact.Name, email.From.Name)
 		}
-		if email.From.Address != testRealm.Contact.EmailDoNotReply {
-			expectedGot(t, testRealm.Contact.EmailDoNotReply, email.From.Address)
+		if email.From.Address != rlm.Contact.EmailDoNotReply {
+			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
 		}
 		if email.To.Name != entry.EntrantName {
 			expectedGot(t, entry.EntrantName, email.To.Name)
@@ -322,11 +389,11 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		if email.To.Address != entry.EntrantEmail {
 			expectedGot(t, entry.EntrantEmail, email.To.Address)
 		}
-		if email.ReplyTo.Name != testRealm.Contact.Name {
-			expectedGot(t, testRealm.Contact.Name, email.ReplyTo.Name)
+		if email.ReplyTo.Name != rlm.Contact.Name {
+			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
 		}
-		if email.ReplyTo.Address != testRealm.Contact.EmailProper {
-			expectedGot(t, testRealm.Contact.EmailProper, email.ReplyTo.Address)
+		if email.ReplyTo.Address != rlm.Contact.EmailProper {
+			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
 		}
 		if email.Subject != expectedSubject {
 			expectedGot(t, expectedSubject, email.Subject)
@@ -348,6 +415,13 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		sep := scoredEntryPrediction
 		sep.EntryPredictionID = invalidUUID
 
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		err = agent.IssueRoundCompleteEmail(ctx, &sep, false)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
@@ -365,6 +439,13 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 
 		sep := scoredEntryPrediction
 		sep.StandingsID = invalidUUID
+
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		err = agent.IssueRoundCompleteEmail(ctx, &sep, false)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
@@ -387,7 +468,14 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		invalidEntryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, entryWithInvalidRealm.ID))
 		invalidScoredEntryPrediction := insertScoredEntryPrediction(t, generateTestScoredEntryPrediction(t, invalidEntryPrediction.ID, standings.ID))
 
-		err := agent.IssueRoundCompleteEmail(ctx, &invalidScoredEntryPrediction, false)
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssueRoundCompleteEmail(ctx, &invalidScoredEntryPrediction, false)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -408,7 +496,14 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		invalidEntryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, entryWithInvalidSeason.ID))
 		invalidScoredEntryPrediction := insertScoredEntryPrediction(t, generateTestScoredEntryPrediction(t, invalidEntryPrediction.ID, standings.ID))
 
-		err := agent.IssueRoundCompleteEmail(ctx, &invalidScoredEntryPrediction, false)
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssueRoundCompleteEmail(ctx, &invalidScoredEntryPrediction, false)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -421,7 +516,14 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		sep := scoredEntryPrediction
 		sep.Rankings = nil
 
-		err := agent.IssueRoundCompleteEmail(ctx, &sep, false)
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssueRoundCompleteEmail(ctx, &sep, false)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -430,13 +532,6 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 
 func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 	defer truncate(t)
-
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-
-	agent := &domain.CommunicationsAgent{
-		CommunicationsAgentInjector: injector,
-	}
 
 	t.Run("issue short code reset begin email with a valid entry must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -451,12 +546,16 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 
 		resetToken := "RESET12345"
 
-		if err := agent.IssueShortCodeResetBeginEmail(ctx, &entry, resetToken); err != nil {
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
 			t.Fatal(err)
 		}
 
-		queue := agent.EmailQueue()
-		close(queue)
+		if err := agent.IssueShortCodeResetBeginEmail(ctx, &entry, resetToken); err != nil {
+			t.Fatal(err)
+		}
 
 		if len(queue) != 1 {
 			expectedGot(t, 1, queue)
@@ -466,22 +565,22 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 
 		expectedSubject := domain.EmailSubjectShortCodeResetBegin
 
-		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_short_code_reset_begin", domain.ShortCodeResetBeginEmail{
+		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_short_code_reset_begin", domain.ShortCodeResetBeginEmail{
 			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
-				SignOff:      testRealm.Contact.Name,
-				URL:          testRealm.Origin,
-				SupportEmail: testRealm.Contact.EmailProper,
+				SignOff:      rlm.Contact.Name,
+				URL:          rlm.Origin,
+				SupportEmail: rlm.Contact.EmailProper,
 			},
-			ResetURL: fmt.Sprintf("%s/reset/%s", testRealm.Origin, resetToken),
+			ResetURL: fmt.Sprintf("%s/reset/%s", rlm.Origin, resetToken),
 		})
 
-		if email.From.Name != testRealm.Contact.Name {
-			expectedGot(t, testRealm.Contact.Name, email.From.Name)
+		if email.From.Name != rlm.Contact.Name {
+			expectedGot(t, rlm.Contact.Name, email.From.Name)
 		}
-		if email.From.Address != testRealm.Contact.EmailDoNotReply {
-			expectedGot(t, testRealm.Contact.EmailDoNotReply, email.From.Address)
+		if email.From.Address != rlm.Contact.EmailDoNotReply {
+			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
 		}
 		if email.To.Name != entry.EntrantName {
 			expectedGot(t, entry.EntrantName, email.To.Name)
@@ -489,11 +588,11 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 		if email.To.Address != entry.EntrantEmail {
 			expectedGot(t, entry.EntrantEmail, email.To.Address)
 		}
-		if email.ReplyTo.Name != testRealm.Contact.Name {
-			expectedGot(t, testRealm.Contact.Name, email.ReplyTo.Name)
+		if email.ReplyTo.Name != rlm.Contact.Name {
+			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
 		}
-		if email.ReplyTo.Address != testRealm.Contact.EmailProper {
-			expectedGot(t, testRealm.Contact.EmailProper, email.ReplyTo.Address)
+		if email.ReplyTo.Address != rlm.Contact.EmailProper {
+			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
 		}
 		if email.Subject != expectedSubject {
 			expectedGot(t, expectedSubject, email.Subject)
@@ -507,7 +606,14 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		err := agent.IssueShortCodeResetBeginEmail(ctx, nil, "dat_string")
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssueShortCodeResetBeginEmail(ctx, nil, "dat_string")
 		if !cmp.ErrorType(err, domain.InternalError{})().Success() {
 			expectedTypeOfGot(t, domain.InternalError{}, err)
 		}
@@ -526,7 +632,14 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 
 		entry.RealmName = "not_a_valid_realm"
 
-		err := agent.IssueShortCodeResetBeginEmail(ctx, &entry, "dat_string")
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssueShortCodeResetBeginEmail(ctx, &entry, "dat_string")
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -545,7 +658,14 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 
 		entry.SeasonID = "not_a_valid_season"
 
-		err := agent.IssueShortCodeResetBeginEmail(ctx, &entry, "dat_string")
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssueShortCodeResetBeginEmail(ctx, &entry, "dat_string")
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -554,13 +674,6 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 
 func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 	defer truncate(t)
-
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-
-	agent := &domain.CommunicationsAgent{
-		CommunicationsAgentInjector: injector,
-	}
 
 	t.Run("issue short code reset complete email with a valid entry must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -573,12 +686,16 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 			"harry.redknapp@football.net",
 		)
 
-		if err := agent.IssueShortCodeResetCompleteEmail(ctx, &entry); err != nil {
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
 			t.Fatal(err)
 		}
 
-		queue := agent.EmailQueue()
-		close(queue)
+		if err := agent.IssueShortCodeResetCompleteEmail(ctx, &entry); err != nil {
+			t.Fatal(err)
+		}
 
 		if len(queue) != 1 {
 			expectedGot(t, 1, queue)
@@ -588,23 +705,23 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 
 		expectedSubject := domain.EmailSubjectShortCodeResetComplete
 
-		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_short_code_reset_complete", domain.ShortCodeResetCompleteEmail{
+		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_short_code_reset_complete", domain.ShortCodeResetCompleteEmail{
 			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
-				SignOff:      testRealm.Contact.Name,
-				URL:          testRealm.Origin,
-				SupportEmail: testRealm.Contact.EmailProper,
+				SignOff:      rlm.Contact.Name,
+				URL:          rlm.Origin,
+				SupportEmail: rlm.Contact.EmailProper,
 			},
-			PredictionsURL: fmt.Sprintf("%s/prediction", testRealm.Origin),
+			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
 			ShortCode:      entry.ShortCode,
 		})
 
-		if email.From.Name != testRealm.Contact.Name {
-			expectedGot(t, testRealm.Contact.Name, email.From.Name)
+		if email.From.Name != rlm.Contact.Name {
+			expectedGot(t, rlm.Contact.Name, email.From.Name)
 		}
-		if email.From.Address != testRealm.Contact.EmailDoNotReply {
-			expectedGot(t, testRealm.Contact.EmailDoNotReply, email.From.Address)
+		if email.From.Address != rlm.Contact.EmailDoNotReply {
+			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
 		}
 		if email.To.Name != entry.EntrantName {
 			expectedGot(t, entry.EntrantName, email.To.Name)
@@ -612,11 +729,11 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 		if email.To.Address != entry.EntrantEmail {
 			expectedGot(t, entry.EntrantEmail, email.To.Address)
 		}
-		if email.ReplyTo.Name != testRealm.Contact.Name {
-			expectedGot(t, testRealm.Contact.Name, email.ReplyTo.Name)
+		if email.ReplyTo.Name != rlm.Contact.Name {
+			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
 		}
-		if email.ReplyTo.Address != testRealm.Contact.EmailProper {
-			expectedGot(t, testRealm.Contact.EmailProper, email.ReplyTo.Address)
+		if email.ReplyTo.Address != rlm.Contact.EmailProper {
+			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
 		}
 		if email.Subject != expectedSubject {
 			expectedGot(t, expectedSubject, email.Subject)
@@ -630,7 +747,14 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		err := agent.IssueShortCodeResetCompleteEmail(ctx, nil)
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssueShortCodeResetCompleteEmail(ctx, nil)
 		if !cmp.ErrorType(err, domain.InternalError{})().Success() {
 			expectedTypeOfGot(t, domain.InternalError{}, err)
 		}
@@ -649,7 +773,14 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 
 		entry.RealmName = "not_a_valid_realm"
 
-		err := agent.IssueShortCodeResetCompleteEmail(ctx, &entry)
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssueShortCodeResetCompleteEmail(ctx, &entry)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -668,7 +799,14 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 
 		entry.SeasonID = "not_a_valid_season"
 
-		err := agent.IssueShortCodeResetCompleteEmail(ctx, &entry)
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssueShortCodeResetCompleteEmail(ctx, &entry)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -678,16 +816,9 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 	defer truncate(t)
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-
 	loc, err := time.LoadLocation("Europe/London")
 	if err != nil {
 		t.Fatal(err)
-	}
-
-	agent := &domain.CommunicationsAgent{
-		CommunicationsAgentInjector: injector,
 	}
 
 	t.Run("issue prediction window open email with a valid entry and sequenced timeframe that is not last must succeed", func(t *testing.T) {
@@ -710,11 +841,16 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 			},
 		}
 
-		if err := agent.IssuePredictionWindowOpenEmail(ctx, &entry, window); err != nil {
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
 			t.Fatal(err)
 		}
 
-		queue := agent.EmailQueue()
+		if err = agent.IssuePredictionWindowOpenEmail(ctx, &entry, window); err != nil {
+			t.Fatal(err)
+		}
 
 		if len(queue) != 1 {
 			expectedGot(t, 1, queue)
@@ -724,13 +860,13 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 
 		expectedSubject := domain.EmailSubjectPredictionWindowOpen
 
-		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_prediction_window_open", domain.PredictionWindowEmail{
+		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_prediction_window_open", domain.PredictionWindowEmail{
 			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
-				SignOff:      testRealm.Contact.Name,
-				URL:          testRealm.Origin,
-				SupportEmail: testRealm.Contact.EmailProper,
+				SignOff:      rlm.Contact.Name,
+				URL:          rlm.Origin,
+				SupportEmail: rlm.Contact.EmailProper,
 			},
 			Window: domain.WindowData{
 				Current:            1,
@@ -739,14 +875,14 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 				CurrentClosingDate: "Sat 26 May",
 				CurrentClosingTime: "3:00pm",
 			},
-			PredictionsURL: fmt.Sprintf("%s/prediction", testRealm.Origin),
+			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
 		})
 
-		if email.From.Name != testRealm.Contact.Name {
-			expectedGot(t, testRealm.Contact.Name, email.From.Name)
+		if email.From.Name != rlm.Contact.Name {
+			expectedGot(t, rlm.Contact.Name, email.From.Name)
 		}
-		if email.From.Address != testRealm.Contact.EmailDoNotReply {
-			expectedGot(t, testRealm.Contact.EmailDoNotReply, email.From.Address)
+		if email.From.Address != rlm.Contact.EmailDoNotReply {
+			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
 		}
 		if email.To.Name != entry.EntrantName {
 			expectedGot(t, entry.EntrantName, email.To.Name)
@@ -754,11 +890,11 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 		if email.To.Address != entry.EntrantEmail {
 			expectedGot(t, entry.EntrantEmail, email.To.Address)
 		}
-		if email.ReplyTo.Name != testRealm.Contact.Name {
-			expectedGot(t, testRealm.Contact.Name, email.ReplyTo.Name)
+		if email.ReplyTo.Name != rlm.Contact.Name {
+			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
 		}
-		if email.ReplyTo.Address != testRealm.Contact.EmailProper {
-			expectedGot(t, testRealm.Contact.EmailProper, email.ReplyTo.Address)
+		if email.ReplyTo.Address != rlm.Contact.EmailProper {
+			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
 		}
 		if email.Subject != expectedSubject {
 			expectedGot(t, expectedSubject, email.Subject)
@@ -788,12 +924,16 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 			},
 		}
 
-		if err := agent.IssuePredictionWindowOpenEmail(ctx, &entry, window); err != nil {
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
 			t.Fatal(err)
 		}
 
-		queue := agent.EmailQueue()
-		close(queue)
+		if err := agent.IssuePredictionWindowOpenEmail(ctx, &entry, window); err != nil {
+			t.Fatal(err)
+		}
 
 		if len(queue) != 1 {
 			expectedGot(t, 1, queue)
@@ -803,13 +943,13 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 
 		expectedSubject := domain.EmailSubjectPredictionWindowOpenFinal
 
-		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_prediction_window_open", domain.PredictionWindowEmail{
+		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_prediction_window_open", domain.PredictionWindowEmail{
 			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
-				SignOff:      testRealm.Contact.Name,
-				URL:          testRealm.Origin,
-				SupportEmail: testRealm.Contact.EmailProper,
+				SignOff:      rlm.Contact.Name,
+				URL:          rlm.Origin,
+				SupportEmail: rlm.Contact.EmailProper,
 			},
 			Window: domain.WindowData{
 				Current:            2,
@@ -818,14 +958,14 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 				CurrentClosingDate: "Sat 26 May",
 				CurrentClosingTime: "3:00pm",
 			},
-			PredictionsURL: fmt.Sprintf("%s/prediction", testRealm.Origin),
+			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
 		})
 
-		if email.From.Name != testRealm.Contact.Name {
-			expectedGot(t, testRealm.Contact.Name, email.From.Name)
+		if email.From.Name != rlm.Contact.Name {
+			expectedGot(t, rlm.Contact.Name, email.From.Name)
 		}
-		if email.From.Address != testRealm.Contact.EmailDoNotReply {
-			expectedGot(t, testRealm.Contact.EmailDoNotReply, email.From.Address)
+		if email.From.Address != rlm.Contact.EmailDoNotReply {
+			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
 		}
 		if email.To.Name != entry.EntrantName {
 			expectedGot(t, entry.EntrantName, email.To.Name)
@@ -833,11 +973,11 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 		if email.To.Address != entry.EntrantEmail {
 			expectedGot(t, entry.EntrantEmail, email.To.Address)
 		}
-		if email.ReplyTo.Name != testRealm.Contact.Name {
-			expectedGot(t, testRealm.Contact.Name, email.ReplyTo.Name)
+		if email.ReplyTo.Name != rlm.Contact.Name {
+			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
 		}
-		if email.ReplyTo.Address != testRealm.Contact.EmailProper {
-			expectedGot(t, testRealm.Contact.EmailProper, email.ReplyTo.Address)
+		if email.ReplyTo.Address != rlm.Contact.EmailProper {
+			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
 		}
 		if email.Subject != expectedSubject {
 			expectedGot(t, expectedSubject, email.Subject)
@@ -851,7 +991,14 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		err := agent.IssuePredictionWindowOpenEmail(ctx, nil, domain.SequencedTimeFrame{})
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssuePredictionWindowOpenEmail(ctx, nil, domain.SequencedTimeFrame{})
 		if !cmp.ErrorType(err, domain.InternalError{})().Success() {
 			expectedTypeOfGot(t, domain.InternalError{}, err)
 		}
@@ -870,7 +1017,14 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 
 		entry.RealmName = "not_a_valid_realm"
 
-		err := agent.IssuePredictionWindowOpenEmail(ctx, &entry, domain.SequencedTimeFrame{})
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssuePredictionWindowOpenEmail(ctx, &entry, domain.SequencedTimeFrame{})
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -889,7 +1043,14 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 
 		entry.SeasonID = "not_a_valid_season"
 
-		err := agent.IssuePredictionWindowOpenEmail(ctx, &entry, domain.SequencedTimeFrame{})
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssuePredictionWindowOpenEmail(ctx, &entry, domain.SequencedTimeFrame{})
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -918,7 +1079,14 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 
 		expectedErrMsg := domain.ErrCurrentTimeFrameIsMissing.Error()
 
-		err := agent.IssuePredictionWindowOpenEmail(ctx, &entry, window)
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssuePredictionWindowOpenEmail(ctx, &entry, window)
 		if err == nil || err.Error() != expectedErrMsg {
 			expectedGot(t, expectedErrMsg, err)
 		}
@@ -928,16 +1096,9 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 	defer truncate(t)
 
-	testRealm := newTestRealm(t)
-	injector := newTestInjector(t, testRealm, templates)
-
 	loc, err := time.LoadLocation("Europe/London")
 	if err != nil {
 		t.Fatal(err)
-	}
-
-	agent := &domain.CommunicationsAgent{
-		CommunicationsAgentInjector: injector,
 	}
 
 	t.Run("issue prediction window closing email with a valid entry and sequenced timeframe that is not last must succeed", func(t *testing.T) {
@@ -964,11 +1125,16 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 			},
 		}
 
-		if err := agent.IssuePredictionWindowClosingEmail(ctx, &entry, window); err != nil {
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
 			t.Fatal(err)
 		}
 
-		queue := agent.EmailQueue()
+		if err = agent.IssuePredictionWindowClosingEmail(ctx, &entry, window); err != nil {
+			t.Fatal(err)
+		}
 
 		if len(queue) != 1 {
 			expectedGot(t, 1, queue)
@@ -978,13 +1144,13 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 		expectedSubject := domain.EmailSubjectPredictionWindowClosing
 
-		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_prediction_window_closing", domain.PredictionWindowEmail{
+		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_prediction_window_closing", domain.PredictionWindowEmail{
 			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
-				SignOff:      testRealm.Contact.Name,
-				URL:          testRealm.Origin,
-				SupportEmail: testRealm.Contact.EmailProper,
+				SignOff:      rlm.Contact.Name,
+				URL:          rlm.Origin,
+				SupportEmail: rlm.Contact.EmailProper,
 			},
 			Window: domain.WindowData{
 				Current:            1,
@@ -995,14 +1161,14 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 				NextOpeningDate:    "Tue 29 May",
 				NextOpeningTime:    "4:00pm",
 			},
-			PredictionsURL: fmt.Sprintf("%s/prediction", testRealm.Origin),
+			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
 		})
 
-		if email.From.Name != testRealm.Contact.Name {
-			expectedGot(t, testRealm.Contact.Name, email.From.Name)
+		if email.From.Name != rlm.Contact.Name {
+			expectedGot(t, rlm.Contact.Name, email.From.Name)
 		}
-		if email.From.Address != testRealm.Contact.EmailDoNotReply {
-			expectedGot(t, testRealm.Contact.EmailDoNotReply, email.From.Address)
+		if email.From.Address != rlm.Contact.EmailDoNotReply {
+			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
 		}
 		if email.To.Name != entry.EntrantName {
 			expectedGot(t, entry.EntrantName, email.To.Name)
@@ -1010,11 +1176,11 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 		if email.To.Address != entry.EntrantEmail {
 			expectedGot(t, entry.EntrantEmail, email.To.Address)
 		}
-		if email.ReplyTo.Name != testRealm.Contact.Name {
-			expectedGot(t, testRealm.Contact.Name, email.ReplyTo.Name)
+		if email.ReplyTo.Name != rlm.Contact.Name {
+			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
 		}
-		if email.ReplyTo.Address != testRealm.Contact.EmailProper {
-			expectedGot(t, testRealm.Contact.EmailProper, email.ReplyTo.Address)
+		if email.ReplyTo.Address != rlm.Contact.EmailProper {
+			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
 		}
 		if email.Subject != expectedSubject {
 			expectedGot(t, expectedSubject, email.Subject)
@@ -1044,12 +1210,16 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 			},
 		}
 
-		if err := agent.IssuePredictionWindowClosingEmail(ctx, &entry, window); err != nil {
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
 			t.Fatal(err)
 		}
 
-		queue := agent.EmailQueue()
-		close(queue)
+		if err := agent.IssuePredictionWindowClosingEmail(ctx, &entry, window); err != nil {
+			t.Fatal(err)
+		}
 
 		if len(queue) != 1 {
 			expectedGot(t, 1, queue)
@@ -1059,13 +1229,13 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 		expectedSubject := domain.EmailSubjectPredictionWindowClosingFinal
 
-		expectedPlainText := mustExecuteTemplate(t, templates, "email_txt_prediction_window_closing", domain.PredictionWindowEmail{
+		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_prediction_window_closing", domain.PredictionWindowEmail{
 			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
-				SignOff:      testRealm.Contact.Name,
-				URL:          testRealm.Origin,
-				SupportEmail: testRealm.Contact.EmailProper,
+				SignOff:      rlm.Contact.Name,
+				URL:          rlm.Origin,
+				SupportEmail: rlm.Contact.EmailProper,
 			},
 			Window: domain.WindowData{
 				Current:            2,
@@ -1074,14 +1244,14 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 				CurrentClosingDate: "Sat 26 May",
 				CurrentClosingTime: "3:00pm",
 			},
-			PredictionsURL: fmt.Sprintf("%s/prediction", testRealm.Origin),
+			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
 		})
 
-		if email.From.Name != testRealm.Contact.Name {
-			expectedGot(t, testRealm.Contact.Name, email.From.Name)
+		if email.From.Name != rlm.Contact.Name {
+			expectedGot(t, rlm.Contact.Name, email.From.Name)
 		}
-		if email.From.Address != testRealm.Contact.EmailDoNotReply {
-			expectedGot(t, testRealm.Contact.EmailDoNotReply, email.From.Address)
+		if email.From.Address != rlm.Contact.EmailDoNotReply {
+			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
 		}
 		if email.To.Name != entry.EntrantName {
 			expectedGot(t, entry.EntrantName, email.To.Name)
@@ -1089,11 +1259,11 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 		if email.To.Address != entry.EntrantEmail {
 			expectedGot(t, entry.EntrantEmail, email.To.Address)
 		}
-		if email.ReplyTo.Name != testRealm.Contact.Name {
-			expectedGot(t, testRealm.Contact.Name, email.ReplyTo.Name)
+		if email.ReplyTo.Name != rlm.Contact.Name {
+			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
 		}
-		if email.ReplyTo.Address != testRealm.Contact.EmailProper {
-			expectedGot(t, testRealm.Contact.EmailProper, email.ReplyTo.Address)
+		if email.ReplyTo.Address != rlm.Contact.EmailProper {
+			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
 		}
 		if email.Subject != expectedSubject {
 			expectedGot(t, expectedSubject, email.Subject)
@@ -1107,7 +1277,14 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		err := agent.IssuePredictionWindowClosingEmail(ctx, nil, domain.SequencedTimeFrame{})
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssuePredictionWindowClosingEmail(ctx, nil, domain.SequencedTimeFrame{})
 		if !cmp.ErrorType(err, domain.InternalError{})().Success() {
 			expectedTypeOfGot(t, domain.InternalError{}, err)
 		}
@@ -1126,7 +1303,14 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 		entry.RealmName = "not_a_valid_realm"
 
-		err := agent.IssuePredictionWindowClosingEmail(ctx, &entry, domain.SequencedTimeFrame{})
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssuePredictionWindowClosingEmail(ctx, &entry, domain.SequencedTimeFrame{})
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -1145,7 +1329,14 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 		entry.SeasonID = "not_a_valid_season"
 
-		err := agent.IssuePredictionWindowClosingEmail(ctx, &entry, domain.SequencedTimeFrame{})
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssuePredictionWindowClosingEmail(ctx, &entry, domain.SequencedTimeFrame{})
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -1174,7 +1365,14 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 		expectedErrMsg := domain.ErrCurrentTimeFrameIsMissing.Error()
 
-		err := agent.IssuePredictionWindowClosingEmail(ctx, &entry, window)
+		queue := make(chan domain.Email, 1)
+
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = agent.IssuePredictionWindowClosingEmail(ctx, &entry, window)
 		if err == nil || err.Error() != expectedErrMsg {
 			expectedGot(t, expectedErrMsg, err)
 		}

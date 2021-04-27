@@ -31,7 +31,7 @@ type DependencyInjector interface {
 	TokenRepoInjector
 }
 
-type ConfigInjector interface{ Config() domain.Config }
+type ConfigInjector interface{ Config() *domain.Config }
 type EmailClientInjector interface{ EmailClient() domain.EmailClient }
 type EmailQueueInjector interface{ EmailQueue() chan domain.Email }
 type RouterInjector interface{ Router() *mux.Router }

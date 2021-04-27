@@ -25,15 +25,17 @@ import (
 )
 
 var (
+	cfg        *domain.Config
 	db         *sql.DB
-	er         domain.EntryRepository
 	epr        domain.EntryPredictionRepository
+	er         domain.EntryRepository
+	rlm        *domain.Realm
 	sepr       domain.ScoredEntryPredictionRepository
 	sr         domain.StandingsRepository
+	testSeason domain.Season
+	tpl        *domain.Templates
 	tr         domain.TokenRepository
 	utc        *time.Location
-	templates  *domain.Templates
-	testSeason domain.Season
 )
 
 const (
@@ -114,7 +116,10 @@ func TestMain(m *testing.M) {
 	// find service path and load templates
 	// everything before the last occurrence of "service" within the current working directory path
 	dirOfServicePath := wd[:strings.LastIndex(wd, "service")]
-	templates = domain.MustParseTemplates(fmt.Sprintf("%s/service/views", dirOfServicePath))
+	tpl = domain.MustParseTemplates(fmt.Sprintf("%s/service/views", dirOfServicePath))
+
+	rlm = newTestRealm()
+	cfg = newTestConfig(*rlm)
 
 	// set testSeason to the first entry within our domain.SeasonsDataStore slice
 	keys := reflect.ValueOf(domain.SeasonsDataStore).MapKeys()
@@ -400,60 +405,16 @@ func insertScoredEntryPrediction(t *testing.T, scoredEntryPrediction domain.Scor
 	return scoredEntryPrediction
 }
 
-type testInjector struct {
-	config    domain.Config
-	queue     chan domain.Email
-	templates *domain.Templates
-	er        domain.EntryRepository
-	epr       domain.EntryPredictionRepository
-	sr        domain.StandingsRepository
-	sepr      domain.ScoredEntryPredictionRepository
-	tr        domain.TokenRepository
-}
-
-func (t *testInjector) Config() domain.Config             { return t.config }
-func (t *testInjector) EntryRepo() domain.EntryRepository { return t.er }
-func (t *testInjector) EntryPredictionRepo() domain.EntryPredictionRepository {
-	return t.epr
-}
-func (t *testInjector) StandingsRepo() domain.StandingsRepository { return t.sr }
-func (t *testInjector) ScoredEntryPredictionRepo() domain.ScoredEntryPredictionRepository {
-	return t.sepr
-}
-func (t *testInjector) TokenRepo() domain.TokenRepository {
-	return t.tr
-}
-func (t *testInjector) EmailQueue() chan domain.Email { return t.queue }
-func (t *testInjector) Template() *domain.Templates   { return t.templates }
-
-func newTestInjector(t *testing.T, r domain.Realm, tpl *domain.Templates) *testInjector {
-	t.Helper()
-	return &testInjector{
-		config:    newTestConfig(t, r),
-		queue:     make(chan domain.Email, 1),
-		templates: tpl,
-		er:        er,
-		epr:       epr,
-		sr:        sr,
-		sepr:      sepr,
-		tr:        tr,
-	}
-}
-
-func newTestConfig(t *testing.T, r domain.Realm) domain.Config {
-	t.Helper()
-
-	return domain.Config{
+func newTestConfig(r domain.Realm) *domain.Config {
+	return &domain.Config{
 		Realms: map[string]domain.Realm{
 			r.Name: r,
 		},
 	}
 }
 
-func newTestRealm(t *testing.T) domain.Realm {
-	t.Helper()
-
-	realm := domain.Realm{
+func newTestRealm() *domain.Realm {
+	return &domain.Realm{
 		Name:     "TEST_REALM",
 		Origin:   "http://test_realm.org",
 		PIN:      "12345",
@@ -466,12 +427,11 @@ func newTestRealm(t *testing.T) domain.Realm {
 				"£0.01 processing fee",
 			},
 		},
+		Contact: domain.RealmContact{
+			Name:            "Harry R and the PL Team",
+			EmailProper:     "hello@world.net",
+			EmailSanitised:  "hello (at) world (dot) net",
+			EmailDoNotReply: "do_not_reply@world.net",
+		},
 	}
-
-	realm.Contact.Name = "Harry R and the PL Team"
-	realm.Contact.EmailProper = "hello@world.net"
-	realm.Contact.EmailSanitised = "hello (at) world (dot) net"
-	realm.Contact.EmailDoNotReply = "do_not_reply@world.net"
-
-	return realm
 }

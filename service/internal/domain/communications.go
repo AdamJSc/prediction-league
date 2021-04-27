@@ -18,18 +18,15 @@ const (
 	EmailSubjectPredictionWindowClosingFinal = "Final chance to revise your Prediction this season!"
 )
 
-// CommunicationsAgentInjector defines the dependencies required by our CommunicationsAgent
-type CommunicationsAgentInjector interface {
-	Config() Config
-	EntryRepo() EntryRepository
-	EntryPredictionRepo() EntryPredictionRepository
-	StandingsRepo() StandingsRepository
-	EmailQueue() chan Email
-	Template() *Templates
-}
-
 // CommunicationsAgent defines the behaviours for issuing communications
-type CommunicationsAgent struct{ CommunicationsAgentInjector }
+type CommunicationsAgent struct {
+	cfg *Config
+	er  EntryRepository
+	epr EntryPredictionRepository
+	sr  StandingsRepository
+	eml chan Email
+	tpl *Templates
+}
 
 // IssueNewEntryEmail generates a "new entry" email for the provided Entry and pushes it to the send queue
 func (c *CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *Entry, paymentDetails *PaymentDetails) error {
@@ -45,7 +42,7 @@ func (c *CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *Entry
 		return ValidationError{Reasons: []string{"invalid payment details"}}
 	}
 
-	realm, ok := c.Config().Realms[entry.RealmName]
+	realm, ok := c.cfg.Realms[entry.RealmName]
 	if !ok {
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
@@ -62,7 +59,7 @@ func (c *CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *Entry
 		ShortCode:      entry.ShortCode,
 	}
 	var emailContent bytes.Buffer
-	if err := c.Template().ExecuteTemplate(&emailContent, "email_txt_new_entry", d); err != nil {
+	if err := c.tpl.ExecuteTemplate(&emailContent, "email_txt_new_entry", d); err != nil {
 		return err
 	}
 
@@ -71,7 +68,7 @@ func (c *CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *Entry
 		Address: entry.EntrantEmail,
 	}
 	email := newEmail(realm, recipient, EmailSubjectNewEntry, emailContent.String())
-	c.EmailQueue() <- email
+	c.eml <- email
 
 	return nil
 }
@@ -88,7 +85,7 @@ func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *
 		return err
 	}
 
-	realm, ok := c.Config().Realms[entry.RealmName]
+	realm, ok := c.cfg.Realms[entry.RealmName]
 	if !ok {
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
@@ -116,7 +113,7 @@ func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *
 	}
 
 	var emailContent bytes.Buffer
-	if err := c.Template().ExecuteTemplate(&emailContent, templateName, d); err != nil {
+	if err := c.tpl.ExecuteTemplate(&emailContent, templateName, d); err != nil {
 		return err
 	}
 
@@ -125,7 +122,7 @@ func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *
 		Address: entry.EntrantEmail,
 	}
 	email := newEmail(realm, recipient, fmt.Sprintf(EmailSubjectRoundComplete, standings.RoundNumber), emailContent.String())
-	c.EmailQueue() <- email
+	c.eml <- email
 
 	return nil
 }
@@ -136,7 +133,7 @@ func (c *CommunicationsAgent) IssueShortCodeResetBeginEmail(_ context.Context, e
 		return InternalError{errors.New("no entry provided")}
 	}
 
-	realm, ok := c.Config().Realms[entry.RealmName]
+	realm, ok := c.cfg.Realms[entry.RealmName]
 	if !ok {
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
@@ -151,7 +148,7 @@ func (c *CommunicationsAgent) IssueShortCodeResetBeginEmail(_ context.Context, e
 		ResetURL:       fmt.Sprintf("%s/reset/%s", realm.Origin, resetToken),
 	}
 	var emailContent bytes.Buffer
-	if err := c.Template().ExecuteTemplate(&emailContent, "email_txt_short_code_reset_begin", d); err != nil {
+	if err := c.tpl.ExecuteTemplate(&emailContent, "email_txt_short_code_reset_begin", d); err != nil {
 		return err
 	}
 
@@ -160,7 +157,7 @@ func (c *CommunicationsAgent) IssueShortCodeResetBeginEmail(_ context.Context, e
 		Address: entry.EntrantEmail,
 	}
 	email := newEmail(realm, recipient, EmailSubjectShortCodeResetBegin, emailContent.String())
-	c.EmailQueue() <- email
+	c.eml <- email
 
 	return nil
 }
@@ -171,7 +168,7 @@ func (c *CommunicationsAgent) IssueShortCodeResetCompleteEmail(_ context.Context
 		return InternalError{errors.New("no entry provided")}
 	}
 
-	realm, ok := c.Config().Realms[entry.RealmName]
+	realm, ok := c.cfg.Realms[entry.RealmName]
 	if !ok {
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
@@ -187,7 +184,7 @@ func (c *CommunicationsAgent) IssueShortCodeResetCompleteEmail(_ context.Context
 		ShortCode:      entry.ShortCode,
 	}
 	var emailContent bytes.Buffer
-	if err := c.Template().ExecuteTemplate(&emailContent, "email_txt_short_code_reset_complete", d); err != nil {
+	if err := c.tpl.ExecuteTemplate(&emailContent, "email_txt_short_code_reset_complete", d); err != nil {
 		return err
 	}
 
@@ -196,7 +193,7 @@ func (c *CommunicationsAgent) IssueShortCodeResetCompleteEmail(_ context.Context
 		Address: entry.EntrantEmail,
 	}
 	email := newEmail(realm, recipient, EmailSubjectShortCodeResetComplete, emailContent.String())
-	c.EmailQueue() <- email
+	c.eml <- email
 
 	return nil
 }
@@ -207,7 +204,7 @@ func (c *CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, 
 		return InternalError{errors.New("no entry provided")}
 	}
 
-	realm, ok := c.Config().Realms[entry.RealmName]
+	realm, ok := c.cfg.Realms[entry.RealmName]
 	if !ok {
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
@@ -228,7 +225,7 @@ func (c *CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, 
 		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
 	}
 	var emailContent bytes.Buffer
-	if err := c.Template().ExecuteTemplate(&emailContent, "email_txt_prediction_window_open", d); err != nil {
+	if err := c.tpl.ExecuteTemplate(&emailContent, "email_txt_prediction_window_open", d); err != nil {
 		return err
 	}
 
@@ -243,7 +240,7 @@ func (c *CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, 
 	}
 
 	email := newEmail(realm, recipient, subject, emailContent.String())
-	c.EmailQueue() <- email
+	c.eml <- email
 
 	return nil
 }
@@ -254,7 +251,7 @@ func (c *CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Contex
 		return InternalError{errors.New("no entry provided")}
 	}
 
-	realm, ok := c.Config().Realms[entry.RealmName]
+	realm, ok := c.cfg.Realms[entry.RealmName]
 	if !ok {
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
@@ -275,7 +272,7 @@ func (c *CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Contex
 		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
 	}
 	var emailContent bytes.Buffer
-	if err := c.Template().ExecuteTemplate(&emailContent, "email_txt_prediction_window_closing", d); err != nil {
+	if err := c.tpl.ExecuteTemplate(&emailContent, "email_txt_prediction_window_closing", d); err != nil {
 		return err
 	}
 
@@ -290,18 +287,15 @@ func (c *CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Contex
 	}
 
 	email := newEmail(realm, recipient, subject, emailContent.String())
-	c.EmailQueue() <- email
+	c.eml <- email
 
 	return nil
 }
 
 // getEntryFromScoredEntryPrediction retrieves the relationally-affiliated entry from the provided scored entry prediction
 func (c *CommunicationsAgent) getEntryFromScoredEntryPrediction(ctx context.Context, sep *ScoredEntryPrediction) (*Entry, error) {
-	entryPredictionRepo := c.EntryPredictionRepo()
-	entryRepo := c.EntryRepo()
-
 	// retrieve entry prediction from scored entry prediction
-	entryPredictions, err := entryPredictionRepo.Select(ctx, map[string]interface{}{
+	entryPredictions, err := c.epr.Select(ctx, map[string]interface{}{
 		"id": sep.EntryPredictionID,
 	}, false)
 	if err != nil {
@@ -312,7 +306,7 @@ func (c *CommunicationsAgent) getEntryFromScoredEntryPrediction(ctx context.Cont
 	}
 
 	// retrieve entry from entry prediction
-	entries, err := entryRepo.Select(ctx, map[string]interface{}{
+	entries, err := c.er.Select(ctx, map[string]interface{}{
 		"id": entryPredictions[0].EntryID,
 	}, false)
 	if err != nil {
@@ -327,10 +321,8 @@ func (c *CommunicationsAgent) getEntryFromScoredEntryPrediction(ctx context.Cont
 
 // getStandingsFromScoredEntryPrediction retrieves the relationally-affiliated standings from the provided scored entry prediction
 func (c *CommunicationsAgent) getStandingsFromScoredEntryPrediction(ctx context.Context, sep *ScoredEntryPrediction) (*Standings, error) {
-	standingsRepo := c.StandingsRepo()
-
 	// retrieve standings from scored entry prediction
-	standings, err := standingsRepo.Select(ctx, map[string]interface{}{
+	standings, err := c.sr.Select(ctx, map[string]interface{}{
 		"id": sep.StandingsID,
 	}, false)
 	if err != nil {
@@ -341,6 +333,33 @@ func (c *CommunicationsAgent) getStandingsFromScoredEntryPrediction(ctx context.
 	}
 
 	return &standings[0], nil
+}
+
+// NewCommunicationsAgent returns a new CommunicationsAgent using the provided repositories
+func NewCommunicationsAgent(cfg *Config, er EntryRepository, epr EntryPredictionRepository, sr StandingsRepository, eml chan Email, tpl *Templates) (*CommunicationsAgent, error) {
+	switch {
+	case cfg == nil:
+		return nil, fmt.Errorf("config: %w", ErrIsNil)
+	case er == nil:
+		return nil, fmt.Errorf("entry repository: %w", ErrIsNil)
+	case epr == nil:
+		return nil, fmt.Errorf("entry prediction repository: %w", ErrIsNil)
+	case sr == nil:
+		return nil, fmt.Errorf("standings repository: %w", ErrIsNil)
+	case eml == nil:
+		return nil, fmt.Errorf("email channel: %w", ErrIsNil)
+	case tpl == nil:
+		return nil, fmt.Errorf("teplates: %w", ErrIsNil)
+	}
+
+	return &CommunicationsAgent{
+		cfg: cfg,
+		er:  er,
+		epr: epr,
+		sr:  sr,
+		eml: eml,
+		tpl: tpl,
+	}, nil
 }
 
 // GenerateWindowDataFromSequencedTimeFrame generates an email WindowData object from the provided SequencedTimeFrame
