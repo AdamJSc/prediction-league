@@ -293,7 +293,7 @@ func TestSeasonCollection_GetByID(t *testing.T) {
 
 func TestSeason_CheckValidation(t *testing.T) {
 	t.Run("validate seasons", func(t *testing.T) {
-		sc, err := domain.GetSeasonsCollection()
+		sc, err := domain.GetSeasonCollection()
 		if err != nil {
 			t.Fatal(err)
 		}

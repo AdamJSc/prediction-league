@@ -132,7 +132,7 @@ func TestMain(m *testing.M) {
 }
 
 func mustGetSeasonsCollection() domain.SeasonCollection {
-	sc, err := domain.GetSeasonsCollection()
+	sc, err := domain.GetSeasonCollection()
 	if err != nil {
 		log.Fatalf("cannot get seasons collection: %s", err.Error())
 	}

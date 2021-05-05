@@ -71,7 +71,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("cannot instantiate token repo: %s", err.Error())
 	}
-	sc, err := domain.GetSeasonsCollection()
+	sc, err := domain.GetSeasonCollection()
 	if err != nil {
 		log.Fatalf("cannot instantiate seasons collection: %s", err.Error())
 	}

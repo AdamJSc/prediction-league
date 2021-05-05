@@ -345,8 +345,8 @@ var TeamsDataStore = TeamCollection{
 	},
 }
 
-// GetSeasonsCollection returns the required SeasonCollection
-func GetSeasonsCollection() (SeasonCollection, error) {
+// GetSeasonCollection returns the required SeasonCollection
+func GetSeasonCollection() (SeasonCollection, error) {
 	loc, err := time.LoadLocation("Europe/London")
 	if err != nil {
 		return nil, fmt.Errorf("cannot load time location Europe/London: %w", err)
