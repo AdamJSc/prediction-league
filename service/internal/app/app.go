@@ -29,6 +29,7 @@ type DependencyInjector interface {
 	EntryPredictionRepoInjector
 	ScoredEntryPredictionRepoInjector
 	TokenRepoInjector
+	SeasonsInjector
 }
 
 type ConfigInjector interface{ Config() *domain.Config }
@@ -51,6 +52,9 @@ type ScoredEntryPredictionRepoInjector interface {
 }
 type TokenRepoInjector interface {
 	TokenRepo() domain.TokenRepository
+}
+type SeasonsInjector interface {
+	Seasons() domain.SeasonCollection
 }
 
 const authCookieName = "PL_AUTH"

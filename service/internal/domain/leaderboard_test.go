@@ -17,15 +17,17 @@ func TestNewLeaderBoardAgent(t *testing.T) {
 			epr  domain.EntryPredictionRepository
 			sr   domain.StandingsRepository
 			sepr domain.ScoredEntryPredictionRepository
+			sc   domain.SeasonCollection
 		}{
-			{nil, epr, sr, sepr},
-			{er, nil, sr, sepr},
-			{er, epr, nil, sepr},
-			{er, epr, sr, nil},
+			{nil, epr, sr, sepr, sc},
+			{er, nil, sr, sepr, sc},
+			{er, epr, nil, sepr, sc},
+			{er, epr, sr, nil, sc},
+			{er, epr, sr, sepr, nil},
 		}
 
 		for _, tc := range tt {
-			_, gotErr := domain.NewLeaderBoardAgent(tc.er, tc.epr, tc.sr, tc.sepr)
+			_, gotErr := domain.NewLeaderBoardAgent(tc.er, tc.epr, tc.sr, tc.sepr, tc.sc)
 			if !errors.Is(gotErr, domain.ErrIsNil) {
 				t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
 			}
@@ -208,7 +210,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 	// store season ID arbitrarily from one of the valid entries (they should all belong to the same one, apart from robbie)
 	seasonID := harryEntry.SeasonID
 
-	lbAgent, err := domain.NewLeaderBoardAgent(er, epr, sr, sepr)
+	lbAgent, err := domain.NewLeaderBoardAgent(er, epr, sr, sepr, sc)
 	if err != nil {
 		t.Fatal(err)
 	}

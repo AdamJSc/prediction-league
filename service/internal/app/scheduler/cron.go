@@ -5,7 +5,6 @@ import (
 	"log"
 	"prediction-league/service/internal/adapters/footballdataorg"
 	"prediction-league/service/internal/app"
-	"prediction-league/service/internal/domain"
 )
 
 // LoadCron returns our populated cron
@@ -39,8 +38,8 @@ type job struct {
 }
 
 // mustGenerateRetrieveLatestStandingsJobs generates the RetrieveLatestStandings jobs to be used by the cron
-func mustGenerateRetrieveLatestStandingsJobs(container *app.HTTPAppContainer) []*job {
-	config := container.Config()
+func mustGenerateRetrieveLatestStandingsJobs(c *app.HTTPAppContainer) []*job {
+	config := c.Config()
 
 	// get the current season ID for all realms
 	var seasonIDs = make(map[string]struct{})
@@ -51,7 +50,7 @@ func mustGenerateRetrieveLatestStandingsJobs(container *app.HTTPAppContainer) []
 	// add a job for each unique season ID that retrieves the latest standings
 	var jobs []*job
 	for id := range seasonIDs {
-		season, err := domain.SeasonsDataStore.GetByID(id)
+		season, err := c.Seasons().GetByID(id)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -64,7 +63,7 @@ func mustGenerateRetrieveLatestStandingsJobs(container *app.HTTPAppContainer) []
 		job, err := newRetrieveLatestStandingsJob(
 			season,
 			footballdataorg.NewClient(config.FootballDataAPIToken),
-			container,
+			c,
 		)
 		if err != nil {
 			log.Fatalf("cannot instantiate retrieve latest standings job: %s", err.Error())
@@ -77,8 +76,8 @@ func mustGenerateRetrieveLatestStandingsJobs(container *app.HTTPAppContainer) []
 }
 
 // mustGeneratePredictionWindowOpenJobs generates the PredictionWindowOpen jobs to be used by the cron
-func mustGeneratePredictionWindowOpenJobs(container *app.HTTPAppContainer) []*job {
-	config := container.Config()
+func mustGeneratePredictionWindowOpenJobs(c *app.HTTPAppContainer) []*job {
+	config := c.Config()
 
 	// get the current season ID for all realms
 	var seasonIDs = make(map[string]struct{})
@@ -89,14 +88,14 @@ func mustGeneratePredictionWindowOpenJobs(container *app.HTTPAppContainer) []*jo
 	// add a job for each unique season ID that retrieves the latest standings
 	var jobs []*job
 	for id := range seasonIDs {
-		season, err := domain.SeasonsDataStore.GetByID(id)
+		season, err := c.Seasons().GetByID(id)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		job, err := newPredictionWindowOpenJob(
 			season,
-			container,
+			c,
 		)
 		if err != nil {
 			log.Fatalf("cannot instantiate prediction window open job: %s", err.Error())
@@ -109,8 +108,8 @@ func mustGeneratePredictionWindowOpenJobs(container *app.HTTPAppContainer) []*jo
 }
 
 // mustGeneratePredictionWindowClosingJobs generates the PredictionWindowClosing jobs to be used by the cron
-func mustGeneratePredictionWindowClosingJobs(container *app.HTTPAppContainer) []*job {
-	config := container.Config()
+func mustGeneratePredictionWindowClosingJobs(c *app.HTTPAppContainer) []*job {
+	config := c.Config()
 
 	// get the current season ID for all realms
 	var seasonIDs = make(map[string]struct{})
@@ -121,14 +120,14 @@ func mustGeneratePredictionWindowClosingJobs(container *app.HTTPAppContainer) []
 	// add a job for each unique season ID that retrieves the latest standings
 	var jobs []*job
 	for id := range seasonIDs {
-		season, err := domain.SeasonsDataStore.GetByID(id)
+		season, err := c.Seasons().GetByID(id)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		job, err := newPredictionWindowClosingJob(
 			season,
-			container,
+			c,
 		)
 		if err != nil {
 			log.Fatalf("cannot instantiate prediction window closing job: %s", err.Error())

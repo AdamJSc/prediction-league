@@ -13,7 +13,7 @@ func createEntryHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http
 		var input createEntryRequest
 
 		// setup agents
-		agent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		agent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return
@@ -57,7 +57,7 @@ func createEntryHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http
 		}
 
 		// retrieve the season we need
-		season, err := domain.SeasonsDataStore.GetByID(seasonID)
+		season, err := c.Seasons().GetByID(seasonID)
 		if err != nil {
 			notFoundError(fmt.Errorf("invalid season: %s", seasonID)).writeTo(w)
 			return
@@ -89,12 +89,12 @@ func updateEntryPaymentDetailsHandler(c *HTTPAppContainer) func(w http.ResponseW
 		var input updateEntryPaymentDetailsRequest
 
 		// setup agents
-		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return
 		}
-		commsAgent, err := domain.NewCommunicationsAgent(c.Config(), c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template())
+		commsAgent, err := domain.NewCommunicationsAgent(c.Config(), c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template(), c.Seasons())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return
@@ -161,7 +161,7 @@ func createEntryPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWrite
 	return func(w http.ResponseWriter, r *http.Request) {
 		var input createEntryPredictionRequest
 
-		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return
@@ -220,7 +220,7 @@ func createEntryPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWrite
 
 func retrieveLatestEntryPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return
@@ -274,7 +274,7 @@ func retrieveLatestEntryPredictionHandler(c *HTTPAppContainer) func(w http.Respo
 
 func approveEntryByShortCodeHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return

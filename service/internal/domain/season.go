@@ -146,7 +146,7 @@ type SeasonState struct {
 	NextPredictionsWindow  *TimeFrame
 }
 
-// SeasonCollection is map of SeasonsDataStore
+// SeasonCollection is map of Season
 type SeasonCollection map[string]Season
 
 // GetByID retrieves a matching Season from the collection by its ID
@@ -177,7 +177,7 @@ type ResourceIdentifier interface {
 
 // ValidateSeason returns an error if validation rules are not satisfied for the provided Season
 func ValidateSeason(s Season) error {
-	if s.ID == FakeSeasonID {
+	if s.ID == fakeSeasonID {
 		// don't validate our faked season
 		return nil
 	}

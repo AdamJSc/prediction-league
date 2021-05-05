@@ -26,6 +26,7 @@ type CommunicationsAgent struct {
 	sr  StandingsRepository
 	eml chan Email
 	tpl *Templates
+	sc  SeasonCollection
 }
 
 // IssueNewEntryEmail generates a "new entry" email for the provided Entry and pushes it to the send queue
@@ -47,7 +48,7 @@ func (c *CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *Entry
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
 
-	season, err := SeasonsDataStore.GetByID(entry.SeasonID)
+	season, err := c.sc.GetByID(entry.SeasonID)
 	if err != nil {
 		return NotFoundError{err}
 	}
@@ -90,7 +91,7 @@ func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
 
-	season, err := SeasonsDataStore.GetByID(entry.SeasonID)
+	season, err := c.sc.GetByID(entry.SeasonID)
 	if err != nil {
 		return NotFoundError{err}
 	}
@@ -138,7 +139,7 @@ func (c *CommunicationsAgent) IssueShortCodeResetBeginEmail(_ context.Context, e
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
 
-	season, err := SeasonsDataStore.GetByID(entry.SeasonID)
+	season, err := c.sc.GetByID(entry.SeasonID)
 	if err != nil {
 		return NotFoundError{err}
 	}
@@ -173,7 +174,7 @@ func (c *CommunicationsAgent) IssueShortCodeResetCompleteEmail(_ context.Context
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
 
-	season, err := SeasonsDataStore.GetByID(entry.SeasonID)
+	season, err := c.sc.GetByID(entry.SeasonID)
 	if err != nil {
 		return NotFoundError{err}
 	}
@@ -209,7 +210,7 @@ func (c *CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, 
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
 
-	season, err := SeasonsDataStore.GetByID(entry.SeasonID)
+	season, err := c.sc.GetByID(entry.SeasonID)
 	if err != nil {
 		return NotFoundError{err}
 	}
@@ -256,7 +257,7 @@ func (c *CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Contex
 		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
 	}
 
-	season, err := SeasonsDataStore.GetByID(entry.SeasonID)
+	season, err := c.sc.GetByID(entry.SeasonID)
 	if err != nil {
 		return NotFoundError{err}
 	}
@@ -336,7 +337,7 @@ func (c *CommunicationsAgent) getStandingsFromScoredEntryPrediction(ctx context.
 }
 
 // NewCommunicationsAgent returns a new CommunicationsAgent using the provided repositories
-func NewCommunicationsAgent(cfg *Config, er EntryRepository, epr EntryPredictionRepository, sr StandingsRepository, eml chan Email, tpl *Templates) (*CommunicationsAgent, error) {
+func NewCommunicationsAgent(cfg *Config, er EntryRepository, epr EntryPredictionRepository, sr StandingsRepository, eml chan Email, tpl *Templates, sc SeasonCollection) (*CommunicationsAgent, error) {
 	switch {
 	case cfg == nil:
 		return nil, fmt.Errorf("config: %w", ErrIsNil)
@@ -350,6 +351,8 @@ func NewCommunicationsAgent(cfg *Config, er EntryRepository, epr EntryPrediction
 		return nil, fmt.Errorf("email channel: %w", ErrIsNil)
 	case tpl == nil:
 		return nil, fmt.Errorf("teplates: %w", ErrIsNil)
+	case sc == nil:
+		return nil, fmt.Errorf("season collection: %w", ErrIsNil)
 	}
 
 	return &CommunicationsAgent{
@@ -359,6 +362,7 @@ func NewCommunicationsAgent(cfg *Config, er EntryRepository, epr EntryPrediction
 		sr:  sr,
 		eml: eml,
 		tpl: tpl,
+		sc:  sc,
 	}, nil
 }
 

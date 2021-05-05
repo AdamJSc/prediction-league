@@ -293,7 +293,11 @@ func TestSeasonCollection_GetByID(t *testing.T) {
 
 func TestSeason_CheckValidation(t *testing.T) {
 	t.Run("validate seasons", func(t *testing.T) {
-		for id, season := range domain.SeasonsDataStore {
+		sc, err := domain.GetSeasonsCollection()
+		if err != nil {
+			t.Fatal(err)
+		}
+		for id, season := range sc {
 			if id != season.ID {
 				t.Fatal(fmt.Errorf("mismatched season id: %s != %s", id, season.ID))
 			}

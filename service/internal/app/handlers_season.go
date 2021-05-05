@@ -29,7 +29,7 @@ func retrieveSeasonHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *h
 		}
 
 		// retrieve the season we need
-		season, err := domain.SeasonsDataStore.GetByID(seasonID)
+		season, err := c.Seasons().GetByID(seasonID)
 		if err != nil {
 			notFoundError(fmt.Errorf("invalid season: %s", seasonID)).writeTo(w)
 			return
@@ -82,7 +82,7 @@ func retrieveLeaderBoardHandler(c *HTTPAppContainer) func(w http.ResponseWriter,
 		}
 
 		// retrieve leaderboard
-		lbAgent, err := domain.NewLeaderBoardAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.ScoredEntryPredictionRepo())
+		lbAgent, err := domain.NewLeaderBoardAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.ScoredEntryPredictionRepo(), c.Seasons())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return

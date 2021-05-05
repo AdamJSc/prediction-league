@@ -85,6 +85,7 @@ type EntryPredictionRepository interface {
 type EntryAgent struct {
 	er  EntryRepository
 	epr EntryPredictionRepository
+	sc  SeasonCollection
 }
 
 // CreateEntry handles the creation of a new Entry in the database
@@ -363,7 +364,7 @@ func (e *EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPredict
 	}
 
 	// retrieve the entry's Season
-	season, err := SeasonsDataStore.GetByID(entry.SeasonID)
+	season, err := e.sc.GetByID(entry.SeasonID)
 	if err != nil {
 		return Entry{}, NotFoundError{err}
 	}
@@ -641,17 +642,20 @@ func (e *EntryAgent) SeedEntries(ctx context.Context, entries []Entry) error {
 }
 
 // NewEntryAgent returns a new EntryAgent using the provided repositories
-func NewEntryAgent(er EntryRepository, epr EntryPredictionRepository) (*EntryAgent, error) {
+func NewEntryAgent(er EntryRepository, epr EntryPredictionRepository, sc SeasonCollection) (*EntryAgent, error) {
 	switch {
 	case er == nil:
 		return nil, fmt.Errorf("entry repository: %w", ErrIsNil)
 	case epr == nil:
 		return nil, fmt.Errorf("entry prediction repository: %w", ErrIsNil)
+	case sc == nil:
+		return nil, fmt.Errorf("season collection: %w", ErrIsNil)
 	}
 
 	return &EntryAgent{
 		er:  er,
 		epr: epr,
+		sc:  sc,
 	}, nil
 }
 

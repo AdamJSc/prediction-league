@@ -19,7 +19,7 @@ func frontendIndexHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *ht
 		defer cancel()
 
 		seasonID := domain.RealmFromContext(ctx).SeasonID
-		season, err := domain.SeasonsDataStore.GetByID(seasonID)
+		season, err := c.Seasons().GetByID(seasonID)
 		if err != nil {
 			internalError(err).writeTo(w)
 			return
@@ -47,7 +47,7 @@ func frontendLeaderBoardHandler(c *HTTPAppContainer) func(w http.ResponseWriter,
 		}
 
 		// setup agents
-		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return
@@ -56,7 +56,7 @@ func frontendLeaderBoardHandler(c *HTTPAppContainer) func(w http.ResponseWriter,
 		if err != nil {
 			internalError(err).writeTo(w)
 		}
-		lbAgent, err := domain.NewLeaderBoardAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.ScoredEntryPredictionRepo())
+		lbAgent, err := domain.NewLeaderBoardAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.ScoredEntryPredictionRepo(), c.Seasons())
 		if err != nil {
 			internalError(err).writeTo(w)
 		}
@@ -73,6 +73,7 @@ func frontendLeaderBoardHandler(c *HTTPAppContainer) func(w http.ResponseWriter,
 			entryAgent,
 			standingsAgent,
 			lbAgent,
+			c.Seasons(),
 		)
 
 		writeResponse(data)
@@ -111,7 +112,7 @@ func frontendJoinHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *htt
 		}
 		defer cancel()
 
-		season, err := domain.SeasonsDataStore.GetByID(domain.RealmFromContext(ctx).SeasonID)
+		season, err := c.Seasons().GetByID(domain.RealmFromContext(ctx).SeasonID)
 		if err != nil {
 			internalError(err).writeTo(w)
 			return
@@ -151,7 +152,7 @@ func frontendPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWriter, 
 		}
 
 		// setup agents
-		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return
@@ -173,6 +174,7 @@ func frontendPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWriter, 
 			getAuthCookieValue(r),
 			entryAgent,
 			tokenAgent,
+			c.Seasons(),
 		)
 
 		writeResponse(data)
@@ -190,7 +192,7 @@ func frontendShortCodeResetBeginHandler(c *HTTPAppContainer) func(w http.Respons
 		}
 
 		// setup agents
-		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return
@@ -199,7 +201,7 @@ func frontendShortCodeResetBeginHandler(c *HTTPAppContainer) func(w http.Respons
 		if err != nil {
 			internalError(err).writeTo(w)
 		}
-		commsAgent, err := domain.NewCommunicationsAgent(c.Config(), c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template())
+		commsAgent, err := domain.NewCommunicationsAgent(c.Config(), c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template(), c.Seasons())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return
@@ -285,7 +287,7 @@ func frontendShortCodeResetCompleteHandler(c *HTTPAppContainer) func(w http.Resp
 		}
 
 		// setup agents
-		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return
@@ -294,7 +296,7 @@ func frontendShortCodeResetCompleteHandler(c *HTTPAppContainer) func(w http.Resp
 		if err != nil {
 			internalError(err).writeTo(w)
 		}
-		commsAgent, err := domain.NewCommunicationsAgent(c.Config(), c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template())
+		commsAgent, err := domain.NewCommunicationsAgent(c.Config(), c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template(), c.Seasons())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return

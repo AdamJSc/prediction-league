@@ -41,7 +41,11 @@ func main() {
 			log.Fatalf("failed to connect and migrate database: %s", err.Error())
 		}
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Fatalf("cannot close db connection: %s", err.Error())
+		}
+	}()
 
 	// permit flag that provides a debug mode by overriding timestamp for time-sensitive operations
 	ts := flag.String("ts", "", "override timestamp used by time-sensitive operations, in the format yyyymmddhhmmss")
@@ -67,6 +71,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("cannot instantiate token repo: %s", err.Error())
 	}
+	sc, err := domain.GetSeasonsCollection()
+	if err != nil {
+		log.Fatalf("cannot instantiate seasons collection: %s", err.Error())
+	}
 
 	// setup server
 	httpAppContainer := app.NewHTTPAppContainer(dependencies{
@@ -81,6 +89,7 @@ func main() {
 		entryPredictionRepo:       epr,
 		scoredEntryPredictionRepo: sepr,
 		tokenRepo:                 tr,
+		seasons:                   sc,
 	})
 
 	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -89,7 +98,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("cannot generate entries to seed: %s", err.Error())
 	}
-	entryAgent, err := domain.NewEntryAgent(er, epr)
+	entryAgent, err := domain.NewEntryAgent(er, epr, sc)
 	if err != nil {
 		log.Fatalf("cannot instantiate entry agent: %s", err.Error())
 	}
@@ -97,8 +106,6 @@ func main() {
 	if err := entryAgent.SeedEntries(ctxWithTimeout, seeds); err != nil {
 		log.Fatalf("cannot seed entries: %s", err.Error())
 	}
-
-	domain.MustInflate()
 
 	app.RegisterRoutes(httpAppContainer)
 
@@ -140,6 +147,7 @@ type dependencies struct {
 	entryPredictionRepo       *mysqldb.EntryPredictionRepo
 	scoredEntryPredictionRepo *mysqldb.ScoredEntryPredictionRepo
 	tokenRepo                 *mysqldb.TokenRepo
+	seasons                   domain.SeasonCollection
 }
 
 func (d dependencies) Config() *domain.Config          { return d.config }
@@ -159,6 +167,7 @@ func (d dependencies) ScoredEntryPredictionRepo() domain.ScoredEntryPredictionRe
 	return d.scoredEntryPredictionRepo
 }
 func (d dependencies) TokenRepo() domain.TokenRepository { return d.tokenRepo }
+func (d dependencies) Seasons() domain.SeasonCollection  { return d.seasons }
 
 func parseTimeString(t *string) *time.Time {
 	if t == nil {

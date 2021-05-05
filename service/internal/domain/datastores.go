@@ -1,12 +1,16 @@
 package domain
 
 import (
-	"log"
+	"fmt"
 	"time"
 )
 
-// FakeSeasonID defines the ID of the fake Season for running on localhost
-const FakeSeasonID = "FakeSeason"
+const (
+	// fakeSeasonID defines the ID of the fake Season for running on localhost
+	fakeSeasonID = "FakeSeason"
+	// fakeSeasonKey defines the key of the real-world Season to replicate as fake season
+	fakeSeasonKey = "201920_1"
+)
 
 // TeamsDataStore provides a pre-determined data structure of all Teams that can be referenced within the system
 var TeamsDataStore = TeamCollection{
@@ -341,19 +345,15 @@ var TeamsDataStore = TeamCollection{
 	},
 }
 
-// SeasonsDataStore provides a pre-determined data structure of all SeasonsDataStore that can be referenced within the system
-var SeasonsDataStore SeasonCollection
-
-// MustInflate inflates our data stores
-func MustInflate() {
+// GetSeasonsCollection returns the required SeasonCollection
+func GetSeasonsCollection() (SeasonCollection, error) {
 	loc, err := time.LoadLocation("Europe/London")
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("cannot load time location Europe/London: %w", err)
 	}
 
-	// inflate seasons using location
-	// we can't do this directly when defining the struct because we need to load the location at runtime
-	SeasonsDataStore = SeasonCollection{
+	// define seasons using location
+	sc := SeasonCollection{
 
 		// Premier League 2020/21
 		"202021_1": {
@@ -539,10 +539,8 @@ func MustInflate() {
 	}
 
 	// define fake season
-	fakeSeasonKey := "201920_1"
-
-	SeasonsDataStore[FakeSeasonID] = Season{
-		ID:       FakeSeasonID,
+	sc[fakeSeasonID] = Season{
+		ID:       fakeSeasonID,
 		ClientID: nil, // will not invoke requests to client when running in retrieve latest standings job
 		Name:     "Localhost Season",
 		EntriesAccepted: TimeFrame{
@@ -559,7 +557,9 @@ func MustInflate() {
 				Until: time.Now().Add(60 * time.Minute),
 			},
 		},
-		TeamIDs:   SeasonsDataStore[fakeSeasonKey].TeamIDs,
-		MaxRounds: SeasonsDataStore[fakeSeasonKey].MaxRounds,
+		TeamIDs:   sc[fakeSeasonKey].TeamIDs,
+		MaxRounds: sc[fakeSeasonKey].MaxRounds,
 	}
+
+	return sc, nil
 }

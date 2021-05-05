@@ -15,7 +15,7 @@ func predictionLoginHandler(c *HTTPAppContainer) func(http.ResponseWriter, *http
 		var input predictionLoginRequest
 
 		// setup agents
-		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo())
+		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return
@@ -88,12 +88,12 @@ func predictionLoginHandler(c *HTTPAppContainer) func(http.ResponseWriter, *http
 	}
 }
 
-func getPredictionPageData(ctx context.Context, authToken string, entryAgent *domain.EntryAgent, tokenAgent *domain.TokenAgent) view.PredictionPageData {
+func getPredictionPageData(ctx context.Context, authToken string, entryAgent *domain.EntryAgent, tokenAgent *domain.TokenAgent, seasons domain.SeasonCollection) view.PredictionPageData {
 	var data view.PredictionPageData
 
 	// retrieve season and determine its current state
 	seasonID := domain.RealmFromContext(ctx).SeasonID
-	season, err := domain.SeasonsDataStore.GetByID(seasonID)
+	season, err := seasons.GetByID(seasonID)
 	if err != nil {
 		data.Err = err
 		return data

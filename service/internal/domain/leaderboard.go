@@ -27,12 +27,13 @@ type LeaderBoardAgent struct {
 	epr  EntryPredictionRepository
 	sr   StandingsRepository
 	sepr ScoredEntryPredictionRepository
+	sc   SeasonCollection
 }
 
 // RetrieveLeaderBoardBySeasonAndRoundNumber handles the inflation of a LeaderBoard based on the provided season ID and round number
 func (l *LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context.Context, seasonID string, roundNumber int) (*LeaderBoard, error) {
 	// ensure that provided season exists
-	if _, err := SeasonsDataStore.GetByID(seasonID); err != nil {
+	if _, err := l.sc.GetByID(seasonID); err != nil {
 		return nil, NotFoundError{fmt.Errorf("season id %s: not found", seasonID)}
 	}
 
@@ -139,7 +140,7 @@ func (l *LeaderBoardAgent) generateEmptyLeaderBoard(ctx context.Context, roundNu
 }
 
 // NewLeaderBoardAgent returns a new LeaderBoardAgent using the provided repositories
-func NewLeaderBoardAgent(er EntryRepository, epr EntryPredictionRepository, sr StandingsRepository, sepr ScoredEntryPredictionRepository) (*LeaderBoardAgent, error) {
+func NewLeaderBoardAgent(er EntryRepository, epr EntryPredictionRepository, sr StandingsRepository, sepr ScoredEntryPredictionRepository, sc SeasonCollection) (*LeaderBoardAgent, error) {
 	switch {
 	case er == nil:
 		return nil, fmt.Errorf("entry repository: %w", ErrIsNil)
@@ -149,6 +150,8 @@ func NewLeaderBoardAgent(er EntryRepository, epr EntryPredictionRepository, sr S
 		return nil, fmt.Errorf("standings repository: %w", ErrIsNil)
 	case sepr == nil:
 		return nil, fmt.Errorf("scored entry prediction repository: %w", ErrIsNil)
+	case sc == nil:
+		return nil, fmt.Errorf("season collection: %w", ErrIsNil)
 	}
 
 	return &LeaderBoardAgent{
@@ -156,5 +159,6 @@ func NewLeaderBoardAgent(er EntryRepository, epr EntryPredictionRepository, sr S
 		epr:  epr,
 		sr:   sr,
 		sepr: sepr,
+		sc:   sc,
 	}, nil
 }

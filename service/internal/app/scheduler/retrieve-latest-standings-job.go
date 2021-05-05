@@ -13,36 +13,37 @@ import (
 )
 
 // newRetrieveLatestStandingsJob returns a new job that retrieves the latest standings, pertaining to the provided season
-func newRetrieveLatestStandingsJob(season domain.Season, client domain.FootballDataSource, injector app.DependencyInjector) (*job, error) {
+func newRetrieveLatestStandingsJob(season domain.Season, client domain.FootballDataSource, d app.DependencyInjector) (*job, error) {
 	jobName := strings.ToLower(fmt.Sprintf("retrieve-latest-standings-%s", season.ID))
 
-	entryAgent, err := domain.NewEntryAgent(injector.EntryRepo(), injector.EntryPredictionRepo())
+	entryAgent, err := domain.NewEntryAgent(d.EntryRepo(), d.EntryPredictionRepo(), d.Seasons())
 	if err != nil {
 		return nil, fmt.Errorf("cannot instantiate entry agent: %w", err)
 	}
 
-	standingsAgent, err := domain.NewStandingsAgent(injector.StandingsRepo())
+	standingsAgent, err := domain.NewStandingsAgent(d.StandingsRepo())
 	if err != nil {
 		return nil, fmt.Errorf("cannot instantiate standings agent: %w", err)
 	}
 
 	sepAgent, err := domain.NewScoredEntryPredictionAgent(
-		injector.EntryRepo(),
-		injector.EntryPredictionRepo(),
-		injector.StandingsRepo(),
-		injector.ScoredEntryPredictionRepo(),
+		d.EntryRepo(),
+		d.EntryPredictionRepo(),
+		d.StandingsRepo(),
+		d.ScoredEntryPredictionRepo(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("cannot instantiate scored entry prediction agent: %w", err)
 	}
 
 	commsAgent, err := domain.NewCommunicationsAgent(
-		injector.Config(),
-		injector.EntryRepo(),
-		injector.EntryPredictionRepo(),
-		injector.StandingsRepo(),
-		injector.EmailQueue(),
-		injector.Template(),
+		d.Config(),
+		d.EntryRepo(),
+		d.EntryPredictionRepo(),
+		d.StandingsRepo(),
+		d.EmailQueue(),
+		d.Template(),
+		d.Seasons(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("cannot instantiate communications agent: %w", err)

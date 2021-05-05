@@ -19,13 +19,15 @@ func TestNewEntryAgent(t *testing.T) {
 		tt := []struct {
 			er  domain.EntryRepository
 			epr domain.EntryPredictionRepository
+			sc  domain.SeasonCollection
 		}{
-			{nil, epr},
-			{er, nil},
+			{nil, epr, sc},
+			{er, nil, sc},
+			{er, epr, nil},
 		}
 
 		for _, tc := range tt {
-			_, gotErr := domain.NewEntryAgent(tc.er, tc.epr)
+			_, gotErr := domain.NewEntryAgent(tc.er, tc.epr, tc.sc)
 			if !errors.Is(gotErr, domain.ErrIsNil) {
 				t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
 			}
@@ -36,7 +38,7 @@ func TestNewEntryAgent(t *testing.T) {
 func TestEntryAgent_CreateEntry(t *testing.T) {
 	defer truncate(t)
 
-	agent, err := domain.NewEntryAgent(er, epr)
+	agent, err := domain.NewEntryAgent(er, epr, sc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -289,7 +291,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		"harry.redknapp@football.net",
 	))
 
-	agent, err := domain.NewEntryAgent(er, epr)
+	agent, err := domain.NewEntryAgent(er, epr, sc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -501,7 +503,7 @@ func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
 		entry.EntryPredictions = append(entry.EntryPredictions, insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID)))
 	}
 
-	agent, err := domain.NewEntryAgent(er, epr)
+	agent, err := domain.NewEntryAgent(er, epr, sc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -597,7 +599,7 @@ func TestEntryAgent_RetrieveEntryByEntrantEmail(t *testing.T) {
 		entry.EntryPredictions = append(entry.EntryPredictions, insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID)))
 	}
 
-	agent, err := domain.NewEntryAgent(er, epr)
+	agent, err := domain.NewEntryAgent(er, epr, sc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -703,7 +705,7 @@ func TestEntryAgent_RetrieveEntryByEntrantNickname(t *testing.T) {
 		entry.EntryPredictions = append(entry.EntryPredictions, insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID)))
 	}
 
-	agent, err := domain.NewEntryAgent(er, epr)
+	agent, err := domain.NewEntryAgent(er, epr, sc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -831,7 +833,7 @@ func TestEntryAgent_RetrieveEntriesBySeasonID(t *testing.T) {
 		entries = append(entries, insertEntry(t, entry))
 	}
 
-	agent, err := domain.NewEntryAgent(er, epr)
+	agent, err := domain.NewEntryAgent(er, epr, sc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -902,7 +904,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		"harry.redknapp@football.net",
 	))
 
-	agent, err := domain.NewEntryAgent(er, epr)
+	agent, err := domain.NewEntryAgent(er, epr, sc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1095,7 +1097,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 		"harry.redknapp@football.net",
 	))
 
-	agent, err := domain.NewEntryAgent(er, epr)
+	agent, err := domain.NewEntryAgent(er, epr, sc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1275,7 +1277,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 	entryWithReadyStatus.Status = domain.EntryStatusReady
 	entryWithReadyStatus = insertEntry(t, entryWithReadyStatus)
 
-	agent, err := domain.NewEntryAgent(er, epr)
+	agent, err := domain.NewEntryAgent(er, epr, sc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1390,7 +1392,7 @@ func TestEntryAgent_GetEntryPredictionByTimestamp(t *testing.T) {
 		entryPredictions = append(entryPredictions, entryPrediction)
 	}
 
-	agent, err := domain.NewEntryAgent(er, epr)
+	agent, err := domain.NewEntryAgent(er, epr, sc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1475,7 +1477,7 @@ func TestEntryAgent_GetEntryPredictionByTimestamp(t *testing.T) {
 func setContextTimestampRelativeToSeasonAcceptingEntries(t *testing.T, ctx context.Context, seasonID string, withinTimeframe bool) context.Context {
 	t.Helper()
 
-	season, ok := domain.SeasonsDataStore[seasonID]
+	season, ok := sc[seasonID]
 	if !ok {
 		return ctx
 	}

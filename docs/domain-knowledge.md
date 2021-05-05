@@ -44,7 +44,7 @@ e.g. `localhost` or `my.sub.domain.com`. See the file itself for an example.
     * `contact.email_do_not_reply`: Sender's email address on transactional emails (e.g. `do_not_reply@localhost`)
     * `sender_domain`: Outgoing sender domain validated via DNS with Mailgun.
     * `pin`: Arbitrary string value required when creating a new [Entry](#entry) to prevent unwanted sign-ups (e.g. `MYPIN1234`)
-    * `season_id`: ID of current [Season](#season) that Realm pertains to, must be an existing key within `domain.SeasonsDataStore` (e.g. `201920_1`)
+    * `season_id`: ID of current [Season](#season) that Realm pertains to, must be an existing key within the supplied `SeasonCollection` (e.g. `201920_1`)
     * `entry_fee.amount`: Numerical entry fee value charged via PayPal, currently supports GBP only (e.g. `1.23`)
     * `entry_fee.label`: Entry fee's display value (e.g. `£1.23`)
     * `entry_fee.breakdown`: Array of strings that explain breakdown of entry fee (e.g. `- £1.00 kitty contribution, - £0.23 processing fee`) 
@@ -59,7 +59,7 @@ by accessing `Config().Realms[realm_key]` on the app's dependency container.
 
 * A `Season` represents a real-world tournament (such as "Premier League 2020/21").
 
-* The Seasons data used throughout the system is defined in code as a single data structure (see `domain.SeasonsDataStore`).
+* The Seasons data used throughout the system is defined in code and instantiated within the app bootstrap (see `domain.GetSeasonsCollection()`).
 
 * This is deliberately controlled by the project maintainer as a one-off action that is required approximately once a year
 (i.e. between one Season finishing and another beginning).
@@ -247,7 +247,7 @@ can be created or updated at any given moment is determined by the corresponding
 object itself.
 
 Usually these will be **absolute** timeframes that pertain to the dates relevant to a real-world [Season](#season)
-(see `201920_1` in `domain.SeasonsDataStore` as an example).
+(see `201920_1` in the collection returned by `domain.GetSeasonsCollection()` as an example).
 
 For this reason, the default [Realm](#realm) (`localhost`) is affiliated with a [Season](#season) which has the ID `FakeSeason`
 and whose sole purpose is to enable time-sensitive operations to be more easily debugged.
@@ -283,7 +283,7 @@ However, this should be revisited in the future.
 
 ### Adding a new Season
 
-To add a new [Season](#season), define an additional `Season` struct within the map provided by `domain.SeasonsDataStore`.
+To add a new [Season](#season), define an additional `Season` struct within the map provided by the function `domain.GetSeasonsColection()`.
 
 This struct must adhere to the validation rules found within `domain.ValidateSeason()`.
 

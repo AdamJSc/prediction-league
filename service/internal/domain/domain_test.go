@@ -32,6 +32,7 @@ var (
 	rlm        *domain.Realm
 	sepr       domain.ScoredEntryPredictionRepository
 	sr         domain.StandingsRepository
+	sc         domain.SeasonCollection
 	testSeason domain.Season
 	tpl        *domain.Templates
 	tr         domain.TokenRepository
@@ -54,7 +55,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// setup env
-	loadTestEnvFromPaths("infra/test.env")
+	mustLoadTestEnvFromPaths("infra/test.env")
 
 	// load config
 	var config struct {
@@ -111,8 +112,6 @@ func TestMain(m *testing.M) {
 		log.Fatalf("cannot instantiate new token repo: %s", err.Error())
 	}
 
-	domain.MustInflate()
-
 	// find service path and load templates
 	// everything before the last occurrence of "service" within the current working directory path
 	dirOfServicePath := wd[:strings.LastIndex(wd, "service")]
@@ -121,20 +120,30 @@ func TestMain(m *testing.M) {
 	rlm = newTestRealm()
 	cfg = newTestConfig(*rlm)
 
-	// set testSeason to the first entry within our domain.SeasonsDataStore slice
-	keys := reflect.ValueOf(domain.SeasonsDataStore).MapKeys()
-	if len(keys) < 1 {
-		log.Fatal("need more than one domain.Season")
+	// set testSeason to first entity in season collection
+	sc = mustGetSeasonsCollection()
+	for _, s := range sc {
+		testSeason = s
+		break
 	}
 
-	testSeason = domain.SeasonsDataStore[keys[0].String()]
-
-	// run test
+	// run tests
 	os.Exit(m.Run())
 }
 
-// loadTestEnvFromPaths tries to load given env files, leaving current environment variables intact.
-func loadTestEnvFromPaths(paths ...string) {
+func mustGetSeasonsCollection() domain.SeasonCollection {
+	sc, err := domain.GetSeasonsCollection()
+	if err != nil {
+		log.Fatalf("cannot get seasons collection: %s", err.Error())
+	}
+	if len(sc) == 0 {
+		log.Fatal("must have at least one season collection")
+	}
+	return sc
+}
+
+// mustLoadTestEnvFromPaths tries to load given env files, leaving current environment variables intact.
+func mustLoadTestEnvFromPaths(paths ...string) {
 	wd, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("cannot get working directory: %s", err.Error())
