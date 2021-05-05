@@ -15,6 +15,7 @@ const baseURL = "https://api.football-data.org"
 // Client defines our football-data.org API client
 type Client struct {
 	apiToken string
+	tc       domain.TeamCollection
 }
 
 // RetrieveLatestStandingsBySeason implements this method on the clients.FootballDataSource interface
@@ -48,7 +49,7 @@ func (c *Client) RetrieveLatestStandingsBySeason(ctx context.Context, s *domain.
 		RoundNumber: standingsResponse.Season.CurrentMatchday,
 	}
 	for _, tableElem := range standingsResponse.Standings[0].Table {
-		ranking, err := tableElem.toRankingWithMeta()
+		ranking, err := tableElem.toRankingWithMeta(c.tc)
 		if err != nil {
 			return nil, err
 		}
@@ -59,10 +60,14 @@ func (c *Client) RetrieveLatestStandingsBySeason(ctx context.Context, s *domain.
 }
 
 // NewClient generates a new Client
-func NewClient(apiToken string) *Client {
+func NewClient(apiToken string, tc domain.TeamCollection) (*Client, error) {
+	if tc == nil {
+		return nil, fmt.Errorf("team collection: %w", domain.ErrIsNil)
+	}
 	return &Client{
 		apiToken: apiToken,
-	}
+		tc:       tc,
+	}, nil
 }
 
 // getFullURL appends the provided endpoint to the known base URL
@@ -112,10 +117,10 @@ type tableElem struct {
 }
 
 // toRankingWithMeta transforms a tableElem object to a more abstracted RankingWithMeta object
-func (t *tableElem) toRankingWithMeta() (domain.RankingWithMeta, error) {
+func (t *tableElem) toRankingWithMeta(tc domain.TeamCollection) (domain.RankingWithMeta, error) {
 	r := domain.NewRankingWithMeta()
 
-	team, err := domain.TeamsDataStore.GetByResourceID(domain.TeamIdentifier{TeamID: t.Team.ID})
+	team, err := tc.GetByResourceID(domain.TeamIdentifier{TeamID: t.Team.ID})
 	if err != nil {
 		return domain.RankingWithMeta{}, err
 	}

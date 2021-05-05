@@ -27,6 +27,7 @@ type CommunicationsAgent struct {
 	eml chan Email
 	tpl *Templates
 	sc  SeasonCollection
+	tc  TeamCollection
 }
 
 // IssueNewEntryEmail generates a "new entry" email for the provided Entry and pushes it to the send queue
@@ -96,7 +97,7 @@ func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *
 		return NotFoundError{err}
 	}
 
-	rankingsAsStrings, err := TeamRankingsAsStrings(sep.Rankings, standings.Rankings)
+	rankingsAsStrings, err := TeamRankingsAsStrings(sep.Rankings, standings.Rankings, c.tc)
 	if err != nil {
 		return err
 	}
@@ -337,7 +338,7 @@ func (c *CommunicationsAgent) getStandingsFromScoredEntryPrediction(ctx context.
 }
 
 // NewCommunicationsAgent returns a new CommunicationsAgent using the provided repositories
-func NewCommunicationsAgent(cfg *Config, er EntryRepository, epr EntryPredictionRepository, sr StandingsRepository, eml chan Email, tpl *Templates, sc SeasonCollection) (*CommunicationsAgent, error) {
+func NewCommunicationsAgent(cfg *Config, er EntryRepository, epr EntryPredictionRepository, sr StandingsRepository, eml chan Email, tpl *Templates, sc SeasonCollection, tc TeamCollection) (*CommunicationsAgent, error) {
 	switch {
 	case cfg == nil:
 		return nil, fmt.Errorf("config: %w", ErrIsNil)
@@ -353,6 +354,8 @@ func NewCommunicationsAgent(cfg *Config, er EntryRepository, epr EntryPrediction
 		return nil, fmt.Errorf("teplates: %w", ErrIsNil)
 	case sc == nil:
 		return nil, fmt.Errorf("season collection: %w", ErrIsNil)
+	case tc == nil:
+		return nil, fmt.Errorf("team collection: %w", ErrIsNil)
 	}
 
 	return &CommunicationsAgent{
@@ -363,6 +366,7 @@ func NewCommunicationsAgent(cfg *Config, er EntryRepository, epr EntryPrediction
 		eml: eml,
 		tpl: tpl,
 		sc:  sc,
+		tc:  tc,
 	}, nil
 }
 

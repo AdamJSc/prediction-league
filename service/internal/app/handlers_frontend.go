@@ -74,6 +74,7 @@ func frontendLeaderBoardHandler(c *HTTPAppContainer) func(w http.ResponseWriter,
 			standingsAgent,
 			lbAgent,
 			c.Seasons(),
+			c.Teams(),
 		)
 
 		writeResponse(data)
@@ -175,6 +176,7 @@ func frontendPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWriter, 
 			entryAgent,
 			tokenAgent,
 			c.Seasons(),
+			c.Teams(),
 		)
 
 		writeResponse(data)
@@ -201,7 +203,7 @@ func frontendShortCodeResetBeginHandler(c *HTTPAppContainer) func(w http.Respons
 		if err != nil {
 			internalError(err).writeTo(w)
 		}
-		commsAgent, err := domain.NewCommunicationsAgent(c.Config(), c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template(), c.Seasons())
+		commsAgent, err := domain.NewCommunicationsAgent(c.Config(), c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template(), c.Seasons(), c.Teams())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return
@@ -296,7 +298,7 @@ func frontendShortCodeResetCompleteHandler(c *HTTPAppContainer) func(w http.Resp
 		if err != nil {
 			internalError(err).writeTo(w)
 		}
-		commsAgent, err := domain.NewCommunicationsAgent(c.Config(), c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template(), c.Seasons())
+		commsAgent, err := domain.NewCommunicationsAgent(c.Config(), c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template(), c.Seasons(), c.Teams())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return

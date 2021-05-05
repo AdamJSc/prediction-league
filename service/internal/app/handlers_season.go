@@ -36,7 +36,7 @@ func retrieveSeasonHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *h
 		}
 
 		// get teams that correlate to season's team IDs
-		teams, err := domain.FilterTeamsByIDs(season.TeamIDs, domain.TeamsDataStore)
+		teams, err := domain.FilterTeamsByIDs(season.TeamIDs, c.Teams())
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return

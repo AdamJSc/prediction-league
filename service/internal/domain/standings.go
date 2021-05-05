@@ -159,14 +159,14 @@ func NewStandingsAgent(sr StandingsRepository) (*StandingsAgent, error) {
 }
 
 // ValidateAndSortStandings sorts and validates the provided standings
-func ValidateAndSortStandings(standings *Standings) error {
+func ValidateAndSortStandings(standings *Standings, tc TeamCollection) error {
 	if standings == nil {
 		return InternalError{errors.New("standings not provided")}
 	}
 
 	// ensure that all team IDs are valid
 	for _, ranking := range standings.Rankings {
-		if _, err := TeamsDataStore.GetByID(ranking.ID); err != nil {
+		if _, err := tc.GetByID(ranking.ID); err != nil {
 			return NotFoundError{err}
 		}
 	}

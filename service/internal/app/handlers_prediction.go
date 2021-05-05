@@ -88,12 +88,12 @@ func predictionLoginHandler(c *HTTPAppContainer) func(http.ResponseWriter, *http
 	}
 }
 
-func getPredictionPageData(ctx context.Context, authToken string, entryAgent *domain.EntryAgent, tokenAgent *domain.TokenAgent, seasons domain.SeasonCollection) view.PredictionPageData {
+func getPredictionPageData(ctx context.Context, authToken string, entryAgent *domain.EntryAgent, tokenAgent *domain.TokenAgent, sc domain.SeasonCollection, tc domain.TeamCollection) view.PredictionPageData {
 	var data view.PredictionPageData
 
 	// retrieve season and determine its current state
 	seasonID := domain.RealmFromContext(ctx).SeasonID
-	season, err := seasons.GetByID(seasonID)
+	season, err := sc.GetByID(seasonID)
 	if err != nil {
 		data.Err = err
 		return data
@@ -148,7 +148,7 @@ func getPredictionPageData(ctx context.Context, authToken string, entryAgent *do
 	}
 
 	// filter all teams to just the IDs that we need
-	teams, err := domain.FilterTeamsByIDs(teamIDs, domain.TeamsDataStore)
+	teams, err := domain.FilterTeamsByIDs(teamIDs, tc)
 	if err != nil {
 		// something went wrong
 		data.Err = err

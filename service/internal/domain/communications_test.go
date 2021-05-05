@@ -24,18 +24,20 @@ func TestNewCommunicationsAgent(t *testing.T) {
 			eml chan domain.Email
 			tpl *domain.Templates
 			sc  domain.SeasonCollection
+			tc  domain.TeamCollection
 		}{
-			{nil, er, epr, sr, eml, tpl, sc},
-			{cfg, nil, epr, sr, eml, tpl, sc},
-			{cfg, er, nil, sr, eml, tpl, sc},
-			{cfg, er, epr, nil, eml, tpl, sc},
-			{cfg, er, epr, sr, nil, tpl, sc},
-			{cfg, er, epr, sr, eml, nil, sc},
-			{cfg, er, epr, sr, eml, tpl, nil},
+			{nil, er, epr, sr, eml, tpl, sc, tc},
+			{cfg, nil, epr, sr, eml, tpl, sc, tc},
+			{cfg, er, nil, sr, eml, tpl, sc, tc},
+			{cfg, er, epr, nil, eml, tpl, sc, tc},
+			{cfg, er, epr, sr, nil, tpl, sc, tc},
+			{cfg, er, epr, sr, eml, nil, sc, tc},
+			{cfg, er, epr, sr, eml, tpl, nil, tc},
+			{cfg, er, epr, sr, eml, tpl, sc, nil},
 		}
 
 		for _, tc := range tt {
-			_, gotErr := domain.NewCommunicationsAgent(tc.cfg, tc.er, tc.epr, tc.sr, tc.eml, tc.tpl, tc.sc)
+			_, gotErr := domain.NewCommunicationsAgent(tc.cfg, tc.er, tc.epr, tc.sr, tc.eml, tc.tpl, tc.sc, tc.tc)
 			if !errors.Is(gotErr, domain.ErrIsNil) {
 				t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
 			}
@@ -65,7 +67,7 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -129,7 +131,7 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -153,7 +155,7 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -180,7 +182,7 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -220,7 +222,7 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -246,7 +248,7 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -275,7 +277,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		expectedRankingStrings, err := domain.TeamRankingsAsStrings(scoredEntryPrediction.Rankings, standings.Rankings)
+		expectedRankingStrings, err := domain.TeamRankingsAsStrings(scoredEntryPrediction.Rankings, standings.Rankings, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -297,7 +299,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -342,7 +344,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		expectedRankingStrings, err := domain.TeamRankingsAsStrings(scoredEntryPrediction.Rankings, standings.Rankings)
+		expectedRankingStrings, err := domain.TeamRankingsAsStrings(scoredEntryPrediction.Rankings, standings.Rankings, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -364,7 +366,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -419,7 +421,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -444,7 +446,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -472,7 +474,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -500,7 +502,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -520,7 +522,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -550,7 +552,7 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -610,7 +612,7 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -636,7 +638,7 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -662,7 +664,7 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -690,7 +692,7 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -751,7 +753,7 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -777,7 +779,7 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -803,7 +805,7 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -845,7 +847,7 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -928,7 +930,7 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -995,7 +997,7 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1021,7 +1023,7 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1047,7 +1049,7 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1083,7 +1085,7 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1129,7 +1131,7 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1214,7 +1216,7 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1281,7 +1283,7 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1307,7 +1309,7 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1333,7 +1335,7 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1369,7 +1371,7 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 		queue := make(chan domain.Email, 1)
 
-		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc)
+		agent, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, queue, tpl, sc, tc)
 		if err != nil {
 			t.Fatal(err)
 		}

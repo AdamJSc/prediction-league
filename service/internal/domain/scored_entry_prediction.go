@@ -168,7 +168,7 @@ func ScoreEntryPredictionBasedOnStandings(
 }
 
 // TeamRankingsAsStrings returns the provided rankings as a slice of strings formatted with padding
-func TeamRankingsAsStrings(sepRankings []RankingWithScore, standingsRankings []RankingWithMeta) ([]string, error) {
+func TeamRankingsAsStrings(sepRankings []RankingWithScore, standingsRankings []RankingWithMeta, tc TeamCollection) ([]string, error) {
 	if len(sepRankings) == 0 {
 		return nil, NotFoundError{errors.New("provided scored entry predictions are empty")}
 	}
@@ -190,8 +190,6 @@ func TeamRankingsAsStrings(sepRankings []RankingWithScore, standingsRankings []R
 		sequentialRankingScores []string
 		sequentialStandingsPos  []string
 	)
-
-	teams := TeamsDataStore
 
 	var getStandingsPosByTeamID = func(teamID string) (int, error) {
 		for _, r := range standingsRankings {
@@ -228,7 +226,7 @@ func TeamRankingsAsStrings(sepRankings []RankingWithScore, standingsRankings []R
 			return nil, fmt.Errorf("standingsRankings position character length cannot exceed %d: actual length %d", maxStandingsPosLength, len(standingsPosStr))
 		}
 		// retrieve the team so we get its name
-		team, err := teams.GetByID(rws.ID)
+		team, err := tc.GetByID(rws.ID)
 		if err != nil {
 			return nil, NotFoundError{err}
 		}

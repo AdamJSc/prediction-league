@@ -36,7 +36,7 @@ func TestTeamCollection_GetByID(t *testing.T) {
 
 func TestTeam_CheckValidation(t *testing.T) {
 	t.Run("validate teams", func(t *testing.T) {
-		for id, team := range domain.TeamsDataStore {
+		for id, team := range domain.GetTeamCollection() {
 			if id != team.ID {
 				t.Fatal(fmt.Errorf("mismatched team id: %s != %s", id, team.ID))
 			}

@@ -59,7 +59,7 @@ by accessing `Config().Realms[realm_key]` on the app's dependency container.
 
 * A `Season` represents a real-world tournament (such as "Premier League 2020/21").
 
-* The Seasons data used throughout the system is defined in code and instantiated within the app bootstrap (see `domain.GetSeasonsCollection()`).
+* The Seasons data used throughout the system is defined in code and instantiated within the app bootstrap (see `domain.GetSeasonCollection()`).
 
 * This is deliberately controlled by the project maintainer as a one-off action that is required approximately once a year
 (i.e. between one Season finishing and another beginning).
@@ -247,7 +247,7 @@ can be created or updated at any given moment is determined by the corresponding
 object itself.
 
 Usually these will be **absolute** timeframes that pertain to the dates relevant to a real-world [Season](#season)
-(see `201920_1` in the collection returned by `domain.GetSeasonsCollection()` as an example).
+(see `201920_1` in the collection returned by `domain.GetSeasonCollection()` as an example).
 
 For this reason, the default [Realm](#realm) (`localhost`) is affiliated with a [Season](#season) which has the ID `FakeSeason`
 and whose sole purpose is to enable time-sensitive operations to be more easily debugged.

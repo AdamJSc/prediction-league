@@ -176,7 +176,7 @@ type ResourceIdentifier interface {
 }
 
 // ValidateSeason returns an error if validation rules are not satisfied for the provided Season
-func ValidateSeason(s Season) error {
+func ValidateSeason(s Season, tc TeamCollection) error {
 	if s.ID == fakeSeasonID {
 		// don't validate our faked season
 		return nil
@@ -229,7 +229,7 @@ func ValidateSeason(s Season) error {
 	}
 
 	// verify that each team exists and is not duplicated
-	if _, err := FilterTeamsByIDs(s.TeamIDs, TeamsDataStore); err != nil {
+	if _, err := FilterTeamsByIDs(s.TeamIDs, tc); err != nil {
 		return err
 	}
 

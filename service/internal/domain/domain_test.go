@@ -33,6 +33,7 @@ var (
 	sepr       domain.ScoredEntryPredictionRepository
 	sr         domain.StandingsRepository
 	sc         domain.SeasonCollection
+	tc         domain.TeamCollection
 	testSeason domain.Season
 	tpl        *domain.Templates
 	tr         domain.TokenRepository
@@ -121,7 +122,8 @@ func TestMain(m *testing.M) {
 	cfg = newTestConfig(*rlm)
 
 	// set testSeason to first entity in season collection
-	sc = mustGetSeasonsCollection()
+	tc = domain.GetTeamCollection()
+	sc = mustGetSeasonCollection()
 	for _, s := range sc {
 		testSeason = s
 		break
@@ -131,7 +133,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func mustGetSeasonsCollection() domain.SeasonCollection {
+func mustGetSeasonCollection() domain.SeasonCollection {
 	sc, err := domain.GetSeasonCollection()
 	if err != nil {
 		log.Fatalf("cannot get seasons collection: %s", err.Error())

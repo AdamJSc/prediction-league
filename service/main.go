@@ -90,6 +90,7 @@ func main() {
 		scoredEntryPredictionRepo: sepr,
 		tokenRepo:                 tr,
 		seasons:                   sc,
+		teams:                     domain.GetTeamCollection(),
 	})
 
 	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -148,6 +149,7 @@ type dependencies struct {
 	scoredEntryPredictionRepo *mysqldb.ScoredEntryPredictionRepo
 	tokenRepo                 *mysqldb.TokenRepo
 	seasons                   domain.SeasonCollection
+	teams                     domain.TeamCollection
 }
 
 func (d dependencies) Config() *domain.Config          { return d.config }
@@ -168,6 +170,7 @@ func (d dependencies) ScoredEntryPredictionRepo() domain.ScoredEntryPredictionRe
 }
 func (d dependencies) TokenRepo() domain.TokenRepository { return d.tokenRepo }
 func (d dependencies) Seasons() domain.SeasonCollection  { return d.seasons }
+func (d dependencies) Teams() domain.TeamCollection      { return d.teams }
 
 func parseTimeString(t *string) *time.Time {
 	if t == nil {

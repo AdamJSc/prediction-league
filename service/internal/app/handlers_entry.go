@@ -94,7 +94,7 @@ func updateEntryPaymentDetailsHandler(c *HTTPAppContainer) func(w http.ResponseW
 			internalError(err).writeTo(w)
 			return
 		}
-		commsAgent, err := domain.NewCommunicationsAgent(c.Config(), c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template(), c.Seasons())
+		commsAgent, err := domain.NewCommunicationsAgent(c.Config(), c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template(), c.Seasons(), c.Teams())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return
@@ -256,7 +256,7 @@ func retrieveLatestEntryPredictionHandler(c *HTTPAppContainer) func(w http.Respo
 		}
 
 		// get teams that correlate to entry prediction's ranking IDs
-		teams, err := domain.FilterTeamsByIDs(entryPrediction.Rankings.GetIDs(), domain.TeamsDataStore)
+		teams, err := domain.FilterTeamsByIDs(entryPrediction.Rankings.GetIDs(), c.Teams())
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return

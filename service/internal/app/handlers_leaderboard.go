@@ -7,7 +7,7 @@ import (
 	"prediction-league/service/internal/view"
 )
 
-func getLeaderBoardPageData(ctx context.Context, entryAgent *domain.EntryAgent, standingsAgent *domain.StandingsAgent, leaderBoardAgent *domain.LeaderBoardAgent, seasons domain.SeasonCollection) view.LeaderBoardPageData {
+func getLeaderBoardPageData(ctx context.Context, entryAgent *domain.EntryAgent, standingsAgent *domain.StandingsAgent, leaderBoardAgent *domain.LeaderBoardAgent, sc domain.SeasonCollection, tc domain.TeamCollection) view.LeaderBoardPageData {
 	var data view.LeaderBoardPageData
 
 	ctxRealm := domain.RealmFromContext(ctx)
@@ -84,14 +84,14 @@ func getLeaderBoardPageData(ctx context.Context, entryAgent *domain.EntryAgent, 
 	data.Entries.RawEntries = string(rawEntries)
 
 	// finally, populate teams for season
-	season, err := seasons.GetByID(seasonID)
+	season, err := sc.GetByID(seasonID)
 	if err != nil {
 		data.Err = err
 		return data
 	}
 	var teams []domain.Team
 	for _, id := range season.TeamIDs {
-		team, err := domain.TeamsDataStore.GetByID(id)
+		team, err := tc.GetByID(id)
 		if err != nil {
 			data.Err = err
 			return data

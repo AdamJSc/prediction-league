@@ -44,6 +44,7 @@ func newRetrieveLatestStandingsJob(season domain.Season, client domain.FootballD
 		d.EmailQueue(),
 		d.Template(),
 		d.Seasons(),
+		d.Teams(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("cannot instantiate communications agent: %w", err)
@@ -87,7 +88,7 @@ func newRetrieveLatestStandingsJob(season domain.Season, client domain.FootballD
 			return
 		}
 		// validate and sort
-		if err := domain.ValidateAndSortStandings(clientStandings); err != nil {
+		if err := domain.ValidateAndSortStandings(clientStandings, d.Teams()); err != nil {
 			log.Println(wrapJobError(
 				jobName,
 				errors.Wrapf(err, "validate and sort client standings for season id: %s", season.ID),

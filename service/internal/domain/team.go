@@ -14,7 +14,7 @@ type Team struct {
 	CrestURL  string             `json:"crest_url"`  // absolute URL representing image of team's crest
 }
 
-// TeamCollection is map of TeamsDataStore
+// TeamCollection is map of Team
 type TeamCollection map[string]Team
 
 // GetByID retrieves a matching Team from the collection by its ID

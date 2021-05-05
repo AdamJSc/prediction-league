@@ -34,6 +34,7 @@ func newPredictionWindowOpenJob(season domain.Season, d app.DependencyInjector) 
 		d.EmailQueue(),
 		d.Template(),
 		d.Seasons(),
+		d.Teams(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("cannot instantiate communications agent: %w", err)

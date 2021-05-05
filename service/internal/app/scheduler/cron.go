@@ -60,11 +60,12 @@ func mustGenerateRetrieveLatestStandingsJobs(c *app.HTTPAppContainer) []*job {
 			continue
 		}
 
-		job, err := newRetrieveLatestStandingsJob(
-			season,
-			footballdataorg.NewClient(config.FootballDataAPIToken),
-			c,
-		)
+		cl, err := footballdataorg.NewClient(config.FootballDataAPIToken, c.Teams())
+		if err != nil {
+			log.Fatalf("cannot instantiate football data client: %s", err.Error())
+		}
+
+		job, err := newRetrieveLatestStandingsJob(season, cl, c)
 		if err != nil {
 			log.Fatalf("cannot instantiate retrieve latest standings job: %s", err.Error())
 		}

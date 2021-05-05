@@ -465,7 +465,7 @@ func TestTeamRankingsAsStrings(t *testing.T) {
 	}
 
 	t.Run("generating strings from valid team rankings must succeed", func(t *testing.T) {
-		actualStrings, err := domain.TeamRankingsAsStrings(testRankingsWithScore, testRankingsWithMeta)
+		actualStrings, err := domain.TeamRankingsAsStrings(testRankingsWithScore, testRankingsWithMeta, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -491,22 +491,22 @@ func TestTeamRankingsAsStrings(t *testing.T) {
 	})
 
 	t.Run("generating strings from empty scored entry prediction rankings must fail", func(t *testing.T) {
-		_, err := domain.TeamRankingsAsStrings(nil, testRankingsWithMeta)
+		_, err := domain.TeamRankingsAsStrings(nil, testRankingsWithMeta, tc)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
-		_, err = domain.TeamRankingsAsStrings([]domain.RankingWithScore{}, testRankingsWithMeta)
+		_, err = domain.TeamRankingsAsStrings([]domain.RankingWithScore{}, testRankingsWithMeta, tc)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
 	})
 
 	t.Run("generating strings from empty standings rankings must fail", func(t *testing.T) {
-		_, err := domain.TeamRankingsAsStrings(testRankingsWithScore, nil)
+		_, err := domain.TeamRankingsAsStrings(testRankingsWithScore, nil, tc)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
-		_, err = domain.TeamRankingsAsStrings(testRankingsWithScore, []domain.RankingWithMeta{})
+		_, err = domain.TeamRankingsAsStrings(testRankingsWithScore, []domain.RankingWithMeta{}, tc)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -519,7 +519,7 @@ func TestTeamRankingsAsStrings(t *testing.T) {
 
 		expectedErrorMessage := "total score character length cannot exceed 8: actual length 9"
 
-		_, err := domain.TeamRankingsAsStrings(rwsThatShouldFail, testRankingsWithMeta)
+		_, err := domain.TeamRankingsAsStrings(rwsThatShouldFail, testRankingsWithMeta, tc)
 		if !cmp.Error(err, expectedErrorMessage)().Success() {
 			expectedGot(t, expectedErrorMessage, err)
 		}
@@ -532,7 +532,7 @@ func TestTeamRankingsAsStrings(t *testing.T) {
 
 		expectedErrorMessage := "prediction position character length cannot exceed 4: actual length 5"
 
-		_, err := domain.TeamRankingsAsStrings(rwsThatShouldFail, testRankingsWithMeta)
+		_, err := domain.TeamRankingsAsStrings(rwsThatShouldFail, testRankingsWithMeta, tc)
 		if !cmp.Error(err, expectedErrorMessage)().Success() {
 			expectedGot(t, expectedErrorMessage, err)
 		}
@@ -547,7 +547,7 @@ func TestTeamRankingsAsStrings(t *testing.T) {
 			},
 		}
 
-		_, err := domain.TeamRankingsAsStrings(rwsThatShouldFail, []domain.RankingWithMeta{})
+		_, err := domain.TeamRankingsAsStrings(rwsThatShouldFail, []domain.RankingWithMeta{}, tc)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
