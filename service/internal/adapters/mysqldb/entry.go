@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"golang.org/x/net/context"
 	"math/rand"
-	"prediction-league/service/internal/adapters/mysqldb/sqltypes"
 	"prediction-league/service/internal/domain"
 	"time"
 )
@@ -72,7 +71,7 @@ func (e *EntryRepo) Update(ctx context.Context, entry *domain.Entry) error {
 				SET ` + getDBFieldsWithEqualsPlaceholdersStringFromFields(entryDBFields) + `, updated_at = ?
 				WHERE id = ?`
 
-	now := sqltypes.ToNullTime(time.Now().Truncate(time.Second))
+	now := time.Now().Truncate(time.Second)
 
 	rows, err := e.db.QueryContext(
 		ctx,
@@ -95,7 +94,7 @@ func (e *EntryRepo) Update(ctx context.Context, entry *domain.Entry) error {
 	}
 	defer rows.Close()
 
-	entry.UpdatedAt = now
+	entry.UpdatedAt = &now
 
 	return nil
 }

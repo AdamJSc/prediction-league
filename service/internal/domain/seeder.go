@@ -3,7 +3,6 @@ package domain
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"prediction-league/service/internal/adapters/mysqldb/sqltypes"
 	"time"
 )
 
@@ -343,7 +342,7 @@ func GenerateSeedEntries() ([]Entry, error) {
 		e.Status = EntryStatusReady
 		e.PaymentMethod = &paymentMethod
 		e.PaymentRef = &paymentRef
-		e.ApprovedAt = sqltypes.ToNullTime(approvedAt)
+		e.ApprovedAt = &approvedAt
 
 		for j := range e.EntryPredictions {
 			ep := &e.EntryPredictions[j]

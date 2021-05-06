@@ -96,8 +96,8 @@ func (l *LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context
 	}
 
 	lastUpdated := standings.CreatedAt
-	if standings.UpdatedAt.Valid {
-		lastUpdated = standings.UpdatedAt.Time
+	if standings.UpdatedAt != nil {
+		lastUpdated = *standings.UpdatedAt
 	}
 
 	return &LeaderBoard{

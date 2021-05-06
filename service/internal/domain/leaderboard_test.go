@@ -55,8 +55,8 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 			// later on, we can check that round 2's leaderboard has a last updated date that
 			// matches the created_at date of standings round 2
 			// otherwise, leaderboard should match the standings round's updated_at date instead
-			s.UpdatedAt.Valid = true
-			s.UpdatedAt.Time = s.CreatedAt.Add(time.Minute)
+			addMin := s.CreatedAt.Add(time.Minute)
+			s.UpdatedAt = &addMin
 			s = updateStandings(t, s)
 		}
 		standingsRounds[i] = s
@@ -69,8 +69,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		"MrHarryR",
 		"harry.redknapp@football.net",
 	)
-	harryEntry.ApprovedAt.Valid = true
-	harryEntry.ApprovedAt.Time = now
+	harryEntry.ApprovedAt = &now
 	harryEntry = insertEntry(t, harryEntry)
 
 	jamieEntry := generateTestEntry(t,
@@ -78,8 +77,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		"MrJamieR",
 		"jamie.redknapp@football.net",
 	)
-	jamieEntry.ApprovedAt.Valid = true
-	jamieEntry.ApprovedAt.Time = now
+	jamieEntry.ApprovedAt = &now
 	jamieEntry = insertEntry(t, jamieEntry)
 
 	frankEntry := generateTestEntry(t,
@@ -87,8 +85,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		"FrankieLamps",
 		"frank.lampard@football.net",
 	)
-	frankEntry.ApprovedAt.Valid = true
-	frankEntry.ApprovedAt.Time = now
+	frankEntry.ApprovedAt = &now
 	frankEntry = insertEntry(t, frankEntry)
 
 	harryEntryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, harryEntry.ID))
@@ -178,8 +175,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		"MrRobbieS",
 		"robbie.savage@football.net",
 	)
-	robbieEntry.ApprovedAt.Valid = true
-	robbieEntry.ApprovedAt.Time = now
+	robbieEntry.ApprovedAt = &now
 	robbieEntry.SeasonID = "NotSameID" // different season ID to the others
 	robbieEntry = insertEntry(t, robbieEntry)
 	robbieEntryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, robbieEntry.ID))
@@ -190,8 +186,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		"MrJoeyB",
 		"joey.barton@football.net",
 	)
-	joeyEntry.ApprovedAt.Valid = true
-	joeyEntry.ApprovedAt.Time = now
+	joeyEntry.ApprovedAt = &now
 	joeyEntry.RealmName = "NotSameRealm" // different realm name to the others
 	joeyEntry = insertEntry(t, joeyEntry)
 	joeyEntryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, joeyEntry.ID))
@@ -278,7 +273,6 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		lastUpdated := standingsRounds[3].UpdatedAt.Time
 		expectedLeaderBoard := &domain.LeaderBoard{
 			RoundNumber: 3,
 			Rankings: []domain.LeaderBoardRanking{
@@ -289,7 +283,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 				// total 249, min 124, current 125
 				generateTestLeaderBoardRanking(3, frankEntry.ID.String(), frankScores.max, frankScores.mid, frankScores.mid+frankScores.max),
 			},
-			LastUpdated: &lastUpdated,
+			LastUpdated: standingsRounds[3].UpdatedAt,
 		}
 
 		actualLeaderBoard, err := lbAgent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 3)
@@ -306,7 +300,6 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		lastUpdated := standingsRounds[4].UpdatedAt.Time
 		expectedLeaderBoard := &domain.LeaderBoard{
 			RoundNumber: 4,
 			Rankings: []domain.LeaderBoardRanking{
@@ -317,7 +310,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 				// total 372, min 122, current 126
 				generateTestLeaderBoardRanking(3, harryEntry.ID.String(), harryScores.max, harryScores.min, harryScores.min+harryScores.mid+harryScores.max),
 			},
-			LastUpdated: &lastUpdated,
+			LastUpdated: standingsRounds[4].UpdatedAt,
 		}
 
 		actualLeaderBoard, err := lbAgent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, 4)

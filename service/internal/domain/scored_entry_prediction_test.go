@@ -72,8 +72,8 @@ func TestScoredEntryPredictionAgent_CreateScoredEntryPrediction(t *testing.T) {
 		if createdScoredEntryPrediction.CreatedAt.Equal(emptyTime) {
 			expectedNonEmpty(t, "CreatedAt")
 		}
-		if createdScoredEntryPrediction.UpdatedAt.Valid {
-			expectedEmpty(t, "UpdatedAt", createdScoredEntryPrediction.UpdatedAt)
+		if createdScoredEntryPrediction.UpdatedAt != nil {
+			expectedEmpty(t, "UpdatedAt", *createdScoredEntryPrediction.UpdatedAt)
 		}
 
 		// inserting same scored entry prediction a second time should fail
@@ -168,7 +168,7 @@ func TestScoredEntryPredictionAgent_UpdateScoredEntryPrediction(t *testing.T) {
 		if !updatedScoredEntryPrediction.CreatedAt.Equal(changedScoredEntryPrediction.CreatedAt) {
 			expectedGot(t, changedScoredEntryPrediction.CreatedAt, updatedScoredEntryPrediction.CreatedAt)
 		}
-		if !updatedScoredEntryPrediction.UpdatedAt.Valid {
+		if updatedScoredEntryPrediction.UpdatedAt == nil {
 			expectedNonEmpty(t, "UpdatedAt")
 		}
 	})
@@ -241,8 +241,8 @@ func TestScoredEntryPredictionAgent_RetrieveScoredEntryPredictionByIDs(t *testin
 		if !retrievedScoredEntryPrediction.CreatedAt.In(utc).Equal(now.In(utc)) {
 			expectedGot(t, now, retrievedScoredEntryPrediction.CreatedAt)
 		}
-		if retrievedScoredEntryPrediction.UpdatedAt.Valid {
-			expectedEmpty(t, "UpdatedAt", retrievedScoredEntryPrediction.UpdatedAt)
+		if retrievedScoredEntryPrediction.UpdatedAt != nil {
+			expectedEmpty(t, "UpdatedAt", *retrievedScoredEntryPrediction.UpdatedAt)
 		}
 	})
 
@@ -317,8 +317,8 @@ func TestScoredEntryPredictionAgent_RetrieveLatestScoredEntryPredictionByEntryID
 		if !retrievedScoredEntryPrediction.CreatedAt.In(utc).Equal(mostRecentScoredEntryPrediction.CreatedAt.In(utc)) {
 			expectedGot(t, mostRecentScoredEntryPrediction.CreatedAt, retrievedScoredEntryPrediction.CreatedAt)
 		}
-		if retrievedScoredEntryPrediction.UpdatedAt.Valid {
-			expectedEmpty(t, "UpdatedAt", retrievedScoredEntryPrediction.UpdatedAt)
+		if retrievedScoredEntryPrediction.UpdatedAt != nil {
+			expectedEmpty(t, "UpdatedAt", *retrievedScoredEntryPrediction.UpdatedAt)
 		}
 	})
 

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
-	"prediction-league/service/internal/adapters/mysqldb/sqltypes"
 	"regexp"
 	"sort"
 	"strings"
@@ -39,13 +38,13 @@ type Entry struct {
 	PaymentMethod    *string   `db:"payment_method"`
 	PaymentRef       *string   `db:"payment_ref"`
 	EntryPredictions []EntryPrediction
-	ApprovedAt       sqltypes.NullTime `db:"approved_at"`
-	CreatedAt        time.Time         `db:"created_at"`
-	UpdatedAt        sqltypes.NullTime `db:"updated_at"`
+	ApprovedAt       *time.Time `db:"approved_at"`
+	CreatedAt        time.Time  `db:"created_at"`
+	UpdatedAt        *time.Time `db:"updated_at"`
 }
 
 func (e *Entry) IsApproved() bool {
-	return e.ApprovedAt.Valid
+	return e.ApprovedAt != nil
 }
 
 // EntryPrediction provides a data type for the prediction that is associated with an Entry
@@ -119,9 +118,9 @@ func (e *EntryAgent) CreateEntry(ctx context.Context, entry Entry, s *Season) (E
 	entry.PaymentMethod = nil
 	entry.PaymentRef = nil
 	entry.EntryPredictions = []EntryPrediction{}
-	entry.ApprovedAt = sqltypes.NullTime{}
+	entry.ApprovedAt = nil
 	entry.CreatedAt = time.Time{}
-	entry.UpdatedAt = sqltypes.NullTime{}
+	entry.UpdatedAt = nil
 
 	// generate a unique lookup ref
 	entry.ShortCode, err = e.er.GenerateUniqueShortCode(ctx)
@@ -541,11 +540,12 @@ func (e *EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode stri
 	}
 
 	// check if Entry has already been approved
-	if entry.ApprovedAt.Valid {
+	if entry.ApprovedAt != nil {
 		return Entry{}, ConflictError{errors.New("entry has already been approved")}
 	}
 
-	entry.ApprovedAt = sqltypes.ToNullTime(TimestampFromContext(ctx).Truncate(time.Second))
+	ts := TimestampFromContext(ctx).Truncate(time.Second)
+	entry.ApprovedAt = &ts
 
 	// write to database
 	if err := e.er.Update(ctx, &entry); err != nil {

@@ -367,8 +367,8 @@ func retrieveLatestScoredEntryPrediction(c *HTTPAppContainer) func(w http.Respon
 		}
 
 		lastUpdated := standings.CreatedAt
-		if standings.UpdatedAt.Valid {
-			lastUpdated = standings.UpdatedAt.Time
+		if standings.UpdatedAt != nil {
+			lastUpdated = *standings.UpdatedAt
 		}
 		okResponse(&data{
 			Type: "scored",

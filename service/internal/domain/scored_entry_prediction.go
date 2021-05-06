@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
-	"prediction-league/service/internal/adapters/mysqldb/sqltypes"
 	"strconv"
 	"strings"
 	"time"
@@ -18,7 +17,7 @@ type ScoredEntryPrediction struct {
 	Rankings          []RankingWithScore `db:"rankings"`
 	Score             int                `db:"score"`
 	CreatedAt         time.Time          `db:"created_at"`
-	UpdatedAt         sqltypes.NullTime  `db:"updated_at"`
+	UpdatedAt         *time.Time         `db:"updated_at"`
 }
 
 // ScoredEntryPredictionRepository defines the interface for transacting with our ScoredEntryPredictions data source
@@ -67,7 +66,7 @@ func (s *ScoredEntryPredictionAgent) CreateScoredEntryPrediction(ctx context.Con
 
 	// override these values
 	scoredEntryPrediction.CreatedAt = time.Now().Truncate(time.Second)
-	scoredEntryPrediction.UpdatedAt = sqltypes.NullTime{}
+	scoredEntryPrediction.UpdatedAt = nil
 
 	// write scoredEntryPrediction to database
 	if err := s.sepr.Insert(ctx, &scoredEntryPrediction); err != nil {
@@ -114,7 +113,8 @@ func (s *ScoredEntryPredictionAgent) UpdateScoredEntryPrediction(ctx context.Con
 	}
 
 	// override these values
-	scoredEntryPrediction.UpdatedAt = sqltypes.ToNullTime(time.Now().Truncate(time.Second))
+	now := time.Now().Truncate(time.Second)
+	scoredEntryPrediction.UpdatedAt = &now
 
 	// write to database
 	if err := s.sepr.Update(ctx, &scoredEntryPrediction); err != nil {

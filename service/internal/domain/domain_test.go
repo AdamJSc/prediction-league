@@ -402,14 +402,14 @@ func newTestRealm() *domain.Realm {
 	}
 }
 
-func checkStringPtrMatch(t *testing.T, a *string, b *string) {
-	if a == nil {
-		t.Fatal("a is nil")
+func checkStringPtrMatch(t *testing.T, exp *string, got *string) {
+	if exp == nil {
+		t.Fatal("exp is nil")
 	}
-	if b == nil {
-		t.Fatal("b is nil")
+	if got == nil {
+		t.Fatal("got is nil")
 	}
-	if *a != *b {
-		expectedGot(t, *a, *b)
+	if *exp != *got {
+		expectedGot(t, *exp, *got)
 	}
 }

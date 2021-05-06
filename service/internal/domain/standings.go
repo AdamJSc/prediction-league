@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
-	"prediction-league/service/internal/adapters/mysqldb/sqltypes"
 	"sort"
 	"time"
 )
@@ -18,7 +17,7 @@ type Standings struct {
 	Rankings    []RankingWithMeta `db:"rankings"`
 	Finalised   bool              `db:"finalised"`
 	CreatedAt   time.Time         `db:"created_at"`
-	UpdatedAt   sqltypes.NullTime `db:"updated_at"`
+	UpdatedAt   *time.Time        `db:"updated_at"`
 }
 
 // These methods make the Standings struct sortable
@@ -53,7 +52,7 @@ func (s *StandingsAgent) CreateStandings(ctx context.Context, standings Standing
 	// override these values
 	standings.ID = id
 	standings.CreatedAt = time.Now().Truncate(time.Second)
-	standings.UpdatedAt = sqltypes.NullTime{}
+	standings.UpdatedAt = nil
 
 	// write entry to database
 	if err := s.sr.Insert(ctx, &standings); err != nil {
@@ -106,7 +105,8 @@ func (s *StandingsAgent) UpdateStandings(ctx context.Context, standings Standing
 	}
 
 	// override these values
-	standings.UpdatedAt = sqltypes.ToNullTime(time.Now().Truncate(time.Second))
+	now := time.Now().Truncate(time.Second)
+	standings.UpdatedAt = &now
 
 	// write to database
 	if err := s.sr.Update(ctx, &standings); err != nil {

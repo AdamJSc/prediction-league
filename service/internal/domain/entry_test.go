@@ -7,7 +7,6 @@ import (
 	gocmp "github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"gotest.tools/assert/cmp"
-	"prediction-league/service/internal/adapters/mysqldb/sqltypes"
 	"prediction-league/service/internal/domain"
 	"sort"
 	"testing"
@@ -64,6 +63,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	entry := domain.Entry{
 		// these values should be populated
 		EntrantName:     "Harry Redknapp",
@@ -81,9 +81,9 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		EntryPredictions: []domain.EntryPrediction{
 			domain.NewEntryPrediction([]string{"entry_team_id_1", "entry_team_id_2"}),
 		},
-		ApprovedAt: sqltypes.ToNullTime(time.Now()),
+		ApprovedAt: &now,
 		CreatedAt:  time.Time{},
-		UpdatedAt:  sqltypes.ToNullTime(time.Now()),
+		UpdatedAt:  &now,
 	}
 
 	t.Run("create a valid entry with a valid guard value must succeed", func(t *testing.T) {
@@ -136,14 +136,14 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		if len(createdEntry.EntryPredictions) != 0 {
 			expectedEmpty(t, "Entry.EntryPredictions", createdEntry.EntryPredictions)
 		}
-		if createdEntry.ApprovedAt.Valid {
-			expectedEmpty(t, "Entry.ApprovedAt", createdEntry.ApprovedAt)
+		if createdEntry.ApprovedAt != nil {
+			expectedEmpty(t, "Entry.ApprovedAt", *createdEntry.ApprovedAt)
 		}
 		if createdEntry.CreatedAt.Equal(time.Time{}) {
 			expectedNonEmpty(t, "Entry.CreatedAt")
 		}
-		if createdEntry.UpdatedAt.Valid {
-			expectedEmpty(t, "Entry.UpdatedAt", createdEntry.UpdatedAt)
+		if createdEntry.UpdatedAt != nil {
+			expectedEmpty(t, "Entry.UpdatedAt", *createdEntry.UpdatedAt)
 		}
 
 		// inserting same entry a second time should fail
@@ -550,15 +550,12 @@ func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
 		if len(entry.EntryPredictions) != len(retrievedEntry.EntryPredictions) {
 			t.Fatal(gocmp.Diff(entry.EntryPredictions, retrievedEntry.EntryPredictions))
 		}
-		if entry.ApprovedAt.Time.In(utc) != retrievedEntry.ApprovedAt.Time.In(utc) {
-			expectedGot(t, entry.ApprovedAt, retrievedEntry.ApprovedAt)
-		}
 		if entry.CreatedAt.In(utc) != retrievedEntry.CreatedAt.In(utc) {
 			expectedGot(t, entry.CreatedAt, retrievedEntry.CreatedAt)
 		}
-		if entry.UpdatedAt.Time.In(utc) != retrievedEntry.UpdatedAt.Time.In(utc) {
-			expectedGot(t, entry.UpdatedAt, retrievedEntry.UpdatedAt)
-		}
+
+		checkTimePtrMatch(t, entry.ApprovedAt, retrievedEntry.ApprovedAt)
+		checkTimePtrMatch(t, entry.UpdatedAt, retrievedEntry.UpdatedAt)
 	})
 
 	t.Run("retrieve a non-existent entry must fail", func(t *testing.T) {
@@ -644,15 +641,12 @@ func TestEntryAgent_RetrieveEntryByEntrantEmail(t *testing.T) {
 		if len(entry.EntryPredictions) != len(retrievedEntry.EntryPredictions) {
 			t.Fatal(gocmp.Diff(entry.EntryPredictions, retrievedEntry.EntryPredictions))
 		}
-		if entry.ApprovedAt.Time.In(utc) != retrievedEntry.ApprovedAt.Time.In(utc) {
-			expectedGot(t, entry.ApprovedAt, retrievedEntry.ApprovedAt)
-		}
 		if entry.CreatedAt.In(utc) != retrievedEntry.CreatedAt.In(utc) {
 			expectedGot(t, entry.CreatedAt, retrievedEntry.CreatedAt)
 		}
-		if entry.UpdatedAt.Time.In(utc) != retrievedEntry.UpdatedAt.Time.In(utc) {
-			expectedGot(t, entry.UpdatedAt, retrievedEntry.UpdatedAt)
-		}
+
+		checkTimePtrMatch(t, entry.ApprovedAt, retrievedEntry.ApprovedAt)
+		checkTimePtrMatch(t, entry.UpdatedAt, retrievedEntry.UpdatedAt)
 	})
 
 	t.Run("retrieve a non-existent entry must fail", func(t *testing.T) {
@@ -748,15 +742,12 @@ func TestEntryAgent_RetrieveEntryByEntrantNickname(t *testing.T) {
 		if len(entry.EntryPredictions) != len(retrievedEntry.EntryPredictions) {
 			t.Fatal(gocmp.Diff(entry.EntryPredictions, retrievedEntry.EntryPredictions))
 		}
-		if entry.ApprovedAt.Time.In(utc) != retrievedEntry.ApprovedAt.Time.In(utc) {
-			expectedGot(t, entry.ApprovedAt, retrievedEntry.ApprovedAt)
-		}
 		if entry.CreatedAt.In(utc) != retrievedEntry.CreatedAt.In(utc) {
 			expectedGot(t, entry.CreatedAt, retrievedEntry.CreatedAt)
 		}
-		if entry.UpdatedAt.Time.In(utc) != retrievedEntry.UpdatedAt.Time.In(utc) {
-			expectedGot(t, entry.UpdatedAt, retrievedEntry.UpdatedAt)
-		}
+
+		checkTimePtrMatch(t, entry.ApprovedAt, retrievedEntry.ApprovedAt)
+		checkTimePtrMatch(t, entry.UpdatedAt, retrievedEntry.UpdatedAt)
 	})
 
 	t.Run("retrieve a non-existent entry must fail", func(t *testing.T) {
@@ -817,9 +808,9 @@ func TestEntryAgent_RetrieveEntriesBySeasonID(t *testing.T) {
 	// set our second entry to an invalid season ID, so that it won't be retrieved by our agent method
 	generatedEntries[1].SeasonID = "nnnnnn"
 
-	// set an approved date on our third entry so that we can verify retrieval of approved entires only
-	generatedEntries[2].ApprovedAt.Valid = true
-	generatedEntries[2].ApprovedAt.Time = time.Now()
+	// set an approved date on our third entry so that we can verify retrieval of approved entries only
+	now := time.Now()
+	generatedEntries[2].ApprovedAt = &now
 
 	// insert entries
 	var entries []domain.Entry
@@ -962,7 +953,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		if changedEntry.PaymentRef != updatedEntry.PaymentRef {
 			expectedGot(t, changedEntry.PaymentRef, updatedEntry.PaymentRef)
 		}
-		if !updatedEntry.UpdatedAt.Valid {
+		if updatedEntry.UpdatedAt == nil {
 			expectedNonEmpty(t, "Entry.UpdatedAt")
 		}
 	})
@@ -1289,7 +1280,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		if !approvedEntry.IsApproved() {
 			expectedGot(t, "approved entry true", "approved entry false")
 		}
-		if !approvedEntry.ApprovedAt.Valid {
+		if approvedEntry.ApprovedAt == nil {
 			expectedNonEmpty(t, "Entry.ApprovedAt")
 		}
 
@@ -1301,7 +1292,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		if !approvedEntry.IsApproved() {
 			expectedGot(t, "approved entry true", "approved entry false")
 		}
-		if !approvedEntry.ApprovedAt.Valid {
+		if approvedEntry.ApprovedAt == nil {
 			expectedNonEmpty(t, "Entry.ApprovedAt")
 		}
 	})
@@ -1492,4 +1483,18 @@ func setContextTimestampRelativeToSeasonAcceptingEntries(t *testing.T, ctx conte
 	ctx = domain.SetTimestampOnContext(ctx, ts)
 
 	return ctx
+}
+
+func checkTimePtrMatch(t *testing.T, exp *time.Time, got *time.Time) {
+	switch {
+	case exp == nil && got == nil:
+		return
+	case exp == nil && got != nil:
+		expectedGot(t, nil, *got)
+	case exp != nil && got == nil:
+		expectedGot(t, *exp, nil)
+	}
+	if !exp.In(time.UTC).Equal(got.In(time.UTC)) {
+		expectedGot(t, *exp, *got)
+	}
 }
