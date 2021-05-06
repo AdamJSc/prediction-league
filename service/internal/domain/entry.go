@@ -28,16 +28,16 @@ const (
 
 // Entry defines a user's entry into the prediction league
 type Entry struct {
-	ID               uuid.UUID           `db:"id"`
-	ShortCode        string              `db:"short_code"`
-	SeasonID         string              `db:"season_id"`
-	RealmName        string              `db:"realm_name"`
-	EntrantName      string              `db:"entrant_name"`
-	EntrantNickname  string              `db:"entrant_nickname"`
-	EntrantEmail     string              `db:"entrant_email"`
-	Status           string              `db:"status"`
-	PaymentMethod    sqltypes.NullString `db:"payment_method"`
-	PaymentRef       sqltypes.NullString `db:"payment_ref"`
+	ID               uuid.UUID `db:"id"`
+	ShortCode        string    `db:"short_code"`
+	SeasonID         string    `db:"season_id"`
+	RealmName        string    `db:"realm_name"`
+	EntrantName      string    `db:"entrant_name"`
+	EntrantNickname  string    `db:"entrant_nickname"`
+	EntrantEmail     string    `db:"entrant_email"`
+	Status           string    `db:"status"`
+	PaymentMethod    *string   `db:"payment_method"`
+	PaymentRef       *string   `db:"payment_ref"`
 	EntryPredictions []EntryPrediction
 	ApprovedAt       sqltypes.NullTime `db:"approved_at"`
 	CreatedAt        time.Time         `db:"created_at"`
@@ -116,8 +116,8 @@ func (e *EntryAgent) CreateEntry(ctx context.Context, entry Entry, s *Season) (E
 	entry.SeasonID = s.ID
 	entry.RealmName = ctxRealm.Name
 	entry.Status = EntryStatusPending
-	entry.PaymentMethod = sqltypes.NullString{}
-	entry.PaymentRef = sqltypes.NullString{}
+	entry.PaymentMethod = nil
+	entry.PaymentRef = nil
 	entry.EntryPredictions = []EntryPrediction{}
 	entry.ApprovedAt = sqltypes.NullTime{}
 	entry.CreatedAt = time.Time{}
@@ -491,8 +491,8 @@ func (e *EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, pay
 		return Entry{}, ConflictError{errors.New("payment details can only be added if entry status is pending")}
 	}
 
-	entry.PaymentMethod = sqltypes.ToNullString(&paymentMethod)
-	entry.PaymentRef = sqltypes.ToNullString(&paymentRef)
+	entry.PaymentMethod = &paymentMethod
+	entry.PaymentRef = &paymentRef
 	entry.Status = EntryStatusPaid
 
 	// write to database
@@ -676,8 +676,8 @@ func sanitiseEntry(entry *Entry) error {
 	entry.EntrantNickname = strings.Trim(entry.EntrantNickname, " ")
 	entry.EntrantEmail = strings.Trim(entry.EntrantEmail, " ")
 	entry.Status = strings.Trim(entry.Status, " ")
-	entry.PaymentMethod.String = strings.Trim(entry.PaymentMethod.String, " ")
-	entry.PaymentRef.String = strings.Trim(entry.PaymentRef.String, " ")
+	trimStringPtr(entry.PaymentMethod)
+	trimStringPtr(entry.PaymentRef)
 
 	var validationMsgs []string
 
@@ -707,8 +707,8 @@ func sanitiseEntry(entry *Entry) error {
 	if !isValidEntryStatus(entry.Status) {
 		validationMsgs = append(validationMsgs, fmt.Sprintf("%s is not a valid status", entry.Status))
 	}
-	if entry.PaymentMethod.Valid && !isValidEntryPaymentMethod(entry.PaymentMethod.String) {
-		validationMsgs = append(validationMsgs, fmt.Sprintf("%s is not a valid payment method", entry.PaymentMethod.String))
+	if entry.PaymentMethod != nil && !isValidEntryPaymentMethod(*entry.PaymentMethod) {
+		validationMsgs = append(validationMsgs, fmt.Sprintf("%s is not a valid payment method", *entry.PaymentMethod))
 	}
 
 	if len(validationMsgs) > 0 {
@@ -768,4 +768,11 @@ func isValidEntryPaymentMethod(paymentMethod string) bool {
 	}
 
 	return false
+}
+
+func trimStringPtr(str *string) {
+	if str == nil {
+		return
+	}
+	*str = strings.Trim(*str, " ")
 }

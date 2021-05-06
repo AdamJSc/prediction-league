@@ -341,8 +341,8 @@ func GenerateSeedEntries() ([]Entry, error) {
 		e.SeasonID = seasonID
 		e.RealmName = realmName
 		e.Status = EntryStatusReady
-		e.PaymentMethod = sqltypes.ToNullString(&paymentMethod)
-		e.PaymentRef = sqltypes.ToNullString(&paymentRef)
+		e.PaymentMethod = &paymentMethod
+		e.PaymentRef = &paymentRef
 		e.ApprovedAt = sqltypes.ToNullTime(approvedAt)
 
 		for j := range e.EntryPredictions {

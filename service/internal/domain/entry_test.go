@@ -76,8 +76,8 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		SeasonID:      "entry_season_id",
 		RealmName:     "entry_realm_name",
 		Status:        "entry_status",
-		PaymentMethod: sqltypes.ToNullString(&paymentMethod),
-		PaymentRef:    sqltypes.ToNullString(&paymentRef),
+		PaymentMethod: &paymentMethod,
+		PaymentRef:    &paymentRef,
 		EntryPredictions: []domain.EntryPrediction{
 			domain.NewEntryPrediction([]string{"entry_team_id_1", "entry_team_id_2"}),
 		},
@@ -127,10 +127,10 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		if expectedStatus != createdEntry.Status {
 			expectedGot(t, expectedStatus, createdEntry.Status)
 		}
-		if createdEntry.PaymentMethod.Valid {
+		if createdEntry.PaymentMethod != nil {
 			expectedEmpty(t, "Entry.PaymentMethod", createdEntry.PaymentMethod)
 		}
-		if createdEntry.PaymentRef.Valid {
+		if createdEntry.PaymentRef != nil {
 			expectedEmpty(t, "Entry.PaymentRef", createdEntry.PaymentRef)
 		}
 		if len(createdEntry.EntryPredictions) != 0 {
@@ -543,12 +543,10 @@ func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
 		if entry.Status != retrievedEntry.Status {
 			expectedGot(t, entry.Status, retrievedEntry.Status)
 		}
-		if entry.PaymentMethod != retrievedEntry.PaymentMethod {
-			expectedGot(t, entry.PaymentMethod, retrievedEntry.PaymentMethod)
-		}
-		if entry.PaymentRef != retrievedEntry.PaymentRef {
-			expectedGot(t, entry.PaymentRef, retrievedEntry.PaymentRef)
-		}
+
+		checkStringPtrMatch(t, entry.PaymentMethod, retrievedEntry.PaymentMethod)
+		checkStringPtrMatch(t, entry.PaymentRef, retrievedEntry.PaymentRef)
+
 		if len(entry.EntryPredictions) != len(retrievedEntry.EntryPredictions) {
 			t.Fatal(gocmp.Diff(entry.EntryPredictions, retrievedEntry.EntryPredictions))
 		}
@@ -639,12 +637,10 @@ func TestEntryAgent_RetrieveEntryByEntrantEmail(t *testing.T) {
 		if entry.Status != retrievedEntry.Status {
 			expectedGot(t, entry.Status, retrievedEntry.Status)
 		}
-		if entry.PaymentMethod != retrievedEntry.PaymentMethod {
-			expectedGot(t, entry.PaymentMethod, retrievedEntry.PaymentMethod)
-		}
-		if entry.PaymentRef != retrievedEntry.PaymentRef {
-			expectedGot(t, entry.PaymentRef, retrievedEntry.PaymentRef)
-		}
+
+		checkStringPtrMatch(t, entry.PaymentMethod, retrievedEntry.PaymentMethod)
+		checkStringPtrMatch(t, entry.PaymentRef, retrievedEntry.PaymentRef)
+
 		if len(entry.EntryPredictions) != len(retrievedEntry.EntryPredictions) {
 			t.Fatal(gocmp.Diff(entry.EntryPredictions, retrievedEntry.EntryPredictions))
 		}
@@ -745,12 +741,10 @@ func TestEntryAgent_RetrieveEntryByEntrantNickname(t *testing.T) {
 		if entry.Status != retrievedEntry.Status {
 			expectedGot(t, entry.Status, retrievedEntry.Status)
 		}
-		if entry.PaymentMethod != retrievedEntry.PaymentMethod {
-			expectedGot(t, entry.PaymentMethod, retrievedEntry.PaymentMethod)
-		}
-		if entry.PaymentRef != retrievedEntry.PaymentRef {
-			expectedGot(t, entry.PaymentRef, retrievedEntry.PaymentRef)
-		}
+
+		checkStringPtrMatch(t, entry.PaymentMethod, retrievedEntry.PaymentMethod)
+		checkStringPtrMatch(t, entry.PaymentRef, retrievedEntry.PaymentRef)
+
 		if len(entry.EntryPredictions) != len(retrievedEntry.EntryPredictions) {
 			t.Fatal(gocmp.Diff(entry.EntryPredictions, retrievedEntry.EntryPredictions))
 		}
@@ -925,7 +919,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 			EntrantNickname: "MrJamieR",
 			EntrantEmail:    "jamie.redknapp@football.net",
 			Status:          domain.EntryStatusReady,
-			PaymentRef:      sqltypes.ToNullString(&changedEntryPaymentRef),
+			PaymentRef:      &changedEntryPaymentRef,
 			CreatedAt:       entry.CreatedAt,
 		}
 
@@ -1080,7 +1074,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		// invalid payment method
 		invalidEntry = entry
 		invalidPaymentMethod := "not_a_valid_payment_method"
-		invalidEntry.PaymentMethod = sqltypes.ToNullString(&invalidPaymentMethod)
+		invalidEntry.PaymentMethod = &invalidPaymentMethod
 		_, err = agent.UpdateEntry(ctx, invalidEntry)
 		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
 			expectedTypeOfGot(t, domain.ValidationError{}, err)
@@ -1119,12 +1113,12 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if domain.EntryPaymentMethodPayPal != entryWithPaymentDetails.PaymentMethod.String {
-			expectedGot(t, domain.EntryPaymentMethodPayPal, entryWithPaymentDetails.PaymentMethod.String)
+		if domain.EntryPaymentMethodPayPal != *entryWithPaymentDetails.PaymentMethod {
+			expectedGot(t, domain.EntryPaymentMethodPayPal, *entryWithPaymentDetails.PaymentMethod)
 		}
 
-		if paymentRef != entryWithPaymentDetails.PaymentRef.String {
-			expectedGot(t, paymentRef, entryWithPaymentDetails.PaymentRef.String)
+		if paymentRef != *entryWithPaymentDetails.PaymentRef {
+			expectedGot(t, paymentRef, *entryWithPaymentDetails.PaymentRef)
 		}
 	})
 

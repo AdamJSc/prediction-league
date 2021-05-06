@@ -14,7 +14,6 @@ import (
 	"os"
 	"prediction-league/service/internal/adapters/logger"
 	"prediction-league/service/internal/adapters/mysqldb"
-	"prediction-league/service/internal/adapters/mysqldb/sqltypes"
 	"prediction-league/service/internal/domain"
 	"reflect"
 	"strings"
@@ -292,8 +291,8 @@ func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail 
 		EntrantNickname:  entrantNickname,
 		EntrantEmail:     entrantEmail,
 		Status:           domain.EntryStatusPending,
-		PaymentMethod:    sqltypes.ToNullString(&paymentMethod),
-		PaymentRef:       sqltypes.ToNullString(&paymentRef),
+		PaymentMethod:    &paymentMethod,
+		PaymentRef:       &paymentRef,
 		EntryPredictions: nil,
 	}
 }
@@ -400,5 +399,17 @@ func newTestRealm() *domain.Realm {
 			EmailSanitised:  "hello (at) world (dot) net",
 			EmailDoNotReply: "do_not_reply@world.net",
 		},
+	}
+}
+
+func checkStringPtrMatch(t *testing.T, a *string, b *string) {
+	if a == nil {
+		t.Fatal("a is nil")
+	}
+	if b == nil {
+		t.Fatal("b is nil")
+	}
+	if *a != *b {
+		expectedGot(t, *a, *b)
 	}
 }
