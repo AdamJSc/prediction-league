@@ -40,7 +40,7 @@ func (m *mockClock) Now() time.Time {
 
 func TestNewLogger(t *testing.T) {
 	t.Run("passing nil must return the expected error", func(t *testing.T) {
-		if _, gotErr := logger.NewLogger(nil, &logger.RealClock{}); !errors.Is(gotErr, domain.ErrIsNil) {
+		if _, gotErr := logger.NewLogger(nil, &domain.RealClock{}); !errors.Is(gotErr, domain.ErrIsNil) {
 			t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
 		}
 		if _, gotErr := logger.NewLogger(os.Stdout, nil); !errors.Is(gotErr, domain.ErrIsNil) {

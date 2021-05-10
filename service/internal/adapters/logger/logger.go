@@ -12,7 +12,7 @@ const prefixInfo = "INFO"
 type logger struct {
 	domain.Logger
 	w io.Writer
-	c Clock
+	c domain.Clock
 }
 
 // Info implements domain.Logger
@@ -32,7 +32,7 @@ func (l *logger) prefixMsgArgs(prefix, msg string, a ...interface{}) string {
 }
 
 // NewLogger returns a new Logger using the provided writer
-func NewLogger(w io.Writer, c Clock) (*logger, error) {
+func NewLogger(w io.Writer, c domain.Clock) (*logger, error) {
 	if w == nil {
 		return nil, fmt.Errorf("writer: %w", domain.ErrIsNil)
 	}
