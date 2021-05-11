@@ -73,3 +73,12 @@ type DuplicateDBRecordError struct {
 func (d DuplicateDBRecordError) Error() string {
 	return d.Err.Error()
 }
+
+// MultiError encapsulates multiple errors
+type MultiError struct {
+	Errs []error
+}
+
+func (m MultiError) Error() string {
+	return "multiple errors occurred"
+}

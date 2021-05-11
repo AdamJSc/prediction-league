@@ -571,13 +571,8 @@ func (e *EntryAgent) RetrieveEntryPredictionByTimestamp(ctx context.Context, ent
 func (e *EntryAgent) RetrieveEntryPredictionsForActiveSeasonByTimestamp(
 	ctx context.Context,
 	season Season,
-	timestamp *time.Time,
+	ts time.Time,
 ) ([]EntryPrediction, error) {
-	ts := time.Now()
-	if timestamp != nil {
-		ts = *timestamp
-	}
-
 	// ensure that season is active based on provided timestamp
 	if !season.Active.HasBegunBy(ts) || season.Active.HasElapsedBy(ts) {
 		return nil, ConflictError{fmt.Errorf("season not active: id %s", season.ID)}

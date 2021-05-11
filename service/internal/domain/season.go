@@ -68,13 +68,13 @@ func (s Season) GetState(ts time.Time) SeasonState {
 }
 
 // IsCompletedByStandings returns true if the provided standings represents a completed final round, otherwise false
-func (s Season) IsCompletedByStandings(standings *Standings) bool {
-	if standings.SeasonID != s.ID {
+func (s Season) IsCompletedByStandings(stnd Standings) bool {
+	if stnd.SeasonID != s.ID {
 		// standings pertain to a different season
 		return false
 	}
 
-	for _, rwm := range standings.Rankings {
+	for _, rwm := range stnd.Rankings {
 		played, ok := rwm.MetaData[MetaKeyPlayedGames]
 		if !ok || played != s.MaxRounds {
 			// this ranked team has not played the maximum number of games, so season is not complete

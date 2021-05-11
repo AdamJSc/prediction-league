@@ -4,4 +4,5 @@ package domain
 type Logger interface {
 	Info(msg string)
 	Infof(msg string, a ...interface{})
+	Errorf(msg string, a ...interface{})
 }

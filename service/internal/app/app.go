@@ -31,6 +31,8 @@ type DependencyInjector interface {
 	TokenRepoInjector
 	SeasonsInjector
 	TeamsInjector
+	ClockInjector
+	LoggerInjector
 }
 
 type ConfigInjector interface{ Config() *domain.Config }
@@ -59,6 +61,12 @@ type SeasonsInjector interface {
 }
 type TeamsInjector interface {
 	Teams() domain.TeamCollection
+}
+type ClockInjector interface {
+	Clock() domain.Clock
+}
+type LoggerInjector interface {
+	Logger() domain.Logger
 }
 
 const authCookieName = "PL_AUTH"

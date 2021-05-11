@@ -22,8 +22,10 @@ import (
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
+	cl := &domain.RealClock{}
+
 	// setup logger
-	l, err := logger.NewLogger(os.Stdout, &domain.RealClock{})
+	l, err := logger.NewLogger(os.Stdout, cl)
 	if err != nil {
 		log.Fatalf("cannot instantiate new logger: %s", err.Error())
 	}
@@ -91,6 +93,8 @@ func main() {
 		tokenRepo:                 tr,
 		seasons:                   sc,
 		teams:                     domain.GetTeamCollection(),
+		clock:                     cl,
+		logger:                    l,
 	})
 
 	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -150,6 +154,8 @@ type dependencies struct {
 	tokenRepo                 *mysqldb.TokenRepo
 	seasons                   domain.SeasonCollection
 	teams                     domain.TeamCollection
+	clock                     domain.Clock
+	logger                    domain.Logger
 }
 
 func (d dependencies) Config() *domain.Config          { return d.config }
@@ -171,6 +177,8 @@ func (d dependencies) ScoredEntryPredictionRepo() domain.ScoredEntryPredictionRe
 func (d dependencies) TokenRepo() domain.TokenRepository { return d.tokenRepo }
 func (d dependencies) Seasons() domain.SeasonCollection  { return d.seasons }
 func (d dependencies) Teams() domain.TeamCollection      { return d.teams }
+func (d dependencies) Clock() domain.Clock               { return d.clock }
+func (d dependencies) Logger() domain.Logger             { return d.logger }
 
 func parseTimeString(t *string) *time.Time {
 	if t == nil {

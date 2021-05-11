@@ -145,28 +145,6 @@ func NewScoredEntryPredictionAgent(er EntryRepository, epr EntryPredictionReposi
 	}, nil
 }
 
-// ScoreEntryPredictionBasedOnStandings generates a scored entry prediction from the provided entry prediction and standings
-func ScoreEntryPredictionBasedOnStandings(
-	entryPrediction EntryPrediction,
-	standings Standings,
-) (*ScoredEntryPrediction, error) {
-	standingsRankingCollection := NewRankingCollectionFromRankingWithMetas(standings.Rankings)
-
-	rws, err := CalculateRankingsScores(entryPrediction.Rankings, standingsRankingCollection)
-	if err != nil {
-		return nil, err
-	}
-
-	sep := ScoredEntryPrediction{
-		EntryPredictionID: entryPrediction.ID,
-		StandingsID:       standings.ID,
-		Rankings:          *rws,
-		Score:             rws.GetTotal(),
-	}
-
-	return &sep, nil
-}
-
 // TeamRankingsAsStrings returns the provided rankings as a slice of strings formatted with padding
 func TeamRankingsAsStrings(sepRankings []RankingWithScore, standingsRankings []RankingWithMeta, tc TeamCollection) ([]string, error) {
 	if len(sepRankings) == 0 {

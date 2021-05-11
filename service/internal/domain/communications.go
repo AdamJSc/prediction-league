@@ -76,7 +76,7 @@ func (c *CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *Entry
 }
 
 // IssueRoundCompleteEmail generates a "round complete" email for the provided Scored Entry Prediction and pushes it to the send queue
-func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep *ScoredEntryPrediction, finalRound bool) error {
+func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep ScoredEntryPrediction, finalRound bool) error {
 	entry, err := c.getEntryFromScoredEntryPrediction(ctx, sep)
 	if err != nil {
 		return err
@@ -295,7 +295,7 @@ func (c *CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Contex
 }
 
 // getEntryFromScoredEntryPrediction retrieves the relationally-affiliated entry from the provided scored entry prediction
-func (c *CommunicationsAgent) getEntryFromScoredEntryPrediction(ctx context.Context, sep *ScoredEntryPrediction) (*Entry, error) {
+func (c *CommunicationsAgent) getEntryFromScoredEntryPrediction(ctx context.Context, sep ScoredEntryPrediction) (*Entry, error) {
 	// retrieve entry prediction from scored entry prediction
 	entryPredictions, err := c.epr.Select(ctx, map[string]interface{}{
 		"id": sep.EntryPredictionID,
@@ -322,7 +322,7 @@ func (c *CommunicationsAgent) getEntryFromScoredEntryPrediction(ctx context.Cont
 }
 
 // getStandingsFromScoredEntryPrediction retrieves the relationally-affiliated standings from the provided scored entry prediction
-func (c *CommunicationsAgent) getStandingsFromScoredEntryPrediction(ctx context.Context, sep *ScoredEntryPrediction) (*Standings, error) {
+func (c *CommunicationsAgent) getStandingsFromScoredEntryPrediction(ctx context.Context, sep ScoredEntryPrediction) (*Standings, error) {
 	// retrieve standings from scored entry prediction
 	standings, err := c.sr.Select(ctx, map[string]interface{}{
 		"id": sep.StandingsID,

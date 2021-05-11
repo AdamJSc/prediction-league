@@ -19,7 +19,7 @@ type Client struct {
 }
 
 // RetrieveLatestStandingsBySeason implements this method on the clients.FootballDataSource interface
-func (c *Client) RetrieveLatestStandingsBySeason(ctx context.Context, s *domain.Season) (*domain.Standings, error) {
+func (c *Client) RetrieveLatestStandingsBySeason(ctx context.Context, s domain.Season) (domain.Standings, error) {
 	var url = getFullURL(fmt.Sprintf("/v2/competitions/%s/standings?season=%d&standingType=TOTAL",
 		s.ClientID.Value(),
 		s.Active.From.Year()),
@@ -27,21 +27,21 @@ func (c *Client) RetrieveLatestStandingsBySeason(ctx context.Context, s *domain.
 
 	httpResponse, err := getResponse(c, ctx, url)
 	if err != nil {
-		return nil, err
+		return domain.Standings{}, err
 	}
 
 	body, err := ioutil.ReadAll(httpResponse.Body)
 	if err != nil {
-		return nil, err
+		return domain.Standings{}, err
 	}
 
 	var standingsResponse competitionStandingsGetResponse
 	if err := json.Unmarshal(body, &standingsResponse); err != nil {
-		return nil, err
+		return domain.Standings{}, err
 	}
 
 	if len(standingsResponse.Standings) != 1 {
-		return nil, fmt.Errorf("expected standings length of 1, got %d", len(standingsResponse.Standings))
+		return domain.Standings{}, fmt.Errorf("expected standings length of 1, got %d", len(standingsResponse.Standings))
 	}
 
 	standings := domain.Standings{
@@ -51,12 +51,12 @@ func (c *Client) RetrieveLatestStandingsBySeason(ctx context.Context, s *domain.
 	for _, tableElem := range standingsResponse.Standings[0].Table {
 		ranking, err := tableElem.toRankingWithMeta(c.tc)
 		if err != nil {
-			return nil, err
+			return domain.Standings{}, err
 		}
 		standings.Rankings = append(standings.Rankings, ranking)
 	}
 
-	return &standings, nil
+	return standings, nil
 }
 
 // NewClient generates a new Client

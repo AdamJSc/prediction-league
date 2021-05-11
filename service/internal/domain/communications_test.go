@@ -304,7 +304,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := agent.IssueRoundCompleteEmail(ctx, &scoredEntryPrediction, false); err != nil {
+		if err := agent.IssueRoundCompleteEmail(ctx, scoredEntryPrediction, false); err != nil {
 			t.Fatal(err)
 		}
 
@@ -371,7 +371,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := agent.IssueRoundCompleteEmail(ctx, &scoredEntryPrediction, true); err != nil {
+		if err := agent.IssueRoundCompleteEmail(ctx, scoredEntryPrediction, true); err != nil {
 			t.Fatal(err)
 		}
 
@@ -426,7 +426,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = agent.IssueRoundCompleteEmail(ctx, &sep, false)
+		err = agent.IssueRoundCompleteEmail(ctx, sep, false)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -451,7 +451,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = agent.IssueRoundCompleteEmail(ctx, &sep, false)
+		err = agent.IssueRoundCompleteEmail(ctx, sep, false)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -479,7 +479,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = agent.IssueRoundCompleteEmail(ctx, &invalidScoredEntryPrediction, false)
+		err = agent.IssueRoundCompleteEmail(ctx, invalidScoredEntryPrediction, false)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -507,7 +507,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = agent.IssueRoundCompleteEmail(ctx, &invalidScoredEntryPrediction, false)
+		err = agent.IssueRoundCompleteEmail(ctx, invalidScoredEntryPrediction, false)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -527,7 +527,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = agent.IssueRoundCompleteEmail(ctx, &sep, false)
+		err = agent.IssueRoundCompleteEmail(ctx, sep, false)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}

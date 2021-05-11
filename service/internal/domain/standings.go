@@ -2,10 +2,8 @@ package domain
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/google/uuid"
-	"sort"
 	"time"
 )
 
@@ -156,23 +154,4 @@ func NewStandingsAgent(sr StandingsRepository) (*StandingsAgent, error) {
 		return nil, fmt.Errorf("standings repository: %w", ErrIsNil)
 	}
 	return &StandingsAgent{sr: sr}, nil
-}
-
-// ValidateAndSortStandings sorts and validates the provided standings
-func ValidateAndSortStandings(standings *Standings, tc TeamCollection) error {
-	if standings == nil {
-		return InternalError{errors.New("standings not provided")}
-	}
-
-	// ensure that all team IDs are valid
-	for _, ranking := range standings.Rankings {
-		if _, err := tc.GetByID(ranking.ID); err != nil {
-			return NotFoundError{err}
-		}
-	}
-
-	// default standings sort (ascending by Rankings[].Position)
-	sort.Sort(standings)
-
-	return nil
 }

@@ -139,7 +139,7 @@ rather than the frontend
 ## Concurrency within Scheduled Tasks
 
 * In the cron job that retrieves latest standings, consider generating scores concurrently (i.e. where
-`domain.ScoreEntryPredictionBasedOnStandings()` is invoked within a loop).
+`domain.GenerateScoredEntryPrediction()` is invoked within a loop).
 
 * This process only runs once every 15 minutes anyway and scale is expected to be very minimal, but performance benefits
 are always fun regardless.
