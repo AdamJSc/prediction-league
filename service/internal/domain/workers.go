@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -23,8 +24,21 @@ func HandleWorker(ctx context.Context, name string, timeout int, w Worker, l Log
 		ctxWithTO, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
 		defer cancel()
 
+		var errs []error
+
 		if err := w.DoWork(ctxWithTO); err != nil {
-			l.Errorf("%s: %w", name, err)
+			mErr := MultiError{}
+			switch {
+			case errors.As(err, &mErr):
+				for _, e := range mErr.Errs {
+					errs = append(errs, e)
+				}
+			default:
+				errs = []error{err}
+			}
+			for _, e := range errs {
+				l.Errorf("%s: %s", name, e.Error())
+			}
 		}
 	}, nil
 }

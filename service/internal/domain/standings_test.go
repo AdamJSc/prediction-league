@@ -252,6 +252,19 @@ func TestStandingsAgent_RetrieveStandingsBySeasonAndRoundNumber(t *testing.T) {
 		}
 		checkTimePtrMatch(t, standings2.UpdatedAt, retrievedStandings.UpdatedAt)
 	})
+
+	t.Run("retrieving non-existent standings must provided the expected error", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		if _, err := agent.RetrieveStandingsBySeasonAndRoundNumber(ctx, "non-existent", 1); !errors.As(err, &domain.NotFoundError{}) {
+			t.Fatalf("want not found error, got %s (%T)", err.Error(), err)
+		}
+
+		if _, err := agent.RetrieveStandingsBySeasonAndRoundNumber(ctx, testSeason.ID, 1234); !errors.As(err, &domain.NotFoundError{}) {
+			t.Fatalf("want not found error, got %s (%T)", err.Error(), err)
+		}
+	})
 }
 
 func TestStandingsAgent_RetrieveLatestStandingsBySeasonIDAndTimestamp(t *testing.T) {

@@ -208,60 +208,59 @@ func TestScoredEntryPredictionAgent_RetrieveScoredEntryPredictionByIDs(t *testin
 		t.Fatal(err)
 	}
 
-	entry := insertEntry(t, generateTestEntry(t, "Harry Redknapp", "MrHarryR", "harry.redknapp@football.net"))
-	entryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID))
-	standings := insertStandings(t, generateTestStandings(t))
+	e := insertEntry(t, generateTestEntry(t, "Harry Redknapp", "MrHarryR", "harry.redknapp@football.net"))
+	ep := insertEntryPrediction(t, generateTestEntryPrediction(t, e.ID))
+	st := insertStandings(t, generateTestStandings(t))
 
 	now := time.Now().Truncate(time.Second)
-	scoredEntryPrediction := generateTestScoredEntryPrediction(t, entryPrediction.ID, standings.ID)
-	scoredEntryPrediction.CreatedAt = now
-	scoredEntryPrediction = insertScoredEntryPrediction(t, scoredEntryPrediction)
+	sep := generateTestScoredEntryPrediction(t, ep.ID, st.ID)
+	sep.CreatedAt = now
+	sep = insertScoredEntryPrediction(t, sep)
 
 	t.Run("retrieve existent scored entry prediction must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		retrievedScoredEntryPrediction, err := agent.RetrieveScoredEntryPredictionByIDs(ctx, entryPrediction.ID.String(), standings.ID.String())
+		rtrSep, err := agent.RetrieveScoredEntryPredictionByIDs(ctx, ep.ID.String(), st.ID.String())
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if retrievedScoredEntryPrediction.EntryPredictionID != scoredEntryPrediction.EntryPredictionID {
-			expectedGot(t, scoredEntryPrediction.EntryPredictionID, retrievedScoredEntryPrediction.EntryPredictionID)
+		if rtrSep.EntryPredictionID != sep.EntryPredictionID {
+			expectedGot(t, sep.EntryPredictionID, rtrSep.EntryPredictionID)
 		}
-		if retrievedScoredEntryPrediction.StandingsID != scoredEntryPrediction.StandingsID {
-			expectedGot(t, scoredEntryPrediction.StandingsID, retrievedScoredEntryPrediction.StandingsID)
+		if rtrSep.StandingsID != sep.StandingsID {
+			expectedGot(t, sep.StandingsID, rtrSep.StandingsID)
 		}
-		if !gocmp.Equal(retrievedScoredEntryPrediction.Rankings, scoredEntryPrediction.Rankings) {
-			t.Fatal(gocmp.Diff(scoredEntryPrediction.Rankings, retrievedScoredEntryPrediction.Rankings))
+		if !gocmp.Equal(rtrSep.Rankings, sep.Rankings) {
+			t.Fatal(gocmp.Diff(sep.Rankings, rtrSep.Rankings))
 		}
-		if retrievedScoredEntryPrediction.Score != scoredEntryPrediction.Score {
-			expectedGot(t, scoredEntryPrediction.Score, retrievedScoredEntryPrediction.Score)
+		if rtrSep.Score != sep.Score {
+			expectedGot(t, sep.Score, rtrSep.Score)
 		}
-		if !retrievedScoredEntryPrediction.CreatedAt.In(utc).Equal(now.In(utc)) {
-			expectedGot(t, now, retrievedScoredEntryPrediction.CreatedAt)
+		if !rtrSep.CreatedAt.In(utc).Equal(now.In(utc)) {
+			expectedGot(t, now, rtrSep.CreatedAt)
 		}
-		if retrievedScoredEntryPrediction.UpdatedAt != nil {
-			expectedEmpty(t, "UpdatedAt", *retrievedScoredEntryPrediction.UpdatedAt)
+		if rtrSep.UpdatedAt != nil {
+			expectedEmpty(t, "UpdatedAt", *rtrSep.UpdatedAt)
 		}
 	})
 
-	t.Run("retrieve non-existent scored entry prediction must fail", func(t *testing.T) {
+	t.Run("retrieve non-existent scored entry prediction must produce expected error", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		nonExistentID, err := uuid.NewRandom()
+		newUUID, err := uuid.NewRandom()
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		_, err = agent.RetrieveScoredEntryPredictionByIDs(ctx, nonExistentID.String(), scoredEntryPrediction.StandingsID.String())
-		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+		nID := newUUID.String()
+
+		if _, err = agent.RetrieveScoredEntryPredictionByIDs(ctx, nID, sep.StandingsID.String()); !errors.As(err, &domain.NotFoundError{}) {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
-
-		_, err = agent.RetrieveScoredEntryPredictionByIDs(ctx, scoredEntryPrediction.EntryPredictionID.String(), nonExistentID.String())
-		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+		if _, err = agent.RetrieveScoredEntryPredictionByIDs(ctx, sep.EntryPredictionID.String(), nID); !errors.As(err, &domain.NotFoundError{}) {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
 	})

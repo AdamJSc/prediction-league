@@ -75,8 +75,8 @@ func (c *CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *Entry
 	return nil
 }
 
-// IssueRoundCompleteEmail generates a "round complete" email for the provided Scored Entry Prediction and pushes it to the send queue
-func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep ScoredEntryPrediction, finalRound bool) error {
+// IssueRoundCompleteEmail generates a "round complete" email for the provided ScoredEntryPrediction and pushes it to the send queue
+func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep ScoredEntryPrediction, isFinalRound bool) error {
 	entry, err := c.getEntryFromScoredEntryPrediction(ctx, sep)
 	if err != nil {
 		return err
@@ -110,7 +110,7 @@ func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep S
 	}
 
 	templateName := "email_txt_round_complete"
-	if finalRound {
+	if isFinalRound {
 		templateName = "email_txt_final_round_complete"
 	}
 

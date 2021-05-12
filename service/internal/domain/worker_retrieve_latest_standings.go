@@ -19,6 +19,7 @@ type RetrieveLatestStandingsWorker struct {
 	fds  FootballDataSource
 }
 
+// DoWork implements domain.Worker
 func (r *RetrieveLatestStandingsWorker) DoWork(ctx context.Context) error {
 	// retrieve entry predictions for provided season
 	eps, err := r.ea.RetrieveEntryPredictionsForActiveSeasonByTimestamp(ctx, r.s, r.cl.Now())
@@ -47,12 +48,7 @@ func (r *RetrieveLatestStandingsWorker) DoWork(ctx context.Context) error {
 		return fmt.Errorf("cannot validate and sort client standings: %w", err)
 	}
 
-	// if standings retrieved from client represents a completed season, ensure that round number reflects the season's
-	// max rounds - standings data from upstream client was stuck on round 37 for a 38-round PL season in 2019/20
-	// so this check safeguards against that
-	if r.s.IsCompletedByStandings(clientStnd) && clientStnd.RoundNumber != r.s.MaxRounds {
-		clientStnd.RoundNumber = r.s.MaxRounds
-	}
+	r.CheckRoundNumber(&clientStnd)
 
 	var jobStnd Standings
 
@@ -60,13 +56,13 @@ func (r *RetrieveLatestStandingsWorker) DoWork(ctx context.Context) error {
 	switch {
 	case err == nil:
 		// we have existing standings
-		jobStnd, err = r.processExistingStandings(ctx, existStnd, clientStnd)
+		jobStnd, err = r.ProcessExistingStandings(ctx, existStnd, clientStnd)
 		if err != nil {
 			return fmt.Errorf("cannot process existing standings: %w", err)
 		}
 	case errors.As(err, &NotFoundError{}):
 		// we have new standings
-		jobStnd, err = r.processNewStandings(ctx, clientStnd)
+		jobStnd, err = r.ProcessNewStandings(ctx, clientStnd)
 		if err != nil {
 			return fmt.Errorf("cannot process new standings: %w", err)
 		}
@@ -75,7 +71,7 @@ func (r *RetrieveLatestStandingsWorker) DoWork(ctx context.Context) error {
 		return fmt.Errorf("cannot retrieve standings by round number %d: %w", clientStnd.RoundNumber, err)
 	}
 
-	if r.s.IsCompletedByStandings(jobStnd) && jobStnd.Finalised {
+	if r.HasFinalisedLastRound(jobStnd) {
 		// we've already finalised the last round of our season so just exit early
 		return nil
 	}
@@ -94,21 +90,83 @@ func (r *RetrieveLatestStandingsWorker) DoWork(ctx context.Context) error {
 		seps = append(seps, *sep)
 	}
 
+	if r.s.IsCompletedByStandings(jobStnd) {
+		// last round of season!
+		jobStnd.Finalised = true
+		if _, err := r.sa.UpdateStandings(ctx, jobStnd); err != nil {
+			return fmt.Errorf("cannot update finalised standings: %w", err)
+		}
+	}
+
+	return r.IssueEmails(ctx, jobStnd, seps)
+}
+
+// CheckRoundNumber updates the round number of the provided standings based on whether this completes the worker's Season
+func (r *RetrieveLatestStandingsWorker) CheckRoundNumber(stnd *Standings) {
+	// if standings retrieved from client represents a completed season, ensure that round number reflects the season's
+	// max rounds - standings data from upstream client was stuck on round 37 for a 38-round PL season in 2019/20
+	// so this check safeguards against that
+	if r.s.IsCompletedByStandings(*stnd) && stnd.RoundNumber != r.s.MaxRounds {
+		stnd.RoundNumber = r.s.MaxRounds
+	}
+}
+
+// ProcessExistingStandings updates the rankings of the provided existing standings then updates them
+func (r *RetrieveLatestStandingsWorker) ProcessExistingStandings(
+	ctx context.Context,
+	existStnd Standings,
+	clientStnd Standings,
+) (Standings, error) {
+	// update rankings
+	existStnd.Rankings = clientStnd.Rankings
+	return r.sa.UpdateStandings(ctx, existStnd)
+}
+
+// ProcessNewStandings processes the provided Standings as a new entity
+func (r *RetrieveLatestStandingsWorker) ProcessNewStandings(
+	ctx context.Context,
+	stnd Standings,
+) (Standings, error) {
+	if stnd.RoundNumber == 1 {
+		// this is the first time we've scraped our first round
+		// just save it!
+		return r.sa.CreateStandings(ctx, stnd)
+	}
+
+	// check whether we have a previous round of standings that still needs to be finalised
+	rtrvdStnd, err := r.sa.RetrieveStandingsIfNotFinalised(ctx, r.s.ID, stnd.RoundNumber-1, stnd)
+	if err != nil {
+		return Standings{}, err
+	}
+
+	if rtrvdStnd.RoundNumber != stnd.RoundNumber {
+		// looks like we have unfinished business with our previous standings round
+		// let's finalise and update it, then continue with this one
+		rtrvdStnd.Finalised = true
+		return r.sa.UpdateStandings(ctx, rtrvdStnd)
+	}
+
+	// previous round's standings has already been finalised, so let's create a new one and continue with this
+	return r.sa.CreateStandings(ctx, stnd)
+}
+
+// HasFinalisedLastRound returns true if the provided Standings represents the worker's Season having been finalised, otherwise false
+func (r *RetrieveLatestStandingsWorker) HasFinalisedLastRound(stnd Standings) bool {
+	return r.s.IsCompletedByStandings(stnd) && stnd.Finalised
+}
+
+// IssueEmails issues emails to entrants based on the provided Standings and ScoredEntryPredictions
+func (r *RetrieveLatestStandingsWorker) IssueEmails(ctx context.Context, stnd Standings, seps []ScoredEntryPrediction) error {
 	chDone := make(chan struct{}, 1)
 	chErr := make(chan error, 1)
 
 	switch {
-	case r.s.IsCompletedByStandings(jobStnd):
-		// last round of season!
-		jobStnd.Finalised = true
-		if _, err := r.sa.UpdateStandings(ctx, jobStnd); err != nil {
-			return fmt.Errorf("cannot update standings: %w", err)
-		}
+	case r.s.IsCompletedByStandings(stnd):
 		go func() {
 			defer func() { chDone <- struct{}{} }()
 			r.issueRoundCompleteEmails(ctx, seps, true, chErr)
 		}()
-	case jobStnd.Finalised:
+	case stnd.Finalised:
 		go func() {
 			defer func() { chDone <- struct{}{} }()
 			r.issueRoundCompleteEmails(ctx, seps, false, chErr)
@@ -134,45 +192,6 @@ func (r *RetrieveLatestStandingsWorker) DoWork(ctx context.Context) error {
 			return nil
 		}
 	}
-
-	// job is complete!
-}
-
-func (r *RetrieveLatestStandingsWorker) processExistingStandings(
-	ctx context.Context,
-	existStnd Standings,
-	clientStnd Standings,
-) (Standings, error) {
-	// update rankings
-	existStnd.Rankings = clientStnd.Rankings
-	return r.sa.UpdateStandings(ctx, existStnd)
-}
-
-func (r *RetrieveLatestStandingsWorker) processNewStandings(
-	ctx context.Context,
-	clientStnd Standings,
-) (Standings, error) {
-	if clientStnd.RoundNumber == 1 {
-		// this is the first time we've scraped our first round
-		// just save it!
-		return r.sa.CreateStandings(ctx, clientStnd)
-	}
-
-	// check whether we have a previous round of standings that still needs to be finalised
-	rtrvdStnd, err := r.sa.RetrieveStandingsIfNotFinalised(ctx, r.s.ID, clientStnd.RoundNumber-1, clientStnd)
-	if err != nil {
-		return Standings{}, err
-	}
-
-	if rtrvdStnd.RoundNumber != clientStnd.RoundNumber {
-		// looks like we have unfinished business with our previous standings round
-		// let's finalise and update it, then continue with this one
-		rtrvdStnd.Finalised = true
-		return r.sa.UpdateStandings(ctx, rtrvdStnd)
-	}
-
-	// previous round's standings has already been finalised, so let's create a new one and continue with this
-	return r.sa.CreateStandings(ctx, clientStnd)
 }
 
 // upsertScoredEntryPrediction creates or updates the provided ScoredEntryPrediction depending on whether or not it already exists
@@ -218,7 +237,7 @@ func (r *RetrieveLatestStandingsWorker) upsertScoredEntryPrediction(ctx context.
 func (r *RetrieveLatestStandingsWorker) issueRoundCompleteEmails(
 	ctx context.Context,
 	seps []ScoredEntryPrediction,
-	finalRound bool,
+	isFinalRound bool,
 	chErr chan error,
 ) {
 	sem := make(chan struct{}, 10) // send a maximum of 10 concurrent emails
@@ -232,7 +251,7 @@ func (r *RetrieveLatestStandingsWorker) issueRoundCompleteEmails(
 			defer wg.Done()
 			defer func() { <-sem }()
 
-			if err := r.ca.IssueRoundCompleteEmail(ctx, sep, finalRound); err != nil {
+			if err := r.ca.IssueRoundCompleteEmail(ctx, sep, isFinalRound); err != nil {
 				chErr <- err
 			}
 		}(sep)

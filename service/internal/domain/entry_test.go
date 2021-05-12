@@ -1457,7 +1457,7 @@ func TestEntryAgent_GetEntryPredictionByTimestamp(t *testing.T) {
 	})
 }
 
-// TODO - tests for RetrieveEntryPredictionsForActiveSeasonByTimestamp
+// TODO - tests for EntryAgent.RetrieveEntryPredictionsForActiveSeasonByTimestamp
 
 func setContextTimestampRelativeToSeasonAcceptingEntries(t *testing.T, ctx context.Context, seasonID string, withinTimeframe bool) context.Context {
 	t.Helper()
