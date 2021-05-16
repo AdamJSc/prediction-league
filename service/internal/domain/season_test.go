@@ -10,7 +10,39 @@ import (
 
 // TODO - tests for Season.GetState
 
-// TODO - tests for Season.IsCompletedByStandings
+func TestSeason_IsCompletedByStandings(t *testing.T) {
+	s := domain.Season{ID: "season_id", MaxRounds: 5}
+
+	tt := []struct {
+		stnd domain.Standings
+		want bool
+	}{
+		{
+			stnd: domain.Standings{SeasonID: "alt_season_id"},
+			want: false,
+		},
+		{
+			stnd: domain.Standings{SeasonID: "season_id", Rankings: []domain.RankingWithMeta{
+				{MetaData: map[string]int{domain.MetaKeyPlayedGames: 4}}, // one short of max rounds
+				{MetaData: map[string]int{domain.MetaKeyPlayedGames: 5}},
+			}},
+			want: false,
+		},
+		{
+			stnd: domain.Standings{SeasonID: "season_id", Rankings: []domain.RankingWithMeta{
+				{MetaData: map[string]int{domain.MetaKeyPlayedGames: 5}},
+				{MetaData: map[string]int{domain.MetaKeyPlayedGames: 5}},
+			}},
+			want: true,
+		},
+	}
+
+	for _, tc := range tt {
+		if s.IsCompletedByStandings(tc.stnd) != tc.want {
+			t.Fatalf("want %t, got %t", tc.want, !tc.want)
+		}
+	}
+}
 
 func TestSeason_GetPredictionWindowBeginsWithin(t *testing.T) {
 	var now = time.Now()

@@ -8,6 +8,10 @@ import (
 	"sync"
 )
 
+type RoundCompleteEmailIssuer interface {
+	IssueRoundCompleteEmail(ctx context.Context, sep ScoredEntryPrediction, isFinalRound bool) error
+}
+
 type RetrieveLatestStandingsWorker struct {
 	s    Season
 	tc   TeamCollection
@@ -15,7 +19,7 @@ type RetrieveLatestStandingsWorker struct {
 	ea   *EntryAgent
 	sa   *StandingsAgent
 	sepa *ScoredEntryPredictionAgent
-	ca   *CommunicationsAgent
+	rcei RoundCompleteEmailIssuer
 	fds  FootballDataSource
 }
 
@@ -48,7 +52,12 @@ func (r *RetrieveLatestStandingsWorker) DoWork(ctx context.Context) error {
 		return fmt.Errorf("cannot validate and sort client standings: %w", err)
 	}
 
-	r.CheckRoundNumber(&clientStnd)
+	// if standings retrieved from client represents a completed season, ensure that round number reflects the season's
+	// max rounds - standings data from upstream client was stuck on round 37 for a 38-round PL season in 2019/20
+	// so this check safeguards against that
+	if r.s.IsCompletedByStandings(clientStnd) {
+		clientStnd.RoundNumber = r.s.MaxRounds
+	}
 
 	var jobStnd Standings
 
@@ -101,16 +110,6 @@ func (r *RetrieveLatestStandingsWorker) DoWork(ctx context.Context) error {
 	return r.IssueEmails(ctx, jobStnd, seps)
 }
 
-// CheckRoundNumber updates the round number of the provided standings based on whether this completes the worker's Season
-func (r *RetrieveLatestStandingsWorker) CheckRoundNumber(stnd *Standings) {
-	// if standings retrieved from client represents a completed season, ensure that round number reflects the season's
-	// max rounds - standings data from upstream client was stuck on round 37 for a 38-round PL season in 2019/20
-	// so this check safeguards against that
-	if r.s.IsCompletedByStandings(*stnd) && stnd.RoundNumber != r.s.MaxRounds {
-		stnd.RoundNumber = r.s.MaxRounds
-	}
-}
-
 // ProcessExistingStandings updates the rankings of the provided existing standings then updates them
 func (r *RetrieveLatestStandingsWorker) ProcessExistingStandings(
 	ctx context.Context,
@@ -136,7 +135,7 @@ func (r *RetrieveLatestStandingsWorker) ProcessNewStandings(
 	// check whether we have a previous round of standings that still needs to be finalised
 	rtrvdStnd, err := r.sa.RetrieveStandingsIfNotFinalised(ctx, r.s.ID, stnd.RoundNumber-1, stnd)
 	if err != nil {
-		return Standings{}, err
+		return Standings{}, fmt.Errorf("cannot retrieve existing standings: %w", err)
 	}
 
 	if rtrvdStnd.RoundNumber != stnd.RoundNumber {
@@ -251,7 +250,7 @@ func (r *RetrieveLatestStandingsWorker) issueRoundCompleteEmails(
 			defer wg.Done()
 			defer func() { <-sem }()
 
-			if err := r.ca.IssueRoundCompleteEmail(ctx, sep, isFinalRound); err != nil {
+			if err := r.rcei.IssueRoundCompleteEmail(ctx, sep, isFinalRound); err != nil {
 				chErr <- err
 			}
 		}(sep)
@@ -292,6 +291,19 @@ func NewRetrieveLatestStandingsWorker(
 		return nil, fmt.Errorf("football data source: %w", ErrIsNil)
 	}
 	return &RetrieveLatestStandingsWorker{s, tc, cl, ea, sa, sepa, ca, fds}, nil
+}
+
+func NewTestRetrieveLatestStandingsWorker(
+	s Season,
+	tc TeamCollection,
+	cl Clock,
+	ea *EntryAgent,
+	sa *StandingsAgent,
+	sepa *ScoredEntryPredictionAgent,
+	rcei RoundCompleteEmailIssuer,
+	fds FootballDataSource,
+) *RetrieveLatestStandingsWorker {
+	return &RetrieveLatestStandingsWorker{s, tc, cl, ea, sa, sepa, rcei, fds}
 }
 
 // GenerateScoredEntryPrediction generates a scored entry prediction from the provided entry prediction and standings
