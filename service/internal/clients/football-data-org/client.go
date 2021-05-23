@@ -3,6 +3,7 @@ package football_data_org
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -20,7 +21,7 @@ type Client struct {
 
 // RetrieveLatestStandingsBySeason implements this method on the clients.FootballDataSource interface
 func (c *Client) RetrieveLatestStandingsBySeason(ctx context.Context, s *models.Season) (*models.Standings, error) {
-	var url = getFullURL(fmt.Sprintf("/v2/competitions/%s/standings?season=%d&standingType=TOTAL",
+	var url = getFullURL(fmt.Sprintf("/v2/competitions/%s/standings?season=%d",
 		s.ClientID.Value(),
 		s.Active.From.Year()),
 	)
@@ -40,15 +41,16 @@ func (c *Client) RetrieveLatestStandingsBySeason(ctx context.Context, s *models.
 		return nil, err
 	}
 
-	if len(standingsResponse.Standings) != 1 {
-		return nil, fmt.Errorf("expected standings length of 1, got %d", len(standingsResponse.Standings))
+	ovSt, err := getOverallStandings(standingsResponse)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get overall standings: %w", err)
 	}
 
 	standings := models.Standings{
 		SeasonID:    s.ID,
 		RoundNumber: standingsResponse.Season.CurrentMatchday,
 	}
-	for _, tableElem := range standingsResponse.Standings[0].Table {
+	for _, tableElem := range ovSt.Table {
 		ranking, err := tableElem.toRankingWithMeta()
 		if err != nil {
 			return nil, err
@@ -93,9 +95,13 @@ type competitionStandingsGetResponse struct {
 	Season struct {
 		CurrentMatchday int `json:"currentMatchday"`
 	} `json:"season"`
-	Standings []struct {
-		Table []tableElem `json:"table"`
-	} `json:"standings"`
+	Standings []competitionStandings `json:"standings"`
+}
+
+// competitionStandings defines the expected payload structure of a standings object on the response
+type competitionStandings struct {
+	Type  string      `json:"type"`
+	Table []tableElem `json:"table"`
 }
 
 // tableElem defines the nested payload structure within the response that retrieves the current standings
@@ -130,4 +136,14 @@ func (t *tableElem) toRankingWithMeta() (models.RankingWithMeta, error) {
 	r.MetaData[models.MetaKeyGoalDifference] = t.GoalDifference
 
 	return r, nil
+}
+
+// getOverallStandings returns the standings with a type value of TOTAL from the provided response
+func getOverallStandings(resp competitionStandingsGetResponse) (*competitionStandings, error) {
+	for _, s := range resp.Standings {
+		if s.Type == "TOTAL" {
+			return &s, nil
+		}
+	}
+	return nil, errors.New("cannot find standings with type of total")
 }
