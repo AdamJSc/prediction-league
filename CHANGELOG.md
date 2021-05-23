@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.4] - 2021-05-23
+### Fixed
+- Accommodate deprecation of `standingsType` query param when retrieving Standings from upstream Football Data API.
+Perform this filter explicitly, by iterating over response payload and checking `type` value of all Standings objects.  
+
 ## [1.1.3] - 2021-03-27
 ### Fixed
 - Docker image build copies additional source files not included in binary
