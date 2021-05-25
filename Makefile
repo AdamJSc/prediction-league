@@ -6,7 +6,7 @@ app.install:
 
 app.run:
 	npm run watch \
-	| go run service/main.go
+	| go run service/cmd/api/main.go
 
 test.run:
 	docker-compose up -d db_test
