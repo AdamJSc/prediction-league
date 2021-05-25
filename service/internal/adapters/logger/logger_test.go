@@ -69,7 +69,7 @@ func TestLogger_Info(t *testing.T) {
 
 	l.Info("hello world")
 
-	want := "2018/05/26 14:00:00 INFO: hello world\n"
+	want := "2018-05-26T14:00:00+01:00 INFO: [testing.go:1194] hello world\n"
 	got := wr.buf.String()
 
 	if got != want {
@@ -84,7 +84,22 @@ func TestLogger_Infof(t *testing.T) {
 
 	l.Infof("hello %d", 123)
 
-	want := "2018/05/26 14:00:00 INFO: hello 123\n"
+	want := "2018-05-26T14:00:00+01:00 INFO: [testing.go:1194] hello 123\n"
+	got := wr.buf.String()
+
+	if got != want {
+		t.Fatalf("want %s, got %s", want, got)
+	}
+}
+
+func TestLogger_Errorf(t *testing.T) {
+	wr := &mockWriter{buf: &bytes.Buffer{}}
+	c := &mockClock{t: testDate}
+	l, _ := logger.NewLogger(wr, c)
+
+	l.Errorf("hello %d", 123)
+
+	want := "2018-05-26T14:00:00+01:00 ERROR: [testing.go:1194] hello 123\n"
 	got := wr.buf.String()
 
 	if got != want {
