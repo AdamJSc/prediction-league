@@ -1,141 +1,221 @@
 package scheduler
 
 import (
+	"errors"
+	"fmt"
 	"github.com/robfig/cron/v3"
-	"log"
-	"prediction-league/service/internal/adapters/footballdataorg"
-	"prediction-league/service/internal/app"
+	"prediction-league/service/internal/domain"
+	"strings"
 )
 
-// LoadCron returns our populated cron
-func LoadCron(container *app.HTTPAppContainer) *cron.Cron {
-	c := cron.New()
+const (
+	// predictionWindowOpenCronSpec determines the frequency by which the PredictionWindowOpenWorker will run
+	// (i.e. every day at 12:34pm)
+	predictionWindowOpenCronSpec = "34 12 * * *"
 
-	for _, j := range mustGeneratePredictionWindowOpenJobs(container) {
-		c.AddFunc(j.spec, j.task)
-	}
+	// predictionWindowClosingCronSpec determines the frequency by which the PredictionWindowClosingWorker will run
+	// (i.e. every day at 4:48pm)
+	predictionWindowClosingCronSpec = "48 16 * * *"
 
-	for _, j := range mustGeneratePredictionWindowClosingJobs(container) {
-		c.AddFunc(j.spec, j.task)
-	}
+	// retrieveLatestStandingsCronSpec determines the frequency by which the RetrieveLatestStandingsWorker will run
+	retrieveLatestStandingsCronSpec = "@every 0h15m"
+)
 
-	if container.Config().FootballDataAPIToken == "" {
-		log.Println("missing config: football data api... scheduled retrieval of latest standings will not run...")
-		return c
-	}
-
-	for _, j := range mustGenerateRetrieveLatestStandingsJobs(container) {
-		c.AddFunc(j.spec, j.task)
-	}
-
-	return c
+// CronFactory encapsulates the logic required to generate our cron jobs
+type CronFactory struct {
+	ea   *domain.EntryAgent
+	sa   *domain.StandingsAgent
+	sepa *domain.ScoredEntryPredictionAgent
+	ca   *domain.CommunicationsAgent
+	sc   domain.SeasonCollection
+	tc   domain.TeamCollection
+	rlms map[string]domain.Realm
+	cl   domain.Clock
+	l    domain.Logger
+	fds  domain.FootballDataSource
 }
 
-// job provides our cron job interface
-type job struct {
+func NewCronFactory(
+	ea *domain.EntryAgent,
+	sa *domain.StandingsAgent,
+	sepa *domain.ScoredEntryPredictionAgent,
+	ca *domain.CommunicationsAgent,
+	sc domain.SeasonCollection,
+	tc domain.TeamCollection,
+	rlms map[string]domain.Realm,
+	cl domain.Clock,
+	l domain.Logger,
+	fds domain.FootballDataSource,
+) (*CronFactory, error) {
+	if ea == nil {
+		return nil, fmt.Errorf("entry agent: %w", domain.ErrIsNil)
+	}
+	if sa == nil {
+		return nil, fmt.Errorf("standings agent: %w", domain.ErrIsNil)
+	}
+	if sepa == nil {
+		return nil, fmt.Errorf("scored entry prediction agent: %w", domain.ErrIsNil)
+	}
+	if ca == nil {
+		return nil, fmt.Errorf("communications agent: %w", domain.ErrIsNil)
+	}
+	if sc == nil {
+		return nil, fmt.Errorf("season collection: %w", domain.ErrIsNil)
+	}
+	if tc == nil {
+		return nil, fmt.Errorf("team collection: %w", domain.ErrIsNil)
+	}
+	if rlms == nil {
+		return nil, fmt.Errorf("realms: %w", domain.ErrIsNil)
+	}
+	if cl == nil {
+		return nil, fmt.Errorf("clock: %w", domain.ErrIsNil)
+	}
+	if l == nil {
+		return nil, fmt.Errorf("logger: %w", domain.ErrIsNil)
+	}
+	// do not check fds, allow nil
+	return &CronFactory{ea, sa, sepa, ca, sc, tc, rlms, cl, l, fds}, nil
+}
+
+// Make generates our populated cron
+func (c *CronFactory) Make() (*cron.Cron, error) {
+	// get unique season IDs for all realms
+	sIDs := make(map[string]struct{})
+	for _, rlm := range c.rlms {
+		sIDs[rlm.SeasonID] = struct{}{}
+	}
+
+	seasons := make([]domain.Season, 0)
+	for id := range sIDs {
+		s, err := c.sc.GetByID(id)
+		if err != nil {
+			return nil, fmt.Errorf("cannot retrieve season by id '%s': %w", id, err)
+		}
+
+		seasons = append(seasons, s)
+	}
+
+	if len(seasons) < 1 {
+		return nil, errors.New("need at least one season for active realms")
+	}
+
+	j, err := c.generateJobConfigs(seasons)
+	if err != nil {
+		return nil, fmt.Errorf("cannot generate job configs: %w", err)
+	}
+
+	cr, err := newCronFromJobConfigs(j)
+	if err != nil {
+		return nil, fmt.Errorf("cannot initialise cron from job configs: %w", err)
+	}
+
+	return cr, nil
+}
+
+// generateJobConfigs returns a slice of job configs for all jobs required by each provided Season
+func (c *CronFactory) generateJobConfigs(seasons []domain.Season) ([]*jobConfig, error) {
+	jobs := make([]*jobConfig, 0)
+
+	for _, s := range seasons {
+		oj, err := c.newPredictionWindowOpenJob(s)
+		if err != nil {
+			return nil, fmt.Errorf("cannot generate new prediction window open job: %w", err)
+		}
+
+		cj, err := c.newPredictionWindowClosingJob(s)
+		if err != nil {
+			return nil, fmt.Errorf("cannot generate new prediction window closing job: %w", err)
+		}
+
+		jobs = append(jobs, oj, cj)
+
+		switch {
+		case c.fds == nil:
+			c.l.Infof("skipping retrieve latest standings job for season %s: no football data source configured", s.ID)
+		}
+
+		if c.fds != nil {
+			j, err := c.newRetrieveLatestStandingsJob(s)
+			if err != nil {
+				return nil, fmt.Errorf("cannot generate new retrieve latest standings job: %w", err)
+			}
+
+			jobs = append(jobs, j)
+		}
+	}
+
+	return jobs, nil
+}
+
+// newPredictionWindowOpenJob returns a new job that issues emails to entrants
+// when a new Prediction Window has been opened for the provided season
+func (c *CronFactory) newPredictionWindowOpenJob(s domain.Season) (*jobConfig, error) {
+	jobName := strings.ToLower(fmt.Sprintf("prediction-window-open-%s", s.ID))
+
+	w, err := domain.NewPredictionWindowOpenWorker(s, c.cl, c.ea, c.ca)
+	if err != nil {
+		return nil, fmt.Errorf("cannot instantiate prediction window open worker: %w", err)
+	}
+
+	task, err := domain.HandleWorker(jobName, 5, w, c.l)
+
+	return &jobConfig{
+		spec: predictionWindowOpenCronSpec,
+		task: task,
+	}, nil
+}
+
+// newPredictionWindowClosingJob returns a new job that issues emails to entrants
+// when an active Prediction Window is due to close for the provided season
+func (c *CronFactory) newPredictionWindowClosingJob(s domain.Season) (*jobConfig, error) {
+	jobName := strings.ToLower(fmt.Sprintf("prediction-window-closing-%s", s.ID))
+
+	w, err := domain.NewPredictionWindowClosingWorker(s, c.cl, c.ea, c.ca)
+	if err != nil {
+		return nil, fmt.Errorf("cannot instantiate prediction window closing worker: %w", err)
+	}
+
+	task, err := domain.HandleWorker(jobName, 5, w, c.l)
+
+	return &jobConfig{
+		spec: predictionWindowClosingCronSpec,
+		task: task,
+	}, nil
+}
+
+// newRetrieveLatestStandingsJob returns a new job that retrieves the latest standings, pertaining to the provided season
+func (c *CronFactory) newRetrieveLatestStandingsJob(s domain.Season) (*jobConfig, error) {
+	jobName := strings.ToLower(fmt.Sprintf("retrieve-latest-standings-%s", s.ID))
+
+	w, err := domain.NewRetrieveLatestStandingsWorker(s, c.tc, c.cl, c.ea, c.sa, c.sepa, c.ca, c.fds)
+	if err != nil {
+		return nil, fmt.Errorf("cannot instantiate retrieve last standings worker: %w", err)
+	}
+
+	task, err := domain.HandleWorker(jobName, 5, w, c.l)
+
+	return &jobConfig{
+		spec: retrieveLatestStandingsCronSpec,
+		task: task,
+	}, nil
+}
+
+// newCronFromJobConfigs initialises a cron using the provided job configs
+func newCronFromJobConfigs(jobs []*jobConfig) (*cron.Cron, error) {
+	cr := cron.New()
+
+	for _, j := range jobs {
+		if _, err := cr.AddFunc(j.spec, j.task); err != nil {
+			return nil, fmt.Errorf("cannot add function: %w", err)
+		}
+	}
+
+	return cr, nil
+}
+
+// jobConfig encapsulates our cron jobConfig attributes
+type jobConfig struct {
 	spec string
 	task func()
-}
-
-// mustGenerateRetrieveLatestStandingsJobs generates the RetrieveLatestStandings jobs to be used by the cron
-func mustGenerateRetrieveLatestStandingsJobs(c *app.HTTPAppContainer) []*job {
-	config := c.Config()
-
-	// get the current season ID for all realms
-	var seasonIDs = make(map[string]struct{})
-	for _, realm := range config.Realms {
-		seasonIDs[realm.SeasonID] = struct{}{}
-	}
-
-	// add a job for each unique season ID that retrieves the latest standings
-	var jobs []*job
-	for id := range seasonIDs {
-		season, err := c.Seasons().GetByID(id)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		if season.ClientID == nil {
-			// skip if there is no client id (e.g. FakeSeason)
-			continue
-		}
-
-		cl, err := footballdataorg.NewClient(config.FootballDataAPIToken, c.Teams())
-		if err != nil {
-			log.Fatalf("cannot instantiate football data client: %s", err.Error())
-		}
-
-		job, err := newRetrieveLatestStandingsJob(season, cl, c)
-		if err != nil {
-			log.Fatalf("cannot instantiate retrieve latest standings job: %s", err.Error())
-		}
-
-		jobs = append(jobs, job)
-	}
-
-	return jobs
-}
-
-// mustGeneratePredictionWindowOpenJobs generates the PredictionWindowOpen jobs to be used by the cron
-func mustGeneratePredictionWindowOpenJobs(c *app.HTTPAppContainer) []*job {
-	config := c.Config()
-
-	// get the current season ID for all realms
-	var seasonIDs = make(map[string]struct{})
-	for _, realm := range config.Realms {
-		seasonIDs[realm.SeasonID] = struct{}{}
-	}
-
-	// add a job for each unique season ID that retrieves the latest standings
-	var jobs []*job
-	for id := range seasonIDs {
-		season, err := c.Seasons().GetByID(id)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		job, err := newPredictionWindowOpenJob(
-			season,
-			c,
-		)
-		if err != nil {
-			log.Fatalf("cannot instantiate prediction window open job: %s", err.Error())
-		}
-
-		jobs = append(jobs, job)
-	}
-
-	return jobs
-}
-
-// mustGeneratePredictionWindowClosingJobs generates the PredictionWindowClosing jobs to be used by the cron
-func mustGeneratePredictionWindowClosingJobs(c *app.HTTPAppContainer) []*job {
-	config := c.Config()
-
-	// get the current season ID for all realms
-	var seasonIDs = make(map[string]struct{})
-	for _, realm := range config.Realms {
-		seasonIDs[realm.SeasonID] = struct{}{}
-	}
-
-	// add a job for each unique season ID that retrieves the latest standings
-	var jobs []*job
-	for id := range seasonIDs {
-		season, err := c.Seasons().GetByID(id)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		job, err := newPredictionWindowClosingJob(
-			season,
-			c,
-		)
-		if err != nil {
-			log.Fatalf("cannot instantiate prediction window closing job: %s", err.Error())
-		}
-
-		jobs = append(jobs, job)
-	}
-
-	return jobs
 }

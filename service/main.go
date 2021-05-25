@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"prediction-league/service/internal/adapters/footballdataorg"
 	"prediction-league/service/internal/adapters/logger"
 	"prediction-league/service/internal/adapters/mailgun"
 	"prediction-league/service/internal/adapters/mysqldb"
@@ -31,10 +32,10 @@ func main() {
 	}
 
 	// setup env and config
-	config := domain.MustLoadConfigFromEnvPaths(l, ".env", "infra/app.env")
+	cfg := domain.MustLoadConfigFromEnvPaths(l, ".env", "infra/app.env")
 
 	// setup db connection
-	db, err := mysqldb.ConnectAndMigrate(config.MySQLURL, config.MigrationsURL, l)
+	db, err := mysqldb.ConnectAndMigrate(cfg.MySQLURL, cfg.MigrationsURL, l)
 	if err != nil {
 		switch {
 		case errors.Is(err, migrate.ErrNoChange):
@@ -63,7 +64,7 @@ func main() {
 	}
 	sepr, err := mysqldb.NewScoredEntryPredictionRepo(db)
 	if err != nil {
-		log.Fatalf("cannot instantiate score entry prediction repo: %s", err.Error())
+		log.Fatalf("cannot instantiate scored entry prediction repo: %s", err.Error())
 	}
 	sr, err := mysqldb.NewStandingsRepo(db)
 	if err != nil {
@@ -77,14 +78,18 @@ func main() {
 	if err != nil {
 		log.Fatalf("cannot instantiate seasons collection: %s", err.Error())
 	}
+	tc := domain.GetTeamCollection()
+
+	chEml := make(chan domain.Email)
+	tpl := domain.MustParseTemplates("./service/views")
 
 	// setup server
 	httpAppContainer := app.NewHTTPAppContainer(dependencies{
-		config:                    config,
-		emailClient:               mailgun.NewClient(config.MailgunAPIKey),
-		emailQueue:                make(chan domain.Email),
+		config:                    cfg,
+		emailClient:               mailgun.NewClient(cfg.MailgunAPIKey),
+		emailQueue:                chEml,
 		router:                    mux.NewRouter(),
-		templates:                 domain.MustParseTemplates("./service/views"),
+		templates:                 tpl,
 		debugTimestamp:            parseTimeString(ts),
 		standingsRepo:             sr,
 		entryRepo:                 er,
@@ -92,34 +97,64 @@ func main() {
 		scoredEntryPredictionRepo: sepr,
 		tokenRepo:                 tr,
 		seasons:                   sc,
-		teams:                     domain.GetTeamCollection(),
+		teams:                     tc,
 		clock:                     cl,
 		logger:                    l,
 	})
 
-	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	ea, err := domain.NewEntryAgent(er, epr, sc)
+	if err != nil {
+		log.Fatalf("cannot instantiate entry agent: %s", err.Error())
+	}
+	sa, err := domain.NewStandingsAgent(sr)
+	if err != nil {
+		log.Fatalf("cannot instantiate standings agent: %s", err.Error())
+	}
+	sepa, err := domain.NewScoredEntryPredictionAgent(er, epr, sr, sepr)
+	if err != nil {
+		log.Fatalf("cannot instantiate scored entry prediction agent: %s", err.Error())
+	}
+	ca, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, chEml, tpl, sc, tc)
+	if err != nil {
+		log.Fatalf("cannot instantiate communications agent: %s", err.Error())
+	}
+	var fds domain.FootballDataSource
+	if cfg.FootballDataAPIToken != "" {
+		fds, err = footballdataorg.NewClient(cfg.FootballDataAPIToken, tc)
+		if err != nil {
+			log.Fatalf("cannot instantiate football data org source: %s", err.Error())
+		}
+	}
+	rlms := cfg.Realms
+
 	seeds, err := domain.GenerateSeedEntries()
 	if err != nil {
 		log.Fatalf("cannot generate entries to seed: %s", err.Error())
 	}
-	entryAgent, err := domain.NewEntryAgent(er, epr, sc)
-	if err != nil {
-		log.Fatalf("cannot instantiate entry agent: %s", err.Error())
-	}
 
-	if err := entryAgent.SeedEntries(ctxWithTimeout, seeds); err != nil {
+	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := ea.SeedEntries(ctxWithTimeout, seeds); err != nil {
 		log.Fatalf("cannot seed entries: %s", err.Error())
 	}
 
 	app.RegisterRoutes(httpAppContainer)
 
 	// start cron
-	scheduler.LoadCron(httpAppContainer).Start()
+	crFac, err := scheduler.NewCronFactory(ea, sa, sepa, ca, sc, tc, rlms, cl, l, fds)
+	if err != nil {
+		log.Fatalf("cannot instantiate cron factory: %s", err.Error())
+	}
+	cr, err := crFac.Make()
+	if err != nil {
+		log.Fatalf("cannot make cron: %s", err.Error())
+	}
+	cr.Start()
 
 	// setup http server process
 	httpServer := app.NewServer(&http.Server{
-		Addr:    fmt.Sprintf(":%s", config.ServicePort),
+		Addr:    fmt.Sprintf(":%s", cfg.ServicePort),
 		Handler: httpAppContainer.Router(),
 	})
 
