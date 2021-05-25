@@ -3,6 +3,7 @@ package logger_test
 import (
 	"bytes"
 	"errors"
+	"io"
 	"log"
 	"os"
 	"prediction-league/service/internal/adapters/logger"
@@ -40,11 +41,23 @@ func (m *mockClock) Now() time.Time {
 
 func TestNewLogger(t *testing.T) {
 	t.Run("passing nil must return the expected error", func(t *testing.T) {
-		if _, gotErr := logger.NewLogger(nil, &domain.RealClock{}); !errors.Is(gotErr, domain.ErrIsNil) {
-			t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+		tt := []struct {
+			w       io.Writer
+			cl      domain.Clock
+			wantErr bool
+		}{
+			{nil, &domain.RealClock{}, true},
+			{os.Stdout, nil, true},
+			{os.Stdout, &domain.RealClock{}, false},
 		}
-		if _, gotErr := logger.NewLogger(os.Stdout, nil); !errors.Is(gotErr, domain.ErrIsNil) {
-			t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+		for idx, tc := range tt {
+			l, gotErr := logger.NewLogger(tc.w, tc.cl)
+			if tc.wantErr && !errors.Is(gotErr, domain.ErrIsNil) {
+				t.Fatalf("tc #%d: want ErrIsNil, got %s (%T)", idx, gotErr, gotErr)
+			}
+			if !tc.wantErr && l == nil {
+				t.Fatalf("tc #%d: want non-empty logger, got nil", idx)
+			}
 		}
 	})
 }
