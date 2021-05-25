@@ -8,10 +8,12 @@ import (
 	"sync"
 )
 
+// RoundCompleteEmailIssuer defines behaviours required to issue a Round Complete email
 type RoundCompleteEmailIssuer interface {
 	IssueRoundCompleteEmail(ctx context.Context, sep ScoredEntryPrediction, isFinalRound bool) error
 }
 
+// RetrieveLatestStandingsWorker performs the work required to retrieve the latest standings for a provided Season
 type RetrieveLatestStandingsWorker struct {
 	s    Season
 	tc   TeamCollection
@@ -247,8 +249,10 @@ func (r *RetrieveLatestStandingsWorker) issueRoundCompleteEmails(
 		sem <- struct{}{}
 
 		go func(sep ScoredEntryPrediction) {
-			defer wg.Done()
-			defer func() { <-sem }()
+			defer func() {
+				wg.Done()
+				<-sem
+			}()
 
 			if err := r.rcei.IssueRoundCompleteEmail(ctx, sep, isFinalRound); err != nil {
 				chErr <- err

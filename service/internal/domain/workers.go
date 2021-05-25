@@ -13,7 +13,7 @@ type Worker interface {
 }
 
 // HandleWorker returns a function that wraps and handles the provided Worker
-func HandleWorker(ctx context.Context, name string, timeout int, w Worker, l Logger) (func(), error) {
+func HandleWorker(name string, timeout int, w Worker, l Logger) (func(), error) {
 	if w == nil {
 		return nil, fmt.Errorf("worker: %w", ErrIsNil)
 	}
@@ -21,12 +21,12 @@ func HandleWorker(ctx context.Context, name string, timeout int, w Worker, l Log
 		return nil, fmt.Errorf("logger: %w", ErrIsNil)
 	}
 	return func() {
-		ctxWithTO, cancel := context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 		defer cancel()
 
 		var errs []error
 
-		if err := w.DoWork(ctxWithTO); err != nil {
+		if err := w.DoWork(ctx); err != nil {
 			mErr := MultiError{}
 			switch {
 			case errors.As(err, &mErr):

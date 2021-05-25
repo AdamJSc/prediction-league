@@ -1,7 +1,6 @@
 package scheduler
 
 import (
-	"context"
 	"fmt"
 	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/domain"
@@ -51,7 +50,7 @@ func newRetrieveLatestStandingsJob(s domain.Season, fds domain.FootballDataSourc
 		return nil, fmt.Errorf("cannot instantiate retrieve last standings worker: %w", err)
 	}
 
-	task, err := domain.HandleWorker(context.Background(), jobName, 5, w, d.Logger())
+	task, err := domain.HandleWorker(jobName, 5, w, d.Logger())
 
 	return &job{
 		spec: "@every 0h15m",
