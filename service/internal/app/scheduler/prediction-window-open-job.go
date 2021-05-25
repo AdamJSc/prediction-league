@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// predictionWindowOpenCronSpec determines the frequency by which the PredictionWindowOpenJob will run
+// predictionWindowOpenCronSpec determines the frequency by which the PredictionWindowOpenWorker will run
 // (i.e. every day at 12:34pm)
 const predictionWindowOpenCronSpec = "34 12 * * *"
 

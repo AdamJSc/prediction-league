@@ -1,7 +1,6 @@
-package scheduler_test
+package domain_test
 
 import (
-	"prediction-league/service/internal/app/scheduler"
 	"prediction-league/service/internal/domain"
 	"testing"
 	"time"
@@ -23,7 +22,7 @@ func TestGenerateTimeFrameForPredictionWindowClosingQuery(t *testing.T) {
 			Until: time.Date(2018, 5, 28, 1, 59, 0, 0, loc),
 		}
 
-		actualTimeFrame := scheduler.GenerateTimeFrameForPredictionWindowClosingQuery(baseTime)
+		actualTimeFrame := domain.GenerateTimeFrameForPredictionWindowClosingQuery(baseTime)
 
 		if expectedTimeframe != actualTimeFrame {
 			t.Fatalf("expected %+v, got %+v", expectedTimeframe, actualTimeFrame)

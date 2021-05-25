@@ -23,7 +23,7 @@ type PredictionWindowOpenWorker struct {
 // DoWork implements domain.Worker
 func (p *PredictionWindowOpenWorker) DoWork(ctx context.Context) error {
 	// previous 24-hour window
-	tf := GenerateTimeFrameForPredictionWindowOpenQuery(time.Now())
+	tf := GenerateTimeFrameForPredictionWindowOpenQuery(p.cl.Now())
 
 	// see if a prediction window has opened within this timeframe for the provided season
 	window, err := p.s.GetPredictionWindowBeginsWithin(tf)
