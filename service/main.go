@@ -15,7 +15,6 @@ import (
 	"prediction-league/service/internal/adapters/mailgun"
 	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/app"
-	"prediction-league/service/internal/app/scheduler"
 	"prediction-league/service/internal/domain"
 	"time"
 )
@@ -142,7 +141,7 @@ func main() {
 	app.RegisterRoutes(httpAppContainer)
 
 	// start cron
-	crFac, err := scheduler.NewCronFactory(ea, sa, sepa, ca, sc, tc, rlms, cl, l, fds)
+	crFac, err := app.NewCronFactory(ea, sa, sepa, ca, sc, tc, rlms, cl, l, fds)
 	if err != nil {
 		log.Fatalf("cannot instantiate cron factory: %s", err.Error())
 	}
