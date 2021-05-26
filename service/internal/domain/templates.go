@@ -7,7 +7,6 @@ import (
 	"html/template"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -37,22 +36,26 @@ var templateFunctions = template.FuncMap{
 	},
 }
 
-// MustParseTemplates parses our HTML templates and returns them collectively for use
-func MustParseTemplates(viewsPath string) *Templates {
+// ParseTemplates parses our HTML templates and returns them collectively for use
+func ParseTemplates(viewsPath string) (*Templates, error) {
 	// prepare the templates
 	tpl := template.New("prediction-league").Funcs(templateFunctions)
 
-	mustWalkPathAndParseTemplates(tpl, fmt.Sprintf("%s/page", viewsPath))
-	mustWalkPathAndParseTemplates(tpl, fmt.Sprintf("%s/email", viewsPath))
+	if err := walkPathAndParseTemplates(tpl, fmt.Sprintf("%s/page", viewsPath)); err != nil {
+		return nil, fmt.Errorf("cannot walk page path: %w", err)
+	}
+	if err := walkPathAndParseTemplates(tpl, fmt.Sprintf("%s/email", viewsPath)); err != nil {
+		return nil, fmt.Errorf("cannot walk email path: %w", err)
+	}
 
 	// return our wrapped template struct
-	return &Templates{Template: tpl}
+	return &Templates{Template: tpl}, nil
 }
 
-// mustWalkPathAndParseTemplates recursively parses templates within a given top-level directory
-func mustWalkPathAndParseTemplates(tpl *template.Template, path string) {
+// walkPathAndParseTemplates recursively parses templates within a given top-level directory
+func walkPathAndParseTemplates(tpl *template.Template, path string) error {
 	// walk through our views folder and parse each item to pack the assets
-	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+	return filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		// we already have an error from a recursive call, so just return with that
 		if err != nil {
 			return err
@@ -79,7 +82,4 @@ func mustWalkPathAndParseTemplates(tpl *template.Template, path string) {
 
 		return nil
 	})
-	if err != nil {
-		log.Fatal(err)
-	}
 }

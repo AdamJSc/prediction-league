@@ -20,16 +20,18 @@ import (
 )
 
 func main() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-
 	cl := &domain.RealClock{}
-
-	// setup logger
 	l, err := logger.NewLogger(os.Stdout, cl)
 	if err != nil {
-		log.Fatalf("cannot instantiate new logger: %s", err.Error())
+		log.Fatalf("cannot instantiate logger: %s", err.Error())
 	}
 
+	if err := run(l, cl); err != nil {
+		l.Errorf("run failed: %s", err.Error())
+	}
+}
+
+func run(l domain.Logger, cl domain.Clock) error {
 	// setup env and config
 	cfg := domain.MustLoadConfigFromEnvPaths(l, ".env", "infra/app.env")
 
@@ -38,14 +40,14 @@ func main() {
 	if err != nil {
 		switch {
 		case errors.Is(err, migrate.ErrNoChange):
-			log.Println("database migration: no changes")
+			l.Info("database migration: no changes")
 		default:
-			log.Fatalf("failed to connect and migrate database: %s", err.Error())
+			return fmt.Errorf("failed to connect and migrate database: %w", err)
 		}
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
-			log.Fatalf("cannot close db connection: %s", err.Error())
+			l.Errorf("cannot close db connection: %s", err.Error())
 		}
 	}()
 
@@ -55,32 +57,35 @@ func main() {
 
 	er, err := mysqldb.NewEntryRepo(db)
 	if err != nil {
-		log.Fatalf("cannot instantiate entry repo: %s", err.Error())
+		return fmt.Errorf("cannot instantiate entry repo: %w", err)
 	}
 	epr, err := mysqldb.NewEntryPredictionRepo(db)
 	if err != nil {
-		log.Fatalf("cannot instantiate entry prediction repo: %s", err.Error())
+		return fmt.Errorf("cannot instantiate entry prediction repo: %w", err)
 	}
 	sepr, err := mysqldb.NewScoredEntryPredictionRepo(db)
 	if err != nil {
-		log.Fatalf("cannot instantiate scored entry prediction repo: %s", err.Error())
+		return fmt.Errorf("cannot instantiate scored entry prediction repo: %w", err)
 	}
 	sr, err := mysqldb.NewStandingsRepo(db)
 	if err != nil {
-		log.Fatalf("cannot instantiate standings repo: %s", err.Error())
+		return fmt.Errorf("cannot instantiate standings repo: %w", err)
 	}
 	tr, err := mysqldb.NewTokenRepo(db)
 	if err != nil {
-		log.Fatalf("cannot instantiate token repo: %s", err.Error())
+		return fmt.Errorf("cannot instantiate token repo: %w", err)
 	}
 	sc, err := domain.GetSeasonCollection()
 	if err != nil {
-		log.Fatalf("cannot instantiate seasons collection: %s", err.Error())
+		return fmt.Errorf("cannot instantiate seasons collection: %w", err)
 	}
 	tc := domain.GetTeamCollection()
 
 	chEml := make(chan domain.Email)
-	tpl := domain.MustParseTemplates("./service/views")
+	tpl, err := domain.ParseTemplates("./service/views")
+	if err != nil {
+		return fmt.Errorf("cannot parse templates: %w", err)
+	}
 
 	// setup server
 	httpAppContainer := app.NewHTTPAppContainer(dependencies{
@@ -103,39 +108,39 @@ func main() {
 
 	ea, err := domain.NewEntryAgent(er, epr, sc)
 	if err != nil {
-		log.Fatalf("cannot instantiate entry agent: %s", err.Error())
+		return fmt.Errorf("cannot instantiate entry agent: %w", err)
 	}
 	sa, err := domain.NewStandingsAgent(sr)
 	if err != nil {
-		log.Fatalf("cannot instantiate standings agent: %s", err.Error())
+		return fmt.Errorf("cannot instantiate standings agent: %w", err)
 	}
 	sepa, err := domain.NewScoredEntryPredictionAgent(er, epr, sr, sepr)
 	if err != nil {
-		log.Fatalf("cannot instantiate scored entry prediction agent: %s", err.Error())
+		return fmt.Errorf("cannot instantiate scored entry prediction agent: %w", err)
 	}
 	ca, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, chEml, tpl, sc, tc)
 	if err != nil {
-		log.Fatalf("cannot instantiate communications agent: %s", err.Error())
+		return fmt.Errorf("cannot instantiate communications agent: %w", err)
 	}
 	var fds domain.FootballDataSource
 	if cfg.FootballDataAPIToken != "" {
 		fds, err = footballdataorg.NewClient(cfg.FootballDataAPIToken, tc)
 		if err != nil {
-			log.Fatalf("cannot instantiate football data org source: %s", err.Error())
+			return fmt.Errorf("cannot instantiate football data org source: %w", err)
 		}
 	}
 	rlms := cfg.Realms
 
 	seeds, err := domain.GenerateSeedEntries()
 	if err != nil {
-		log.Fatalf("cannot generate entries to seed: %s", err.Error())
+		return fmt.Errorf("cannot generate entries to seed: %w", err)
 	}
 
 	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := ea.SeedEntries(ctxWithTimeout, seeds); err != nil {
-		log.Fatalf("cannot seed entries: %s", err.Error())
+		return fmt.Errorf("cannot seed entries: %w", err)
 	}
 
 	app.RegisterRoutes(httpAppContainer)
@@ -143,11 +148,11 @@ func main() {
 	// start cron
 	crFac, err := app.NewCronFactory(ea, sa, sepa, ca, sc, tc, rlms, cl, l, fds)
 	if err != nil {
-		log.Fatalf("cannot instantiate cron factory: %s", err.Error())
+		return fmt.Errorf("cannot instantiate cron factory: %w", err)
 	}
 	cr, err := crFac.Make()
 	if err != nil {
-		log.Fatalf("cannot make cron: %s", err.Error())
+		return fmt.Errorf("cannot make cron: %w", err)
 	}
 	cr.Start()
 
@@ -172,6 +177,8 @@ func main() {
 		httpServer,
 		emailQueueRunner,
 	)
+
+	return nil
 }
 
 type dependencies struct {

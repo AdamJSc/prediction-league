@@ -114,7 +114,10 @@ func TestMain(m *testing.M) {
 	}
 
 	// load templates
-	tpl = domain.MustParseTemplates(svcParent + "/service/views")
+	tpl, err = domain.ParseTemplates(svcParent + "/service/views")
+	if err != nil {
+		log.Fatalf("cannot parse templates: %s", err.Error())
+	}
 
 	rlm = newTestRealm()
 	cfg = newTestConfig(*rlm)
