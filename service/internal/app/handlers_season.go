@@ -6,7 +6,7 @@ import (
 	"prediction-league/service/internal/domain"
 )
 
-func retrieveSeasonHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func retrieveSeasonHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// parse season ID from route
 		var seasonID string
@@ -29,14 +29,14 @@ func retrieveSeasonHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *h
 		}
 
 		// retrieve the season we need
-		season, err := c.Seasons().GetByID(seasonID)
+		season, err := c.seasons.GetByID(seasonID)
 		if err != nil {
 			notFoundError(fmt.Errorf("invalid season: %s", seasonID)).writeTo(w)
 			return
 		}
 
 		// get teams that correlate to season's team IDs
-		teams, err := domain.FilterTeamsByIDs(season.TeamIDs, c.Teams())
+		teams, err := domain.FilterTeamsByIDs(season.TeamIDs, c.teams)
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return
@@ -52,7 +52,7 @@ func retrieveSeasonHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *h
 	}
 }
 
-func retrieveLeaderBoardHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func retrieveLeaderBoardHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// parse season ID from route
 		var seasonID string
@@ -82,12 +82,7 @@ func retrieveLeaderBoardHandler(c *HTTPAppContainer) func(w http.ResponseWriter,
 		}
 
 		// retrieve leaderboard
-		lbAgent, err := domain.NewLeaderBoardAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.ScoredEntryPredictionRepo(), c.Seasons())
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
-		}
-		lb, err := lbAgent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, roundNumber)
+		lb, err := c.lbAgent.RetrieveLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, roundNumber)
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return

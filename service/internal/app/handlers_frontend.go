@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func frontendIndexHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendIndexHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
@@ -19,7 +19,7 @@ func frontendIndexHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *ht
 		defer cancel()
 
 		seasonID := domain.RealmFromContext(ctx).SeasonID
-		season, err := c.Seasons().GetByID(seasonID)
+		season, err := c.seasons.GetByID(seasonID)
 		if err != nil {
 			internalError(err).writeTo(w)
 			return
@@ -29,36 +29,21 @@ func frontendIndexHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *ht
 
 		p := newPage(r, c, "Home", "home", bannerTitle, nil)
 
-		if err := c.Template().ExecuteTemplate(w, "index", p); err != nil {
+		if err := c.templates.ExecuteTemplate(w, "index", p); err != nil {
 			internalError(err).writeTo(w)
 			return
 		}
 	}
 }
 
-func frontendLeaderBoardHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendLeaderBoardHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var writeResponse = func(data view.LeaderBoardPageData) {
 			p := newPage(r, c, "Leaderboard", "leaderboard", "Leaderboard", data)
 
-			if err := c.Template().ExecuteTemplate(w, "leaderboard", p); err != nil {
+			if err := c.templates.ExecuteTemplate(w, "leaderboard", p); err != nil {
 				internalError(err).writeTo(w)
 			}
-		}
-
-		// setup agents
-		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
-		}
-		standingsAgent, err := domain.NewStandingsAgent(c.StandingsRepo())
-		if err != nil {
-			internalError(err).writeTo(w)
-		}
-		lbAgent, err := domain.NewLeaderBoardAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.ScoredEntryPredictionRepo(), c.Seasons())
-		if err != nil {
-			internalError(err).writeTo(w)
 		}
 
 		ctx, cancel, err := contextFromRequest(r, c)
@@ -70,23 +55,23 @@ func frontendLeaderBoardHandler(c *HTTPAppContainer) func(w http.ResponseWriter,
 
 		data := getLeaderBoardPageData(
 			ctx,
-			entryAgent,
-			standingsAgent,
-			lbAgent,
-			c.Seasons(),
-			c.Teams(),
+			c.entryAgent,
+			c.standingsAgent,
+			c.lbAgent,
+			c.seasons,
+			c.teams,
 		)
 
 		writeResponse(data)
 	}
 }
 
-func frontendFAQHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendFAQHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var writeResponse = func(data view.FAQPageData) {
 			p := newPage(r, c, "FAQ", "faq", "FAQ", data)
 
-			if err := c.Template().ExecuteTemplate(w, "faq", p); err != nil {
+			if err := c.templates.ExecuteTemplate(w, "faq", p); err != nil {
 				internalError(err).writeTo(w)
 			}
 		}
@@ -104,7 +89,7 @@ func frontendFAQHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http
 	}
 }
 
-func frontendJoinHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendJoinHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
@@ -113,7 +98,7 @@ func frontendJoinHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *htt
 		}
 		defer cancel()
 
-		season, err := c.Seasons().GetByID(domain.RealmFromContext(ctx).SeasonID)
+		season, err := c.seasons.GetByID(domain.RealmFromContext(ctx).SeasonID)
 		if err != nil {
 			internalError(err).writeTo(w)
 			return
@@ -129,38 +114,27 @@ func frontendJoinHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *htt
 			EntriesClosed:   entriesClosed,
 			EntriesClosedTS: season.EntriesAccepted.Until,
 			SeasonName:      season.Name,
-			PayPalClientID:  c.Config().PayPalClientID,
+			PayPalClientID:  c.config.PayPalClientID,
 			EntryFee:        domain.RealmFromContext(ctx).EntryFee,
 		}
 
 		p := newPage(r, c, "Join", "join", "Join", data)
 
-		if err := c.Template().ExecuteTemplate(w, "join", p); err != nil {
+		if err := c.templates.ExecuteTemplate(w, "join", p); err != nil {
 			internalError(err).writeTo(w)
 			return
 		}
 	}
 }
 
-func frontendPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendPredictionHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var writeResponse = func(data view.PredictionPageData) {
 			p := newPage(r, c, "Update My Prediction", "prediction", "Update My Prediction", data)
 
-			if err := c.Template().ExecuteTemplate(w, "prediction", p); err != nil {
+			if err := c.templates.ExecuteTemplate(w, "prediction", p); err != nil {
 				internalError(err).writeTo(w)
 			}
-		}
-
-		// setup agents
-		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
-		}
-		tokenAgent, err := domain.NewTokenAgent(c.TokenRepo())
-		if err != nil {
-			internalError(err).writeTo(w)
 		}
 
 		ctx, cancel, err := contextFromRequest(r, c)
@@ -173,40 +147,24 @@ func frontendPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWriter, 
 		data := getPredictionPageData(
 			ctx,
 			getAuthCookieValue(r),
-			entryAgent,
-			tokenAgent,
-			c.Seasons(),
-			c.Teams(),
+			c.entryAgent,
+			c.tokenAgent,
+			c.seasons,
+			c.teams,
 		)
 
 		writeResponse(data)
 	}
 }
 
-func frontendShortCodeResetBeginHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendShortCodeResetBeginHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var writeResponse = func(data view.ShortCodeResetBeginPageData) {
 			p := newPage(r, c, "Reset my Short Code", "", "Reset my Short Code", data)
 
-			if err := c.Template().ExecuteTemplate(w, "short-code-reset-begin", p); err != nil {
+			if err := c.templates.ExecuteTemplate(w, "short-code-reset-begin", p); err != nil {
 				internalError(err).writeTo(w)
 			}
-		}
-
-		// setup agents
-		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
-		}
-		tokenAgent, err := domain.NewTokenAgent(c.TokenRepo())
-		if err != nil {
-			internalError(err).writeTo(w)
-		}
-		commsAgent, err := domain.NewCommunicationsAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template(), c.Seasons(), c.Teams(), c.Realms())
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
 		}
 
 		// parse request body (standard form)
@@ -239,7 +197,7 @@ func frontendShortCodeResetBeginHandler(c *HTTPAppContainer) func(w http.Respons
 		realm := domain.RealmFromContext(ctx)
 
 		// retrieve entry
-		entry, err := retrieveEntryByEmailOrNickname(ctx, input.EmailNickname, realm.SeasonID, realm.Name, entryAgent)
+		entry, err := retrieveEntryByEmailOrNickname(ctx, input.EmailNickname, realm.SeasonID, realm.Name, c.entryAgent)
 		if err != nil {
 			switch err.(type) {
 			case domain.NotFoundError:
@@ -259,14 +217,14 @@ func frontendShortCodeResetBeginHandler(c *HTTPAppContainer) func(w http.Respons
 		}
 
 		// generate short code reset token
-		token, err := tokenAgent.GenerateToken(ctx, domain.TokenTypeShortCodeResetToken, entry.ID.String())
+		token, err := c.tokenAgent.GenerateToken(ctx, domain.TokenTypeShortCodeResetToken, entry.ID.String())
 		if err != nil {
 			writeResponse(view.ShortCodeResetBeginPageData{Err: err})
 			return
 		}
 
 		// issue email with short code reset link
-		if err := commsAgent.IssueShortCodeResetBeginEmail(nil, entry, token.ID); err != nil {
+		if err := c.commsAgent.IssueShortCodeResetBeginEmail(nil, entry, token.ID); err != nil {
 			writeResponse(view.ShortCodeResetBeginPageData{Err: err})
 			return
 		}
@@ -276,32 +234,16 @@ func frontendShortCodeResetBeginHandler(c *HTTPAppContainer) func(w http.Respons
 	}
 }
 
-func frontendShortCodeResetCompleteHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func frontendShortCodeResetCompleteHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	invalidTokenErr := errors.New("oh no! looks like your token is invalid :'( please try resetting your short code again")
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		var writeResponse = func(data view.ShortCodeResetCompletePageData) {
 			p := newPage(r, c, "Reset my Short Code", "", "Reset my Short Code", data)
 
-			if err := c.Template().ExecuteTemplate(w, "short-code-reset-complete", p); err != nil {
+			if err := c.templates.ExecuteTemplate(w, "short-code-reset-complete", p); err != nil {
 				internalError(err).writeTo(w)
 			}
-		}
-
-		// setup agents
-		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
-		}
-		tokenAgent, err := domain.NewTokenAgent(c.TokenRepo())
-		if err != nil {
-			internalError(err).writeTo(w)
-		}
-		commsAgent, err := domain.NewCommunicationsAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template(), c.Seasons(), c.Teams(), c.Realms())
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
 		}
 
 		// parse reset token from route
@@ -320,7 +262,7 @@ func frontendShortCodeResetCompleteHandler(c *HTTPAppContainer) func(w http.Resp
 		defer cancel()
 
 		// retrieve token
-		token, err := tokenAgent.RetrieveTokenByID(ctx, resetToken)
+		token, err := c.tokenAgent.RetrieveTokenByID(ctx, resetToken)
 		if err != nil {
 			switch err.(type) {
 			case domain.NotFoundError:
@@ -344,7 +286,7 @@ func frontendShortCodeResetCompleteHandler(c *HTTPAppContainer) func(w http.Resp
 		}
 
 		// retrieve entry
-		entry, err := entryAgent.RetrieveEntryByID(ctx, token.Value)
+		entry, err := c.entryAgent.RetrieveEntryByID(ctx, token.Value)
 		if err != nil {
 			writeResponse(view.ShortCodeResetCompletePageData{Err: err})
 			return
@@ -358,7 +300,7 @@ func frontendShortCodeResetCompleteHandler(c *HTTPAppContainer) func(w http.Resp
 
 		// we've made it this far!
 		// now generate a new short code
-		newShortCode, err := entryAgent.GenerateUniqueShortCode(ctx)
+		newShortCode, err := c.entryAgent.GenerateUniqueShortCode(ctx)
 		if err != nil {
 			writeResponse(view.ShortCodeResetCompletePageData{Err: err})
 			return
@@ -366,20 +308,20 @@ func frontendShortCodeResetCompleteHandler(c *HTTPAppContainer) func(w http.Resp
 
 		// update our entry's short code
 		entry.ShortCode = newShortCode
-		entry, err = entryAgent.UpdateEntry(ctx, entry)
+		entry, err = c.entryAgent.UpdateEntry(ctx, entry)
 		if err != nil {
 			writeResponse(view.ShortCodeResetCompletePageData{Err: err})
 			return
 		}
 
 		// delete short code reset token
-		if err := tokenAgent.DeleteToken(ctx, *token); err != nil {
+		if err := c.tokenAgent.DeleteToken(ctx, *token); err != nil {
 			writeResponse(view.ShortCodeResetCompletePageData{Err: err})
 			return
 		}
 
 		// issue email confirming short code reset
-		if err := commsAgent.IssueShortCodeResetCompleteEmail(nil, &entry); err != nil {
+		if err := c.commsAgent.IssueShortCodeResetCompleteEmail(nil, &entry); err != nil {
 			writeResponse(view.ShortCodeResetCompletePageData{Err: err})
 			return
 		}

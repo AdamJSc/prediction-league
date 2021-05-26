@@ -133,6 +133,7 @@ func (c *CronFactory) generateJobConfigs(seasons []domain.Season) ([]*jobConfig,
 
 		jobs = append(jobs, oj, cj)
 
+		// TODO - remove switch when replaced with alt domain.FootballDataSource
 		switch {
 		case c.fds == nil:
 			c.l.Infof("skipping retrieve latest standings job for season %s: no football data source configured", s.ID)

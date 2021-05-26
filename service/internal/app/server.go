@@ -7,9 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"runtime"
-	"strconv"
 	"time"
 )
 
@@ -66,42 +64,21 @@ func (s *Server) addr() *net.TCPAddr {
 }
 
 // NewServer sets up a new HTTP server.
-func NewServer(server *http.Server) *Server {
-	if server == nil {
-		server = &defaultHTTPServer
+func NewServer(cnt *container) *Server {
+	server := &http.Server{
+		Addr:              fmt.Sprintf(":%s", cnt.config.ServicePort),
+		Handler:           cnt.router,
+		WriteTimeout:      5 * time.Second,
+		ReadTimeout:       5 * time.Second,
+		IdleTimeout:       5 * time.Second,
+		ReadHeaderTimeout: 1 * time.Second,
 	}
-	if server.WriteTimeout == 0 {
-		server.WriteTimeout = defaultHTTPServer.WriteTimeout
-	}
-	if server.ReadTimeout == 0 {
-		server.ReadTimeout = defaultHTTPServer.ReadTimeout
-	}
-	if server.IdleTimeout == 0 {
-		server.IdleTimeout = defaultHTTPServer.IdleTimeout
-	}
-	if server.ReadHeaderTimeout == 0 {
-		server.ReadHeaderTimeout = defaultHTTPServer.ReadHeaderTimeout
-	}
-	if server.Addr == "" {
-		var addr string
-		if addr = os.Getenv("HTTP_ADDR"); addr == "" {
-			addr = net.JoinHostPort("0.0.0.0", strconv.Itoa(port))
-		}
-		server.Addr = addr
-	}
+
 	return &Server{
 		Server: server,
 		Now:    time.Now,
 		addrC:  make(chan *net.TCPAddr, 1),
 	}
-}
-
-// defaultHTTPServer represents the default configuration for the http server
-var defaultHTTPServer = http.Server{
-	WriteTimeout:      5 * time.Second,
-	ReadTimeout:       5 * time.Second,
-	IdleTimeout:       5 * time.Second,
-	ReadHeaderTimeout: 1 * time.Second,
 }
 
 // wrapperHandler returns the wrapper handler for the http server.

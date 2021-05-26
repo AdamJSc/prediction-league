@@ -8,16 +8,9 @@ import (
 	"prediction-league/service/internal/domain"
 )
 
-func createEntryHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func createEntryHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var input createEntryRequest
-
-		// setup agents
-		agent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
-		}
 
 		// read request body
 		body, err := ioutil.ReadAll(r.Body)
@@ -57,7 +50,7 @@ func createEntryHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http
 		}
 
 		// retrieve the season we need
-		season, err := c.Seasons().GetByID(seasonID)
+		season, err := c.seasons.GetByID(seasonID)
 		if err != nil {
 			notFoundError(fmt.Errorf("invalid season: %s", seasonID)).writeTo(w)
 			return
@@ -66,7 +59,7 @@ func createEntryHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http
 		domain.GuardFromContext(ctx).SetAttempt(input.RealmPIN)
 
 		// create entry
-		createdEntry, err := agent.CreateEntry(ctx, entry, &season)
+		createdEntry, err := c.entryAgent.CreateEntry(ctx, entry, &season)
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return
@@ -78,27 +71,15 @@ func createEntryHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http
 				ID:           createdEntry.ID.String(),
 				Nickname:     createdEntry.EntrantNickname,
 				ShortCode:    createdEntry.ShortCode,
-				NeedsPayment: c.Config().PayPalClientID != "",
+				NeedsPayment: c.config.PayPalClientID != "",
 			},
 		}).writeTo(w)
 	}
 }
 
-func updateEntryPaymentDetailsHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func updateEntryPaymentDetailsHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var input updateEntryPaymentDetailsRequest
-
-		// setup agents
-		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
-		}
-		commsAgent, err := domain.NewCommunicationsAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template(), c.Seasons(), c.Teams(), c.Realms())
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
-		}
 
 		// read request body
 		body, err := ioutil.ReadAll(r.Body)
@@ -137,17 +118,17 @@ func updateEntryPaymentDetailsHandler(c *HTTPAppContainer) func(w http.ResponseW
 
 		domain.GuardFromContext(ctx).SetAttempt(input.ShortCode)
 
-		isPayPalConfigMissing := c.Config().PayPalClientID == ""
+		isPayPalConfigMissing := c.config.PayPalClientID == ""
 
 		// update payment details for entry
-		entry, err := entryAgent.UpdateEntryPaymentDetails(ctx, entryID, input.PaymentMethod, input.PaymentRef, isPayPalConfigMissing)
+		entry, err := c.entryAgent.UpdateEntryPaymentDetails(ctx, entryID, input.PaymentMethod, input.PaymentRef, isPayPalConfigMissing)
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// issue new entry email
-		if err := commsAgent.IssueNewEntryEmail(ctx, &entry, &paymentDetails); err != nil {
+		if err := c.commsAgent.IssueNewEntryEmail(ctx, &entry, &paymentDetails); err != nil {
 			responseFromError(err).writeTo(w)
 			return
 		}
@@ -157,15 +138,9 @@ func updateEntryPaymentDetailsHandler(c *HTTPAppContainer) func(w http.ResponseW
 	}
 }
 
-func createEntryPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func createEntryPredictionHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var input createEntryPredictionRequest
-
-		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
-		}
 
 		// read request body
 		body, err := ioutil.ReadAll(r.Body)
@@ -197,7 +172,7 @@ func createEntryPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWrite
 		defer cancel()
 
 		// get entry
-		entry, err := entryAgent.RetrieveEntryByID(ctx, entryID)
+		entry, err := c.entryAgent.RetrieveEntryByID(ctx, entryID)
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return
@@ -208,7 +183,7 @@ func createEntryPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWrite
 		domain.GuardFromContext(ctx).SetAttempt(input.EntryShortCode)
 
 		// create entry prediction for entry
-		if _, err := entryAgent.AddEntryPredictionToEntry(ctx, entryPrediction, entry); err != nil {
+		if _, err := c.entryAgent.AddEntryPredictionToEntry(ctx, entryPrediction, entry); err != nil {
 			responseFromError(err).writeTo(w)
 			return
 		}
@@ -218,14 +193,8 @@ func createEntryPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWrite
 	}
 }
 
-func retrieveLatestEntryPredictionHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func retrieveLatestEntryPredictionHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
-		}
-
 		// parse entry ID from route
 		var entryID string
 		if err := getRouteParam(r, "entry_id", &entryID); err != nil {
@@ -242,21 +211,21 @@ func retrieveLatestEntryPredictionHandler(c *HTTPAppContainer) func(w http.Respo
 		defer cancel()
 
 		// get entry
-		entry, err := entryAgent.RetrieveEntryByID(ctx, entryID)
+		entry, err := c.entryAgent.RetrieveEntryByID(ctx, entryID)
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// get entry prediction that pertains to context timestamp
-		entryPrediction, err := entryAgent.RetrieveEntryPredictionByTimestamp(ctx, entry, domain.TimestampFromContext(ctx))
+		entryPrediction, err := c.entryAgent.RetrieveEntryPredictionByTimestamp(ctx, entry, domain.TimestampFromContext(ctx))
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// get teams that correlate to entry prediction's ranking IDs
-		teams, err := domain.FilterTeamsByIDs(entryPrediction.Rankings.GetIDs(), c.Teams())
+		teams, err := domain.FilterTeamsByIDs(entryPrediction.Rankings.GetIDs(), c.teams)
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return
@@ -272,14 +241,8 @@ func retrieveLatestEntryPredictionHandler(c *HTTPAppContainer) func(w http.Respo
 	}
 }
 
-func approveEntryByShortCodeHandler(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func approveEntryByShortCodeHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
-		}
-
 		// parse entry short code from route
 		var entryShortCode string
 		if err := getRouteParam(r, "entry_short_code", &entryShortCode); err != nil {
@@ -295,7 +258,7 @@ func approveEntryByShortCodeHandler(c *HTTPAppContainer) func(w http.ResponseWri
 		defer cancel()
 
 		// approve entry
-		if _, err := entryAgent.ApproveEntryByShortCode(ctx, entryShortCode); err != nil {
+		if _, err := c.entryAgent.ApproveEntryByShortCode(ctx, entryShortCode); err != nil {
 			responseFromError(err).writeTo(w)
 			return
 		}
@@ -305,25 +268,8 @@ func approveEntryByShortCodeHandler(c *HTTPAppContainer) func(w http.ResponseWri
 	}
 }
 
-func retrieveLatestScoredEntryPrediction(c *HTTPAppContainer) func(w http.ResponseWriter, r *http.Request) {
+func retrieveLatestScoredEntryPrediction(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// setup agents
-		standingsAgent, err := domain.NewStandingsAgent(c.StandingsRepo())
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
-		}
-		sepAgent, err := domain.NewScoredEntryPredictionAgent(
-			c.EntryRepo(),
-			c.EntryPredictionRepo(),
-			c.StandingsRepo(),
-			c.ScoredEntryPredictionRepo(),
-		)
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
-		}
-
 		// parse entry ID from route
 		var entryID string
 		if err := getRouteParam(r, "entry_id", &entryID); err != nil {
@@ -347,14 +293,14 @@ func retrieveLatestScoredEntryPrediction(c *HTTPAppContainer) func(w http.Respon
 		defer cancel()
 
 		// get latest scored entry prediction by entry id and round number
-		scoredEntryPredictions, err := sepAgent.RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(ctx, entryID, roundNumber)
+		scoredEntryPredictions, err := c.sepAgent.RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(ctx, entryID, roundNumber)
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return
 		}
 
 		// get corresponding standings
-		standings, err := standingsAgent.RetrieveStandingsByID(ctx, scoredEntryPredictions.StandingsID.String())
+		standings, err := c.standingsAgent.RetrieveStandingsByID(ctx, scoredEntryPredictions.StandingsID.String())
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return

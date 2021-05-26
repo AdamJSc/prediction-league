@@ -4,15 +4,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/gorilla/mux"
 	"log"
-	"net/http"
 	"os"
 	"prediction-league/service/internal/adapters/logger"
-	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/domain"
-	"time"
 )
 
 func main() {
@@ -55,7 +51,7 @@ func run(l domain.Logger, cl domain.Clock) error {
 		return fmt.Errorf("cannot run seeder: %w", err)
 	}
 
-	app.RegisterRoutes(httpAppContainer)
+	app.RegisterRoutes(cnt)
 
 	// TODO - implement as Service with Worker interface (Run/Halt)
 	// start cron
@@ -70,14 +66,12 @@ func run(l domain.Logger, cl domain.Clock) error {
 	cr.Start()
 
 	// setup http server process
-	httpServer := app.NewServer(&http.Server{
-		Addr:    fmt.Sprintf(":%s", cfg.ServicePort),
-		Handler: httpAppContainer.Router(),
-	})
+	httpServer := app.NewServer(cnt)
 
 	// setup email queue runner
-	emailQueueRunner := app.EmailQueueRunner{
-		EmailQueueRunnerInjector: httpAppContainer,
+	emailQueueRunner, err := app.NewEmailQueueRunner(cnt)
+	if err != nil {
+		return fmt.Errorf("cannot instantiate email queue runner: %w", err)
 	}
 
 	// run service
@@ -93,45 +87,3 @@ func run(l domain.Logger, cl domain.Clock) error {
 
 	return nil
 }
-
-type dependencies struct {
-	config                    *app.Config
-	emailClient               domain.EmailClient
-	emailQueue                chan domain.Email
-	router                    *mux.Router
-	templates                 *domain.Templates
-	debugTimestamp            *time.Time
-	standingsRepo             *mysqldb.StandingsRepo
-	entryRepo                 *mysqldb.EntryRepo
-	entryPredictionRepo       *mysqldb.EntryPredictionRepo
-	scoredEntryPredictionRepo *mysqldb.ScoredEntryPredictionRepo
-	tokenRepo                 *mysqldb.TokenRepo
-	seasons                   domain.SeasonCollection
-	teams                     domain.TeamCollection
-	realms                    domain.RealmCollection
-	clock                     domain.Clock
-	logger                    domain.Logger
-}
-
-func (d dependencies) Config() *app.Config             { return d.config }
-func (d dependencies) EmailClient() domain.EmailClient { return d.emailClient }
-func (d dependencies) EmailQueue() chan domain.Email   { return d.emailQueue }
-func (d dependencies) Router() *mux.Router             { return d.router }
-func (d dependencies) Template() *domain.Templates     { return d.templates }
-func (d dependencies) DebugTimestamp() *time.Time      { return d.debugTimestamp }
-func (d dependencies) StandingsRepo() domain.StandingsRepository {
-	return d.standingsRepo
-}
-func (d dependencies) EntryRepo() domain.EntryRepository { return d.entryRepo }
-func (d dependencies) EntryPredictionRepo() domain.EntryPredictionRepository {
-	return d.entryPredictionRepo
-}
-func (d dependencies) ScoredEntryPredictionRepo() domain.ScoredEntryPredictionRepository {
-	return d.scoredEntryPredictionRepo
-}
-func (d dependencies) TokenRepo() domain.TokenRepository { return d.tokenRepo }
-func (d dependencies) Seasons() domain.SeasonCollection  { return d.seasons }
-func (d dependencies) Teams() domain.TeamCollection      { return d.teams }
-func (d dependencies) Realms() domain.RealmCollection    { return d.realms }
-func (d dependencies) Clock() domain.Clock               { return d.clock }
-func (d dependencies) Logger() domain.Logger             { return d.logger }

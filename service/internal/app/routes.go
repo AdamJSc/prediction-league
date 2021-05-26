@@ -5,9 +5,9 @@ import (
 )
 
 // RegisterRoutes attaches all routes to the router
-func RegisterRoutes(c *HTTPAppContainer) {
+func RegisterRoutes(c *container) {
 	// api endpoints
-	api := c.Router().PathPrefix("/api").Subrouter()
+	api := c.router.PathPrefix("/api").Subrouter()
 	api.HandleFunc("/prediction/login", predictionLoginHandler(c)).Methods(http.MethodPost)
 
 	api.HandleFunc("/season/{season_id}", retrieveSeasonHandler(c)).Methods(http.MethodGet)
@@ -22,15 +22,15 @@ func RegisterRoutes(c *HTTPAppContainer) {
 
 	// serve static assets
 	assets := http.Dir("./resources/dist")
-	c.Router().PathPrefix("/assets").Handler(http.StripPrefix("/assets", http.FileServer(assets)))
+	c.router.PathPrefix("/assets").Handler(http.StripPrefix("/assets", http.FileServer(assets)))
 
 	// frontend endpoints
-	c.Router().HandleFunc("/", frontendIndexHandler(c)).Methods(http.MethodGet)
-	c.Router().HandleFunc("/leaderboard", frontendLeaderBoardHandler(c)).Methods(http.MethodGet)
-	c.Router().HandleFunc("/faq", frontendFAQHandler(c)).Methods(http.MethodGet)
-	c.Router().HandleFunc("/join", frontendJoinHandler(c)).Methods(http.MethodGet)
-	c.Router().HandleFunc("/prediction", frontendPredictionHandler(c)).Methods(http.MethodGet)
+	c.router.HandleFunc("/", frontendIndexHandler(c)).Methods(http.MethodGet)
+	c.router.HandleFunc("/leaderboard", frontendLeaderBoardHandler(c)).Methods(http.MethodGet)
+	c.router.HandleFunc("/faq", frontendFAQHandler(c)).Methods(http.MethodGet)
+	c.router.HandleFunc("/join", frontendJoinHandler(c)).Methods(http.MethodGet)
+	c.router.HandleFunc("/prediction", frontendPredictionHandler(c)).Methods(http.MethodGet)
 
-	c.Router().HandleFunc("/reset", frontendShortCodeResetBeginHandler(c)).Methods(http.MethodPost)
-	c.Router().HandleFunc("/reset/{reset_token}", frontendShortCodeResetCompleteHandler(c)).Methods(http.MethodGet)
+	c.router.HandleFunc("/reset", frontendShortCodeResetBeginHandler(c)).Methods(http.MethodPost)
+	c.router.HandleFunc("/reset/{reset_token}", frontendShortCodeResetCompleteHandler(c)).Methods(http.MethodGet)
 }

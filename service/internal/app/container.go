@@ -15,15 +15,19 @@ import (
 
 // container encapsulates the app dependencies
 type container struct {
+	*config
 	realms         domain.RealmCollection
 	seasons        domain.SeasonCollection
 	teams          domain.TeamCollection
+	templates      *domain.Templates
 	commsAgent     *domain.CommunicationsAgent
 	entryAgent     *domain.EntryAgent
 	standingsAgent *domain.StandingsAgent
 	sepAgent       *domain.ScoredEntryPredictionAgent
 	tokenAgent     *domain.TokenAgent
+	lbAgent        *domain.LeaderBoardAgent
 	emailClient    domain.EmailClient
+	emailQueue     chan domain.Email
 	ftblDataSrc    domain.FootballDataSource
 	router         *mux.Router
 	debugTs        *time.Time
@@ -55,10 +59,14 @@ func NewContainer(cfg *config, l domain.Logger, cl domain.Clock, rawTs *string) 
 	// instantiate email queue
 	chEml := make(chan domain.Email)
 
+	// TODO - replace with alt domain.EmailClient if api key is missing
 	// instantiate email client
-	mg, err := mailgun.NewClient(cfg.MailgunAPIKey)
-	if err != nil {
-		return nil, nil, fmt.Errorf("cannot instantiate mailgun client: %w", err)
+	var emlCl domain.EmailClient
+	if cfg.MailgunAPIKey != "" {
+		emlCl, err = mailgun.NewClient(cfg.MailgunAPIKey)
+		if err != nil {
+			return nil, nil, fmt.Errorf("cannot instantiate mailgun client: %w", err)
+		}
 	}
 
 	// new router
@@ -81,10 +89,11 @@ func NewContainer(cfg *config, l domain.Logger, cl domain.Clock, rawTs *string) 
 	}
 	tc := domain.GetTeamCollection()
 
+	// TODO - replace with alt domain.FootballDataSource if api token is missing
 	// instantiate football-data.org client
-	var fdocl *footballdataorg.Client
+	var fds domain.FootballDataSource
 	if cfg.FootballDataAPIToken != "" {
-		fdocl, err = footballdataorg.NewClient(cfg.FootballDataAPIToken, tc)
+		fds, err = footballdataorg.NewClient(cfg.FootballDataAPIToken, tc)
 		if err != nil {
 			return nil, nil, fmt.Errorf("cannot instantiate football-data.org client: %w", err)
 		}
@@ -133,18 +142,26 @@ func NewContainer(cfg *config, l domain.Logger, cl domain.Clock, rawTs *string) 
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot instantiate token agent: %w", err)
 	}
+	lba, err := domain.NewLeaderBoardAgent(er, epr, sr, sepr, sc)
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot instantiate leaderboard agent: %w", err)
+	}
 
 	cnt := &container{
+		cfg,
 		rc,
 		sc,
 		tc,
+		tpl,
 		ca,
 		ea,
 		sa,
 		sepa,
 		ta,
-		mg,
-		fdocl,
+		lba,
+		emlCl,
+		chEml,
+		fds,
 		rtr,
 		debugTs,
 		l,

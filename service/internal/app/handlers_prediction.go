@@ -10,21 +10,9 @@ import (
 	"prediction-league/service/internal/view"
 )
 
-func predictionLoginHandler(c *HTTPAppContainer) func(http.ResponseWriter, *http.Request) {
+func predictionLoginHandler(c *container) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var input predictionLoginRequest
-
-		// setup agents
-		entryAgent, err := domain.NewEntryAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.Seasons())
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
-		}
-		tokenAgent, err := domain.NewTokenAgent(c.TokenRepo())
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
-		}
 
 		// read request body
 		body, err := ioutil.ReadAll(r.Body)
@@ -52,7 +40,7 @@ func predictionLoginHandler(c *HTTPAppContainer) func(http.ResponseWriter, *http
 		realm := domain.RealmFromContext(ctx)
 
 		// retrieve entry based on input
-		entry, err := retrieveEntryByEmailOrNickname(ctx, input.EmailNickname, realm.SeasonID, realm.Name, entryAgent)
+		entry, err := retrieveEntryByEmailOrNickname(ctx, input.EmailNickname, realm.SeasonID, realm.Name, c.entryAgent)
 		if err != nil {
 			switch err.(type) {
 			case domain.NotFoundError:
@@ -77,7 +65,7 @@ func predictionLoginHandler(c *HTTPAppContainer) func(http.ResponseWriter, *http
 		}
 
 		// generate a new auth token for our entry, and set it as a cookie
-		token, err := tokenAgent.GenerateToken(ctx, domain.TokenTypeAuth, entry.ID.String())
+		token, err := c.tokenAgent.GenerateToken(ctx, domain.TokenTypeAuth, entry.ID.String())
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return

@@ -16,62 +16,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type DependencyInjector interface {
-	ConfigInjector
-	EmailClientInjector
-	EmailQueueInjector
-	RouterInjector
-	TemplateInjector
-	DebugTimestampInjector
-	StandingsRepoInjector
-	EntryRepoInjector
-	EntryPredictionRepoInjector
-	ScoredEntryPredictionRepoInjector
-	TokenRepoInjector
-	SeasonsInjector
-	TeamsInjector
-	RealmsInjector
-	ClockInjector
-	LoggerInjector
-}
-
-type ConfigInjector interface{ Config() *config }
-type EmailClientInjector interface{ EmailClient() domain.EmailClient }
-type EmailQueueInjector interface{ EmailQueue() chan domain.Email }
-type RouterInjector interface{ Router() *mux.Router }
-type TemplateInjector interface{ Template() *domain.Templates }
-type DebugTimestampInjector interface{ DebugTimestamp() *time.Time }
-type StandingsRepoInjector interface {
-	StandingsRepo() domain.StandingsRepository
-}
-type EntryRepoInjector interface {
-	EntryRepo() domain.EntryRepository
-}
-type EntryPredictionRepoInjector interface {
-	EntryPredictionRepo() domain.EntryPredictionRepository
-}
-type ScoredEntryPredictionRepoInjector interface {
-	ScoredEntryPredictionRepo() domain.ScoredEntryPredictionRepository
-}
-type TokenRepoInjector interface {
-	TokenRepo() domain.TokenRepository
-}
-type SeasonsInjector interface {
-	Seasons() domain.SeasonCollection
-}
-type TeamsInjector interface {
-	Teams() domain.TeamCollection
-}
-type RealmsInjector interface {
-	Realms() domain.RealmCollection
-}
-type ClockInjector interface {
-	Clock() domain.Clock
-}
-type LoggerInjector interface {
-	Logger() domain.Logger
-}
-
 const authCookieName = "PL_AUTH"
 
 // closeBody closes the body of the provided request
@@ -104,12 +48,12 @@ func getRouteParam(r *http.Request, name string, value interface{}) error {
 }
 
 // contextFromRequest extracts data from a given request object and returns an inflated context
-func contextFromRequest(r *http.Request, c *HTTPAppContainer) (context.Context, context.CancelFunc, error) {
+func contextFromRequest(r *http.Request, c *container) (context.Context, context.CancelFunc, error) {
 	ctx, cancel := domain.NewContext()
 
-	config := c.Config()
-	realms := c.Realms()
-	debugTs := c.DebugTimestamp()
+	config := c.config
+	realms := c.realms
+	debugTs := c.debugTs
 
 	// realm name is host (strip port)
 	realmName := stripPort(r.Host)
@@ -183,7 +127,7 @@ func isLoggedIn(r *http.Request) bool {
 }
 
 // newPage creates a new base page from the provided arguments
-func newPage(r *http.Request, c *HTTPAppContainer, title, activePage, bannerTitle string, data interface{}) *view.Base {
+func newPage(r *http.Request, c *container, title, activePage, bannerTitle string, data interface{}) *view.Base {
 	// ignore error because if the realm doesn't exist the other agent methods will prevent core functionality anyway
 	// we only need the realm for populating a couple of trivial attributes which will be the least of our worries if any issues...
 	ctx, cancel, _ := contextFromRequest(r, c)
@@ -199,8 +143,8 @@ func newPage(r *http.Request, c *HTTPAppContainer, title, activePage, bannerTitl
 		SupportEmailPlainText: realm.Contact.EmailSanitised,
 		SupportEmailFormatted: realm.Contact.EmailProper,
 		RealmName:             realm.Name,
-		RunningVersion:        c.Config().RunningVersion,
-		VersionTimestamp:      c.Config().VersionTimestamp,
+		RunningVersion:        c.config.RunningVersion,
+		VersionTimestamp:      c.config.VersionTimestamp,
 		AnalyticsCode:         realm.AnalyticsCode,
 		Data:                  data,
 	}

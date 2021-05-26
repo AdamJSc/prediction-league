@@ -31,7 +31,7 @@ func NewConfigFromEnvPaths(l domain.Logger, paths ...string) (*config, error) {
 
 	// parse config
 	cfg := &config{}
-	if err := envconfig.Process("", &cfg); err != nil {
+	if err := envconfig.Process("", cfg); err != nil {
 		return nil, fmt.Errorf("cannot process env config: %w", err)
 	}
 

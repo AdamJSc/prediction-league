@@ -51,7 +51,7 @@ e.g. `localhost` or `my.sub.domain.com`. See the file itself for an example.
     * `analytics_code`: Google Analytics code for Realm (optional, analytics ignored if left blank)
 
 * The values of these payloads are parsed as `Realm` objects within the main app bootstrap, and subsequently retrievable
-by accessing `Realms().GetByName(realm_name)` on the app's dependency container.
+by accessing `realms.GetByName(realm_name)` on the app's container.
 
 * The default Realm Name when running locally is `localhost`.
 
