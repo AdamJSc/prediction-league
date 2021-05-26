@@ -33,7 +33,7 @@ func main() {
 
 func run(l domain.Logger, cl domain.Clock) error {
 	// setup env and config
-	cfg := domain.MustLoadConfigFromEnvPaths(l, ".env", "infra/app.env")
+	cfg, err := app.LoadConfigFromEnvPaths(l, ".env", "infra/app.env")
 
 	// setup db connection
 	db, err := mysqldb.ConnectAndMigrate(cfg.MySQLURL, cfg.MigrationsURL, l)
@@ -186,7 +186,7 @@ func run(l domain.Logger, cl domain.Clock) error {
 }
 
 type dependencies struct {
-	config                    *domain.Config
+	config                    app.Config
 	emailClient               domain.EmailClient
 	emailQueue                chan domain.Email
 	router                    *mux.Router
@@ -204,7 +204,7 @@ type dependencies struct {
 	logger                    domain.Logger
 }
 
-func (d dependencies) Config() *domain.Config          { return d.config }
+func (d dependencies) Config() app.Config              { return d.config }
 func (d dependencies) EmailClient() domain.EmailClient { return d.emailClient }
 func (d dependencies) EmailQueue() chan domain.Email   { return d.emailQueue }
 func (d dependencies) Router() *mux.Router             { return d.router }

@@ -1,12 +1,11 @@
-package domain
+package app
 
 import (
+	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
-	"log"
+	"prediction-league/service/internal/domain"
 )
-
-// TODO - move config to app package
 
 // Config represents a struct of required config options
 type Config struct {
@@ -21,28 +20,20 @@ type Config struct {
 	MailgunAPIKey        string `envconfig:"MAILGUN_API_KEY" required:"true"`
 }
 
-// MustLoadConfigFromEnvPaths loads provided env paths and instantiates a new default config
-func MustLoadConfigFromEnvPaths(l Logger, paths ...string) *Config {
-	// attempt to load all provided env paths
-	loadEnvFromPaths(l, paths...)
-
-	// ensure that config parses correctly
-	config := &Config{}
-	if err := envconfig.Process("", config); err != nil {
-		log.Fatal(err)
-	}
-
-	if config.PayPalClientID == "" {
-		log.Println("missing config: paypal... entry signup payment step will be skipped...")
-	}
-
-	return config
-}
-
-func loadEnvFromPaths(l Logger, paths ...string) {
+// LoadConfigFromEnvPaths loads provided env paths and instantiates a new default config
+func LoadConfigFromEnvPaths(l domain.Logger, paths ...string) (Config, error) {
+	// attempt to load env vars from all provided paths
 	for _, fpath := range paths {
 		if err := godotenv.Load(fpath); err != nil {
-			l.Infof("could not load environment file: %s: skipping...", fpath)
+			l.Infof("skipping env file '%s': not found", fpath)
 		}
 	}
+
+	// parse config
+	cfg := Config{}
+	if err := envconfig.Process("", &cfg); err != nil {
+		return Config{}, fmt.Errorf("cannot process env config: %w", err)
+	}
+
+	return cfg, nil
 }
