@@ -157,8 +157,7 @@ func (s SeasonCollection) GetByID(seasonID string) (Season, error) {
 		}
 	}
 
-	// TODO - wrap as NotFoundError
-	return Season{}, fmt.Errorf("season id %s: not found", seasonID)
+	return Season{}, NotFoundError{fmt.Errorf("season id %s: not found", seasonID)}
 }
 
 // SeasonIdentifier defines a season identifier for use with the football-data.org API
