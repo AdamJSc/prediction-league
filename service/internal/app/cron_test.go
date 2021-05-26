@@ -49,14 +49,37 @@ func TestNewCronFactory(t *testing.T) {
 		}
 
 		for _, tc := range tt {
-			_, gotErr := NewCronFactory(tc.ea, tc.sa, tc.sepa, tc.ca, tc.sc, tc.tc, tc.rlms, tc.cl, tc.l, fds)
+			cnt := &container{
+				entryAgent:     tc.ea,
+				standingsAgent: tc.sa,
+				sepAgent:       tc.sepa,
+				commsAgent:     tc.ca,
+				seasons:        tc.sc,
+				teams:          tc.tc,
+				realms:         tc.rlms,
+				clock:          tc.cl,
+				logger:         tc.l,
+				ftblDataSrc:    fds,
+			}
+			_, gotErr := NewCronFactory(cnt)
 			if !errors.Is(gotErr, domain.ErrIsNil) {
 				t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
 			}
 		}
 
 		// allow nil fds
-		if _, err := NewCronFactory(ea, sa, sepa, ca, sc, tc, rlms, cl, l, nil); err != nil {
+		cnt := &container{
+			entryAgent:     ea,
+			standingsAgent: sa,
+			sepAgent:       sepa,
+			commsAgent:     ca,
+			seasons:        sc,
+			teams:          tc,
+			realms:         rlms,
+			clock:          cl,
+			logger:         l,
+		}
+		if _, err := NewCronFactory(cnt); err != nil {
 			t.Fatal(err)
 		}
 	})

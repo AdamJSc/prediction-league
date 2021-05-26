@@ -45,8 +45,12 @@ func (c *Client) SendEmail(ctx context.Context, msg domain.Email) error {
 }
 
 // NewClient generates a new Client
-func NewClient(apiKey string) *Client {
+func NewClient(apiKey string) (*Client, error) {
+	if apiKey == "" {
+		return nil, fmt.Errorf("api key: %w", domain.ErrIsEmpty)
+	}
+
 	return &Client{
 		apiKey: apiKey,
-	}
+	}, nil
 }

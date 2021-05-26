@@ -1,19 +1,54 @@
-package domain
+package app
 
 import (
+	"context"
 	"fmt"
 	"github.com/google/uuid"
+	"prediction-league/service/internal/domain"
 	"time"
 )
 
-func GenerateSeedEntries() ([]Entry, error) {
-	entries := []Entry{
+// TODO - implement as Service with Worker interface (Run/Halt)
+
+// Seed runs the seeder for the app startup
+func Seed(cnt *container) error {
+	seeds, err := generateSeedEntries()
+	if err != nil {
+		return fmt.Errorf("cannot generate entries to seed: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	chErr := make(chan error, 1)
+	chDone := make(chan struct{}, 1)
+	go func() {
+		if err := cnt.entryAgent.SeedEntries(ctx, seeds); err != nil {
+			chErr <- err
+		}
+		chDone <- struct{}{}
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			chErr <- ctx.Err()
+		case err := <-chErr:
+			return fmt.Errorf("cannot seed entries: %w", err)
+		case <-chDone:
+			return nil
+		}
+	}
+}
+
+func generateSeedEntries() ([]domain.Entry, error) {
+	entries := []domain.Entry{
 		{
 			EntrantName:     "Adam S",
 			EntrantNickname: "AdamS",
 			EntrantEmail:    "seeded1@example.net",
-			EntryPredictions: []EntryPrediction{
-				NewEntryPrediction([]string{
+			EntryPredictions: []domain.EntryPrediction{
+				domain.NewEntryPrediction([]string{
 					"MCFC",
 					"LFC",
 					"THFC",
@@ -41,8 +76,8 @@ func GenerateSeedEntries() ([]Entry, error) {
 			EntrantName:     "Ben M",
 			EntrantNickname: "BenM",
 			EntrantEmail:    "seeded2@example.net",
-			EntryPredictions: []EntryPrediction{
-				NewEntryPrediction([]string{
+			EntryPredictions: []domain.EntryPrediction{
+				domain.NewEntryPrediction([]string{
 					"MCFC",
 					"LFC",
 					"CFC",
@@ -69,8 +104,8 @@ func GenerateSeedEntries() ([]Entry, error) {
 			EntrantName:     "Chris F",
 			EntrantNickname: "ChrisF",
 			EntrantEmail:    "seeded3@example.net",
-			EntryPredictions: []EntryPrediction{
-				NewEntryPrediction([]string{
+			EntryPredictions: []domain.EntryPrediction{
+				domain.NewEntryPrediction([]string{
 					"MCFC",
 					"THFC",
 					"LFC",
@@ -97,8 +132,8 @@ func GenerateSeedEntries() ([]Entry, error) {
 			EntrantName:     "Dan N",
 			EntrantNickname: "DanN",
 			EntrantEmail:    "seeded4@example.net",
-			EntryPredictions: []EntryPrediction{
-				NewEntryPrediction([]string{
+			EntryPredictions: []domain.EntryPrediction{
+				domain.NewEntryPrediction([]string{
 					"MCFC",
 					"LFC",
 					"THFC",
@@ -125,8 +160,8 @@ func GenerateSeedEntries() ([]Entry, error) {
 			EntrantName:     "Ed T",
 			EntrantNickname: "EdT",
 			EntrantEmail:    "seeded5@example.net",
-			EntryPredictions: []EntryPrediction{
-				NewEntryPrediction([]string{
+			EntryPredictions: []domain.EntryPrediction{
+				domain.NewEntryPrediction([]string{
 					"MCFC",
 					"LFC",
 					"AFC",
@@ -153,8 +188,8 @@ func GenerateSeedEntries() ([]Entry, error) {
 			EntrantName:     "Gary B",
 			EntrantNickname: "GaryB",
 			EntrantEmail:    "seeded6@example.net",
-			EntryPredictions: []EntryPrediction{
-				NewEntryPrediction([]string{
+			EntryPredictions: []domain.EntryPrediction{
+				domain.NewEntryPrediction([]string{
 					"LFC",
 					"MCFC",
 					"THFC",
@@ -181,8 +216,8 @@ func GenerateSeedEntries() ([]Entry, error) {
 			EntrantName:     "Nigel B",
 			EntrantNickname: "NigelB",
 			EntrantEmail:    "seeded7@example.net",
-			EntryPredictions: []EntryPrediction{
-				NewEntryPrediction([]string{
+			EntryPredictions: []domain.EntryPrediction{
+				domain.NewEntryPrediction([]string{
 					"LFC",
 					"MCFC",
 					"AFC",
@@ -209,8 +244,8 @@ func GenerateSeedEntries() ([]Entry, error) {
 			EntrantName:     "Ray G",
 			EntrantNickname: "RayG",
 			EntrantEmail:    "seeded8@example.net",
-			EntryPredictions: []EntryPrediction{
-				NewEntryPrediction([]string{
+			EntryPredictions: []domain.EntryPrediction{
+				domain.NewEntryPrediction([]string{
 					"LFC",
 					"MCFC",
 					"THFC",
@@ -237,8 +272,8 @@ func GenerateSeedEntries() ([]Entry, error) {
 			EntrantName:     "Rich L",
 			EntrantNickname: "RichL",
 			EntrantEmail:    "seeded9@example.net",
-			EntryPredictions: []EntryPrediction{
-				NewEntryPrediction([]string{
+			EntryPredictions: []domain.EntryPrediction{
+				domain.NewEntryPrediction([]string{
 					"MCFC",
 					"LFC",
 					"THFC",
@@ -265,8 +300,8 @@ func GenerateSeedEntries() ([]Entry, error) {
 			EntrantName:     "Tom M",
 			EntrantNickname: "TomM",
 			EntrantEmail:    "seeded10@example.net",
-			EntryPredictions: []EntryPrediction{
-				NewEntryPrediction([]string{
+			EntryPredictions: []domain.EntryPrediction{
+				domain.NewEntryPrediction([]string{
 					"MCFC",
 					"LFC",
 					"THFC",
@@ -293,8 +328,8 @@ func GenerateSeedEntries() ([]Entry, error) {
 			EntrantName:     "Trev H",
 			EntrantNickname: "TrevH",
 			EntrantEmail:    "seede11@example.net",
-			EntryPredictions: []EntryPrediction{
-				NewEntryPrediction([]string{
+			EntryPredictions: []domain.EntryPrediction{
+				domain.NewEntryPrediction([]string{
 					"MCFC",
 					"LFC",
 					"THFC",
@@ -321,7 +356,7 @@ func GenerateSeedEntries() ([]Entry, error) {
 
 	seasonID := "FakeSeason"
 	realmName := "localhost"
-	paymentMethod := EntryPaymentMethodOther
+	paymentMethod := domain.EntryPaymentMethodOther
 	paymentRef := "payment_ref"
 	approvedAt := time.Now()
 
@@ -339,7 +374,7 @@ func GenerateSeedEntries() ([]Entry, error) {
 		e.ID = entryID
 		e.SeasonID = seasonID
 		e.RealmName = realmName
-		e.Status = EntryStatusReady
+		e.Status = domain.EntryStatusReady
 		e.PaymentMethod = &paymentMethod
 		e.PaymentRef = &paymentRef
 		e.ApprovedAt = &approvedAt

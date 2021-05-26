@@ -7,8 +7,8 @@ import (
 	"prediction-league/service/internal/domain"
 )
 
-// Config represents a struct of required config options
-type Config struct {
+// config encapsulate the required options
+type config struct {
 	ServicePort          string `envconfig:"SERVICE_PORT" required:"true"`
 	MySQLURL             string `envconfig:"MYSQL_URL" required:"true"`
 	MigrationsURL        string `envconfig:"MIGRATIONS_URL" required:"true"`
@@ -20,8 +20,8 @@ type Config struct {
 	MailgunAPIKey        string `envconfig:"MAILGUN_API_KEY" required:"true"`
 }
 
-// LoadConfigFromEnvPaths loads provided env paths and instantiates a new default config
-func LoadConfigFromEnvPaths(l domain.Logger, paths ...string) (Config, error) {
+// NewConfigFromEnvPaths loads provided env paths and instantiates a new default config
+func NewConfigFromEnvPaths(l domain.Logger, paths ...string) (*config, error) {
 	// attempt to load env vars from all provided paths
 	for _, fpath := range paths {
 		if err := godotenv.Load(fpath); err != nil {
@@ -30,9 +30,9 @@ func LoadConfigFromEnvPaths(l domain.Logger, paths ...string) (Config, error) {
 	}
 
 	// parse config
-	cfg := Config{}
+	cfg := &config{}
 	if err := envconfig.Process("", &cfg); err != nil {
-		return Config{}, fmt.Errorf("cannot process env config: %w", err)
+		return nil, fmt.Errorf("cannot process env config: %w", err)
 	}
 
 	return cfg, nil

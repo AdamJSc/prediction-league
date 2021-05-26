@@ -9,6 +9,8 @@ import (
 var (
 	// ErrIsNil defines an error that represents a missing argument passed to a constructor function
 	ErrIsNil = errors.New("is nil")
+	// ErrIsEmpty defines an error that represents an empty argument passed to a constructor function
+	ErrIsEmpty = errors.New("is empty")
 	// ErrCurrentTimeFrameIsMissing defines an error representing a missing timeframe
 	ErrCurrentTimeFrameIsMissing = errors.New("current timeframe is missing")
 	// ErrNoMatchingPredictionWindow defines an error representing a no matching prediction windows

@@ -2,17 +2,13 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
-	"github.com/golang-migrate/migrate/v4"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
-	"prediction-league/service/internal/adapters/footballdataorg"
 	"prediction-league/service/internal/adapters/logger"
-	"prediction-league/service/internal/adapters/mailgun"
 	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/domain"
@@ -32,125 +28,38 @@ func main() {
 }
 
 func run(l domain.Logger, cl domain.Clock) error {
-	// setup env and config
-	cfg, err := app.LoadConfigFromEnvPaths(l, ".env", "infra/app.env")
-
-	// setup db connection
-	db, err := mysqldb.ConnectAndMigrate(cfg.MySQLURL, cfg.MigrationsURL, l)
-	if err != nil {
-		switch {
-		case errors.Is(err, migrate.ErrNoChange):
-			l.Info("database migration: no changes")
-		default:
-			return fmt.Errorf("failed to connect and migrate database: %w", err)
-		}
-	}
-	defer func() {
-		if err := db.Close(); err != nil {
-			l.Errorf("cannot close db connection: %s", err.Error())
-		}
-	}()
-
 	// permit flag that provides a debug mode by overriding timestamp for time-sensitive operations
 	ts := flag.String("ts", "", "override timestamp used by time-sensitive operations, in the format yyyymmddhhmmss")
 	flag.Parse()
 
-	er, err := mysqldb.NewEntryRepo(db)
+	// setup env and config
+	cfg, err := app.NewConfigFromEnvPaths(l, ".env", "infra/app.env")
 	if err != nil {
-		return fmt.Errorf("cannot instantiate entry repo: %w", err)
-	}
-	epr, err := mysqldb.NewEntryPredictionRepo(db)
-	if err != nil {
-		return fmt.Errorf("cannot instantiate entry prediction repo: %w", err)
-	}
-	sepr, err := mysqldb.NewScoredEntryPredictionRepo(db)
-	if err != nil {
-		return fmt.Errorf("cannot instantiate scored entry prediction repo: %w", err)
-	}
-	sr, err := mysqldb.NewStandingsRepo(db)
-	if err != nil {
-		return fmt.Errorf("cannot instantiate standings repo: %w", err)
-	}
-	tr, err := mysqldb.NewTokenRepo(db)
-	if err != nil {
-		return fmt.Errorf("cannot instantiate token repo: %w", err)
-	}
-	sc, err := domain.GetSeasonCollection()
-	if err != nil {
-		return fmt.Errorf("cannot instantiate seasons collection: %w", err)
-	}
-	tc := domain.GetTeamCollection()
-	rc, err := domain.GetRealmCollection()
-	if err != nil {
-		return fmt.Errorf("cannot instantiate realm collection: %w", err)
+		return fmt.Errorf("cannot parse config from end: %w", err)
 	}
 
-	chEml := make(chan domain.Email)
-	tpl, err := domain.ParseTemplates("./service/views")
+	// setup container
+	cnt, cleanup, err := app.NewContainer(cfg, l, cl, ts)
 	if err != nil {
-		return fmt.Errorf("cannot parse templates: %w", err)
+		return fmt.Errorf("cannot instantiate container: %w", err)
 	}
 
-	// setup server
-	httpAppContainer := app.NewHTTPAppContainer(dependencies{
-		config:                    cfg,
-		emailClient:               mailgun.NewClient(cfg.MailgunAPIKey),
-		emailQueue:                chEml,
-		router:                    mux.NewRouter(),
-		templates:                 tpl,
-		debugTimestamp:            parseTimeString(ts),
-		standingsRepo:             sr,
-		entryRepo:                 er,
-		entryPredictionRepo:       epr,
-		scoredEntryPredictionRepo: sepr,
-		tokenRepo:                 tr,
-		seasons:                   sc,
-		teams:                     tc,
-		realms:                    rc,
-		clock:                     cl,
-		logger:                    l,
-	})
-
-	ea, err := domain.NewEntryAgent(er, epr, sc)
-	if err != nil {
-		return fmt.Errorf("cannot instantiate entry agent: %w", err)
-	}
-	sa, err := domain.NewStandingsAgent(sr)
-	if err != nil {
-		return fmt.Errorf("cannot instantiate standings agent: %w", err)
-	}
-	sepa, err := domain.NewScoredEntryPredictionAgent(er, epr, sr, sepr)
-	if err != nil {
-		return fmt.Errorf("cannot instantiate scored entry prediction agent: %w", err)
-	}
-	ca, err := domain.NewCommunicationsAgent(er, epr, sr, chEml, tpl, sc, tc, rc)
-	if err != nil {
-		return fmt.Errorf("cannot instantiate communications agent: %w", err)
-	}
-	var fds domain.FootballDataSource
-	if cfg.FootballDataAPIToken != "" {
-		fds, err = footballdataorg.NewClient(cfg.FootballDataAPIToken, tc)
-		if err != nil {
-			return fmt.Errorf("cannot instantiate football data org source: %w", err)
+	// defer cleanup
+	defer func() {
+		if err := cleanup(); err != nil {
+			l.Errorf("cleanup failed: %s", err.Error())
 		}
-	}
+	}()
 
-	seeds, err := domain.GenerateSeedEntries()
-	if err != nil {
-		return fmt.Errorf("cannot generate entries to seed: %w", err)
-	}
-
-	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := ea.SeedEntries(ctxWithTimeout, seeds); err != nil {
-		return fmt.Errorf("cannot seed entries: %w", err)
+	if err := app.Seed(cnt); err != nil {
+		return fmt.Errorf("cannot run seeder: %w", err)
 	}
 
 	app.RegisterRoutes(httpAppContainer)
 
+	// TODO - implement as Service with Worker interface (Run/Halt)
 	// start cron
-	crFac, err := app.NewCronFactory(ea, sa, sepa, ca, sc, tc, rc, cl, l, fds)
+	crFac, err := app.NewCronFactory(cnt)
 	if err != nil {
 		return fmt.Errorf("cannot instantiate cron factory: %w", err)
 	}
@@ -186,7 +95,7 @@ func run(l domain.Logger, cl domain.Clock) error {
 }
 
 type dependencies struct {
-	config                    app.Config
+	config                    *app.Config
 	emailClient               domain.EmailClient
 	emailQueue                chan domain.Email
 	router                    *mux.Router
@@ -204,7 +113,7 @@ type dependencies struct {
 	logger                    domain.Logger
 }
 
-func (d dependencies) Config() app.Config              { return d.config }
+func (d dependencies) Config() *app.Config             { return d.config }
 func (d dependencies) EmailClient() domain.EmailClient { return d.emailClient }
 func (d dependencies) EmailQueue() chan domain.Email   { return d.emailQueue }
 func (d dependencies) Router() *mux.Router             { return d.router }
@@ -226,29 +135,3 @@ func (d dependencies) Teams() domain.TeamCollection      { return d.teams }
 func (d dependencies) Realms() domain.RealmCollection    { return d.realms }
 func (d dependencies) Clock() domain.Clock               { return d.clock }
 func (d dependencies) Logger() domain.Logger             { return d.logger }
-
-func parseTimeString(t *string) *time.Time {
-	if t == nil {
-		return nil
-	}
-
-	timeString := *t
-	if timeString == "" {
-		return nil
-	}
-
-	var (
-		parsed time.Time
-		err    error
-	)
-
-	parsed, err = time.Parse("20060102150405", timeString)
-	if err != nil {
-		parsed, err = time.Parse("20060102", timeString)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	return &parsed
-}

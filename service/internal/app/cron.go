@@ -35,47 +35,50 @@ type CronFactory struct {
 	fds  domain.FootballDataSource
 }
 
-func NewCronFactory(
-	ea *domain.EntryAgent,
-	sa *domain.StandingsAgent,
-	sepa *domain.ScoredEntryPredictionAgent,
-	ca *domain.CommunicationsAgent,
-	sc domain.SeasonCollection,
-	tc domain.TeamCollection,
-	rc domain.RealmCollection,
-	cl domain.Clock,
-	l domain.Logger,
-	fds domain.FootballDataSource,
-) (*CronFactory, error) {
-	if ea == nil {
+func NewCronFactory(cnt *container) (*CronFactory, error) {
+	if cnt == nil {
+		return nil, fmt.Errorf("container: %w", domain.ErrIsNil)
+	}
+	if cnt.entryAgent == nil {
 		return nil, fmt.Errorf("entry agent: %w", domain.ErrIsNil)
 	}
-	if sa == nil {
+	if cnt.standingsAgent == nil {
 		return nil, fmt.Errorf("standings agent: %w", domain.ErrIsNil)
 	}
-	if sepa == nil {
+	if cnt.sepAgent == nil {
 		return nil, fmt.Errorf("scored entry prediction agent: %w", domain.ErrIsNil)
 	}
-	if ca == nil {
+	if cnt.commsAgent == nil {
 		return nil, fmt.Errorf("communications agent: %w", domain.ErrIsNil)
 	}
-	if sc == nil {
+	if cnt.seasons == nil {
 		return nil, fmt.Errorf("season collection: %w", domain.ErrIsNil)
 	}
-	if tc == nil {
+	if cnt.teams == nil {
 		return nil, fmt.Errorf("team collection: %w", domain.ErrIsNil)
 	}
-	if rc == nil {
+	if cnt.realms == nil {
 		return nil, fmt.Errorf("realms: %w", domain.ErrIsNil)
 	}
-	if cl == nil {
+	if cnt.clock == nil {
 		return nil, fmt.Errorf("clock: %w", domain.ErrIsNil)
 	}
-	if l == nil {
+	if cnt.logger == nil {
 		return nil, fmt.Errorf("logger: %w", domain.ErrIsNil)
 	}
 	// do not check fds, allow nil
-	return &CronFactory{ea, sa, sepa, ca, sc, tc, rc, cl, l, fds}, nil
+	return &CronFactory{
+		cnt.entryAgent,
+		cnt.standingsAgent,
+		cnt.sepAgent,
+		cnt.commsAgent,
+		cnt.seasons,
+		cnt.teams,
+		cnt.realms,
+		cnt.clock,
+		cnt.logger,
+		cnt.ftblDataSrc,
+	}, nil
 }
 
 // Make generates our populated cron
