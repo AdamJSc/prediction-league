@@ -18,7 +18,7 @@ func TestNewCronFactory(t *testing.T) {
 		ca := &domain.CommunicationsAgent{}
 		sc := make(domain.SeasonCollection)
 		tc := make(domain.TeamCollection)
-		rlms := make(map[string]domain.Realm)
+		rlms := make(domain.RealmCollection)
 		cl := &domain.RealClock{}
 		l := &logger.Logger{}
 		fds, err := footballdataorg.NewClient("", tc)
@@ -33,7 +33,7 @@ func TestNewCronFactory(t *testing.T) {
 			ca   *domain.CommunicationsAgent
 			sc   domain.SeasonCollection
 			tc   domain.TeamCollection
-			rlms map[string]domain.Realm
+			rlms domain.RealmCollection
 			cl   domain.Clock
 			l    domain.Logger
 		}{
@@ -72,13 +72,13 @@ func TestCronFactory_Make(t *testing.T) {
 	})
 
 	t.Run("must fail if realm season id does not exist", func(t *testing.T) {
-		rlms := map[string]domain.Realm{
+		rc := domain.RealmCollection{
 			"realm-id": {SeasonID: "non-existent-season-id"},
 		}
 
 		sc := domain.SeasonCollection{"season-id": domain.Season{}}
 
-		cf := &CronFactory{rlms: rlms, sc: sc}
+		cf := &CronFactory{rc: rc, sc: sc}
 		wantErrMsg := "cannot retrieve season by id 'non-existent-season-id': season id non-existent-season-id: not found"
 		if _, gotErr := cf.Make(); gotErr == nil || gotErr.Error() != wantErrMsg {
 			t.Fatalf("want err %s, got %+v", wantErrMsg, gotErr)
@@ -86,13 +86,13 @@ func TestCronFactory_Make(t *testing.T) {
 	})
 
 	t.Run("must fail if job cannot be generated", func(t *testing.T) {
-		rlms := map[string]domain.Realm{
+		rc := domain.RealmCollection{
 			"realm-id": {SeasonID: "season-id"},
 		}
 
 		sc := domain.SeasonCollection{"season-id": domain.Season{}}
 
-		cf := &CronFactory{rlms: rlms, sc: sc}
+		cf := &CronFactory{rc: rc, sc: sc}
 		wantErrMsg := "cannot generate job configs: cannot generate new prediction window open job: cannot instantiate prediction window open worker: clock: is nil"
 		if _, gotErr := cf.Make(); gotErr == nil || gotErr.Error() != wantErrMsg {
 			t.Fatalf("want err %s, got %+v", wantErrMsg, gotErr)
@@ -100,7 +100,7 @@ func TestCronFactory_Make(t *testing.T) {
 	})
 
 	t.Run("must produce 4 cron entries when no football data source is provided", func(t *testing.T) {
-		rlms := map[string]domain.Realm{
+		rc := domain.RealmCollection{
 			"realm-1-id": {SeasonID: "season-1-id"},
 			"realm-2-id": {SeasonID: "season-2-id"},
 		}
@@ -125,7 +125,7 @@ func TestCronFactory_Make(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cf := &CronFactory{rlms: rlms, sc: sc, cl: cl, ea: ea, ca: ca, l: l}
+		cf := &CronFactory{rc: rc, sc: sc, cl: cl, ea: ea, ca: ca, l: l}
 		cr, err := cf.Make()
 		if err != nil {
 			t.Fatal(err)
@@ -138,7 +138,7 @@ func TestCronFactory_Make(t *testing.T) {
 	})
 
 	t.Run("must produce 6 cron entries when football data source is provided", func(t *testing.T) {
-		rlms := map[string]domain.Realm{
+		rc := domain.RealmCollection{
 			"realm-1-id": {SeasonID: "season-1-id"},
 			"realm-2-id": {SeasonID: "season-2-id"},
 		}
@@ -172,7 +172,7 @@ func TestCronFactory_Make(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cf := &CronFactory{rlms: rlms, sc: sc, tc: tc, cl: cl, ea: ea, ca: ca, sa: sa, sepa: sepa, l: l, fds: fds}
+		cf := &CronFactory{rc: rc, sc: sc, tc: tc, cl: cl, ea: ea, ca: ca, sa: sa, sepa: sepa, l: l, fds: fds}
 		cr, err := cf.Make()
 		if err != nil {
 			t.Fatal(err)

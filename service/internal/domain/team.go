@@ -25,6 +25,7 @@ func (t TeamCollection) GetByID(teamID string) (Team, error) {
 		}
 	}
 
+	// TODO - wrap as NotFoundError
 	return Team{}, fmt.Errorf("team id %s: not found", teamID)
 }
 

@@ -157,6 +157,7 @@ func (s SeasonCollection) GetByID(seasonID string) (Season, error) {
 		}
 	}
 
+	// TODO - wrap as NotFoundError
 	return Season{}, fmt.Errorf("season id %s: not found", seasonID)
 }
 

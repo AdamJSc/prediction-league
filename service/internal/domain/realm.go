@@ -1,9 +1,7 @@
 package domain
 
 import (
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	"log"
+	"fmt"
 )
 
 // Realm represents a realm in which the system has been configured to run
@@ -33,28 +31,16 @@ type RealmEntryFee struct {
 	Breakdown []string `yaml:"breakdown"`
 }
 
-// mustParseRealmsFromPath parses the realms from the contents of the YAML file at the provided path
-func mustParseRealmsFromPath(yamlPath string) map[string]Realm {
-	contents, err := ioutil.ReadFile(yamlPath)
-	if err != nil {
-		log.Fatal(err)
+// RealmCollection is map of Realm
+type RealmCollection map[string]Realm
+
+// GetByName retrieves a matching Realm from the collection by its name
+func (rc RealmCollection) GetByName(rName string) (Realm, error) {
+	for id, r := range rc {
+		if id == rName {
+			return r, nil
+		}
 	}
 
-	var payload struct {
-		Realms map[string]Realm `yaml:"realms"`
-	}
-
-	// parse file contents
-	if err := yaml.Unmarshal(contents, &payload); err != nil {
-		log.Fatal(err)
-	}
-
-	// populate names of realms with map key
-	for key := range payload.Realms {
-		r := payload.Realms[key]
-		r.Name = key
-		payload.Realms[key] = r
-	}
-
-	return payload.Realms
+	return Realm{}, NotFoundError{fmt.Errorf("realm name %s: not found", rName)}
 }

@@ -80,6 +80,10 @@ func run(l domain.Logger, cl domain.Clock) error {
 		return fmt.Errorf("cannot instantiate seasons collection: %w", err)
 	}
 	tc := domain.GetTeamCollection()
+	rc, err := domain.GetRealmCollection()
+	if err != nil {
+		return fmt.Errorf("cannot instantiate realm collection: %w", err)
+	}
 
 	chEml := make(chan domain.Email)
 	tpl, err := domain.ParseTemplates("./service/views")
@@ -102,6 +106,7 @@ func run(l domain.Logger, cl domain.Clock) error {
 		tokenRepo:                 tr,
 		seasons:                   sc,
 		teams:                     tc,
+		realms:                    rc,
 		clock:                     cl,
 		logger:                    l,
 	})
@@ -118,7 +123,7 @@ func run(l domain.Logger, cl domain.Clock) error {
 	if err != nil {
 		return fmt.Errorf("cannot instantiate scored entry prediction agent: %w", err)
 	}
-	ca, err := domain.NewCommunicationsAgent(cfg, er, epr, sr, chEml, tpl, sc, tc)
+	ca, err := domain.NewCommunicationsAgent(er, epr, sr, chEml, tpl, sc, tc, rc)
 	if err != nil {
 		return fmt.Errorf("cannot instantiate communications agent: %w", err)
 	}
@@ -129,7 +134,6 @@ func run(l domain.Logger, cl domain.Clock) error {
 			return fmt.Errorf("cannot instantiate football data org source: %w", err)
 		}
 	}
-	rlms := cfg.Realms
 
 	seeds, err := domain.GenerateSeedEntries()
 	if err != nil {
@@ -146,7 +150,7 @@ func run(l domain.Logger, cl domain.Clock) error {
 	app.RegisterRoutes(httpAppContainer)
 
 	// start cron
-	crFac, err := app.NewCronFactory(ea, sa, sepa, ca, sc, tc, rlms, cl, l, fds)
+	crFac, err := app.NewCronFactory(ea, sa, sepa, ca, sc, tc, rc, cl, l, fds)
 	if err != nil {
 		return fmt.Errorf("cannot instantiate cron factory: %w", err)
 	}
@@ -195,6 +199,7 @@ type dependencies struct {
 	tokenRepo                 *mysqldb.TokenRepo
 	seasons                   domain.SeasonCollection
 	teams                     domain.TeamCollection
+	realms                    domain.RealmCollection
 	clock                     domain.Clock
 	logger                    domain.Logger
 }
@@ -218,6 +223,7 @@ func (d dependencies) ScoredEntryPredictionRepo() domain.ScoredEntryPredictionRe
 func (d dependencies) TokenRepo() domain.TokenRepository { return d.tokenRepo }
 func (d dependencies) Seasons() domain.SeasonCollection  { return d.seasons }
 func (d dependencies) Teams() domain.TeamCollection      { return d.teams }
+func (d dependencies) Realms() domain.RealmCollection    { return d.realms }
 func (d dependencies) Clock() domain.Clock               { return d.clock }
 func (d dependencies) Logger() domain.Logger             { return d.logger }
 

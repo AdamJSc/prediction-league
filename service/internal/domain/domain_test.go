@@ -22,11 +22,11 @@ import (
 )
 
 var (
-	cfg        *domain.Config
 	db         *sql.DB
 	epr        domain.EntryPredictionRepository
 	er         domain.EntryRepository
-	rlm        *domain.Realm
+	rc         domain.RealmCollection
+	rlm        domain.Realm
 	sepr       domain.ScoredEntryPredictionRepository
 	sr         domain.StandingsRepository
 	sc         domain.SeasonCollection
@@ -120,7 +120,9 @@ func TestMain(m *testing.M) {
 	}
 
 	rlm = newTestRealm()
-	cfg = newTestConfig(*rlm)
+	rc = domain.RealmCollection{
+		rlm.Name: rlm,
+	}
 
 	// set testSeason to first entity in season collection
 	tc = domain.GetTeamCollection()
@@ -374,16 +376,8 @@ func insertScoredEntryPrediction(t *testing.T, scoredEntryPrediction domain.Scor
 	return scoredEntryPrediction
 }
 
-func newTestConfig(r domain.Realm) *domain.Config {
-	return &domain.Config{
-		Realms: map[string]domain.Realm{
-			r.Name: r,
-		},
-	}
-}
-
-func newTestRealm() *domain.Realm {
-	return &domain.Realm{
+func newTestRealm() domain.Realm {
+	return domain.Realm{
 		Name:     "TEST_REALM",
 		Origin:   "http://test_realm.org",
 		PIN:      "12345",

@@ -20,7 +20,6 @@ const (
 
 // CommunicationsAgent defines the behaviours for issuing communications
 type CommunicationsAgent struct {
-	cfg *Config
 	er  EntryRepository
 	epr EntryPredictionRepository
 	sr  StandingsRepository
@@ -28,6 +27,7 @@ type CommunicationsAgent struct {
 	tpl *Templates
 	sc  SeasonCollection
 	tc  TeamCollection
+	rc  RealmCollection
 }
 
 // IssueNewEntryEmail generates a "new entry" email for the provided Entry and pushes it to the send queue
@@ -44,14 +44,14 @@ func (c *CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *Entry
 		return ValidationError{Reasons: []string{"invalid payment details"}}
 	}
 
-	realm, ok := c.cfg.Realms[entry.RealmName]
-	if !ok {
-		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
+	realm, err := c.rc.GetByName(entry.RealmName)
+	if err != nil {
+		return NotFoundError{fmt.Errorf("cannot get realm with id '%s': %w", entry.RealmName, err)}
 	}
 
 	season, err := c.sc.GetByID(entry.SeasonID)
 	if err != nil {
-		return NotFoundError{err}
+		return NotFoundError{fmt.Errorf("cannot get season with id '%s': %w", entry.SeasonID, err)}
 	}
 
 	d := NewEntryEmailData{
@@ -87,14 +87,14 @@ func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep S
 		return err
 	}
 
-	realm, ok := c.cfg.Realms[entry.RealmName]
-	if !ok {
-		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
+	realm, err := c.rc.GetByName(entry.RealmName)
+	if err != nil {
+		return NotFoundError{fmt.Errorf("cannot get realm with id '%s': %w", entry.RealmName, err)}
 	}
 
 	season, err := c.sc.GetByID(entry.SeasonID)
 	if err != nil {
-		return NotFoundError{err}
+		return NotFoundError{fmt.Errorf("cannot get season with id '%s': %w", entry.SeasonID, err)}
 	}
 
 	rankingsAsStrings, err := TeamRankingsAsStrings(sep.Rankings, standings.Rankings, c.tc)
@@ -135,14 +135,14 @@ func (c *CommunicationsAgent) IssueShortCodeResetBeginEmail(_ context.Context, e
 		return InternalError{errors.New("no entry provided")}
 	}
 
-	realm, ok := c.cfg.Realms[entry.RealmName]
-	if !ok {
-		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
+	realm, err := c.rc.GetByName(entry.RealmName)
+	if err != nil {
+		return NotFoundError{fmt.Errorf("cannot get realm with id '%s': %w", entry.RealmName, err)}
 	}
 
 	season, err := c.sc.GetByID(entry.SeasonID)
 	if err != nil {
-		return NotFoundError{err}
+		return NotFoundError{fmt.Errorf("cannot get season with id '%s': %w", entry.SeasonID, err)}
 	}
 
 	d := ShortCodeResetBeginEmail{
@@ -170,14 +170,14 @@ func (c *CommunicationsAgent) IssueShortCodeResetCompleteEmail(_ context.Context
 		return InternalError{errors.New("no entry provided")}
 	}
 
-	realm, ok := c.cfg.Realms[entry.RealmName]
-	if !ok {
-		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
+	realm, err := c.rc.GetByName(entry.RealmName)
+	if err != nil {
+		return NotFoundError{fmt.Errorf("cannot get realm with id '%s': %w", entry.RealmName, err)}
 	}
 
 	season, err := c.sc.GetByID(entry.SeasonID)
 	if err != nil {
-		return NotFoundError{err}
+		return NotFoundError{fmt.Errorf("cannot get season with id '%s': %w", entry.SeasonID, err)}
 	}
 
 	d := ShortCodeResetCompleteEmail{
@@ -206,14 +206,14 @@ func (c *CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, 
 		return InternalError{errors.New("no entry provided")}
 	}
 
-	realm, ok := c.cfg.Realms[entry.RealmName]
-	if !ok {
-		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
+	realm, err := c.rc.GetByName(entry.RealmName)
+	if err != nil {
+		return NotFoundError{fmt.Errorf("cannot get realm with id '%s': %w", entry.RealmName, err)}
 	}
 
 	season, err := c.sc.GetByID(entry.SeasonID)
 	if err != nil {
-		return NotFoundError{err}
+		return NotFoundError{fmt.Errorf("cannot get season with id '%s': %w", entry.SeasonID, err)}
 	}
 
 	window, err := GenerateWindowDataFromSequencedTimeFrame(tf)
@@ -253,14 +253,14 @@ func (c *CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Contex
 		return InternalError{errors.New("no entry provided")}
 	}
 
-	realm, ok := c.cfg.Realms[entry.RealmName]
-	if !ok {
-		return NotFoundError{fmt.Errorf("realm does not exist: %s", entry.RealmName)}
+	realm, err := c.rc.GetByName(entry.RealmName)
+	if err != nil {
+		return NotFoundError{fmt.Errorf("cannot get realm with id '%s': %w", entry.RealmName, err)}
 	}
 
 	season, err := c.sc.GetByID(entry.SeasonID)
 	if err != nil {
-		return NotFoundError{err}
+		return NotFoundError{fmt.Errorf("cannot get season with id '%s': %w", entry.SeasonID, err)}
 	}
 
 	window, err := GenerateWindowDataFromSequencedTimeFrame(tf)
@@ -338,10 +338,8 @@ func (c *CommunicationsAgent) getStandingsFromScoredEntryPrediction(ctx context.
 }
 
 // NewCommunicationsAgent returns a new CommunicationsAgent using the provided repositories
-func NewCommunicationsAgent(cfg *Config, er EntryRepository, epr EntryPredictionRepository, sr StandingsRepository, eml chan Email, tpl *Templates, sc SeasonCollection, tc TeamCollection) (*CommunicationsAgent, error) {
+func NewCommunicationsAgent(er EntryRepository, epr EntryPredictionRepository, sr StandingsRepository, eml chan Email, tpl *Templates, sc SeasonCollection, tc TeamCollection, rc RealmCollection) (*CommunicationsAgent, error) {
 	switch {
-	case cfg == nil:
-		return nil, fmt.Errorf("config: %w", ErrIsNil)
 	case er == nil:
 		return nil, fmt.Errorf("entry repository: %w", ErrIsNil)
 	case epr == nil:
@@ -356,18 +354,11 @@ func NewCommunicationsAgent(cfg *Config, er EntryRepository, epr EntryPrediction
 		return nil, fmt.Errorf("season collection: %w", ErrIsNil)
 	case tc == nil:
 		return nil, fmt.Errorf("team collection: %w", ErrIsNil)
+	case rc == nil:
+		return nil, fmt.Errorf("realm collection: %w", ErrIsNil)
 	}
 
-	return &CommunicationsAgent{
-		cfg: cfg,
-		er:  er,
-		epr: epr,
-		sr:  sr,
-		eml: eml,
-		tpl: tpl,
-		sc:  sc,
-		tc:  tc,
-	}, nil
+	return &CommunicationsAgent{er, epr, sr, eml, tpl, sc, tc, rc}, nil
 }
 
 // GenerateWindowDataFromSequencedTimeFrame generates an email WindowData object from the provided SequencedTimeFrame

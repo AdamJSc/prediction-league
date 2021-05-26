@@ -29,7 +29,7 @@ type CronFactory struct {
 	ca   *domain.CommunicationsAgent
 	sc   domain.SeasonCollection
 	tc   domain.TeamCollection
-	rlms map[string]domain.Realm
+	rc   domain.RealmCollection
 	cl   domain.Clock
 	l    domain.Logger
 	fds  domain.FootballDataSource
@@ -42,7 +42,7 @@ func NewCronFactory(
 	ca *domain.CommunicationsAgent,
 	sc domain.SeasonCollection,
 	tc domain.TeamCollection,
-	rlms map[string]domain.Realm,
+	rc domain.RealmCollection,
 	cl domain.Clock,
 	l domain.Logger,
 	fds domain.FootballDataSource,
@@ -65,7 +65,7 @@ func NewCronFactory(
 	if tc == nil {
 		return nil, fmt.Errorf("team collection: %w", domain.ErrIsNil)
 	}
-	if rlms == nil {
+	if rc == nil {
 		return nil, fmt.Errorf("realms: %w", domain.ErrIsNil)
 	}
 	if cl == nil {
@@ -75,14 +75,14 @@ func NewCronFactory(
 		return nil, fmt.Errorf("logger: %w", domain.ErrIsNil)
 	}
 	// do not check fds, allow nil
-	return &CronFactory{ea, sa, sepa, ca, sc, tc, rlms, cl, l, fds}, nil
+	return &CronFactory{ea, sa, sepa, ca, sc, tc, rc, cl, l, fds}, nil
 }
 
 // Make generates our populated cron
 func (c *CronFactory) Make() (*cron.Cron, error) {
 	// get unique season IDs for all realms
 	sIDs := make(map[string]struct{})
-	for _, rlm := range c.rlms {
+	for _, rlm := range c.rc {
 		sIDs[rlm.SeasonID] = struct{}{}
 	}
 

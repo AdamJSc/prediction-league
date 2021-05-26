@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"html/template"
 	"log"
@@ -31,6 +30,7 @@ type DependencyInjector interface {
 	TokenRepoInjector
 	SeasonsInjector
 	TeamsInjector
+	RealmsInjector
 	ClockInjector
 	LoggerInjector
 }
@@ -61,6 +61,9 @@ type SeasonsInjector interface {
 }
 type TeamsInjector interface {
 	Teams() domain.TeamCollection
+}
+type RealmsInjector interface {
+	Realms() domain.RealmCollection
 }
 type ClockInjector interface {
 	Clock() domain.Clock
@@ -105,15 +108,16 @@ func contextFromRequest(r *http.Request, c *HTTPAppContainer) (context.Context, 
 	ctx, cancel := domain.NewContext()
 
 	config := c.Config()
+	realms := c.Realms()
 	debugTs := c.DebugTimestamp()
 
 	// realm name is host (strip port)
 	realmName := stripPort(r.Host)
 
 	// see if we can find this realm in our config
-	realm, ok := config.Realms[realmName]
-	if !ok {
-		return nil, nil, errors.New("realm not configured")
+	realm, err := realms.GetByName(realmName)
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot get realm with id '%s': %w", realmName, err)
 	}
 
 	ctxRealm := domain.RealmFromContext(ctx)

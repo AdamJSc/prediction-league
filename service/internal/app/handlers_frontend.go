@@ -203,7 +203,7 @@ func frontendShortCodeResetBeginHandler(c *HTTPAppContainer) func(w http.Respons
 		if err != nil {
 			internalError(err).writeTo(w)
 		}
-		commsAgent, err := domain.NewCommunicationsAgent(c.Config(), c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template(), c.Seasons(), c.Teams())
+		commsAgent, err := domain.NewCommunicationsAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template(), c.Seasons(), c.Teams(), c.Realms())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return
@@ -298,7 +298,7 @@ func frontendShortCodeResetCompleteHandler(c *HTTPAppContainer) func(w http.Resp
 		if err != nil {
 			internalError(err).writeTo(w)
 		}
-		commsAgent, err := domain.NewCommunicationsAgent(c.Config(), c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template(), c.Seasons(), c.Teams())
+		commsAgent, err := domain.NewCommunicationsAgent(c.EntryRepo(), c.EntryPredictionRepo(), c.StandingsRepo(), c.EmailQueue(), c.Template(), c.Seasons(), c.Teams(), c.Realms())
 		if err != nil {
 			internalError(err).writeTo(w)
 			return

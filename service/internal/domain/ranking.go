@@ -28,6 +28,8 @@ type Ranking struct {
 // RankingCollection defines our collection of Rankings
 type RankingCollection []Ranking
 
+// TODO - change pointer receiver type
+
 // GetIDs retrieves just the IDs of all Rankings in the RankingCollection
 func (r *RankingCollection) GetIDs() []string {
 	var ids []string
@@ -46,6 +48,7 @@ func (r *RankingCollection) GetByID(id string) (*Ranking, error) {
 		}
 	}
 
+	// TODO - wrap as NotFoundError
 	return nil, fmt.Errorf("ranking id %s: not found", id)
 }
 
