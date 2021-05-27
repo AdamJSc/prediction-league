@@ -31,6 +31,11 @@ func (l *Logger) Infof(msg string, a ...interface{}) {
 	l.w.Write([]byte(l.prefixMsgArgs(prefixInfo, msg, a...)))
 }
 
+// Info implements domain.Logger
+func (l *Logger) Error(msg string) {
+	l.w.Write([]byte(l.prefixMsgArgs(prefixError, msg)))
+}
+
 // Errorf implements domain.Logger
 func (l *Logger) Errorf(msg string, a ...interface{}) {
 	l.w.Write([]byte(l.prefixMsgArgs(prefixError, msg, a...)))
@@ -57,7 +62,7 @@ func NewLogger(w io.Writer, cl domain.Clock) (*Logger, error) {
 // getCallerRef returns the line and filename of the function that called an exported logger method
 func getCallerRef() string {
 	// TODO - update file name
-	_, fpath, line, ok := runtime.Caller(4)
+	_, fpath, line, ok := runtime.Caller(3)
 	if !ok {
 		return ""
 	}
