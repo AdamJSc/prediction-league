@@ -86,11 +86,9 @@ func NewService(name string, toSecs int, l domain.Logger) (*service, error) {
 		return nil, fmt.Errorf("logger: %w", domain.ErrIsNil)
 	}
 
-	return &service{
-		name:  name,
-		grace: time.Duration(toSecs) * time.Second,
-		l:     l,
-	}, nil
+	grace := time.Duration(toSecs) * time.Second
+
+	return &service{name, grace, l}, nil
 }
 
 // Component represents the behaviour for a runnable service component

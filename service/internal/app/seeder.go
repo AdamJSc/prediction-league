@@ -8,8 +8,6 @@ import (
 	"time"
 )
 
-// TODO - implement as Service with Worker interface (Run/Halt)
-
 // Seed runs the seeder for the app startup
 func Seed(cnt *container) error {
 	seeds, err := generateSeedEntries()

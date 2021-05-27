@@ -47,13 +47,12 @@ func run(l domain.Logger, cl domain.Clock) error {
 		}
 	}()
 
+	// TODO - implement as Service with Component interface (Run/Halt)
 	if err := app.Seed(cnt); err != nil {
 		return fmt.Errorf("cannot run seeder: %w", err)
 	}
 
-	app.RegisterRoutes(cnt)
-
-	// TODO - implement as Service with Worker interface (Run/Halt)
+	// TODO - implement as Service with Component interface (Run/Halt)
 	// start cron
 	crFac, err := app.NewCronFactory(cnt)
 	if err != nil {
@@ -65,8 +64,11 @@ func run(l domain.Logger, cl domain.Clock) error {
 	}
 	cr.Start()
 
-	// setup http server process
-	httpServer := app.NewServer(cnt)
+	// setup components
+	cmpServer, err := app.NewHTTPServer(cnt, l)
+	if err != nil {
+		return fmt.Errorf("cannot instantiate service component: http server: %w", err)
+	}
 
 	// setup email queue runner
 	emailQueueRunner, err := app.NewEmailQueueRunner(cnt)
@@ -80,7 +82,7 @@ func run(l domain.Logger, cl domain.Clock) error {
 	}
 	svc.MustRun(
 		context.Background(),
-		httpServer,
+		cmpServer,
 		emailQueueRunner,
 	)
 

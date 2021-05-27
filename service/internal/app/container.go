@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang-migrate/migrate/v4"
-	"github.com/gorilla/mux"
 	"prediction-league/service/internal/adapters/footballdataorg"
 	"prediction-league/service/internal/adapters/mailgun"
 	"prediction-league/service/internal/adapters/mysqldb"
@@ -29,7 +28,6 @@ type container struct {
 	emailClient    domain.EmailClient
 	emailQueue     chan domain.Email
 	ftblDataSrc    domain.FootballDataSource
-	router         *mux.Router
 	debugTs        *time.Time
 	logger         domain.Logger
 	clock          domain.Clock
@@ -68,9 +66,6 @@ func NewContainer(cfg *config, l domain.Logger, cl domain.Clock, rawTs *string) 
 			return nil, nil, fmt.Errorf("cannot instantiate mailgun client: %w", err)
 		}
 	}
-
-	// new router
-	rtr := mux.NewRouter()
 
 	// TODO - replace with clock usage
 	debugTs, err := parseTimeString(rawTs)
@@ -162,7 +157,6 @@ func NewContainer(cfg *config, l domain.Logger, cl domain.Clock, rawTs *string) 
 		emlCl,
 		chEml,
 		fds,
-		rtr,
 		debugTs,
 		l,
 		cl,
