@@ -67,6 +67,10 @@ func getCallerRef() string {
 		return ""
 	}
 	parts := strings.Split(fpath, string(os.PathSeparator))
+	fdir := ""
 	fname := parts[len(parts)-1]
-	return fmt.Sprintf("[%s:%d] ", fname, line)
+	if len(parts) >= 2 {
+		fdir = parts[len(parts)-2] + string(os.PathSeparator)
+	}
+	return fmt.Sprintf("[%s%s:%d] ", fdir, fname, line)
 }
