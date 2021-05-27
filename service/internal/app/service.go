@@ -3,46 +3,33 @@ package app
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
-	"strings"
+	"prediction-league/service/internal/domain"
 	"sync"
 	"syscall"
 	"time"
 )
 
-// Service represents the minimal information required to define a working service.
-type Service struct {
-	// Name represents the name of the service, typically the same as the github repository.
-	Name string `json:"name"`
-	// Type represents the type of the service, eg. service or aggregator.
-	Type string `json:"type"`
-	// Version represents the latest version or SVC tag of the service.
-	Version string `json:"version"`
-	// Revision represents the SVC revision or commit hash of the service.
-	Revision string `json:"revision"`
-
-	// GracePeriod represents the duration workers have to clean up before the process gets killed.
-	GracePeriod time.Duration `json:"grace_period"`
+// service represents the minimal information required to define a working service.
+type service struct {
+	name  string
+	grace time.Duration
+	l     domain.Logger
 }
 
-// MustRun will start the given service workers and block block indefinitely, until interupted.
-// The process with an appropriate status code.
-func (s *Service) MustRun(ctx context.Context, workers ...Worker) {
-	os.Exit(s.Run(ctx, workers...))
+// MustRun will start the given service workers and block indefinitely, until interrupted.
+// The process exits with an appropriate status code
+func (s *service) MustRun(ctx context.Context, cmps ...Component) {
+	os.Exit(s.Run(ctx, cmps...))
 }
 
-// Run will start the given service workers and block block indefinitely, until interupted.
-func (s *Service) Run(ctx context.Context, workers ...Worker) int {
+// Run will start the given service workers and block indefinitely, until interrupted.
+func (s *service) Run(ctx context.Context, cmps ...Component) int {
 	const fail int = 1
-	nWorkers := len(workers)
-	if nWorkers < 1 {
-		log.Println("need at least 1 service worker")
-		return fail
-	}
-	if err := s.validate(); err != nil {
-		log.Println(err)
+	nCmps := len(cmps)
+	if nCmps < 1 {
+		s.l.Error("need at least 1 service component")
 		return fail
 	}
 	var (
@@ -50,84 +37,72 @@ func (s *Service) Run(ctx context.Context, workers ...Worker) int {
 		completed    <-chan int
 		done, cancel func()
 	)
-	ctx, cancelled, cancel = contextWithSignals(ctx)
-	completed, cancelled, done = waitWithTimeout(nWorkers, cancelled, s.grace())
+	ctx, cancelled, cancel = contextWithSignals(ctx, s.l)
+	completed, cancelled, done = waitWithTimeout(nCmps, cancelled, s.grace)
 
-	var run = func(ctx context.Context, worker Worker, done, cancel func()) {
-		if err := worker.Run(ctx); err != nil {
-			log.Println("service errored:", err)
+	var run = func(ctx context.Context, cmp Component, done, cancel func()) {
+		if err := cmp.Run(ctx); err != nil {
+			s.l.Errorf("failed to run component: %s", err.Error())
 			go cancel()
 		}
 		done()
 	}
-	var halt = func(ctx context.Context, worker Worker) {
-		if err := worker.Halt(ctx); err != nil {
-			log.Println("service halted:", err)
+	var halt = func(ctx context.Context, cmp Component) {
+		if err := cmp.Halt(ctx); err != nil {
+			s.l.Errorf("failed to halt component: %s", err.Error())
 		}
 	}
 
-	log.Printf("starting %s: %s", s.Type, s.name())
+	s.l.Infof("starting service: %s", s.name)
 
-	for _, worker := range workers {
-		go run(ctx, worker, done, cancel)
+	for _, cmp := range cmps {
+		go run(ctx, cmp, done, cancel)
 	}
 	for {
 		select {
 		case <-cancelled:
-			for _, worker := range workers {
-				go halt(ctx, worker)
+			for _, cmp := range cmps {
+				go halt(ctx, cmp)
 			}
 		case code := <-completed:
 			message := "shutdown gracefully..."
 			if code > 0 {
 				message = "failed to shutdown gracefully: killing!"
 			}
-			log.Println(message)
+			s.l.Info(message)
 			return code
 		}
 	}
 }
 
-func (s *Service) validate() error {
-	if s.Name == "" || s.Type == "" {
-		return fmt.Errorf("cannot start without a name or type")
+func NewService(name string, toSecs int, l domain.Logger) (*service, error) {
+	if name == "" {
+		return nil, fmt.Errorf("name: %w", domain.ErrIsEmpty)
 	}
-	return nil
+	if toSecs == 0 {
+		return nil, fmt.Errorf("timeout: %w", domain.ErrIsEmpty)
+	}
+	if l == nil {
+		return nil, fmt.Errorf("logger: %w", domain.ErrIsNil)
+	}
+
+	return &service{
+		name:  name,
+		grace: time.Duration(toSecs) * time.Second,
+		l:     l,
+	}, nil
 }
 
-func (s *Service) name() string {
-	var w strings.Builder
-
-	w.WriteString(s.Name)
-
-	if len(s.Revision) > 5 {
-		w.WriteString(" (" + s.Revision[0:6] + ")")
-	}
-
-	if s.Version != "" {
-		w.WriteString(" " + s.Version)
-	}
-	return w.String()
-}
-
-func (s *Service) grace() time.Duration {
-	grace := s.GracePeriod
-	if grace == 0 {
-		grace = time.Second * 5
-	}
-	return grace
-}
-
-// Worker represents the behaviour for a service worker.
-type Worker interface {
-	// Run should run start processing the worker and be a blocking operation.
+// Component represents the behaviour for a runnable service component
+type Component interface {
+	// Run should run start processing the component and be a blocking operation
 	Run(context.Context) error
-	// Halt should tell the worker to stop doing work.
+	// Halt should tell the worker to stop doing work
 	Halt(context.Context) error
 }
 
 // contextWithSignals creates a new instance of signal context.
-func contextWithSignals(ctx context.Context) (context.Context, <-chan int, context.CancelFunc) {
+func contextWithSignals(ctx context.Context, l domain.Logger) (context.Context, <-chan int, context.CancelFunc) {
 	var cancelCtx context.CancelFunc
 	ctx, cancelCtx = context.WithCancel(ctx)
 
@@ -146,7 +121,7 @@ func contextWithSignals(ctx context.Context) (context.Context, <-chan int, conte
 
 	go func() {
 		sig := <-sigs
-		log.Printf("received signal: %s", sig)
+		l.Infof("received signal: %s", sig)
 		cancel()
 	}()
 

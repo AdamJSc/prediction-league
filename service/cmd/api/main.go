@@ -74,10 +74,9 @@ func run(l domain.Logger, cl domain.Clock) error {
 		return fmt.Errorf("cannot instantiate email queue runner: %w", err)
 	}
 
-	// run service
-	svc := &app.Service{
-		Name: "prediction-league",
-		Type: "service",
+	svc, err := app.NewService("prediction-league", 5, l)
+	if err != nil {
+		return fmt.Errorf("cannot instantiate service: %w", err)
 	}
 	svc.MustRun(
 		context.Background(),
