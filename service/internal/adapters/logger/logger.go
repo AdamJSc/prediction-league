@@ -62,7 +62,6 @@ func NewLogger(w io.Writer, cl domain.Clock) (*Logger, error) {
 
 // getCallerRef returns the line and filename of the function that called an exported logger method
 func getCallerRef() string {
-	// TODO - update file name
 	_, fpath, line, ok := runtime.Caller(3)
 	if !ok {
 		return ""

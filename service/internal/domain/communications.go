@@ -537,3 +537,26 @@ func (i *InMemEmailQueue) Close() error {
 func NewInMemEmailQueue() *InMemEmailQueue {
 	return &InMemEmailQueue{ch: make(chan Email, 1)}
 }
+
+// EmailClient defines the interface for our email client
+type EmailClient interface {
+	SendEmail(ctx context.Context, em Email) error
+}
+
+// LoggerEmailClient provides an EmailClient implementation that logs details of a sent email
+type LoggerEmailClient struct {
+	l Logger
+}
+
+// SendEmail implements EmailClient
+func (l *LoggerEmailClient) SendEmail(_ context.Context, em Email) error {
+	l.l.Infof("sent email: %+v", em)
+	return nil
+}
+
+func NewLoggerEmailClient(l Logger) (*LoggerEmailClient, error) {
+	if l == nil {
+		return nil, fmt.Errorf("logger: %w", ErrIsNil)
+	}
+	return &LoggerEmailClient{l}, nil
+}

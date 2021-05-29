@@ -57,13 +57,20 @@ func NewContainer(cfg *config, l domain.Logger, cl domain.Clock, rawTs *string) 
 	// instantiate email queue
 	emlQ := domain.NewInMemEmailQueue()
 
-	// TODO - replace with alt domain.EmailClient if api key is missing
 	// instantiate email client
 	var emlCl domain.EmailClient
-	if cfg.MailgunAPIKey != "" {
+	switch {
+	case cfg.MailgunAPIKey != "":
+		l.Info("mailgun client credentials found...")
 		emlCl, err = mailgun.NewClient(cfg.MailgunAPIKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("cannot instantiate mailgun client: %w", err)
+			return nil, nil, fmt.Errorf("cannot instantiate mailgun email client: %w", err)
+		}
+	default:
+		l.Info("missing mailgun client credentials: transactional email content will be printed to log...")
+		emlCl, err = domain.NewLoggerEmailClient(l)
+		if err != nil {
+			return nil, nil, fmt.Errorf("cannot instantiate logger email client: %w", err)
 		}
 	}
 

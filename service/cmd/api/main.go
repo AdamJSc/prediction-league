@@ -24,6 +24,7 @@ func main() {
 }
 
 func run(l domain.Logger, cl domain.Clock) error {
+	// TODO - replace with clock usage
 	// permit flag that provides a debug mode by overriding timestamp for time-sensitive operations
 	ts := flag.String("ts", "", "override timestamp used by time-sensitive operations, in the format yyyymmddhhmmss")
 	flag.Parse()

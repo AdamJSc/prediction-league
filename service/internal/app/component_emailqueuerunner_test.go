@@ -19,28 +19,24 @@ func TestNewEmailQueueRunner(t *testing.T) {
 		l := &logger.Logger{}
 
 		tt := []struct {
-			emlQ domain.EmailQueue
-			l    domain.Logger
+			emlCl domain.EmailClient
+			emlQ  domain.EmailQueue
+			l     domain.Logger
 		}{
-			{nil, l},
-			{q, nil},
+			{nil, q, l},
+			{mg, nil, l},
+			{mg, q, nil},
 		}
 
 		for _, tc := range tt {
-			cnt := &container{emailClient: mg, emailQueue: tc.emlQ, logger: tc.l}
+			cnt := &container{emailClient: tc.emlCl, emailQueue: tc.emlQ, logger: tc.l}
 			if _, gotErr := NewEmailQueueRunner(cnt); !errors.Is(gotErr, domain.ErrIsNil) {
 				t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
 			}
 		}
 
-		// accept nil email client
-		cnt := &container{emailClient: nil, emailQueue: q, logger: l}
-		if _, gotErr := NewEmailQueueRunner(cnt); gotErr != nil {
-			t.Fatalf("want nil err, got %s (%T)", gotErr, gotErr)
-		}
-
 		// want no error
-		cnt = &container{emailClient: mg, emailQueue: q, logger: l}
+		cnt := &container{emailClient: mg, emailQueue: q, logger: l}
 		emlQ, err := NewEmailQueueRunner(cnt)
 		if err != nil {
 			t.Fatalf("want nil err, got %s (%T)", err, err)

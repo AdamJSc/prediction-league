@@ -18,17 +18,7 @@ type emailQueueRunner struct {
 func (e *emailQueueRunner) Run(_ context.Context) error {
 	e.l.Info("starting email queue runner...")
 
-	if e.emlCl == nil {
-		e.l.Info("missing email client: transactional email content will be printed to log...")
-	}
-
 	for msg := range e.emlQ.Read() {
-		if e.emlCl == nil {
-			// email client config is missing so just print to the logs instead
-			e.l.Infof("email on queue: %+v", msg)
-			continue
-		}
-
 		go func(em domain.Email) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 			defer cancel()
@@ -54,6 +44,9 @@ func (e *emailQueueRunner) Halt(context.Context) error {
 func NewEmailQueueRunner(cnt *container) (*emailQueueRunner, error) {
 	if cnt == nil {
 		return nil, fmt.Errorf("container: %w", domain.ErrIsNil)
+	}
+	if cnt.emailClient == nil {
+		return nil, fmt.Errorf("email client: %w", domain.ErrIsNil)
 	}
 	if cnt.emailQueue == nil {
 		return nil, fmt.Errorf("email queue: %w", domain.ErrIsNil)

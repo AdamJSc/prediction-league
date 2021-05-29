@@ -410,3 +410,12 @@ func checkStringPtrMatch(t *testing.T, exp *string, got *string) {
 		expectedGot(t, *exp, *got)
 	}
 }
+
+type mockClock struct {
+	t time.Time
+	domain.Clock
+}
+
+func (m *mockClock) Now() time.Time {
+	return m.t
+}

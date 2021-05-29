@@ -2,11 +2,13 @@ package domain_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	gocmp "github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"gotest.tools/assert/cmp"
+	"prediction-league/service/internal/adapters/logger"
 	"prediction-league/service/internal/domain"
 	"testing"
 	"time"
@@ -1555,4 +1557,77 @@ func mustExecuteTemplate(t *testing.T, templates *domain.Templates, templateName
 	}
 
 	return buf.String()
+}
+
+func TestNewLoggerEmailClient(t *testing.T) {
+	t.Run("passing nil must return expected error", func(t *testing.T) {
+		l := &logger.Logger{}
+
+		if _, gotErr := domain.NewLoggerEmailClient(nil); !errors.Is(gotErr, domain.ErrIsNil) {
+			t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+		}
+
+		emlCl, err := domain.NewLoggerEmailClient(l)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if emlCl == nil {
+			t.Fatal("want non-empty logger email client, got nil")
+		}
+	})
+}
+
+func TestLoggerEmailClient_SendEmail(t *testing.T) {
+	t.Run("happy path must log the expected output", func(t *testing.T) {
+		loc, err := time.LoadLocation("Europe/London")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		ts := time.Date(2018, 5, 26, 14, 0, 0, 0, loc)
+		cl := &mockClock{t: ts}
+		buf := &bytes.Buffer{}
+
+		l, err := logger.NewLogger(buf, cl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		emCl, err := domain.NewLoggerEmailClient(l)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		em := domain.Email{
+			From: domain.Identity{
+				Name:    "Paul Mc",
+				Address: "Bass Town",
+			},
+			To: domain.Identity{
+				Name:    "John L",
+				Address: "Sunglassesville",
+			},
+			SenderDomain: "bands.liverpool.net",
+			Subject:      "Cavern Bar",
+			PlainText:    "We're out of lime cordial, can you pick some up?",
+		}
+		if err := emCl.SendEmail(context.Background(), em); err != nil {
+			t.Fatal(err)
+		}
+
+		wantOutput := "2018-05-26T14:00:00+01:00 INFO: [domain/communications.go:553] sent email: {" +
+			"From:{Name:Paul Mc Address:Bass Town} " +
+			"To:{Name:John L Address:Sunglassesville} " +
+			"ReplyTo:{Name: Address:} " +
+			"SenderDomain:bands.liverpool.net " +
+			"Subject:Cavern Bar " +
+			"PlainText:We're out of lime cordial, can you pick some up?" +
+			"}\n"
+		gotOutput := buf.String()
+
+		diff := gocmp.Diff(wantOutput, gotOutput)
+		if diff != "" {
+			t.Fatalf("want logged output %s, got %s, diff %s", wantOutput, gotOutput, diff)
+		}
+	})
 }
