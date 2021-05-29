@@ -28,6 +28,7 @@ type container struct {
 	emailClient    domain.EmailClient
 	emailQueue     domain.EmailQueue
 	ftblDataSrc    domain.FootballDataSource
+	// TODO - replace with clock usage
 	debugTs        *time.Time
 	logger         domain.Logger
 	clock          domain.Clock
