@@ -60,7 +60,7 @@ func run(l domain.Logger, cl domain.Clock) error {
 	cr.Start()
 
 	// setup components
-	cmpServer, err := app.NewHTTPServer(cnt, l)
+	cmpServer, err := app.NewHTTPServer(cnt)
 	if err != nil {
 		return fmt.Errorf("cannot instantiate service component: http server: %w", err)
 	}

@@ -7,15 +7,15 @@ import (
 	"time"
 )
 
-// EmailQueueRunner handles the sending of emails added to the email queue
-type EmailQueueRunner struct {
+// emailQueueRunner handles the sending of emails added to the email queue
+type emailQueueRunner struct {
 	emlCl domain.EmailClient
 	emlQ  domain.EmailQueue
 	l     domain.Logger
 }
 
 // Run starts the queue runner
-func (e *EmailQueueRunner) Run(_ context.Context) error {
+func (e *emailQueueRunner) Run(_ context.Context) error {
 	e.l.Info("starting email queue runner...")
 
 	if e.emlCl == nil {
@@ -43,15 +43,15 @@ func (e *EmailQueueRunner) Run(_ context.Context) error {
 }
 
 // Halt stops the queue runner
-func (e *EmailQueueRunner) Halt(context.Context) error {
-	e.l.Info("stopping email queue runner...")
+func (e *emailQueueRunner) Halt(context.Context) error {
+	e.l.Info("halting email queue runner...")
 	if err := e.emlQ.Close(); err != nil {
-		return fmt.Errorf("failed to close email queue: %w", err)
+		return fmt.Errorf("cannot close email queue: %w", err)
 	}
 	return nil
 }
 
-func NewEmailQueueRunner(cnt *container) (*EmailQueueRunner, error) {
+func NewEmailQueueRunner(cnt *container) (*emailQueueRunner, error) {
 	if cnt == nil {
 		return nil, fmt.Errorf("container: %w", domain.ErrIsNil)
 	}
@@ -61,7 +61,7 @@ func NewEmailQueueRunner(cnt *container) (*EmailQueueRunner, error) {
 	if cnt.logger == nil {
 		return nil, fmt.Errorf("logger: %w", domain.ErrIsNil)
 	}
-	return &EmailQueueRunner{
+	return &emailQueueRunner{
 		emlCl: cnt.emailClient,
 		emlQ:  cnt.emailQueue,
 		l:     cnt.logger,

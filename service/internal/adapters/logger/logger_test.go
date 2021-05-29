@@ -40,7 +40,7 @@ func (m *mockClock) Now() time.Time {
 }
 
 func TestNewLogger(t *testing.T) {
-	t.Run("passing nil must return the expected error", func(t *testing.T) {
+	t.Run("passing nil must return expected error", func(t *testing.T) {
 		tt := []struct {
 			w       io.Writer
 			cl      domain.Clock

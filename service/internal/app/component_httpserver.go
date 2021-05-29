@@ -32,8 +32,11 @@ func (h *httpServer) Run(_ context.Context) error {
 
 // Halt will attempt to gracefully shutdown the server
 func (h *httpServer) Halt(ctx context.Context) error {
-	h.l.Infof("stopping serving http on http://%s...", h.addr().String())
-	return h.srv.Shutdown(ctx)
+	h.l.Info("halting http server...")
+	if err := h.srv.Shutdown(ctx); err != nil {
+		return fmt.Errorf("cannot shutdown http server: %w", err)
+	}
+	return nil
 }
 
 // Addr will block until you have received an address for your server.
@@ -52,8 +55,14 @@ func (h *httpServer) addr() *net.TCPAddr {
 }
 
 // NewHTTPServer returns a new HTTP server
-func NewHTTPServer(cnt *container, l domain.Logger) (*httpServer, error) {
-	if l == nil {
+func NewHTTPServer(cnt *container) (*httpServer, error) {
+	if cnt == nil {
+		return nil, fmt.Errorf("container: %w", domain.ErrIsNil)
+	}
+	if cnt.config == nil {
+		return nil, fmt.Errorf("config: %w", domain.ErrIsNil)
+	}
+	if cnt.logger == nil {
 		return nil, fmt.Errorf("logger: %w", domain.ErrIsNil)
 	}
 
@@ -68,7 +77,7 @@ func NewHTTPServer(cnt *container, l domain.Logger) (*httpServer, error) {
 
 	addrC := make(chan *net.TCPAddr, 1)
 
-	return &httpServer{srv, addrC, nil, l}, nil
+	return &httpServer{srv, addrC, nil, cnt.logger}, nil
 }
 
 // newRouter instantiates a router for the HTTP server
