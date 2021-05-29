@@ -26,7 +26,7 @@ type container struct {
 	tokenAgent     *domain.TokenAgent
 	lbAgent        *domain.LeaderBoardAgent
 	emailClient    domain.EmailClient
-	emailQueue     chan domain.Email
+	emailQueue     domain.EmailQueue
 	ftblDataSrc    domain.FootballDataSource
 	debugTs        *time.Time
 	logger         domain.Logger
@@ -55,7 +55,7 @@ func NewContainer(cfg *config, l domain.Logger, cl domain.Clock, rawTs *string) 
 	}
 
 	// instantiate email queue
-	chEml := make(chan domain.Email)
+	emlQ := domain.NewInMemEmailQueue()
 
 	// TODO - replace with alt domain.EmailClient if api key is missing
 	// instantiate email client
@@ -117,7 +117,7 @@ func NewContainer(cfg *config, l domain.Logger, cl domain.Clock, rawTs *string) 
 	}
 
 	// instantiate agents
-	ca, err := domain.NewCommunicationsAgent(er, epr, sr, chEml, tpl, sc, tc, rc)
+	ca, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot instantiate communications agent: %w", err)
 	}
@@ -155,7 +155,7 @@ func NewContainer(cfg *config, l domain.Logger, cl domain.Clock, rawTs *string) 
 		ta,
 		lba,
 		emlCl,
-		chEml,
+		emlQ,
 		fds,
 		debugTs,
 		l,

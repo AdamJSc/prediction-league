@@ -20,18 +20,18 @@ const (
 
 // CommunicationsAgent defines the behaviours for issuing communications
 type CommunicationsAgent struct {
-	er  EntryRepository
-	epr EntryPredictionRepository
-	sr  StandingsRepository
-	eml chan Email
-	tpl *Templates
-	sc  SeasonCollection
-	tc  TeamCollection
-	rc  RealmCollection
+	er   EntryRepository
+	epr  EntryPredictionRepository
+	sr   StandingsRepository
+	emlQ EmailQueue
+	tpl  *Templates
+	sc   SeasonCollection
+	tc   TeamCollection
+	rc   RealmCollection
 }
 
 // IssueNewEntryEmail generates a "new entry" email for the provided Entry and pushes it to the send queue
-func (c *CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *Entry, paymentDetails *PaymentDetails) error {
+func (c *CommunicationsAgent) IssueNewEntryEmail(ctx context.Context, entry *Entry, paymentDetails *PaymentDetails) error {
 	if entry == nil {
 		return InternalError{errors.New("no entry provided")}
 	}
@@ -70,7 +70,9 @@ func (c *CommunicationsAgent) IssueNewEntryEmail(_ context.Context, entry *Entry
 		Address: entry.EntrantEmail,
 	}
 	email := newEmail(realm, recipient, EmailSubjectNewEntry, emailContent.String())
-	c.eml <- email
+	if err := c.emlQ.Send(ctx, email); err != nil {
+		return fmt.Errorf("cannot send email to queue: %w", err)
+	}
 
 	return nil
 }
@@ -124,13 +126,15 @@ func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep S
 		Address: entry.EntrantEmail,
 	}
 	email := newEmail(realm, recipient, fmt.Sprintf(EmailSubjectRoundComplete, standings.RoundNumber), emailContent.String())
-	c.eml <- email
+	if err := c.emlQ.Send(ctx, email); err != nil {
+		return fmt.Errorf("cannot send email to queue: %w", err)
+	}
 
 	return nil
 }
 
 // IssueShortCodeResetBeginEmail generates a "short code reset begin" email for the provided Entry and pushes it to the send queue
-func (c *CommunicationsAgent) IssueShortCodeResetBeginEmail(_ context.Context, entry *Entry, resetToken string) error {
+func (c *CommunicationsAgent) IssueShortCodeResetBeginEmail(ctx context.Context, entry *Entry, resetToken string) error {
 	if entry == nil {
 		return InternalError{errors.New("no entry provided")}
 	}
@@ -159,13 +163,15 @@ func (c *CommunicationsAgent) IssueShortCodeResetBeginEmail(_ context.Context, e
 		Address: entry.EntrantEmail,
 	}
 	email := newEmail(realm, recipient, EmailSubjectShortCodeResetBegin, emailContent.String())
-	c.eml <- email
+	if err := c.emlQ.Send(ctx, email); err != nil {
+		return fmt.Errorf("cannot send email to queue: %w", err)
+	}
 
 	return nil
 }
 
 // IssueShortCodeResetCompleteEmail generates a "short code reset complete" email for the provided Entry and pushes it to the send queue
-func (c *CommunicationsAgent) IssueShortCodeResetCompleteEmail(_ context.Context, entry *Entry) error {
+func (c *CommunicationsAgent) IssueShortCodeResetCompleteEmail(ctx context.Context, entry *Entry) error {
 	if entry == nil {
 		return InternalError{errors.New("no entry provided")}
 	}
@@ -195,13 +201,15 @@ func (c *CommunicationsAgent) IssueShortCodeResetCompleteEmail(_ context.Context
 		Address: entry.EntrantEmail,
 	}
 	email := newEmail(realm, recipient, EmailSubjectShortCodeResetComplete, emailContent.String())
-	c.eml <- email
+	if err := c.emlQ.Send(ctx, email); err != nil {
+		return fmt.Errorf("cannot send email to queue: %w", err)
+	}
 
 	return nil
 }
 
 // IssuePredictionWindowOpenEmail generates a "prediction window open" email for the provided Entry and pushes it to the send queue
-func (c *CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, entry *Entry, tf SequencedTimeFrame) error {
+func (c *CommunicationsAgent) IssuePredictionWindowOpenEmail(ctx context.Context, entry *Entry, tf SequencedTimeFrame) error {
 	if entry == nil {
 		return InternalError{errors.New("no entry provided")}
 	}
@@ -242,13 +250,15 @@ func (c *CommunicationsAgent) IssuePredictionWindowOpenEmail(_ context.Context, 
 	}
 
 	email := newEmail(realm, recipient, subject, emailContent.String())
-	c.eml <- email
+	if err := c.emlQ.Send(ctx, email); err != nil {
+		return fmt.Errorf("cannot send email to queue: %w", err)
+	}
 
 	return nil
 }
 
 // IssuePredictionWindowClosingEmail generates a "prediction window closing" email for the provided Entry and pushes it to the send queue
-func (c *CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Context, entry *Entry, tf SequencedTimeFrame) error {
+func (c *CommunicationsAgent) IssuePredictionWindowClosingEmail(ctx context.Context, entry *Entry, tf SequencedTimeFrame) error {
 	if entry == nil {
 		return InternalError{errors.New("no entry provided")}
 	}
@@ -289,7 +299,9 @@ func (c *CommunicationsAgent) IssuePredictionWindowClosingEmail(_ context.Contex
 	}
 
 	email := newEmail(realm, recipient, subject, emailContent.String())
-	c.eml <- email
+	if err := c.emlQ.Send(ctx, email); err != nil {
+		return fmt.Errorf("cannot send email to queue: %w", err)
+	}
 
 	return nil
 }
@@ -338,7 +350,7 @@ func (c *CommunicationsAgent) getStandingsFromScoredEntryPrediction(ctx context.
 }
 
 // NewCommunicationsAgent returns a new CommunicationsAgent using the provided repositories
-func NewCommunicationsAgent(er EntryRepository, epr EntryPredictionRepository, sr StandingsRepository, eml chan Email, tpl *Templates, sc SeasonCollection, tc TeamCollection, rc RealmCollection) (*CommunicationsAgent, error) {
+func NewCommunicationsAgent(er EntryRepository, epr EntryPredictionRepository, sr StandingsRepository, emlQ EmailQueue, tpl *Templates, sc SeasonCollection, tc TeamCollection, rc RealmCollection) (*CommunicationsAgent, error) {
 	switch {
 	case er == nil:
 		return nil, fmt.Errorf("entry repository: %w", ErrIsNil)
@@ -346,8 +358,8 @@ func NewCommunicationsAgent(er EntryRepository, epr EntryPredictionRepository, s
 		return nil, fmt.Errorf("entry prediction repository: %w", ErrIsNil)
 	case sr == nil:
 		return nil, fmt.Errorf("standings repository: %w", ErrIsNil)
-	case eml == nil:
-		return nil, fmt.Errorf("email channel: %w", ErrIsNil)
+	case emlQ == nil:
+		return nil, fmt.Errorf("email queue: %w", ErrIsNil)
 	case tpl == nil:
 		return nil, fmt.Errorf("teplates: %w", ErrIsNil)
 	case sc == nil:
@@ -358,7 +370,7 @@ func NewCommunicationsAgent(er EntryRepository, epr EntryPredictionRepository, s
 		return nil, fmt.Errorf("realm collection: %w", ErrIsNil)
 	}
 
-	return &CommunicationsAgent{er, epr, sr, eml, tpl, sc, tc, rc}, nil
+	return &CommunicationsAgent{er, epr, sr, emlQ, tpl, sc, tc, rc}, nil
 }
 
 // GenerateWindowDataFromSequencedTimeFrame generates an email WindowData object from the provided SequencedTimeFrame
@@ -493,4 +505,35 @@ type PredictionWindowEmail struct {
 	MessagePayload
 	Window         WindowData
 	PredictionsURL string
+}
+
+// EmailQueue defines behaviours for sending and reading Emails on a queue
+type EmailQueue interface {
+	Send(ctx context.Context, eml Email) error
+	Read() chan Email
+	Close() error
+}
+
+// InMemEmailQueue defines an Email queue that operates in memory
+type InMemEmailQueue struct{ ch chan Email }
+
+// Send implements domain.EmailQueue
+func (i *InMemEmailQueue) Send(_ context.Context, eml Email) error {
+	i.ch <- eml
+	return nil
+}
+
+// Read implements domain.EmailQueue
+func (i *InMemEmailQueue) Read() chan Email {
+	return i.ch
+}
+
+// Close implements domain.EmailQueue
+func (i *InMemEmailQueue) Close() error {
+	close(i.ch)
+	return nil
+}
+
+func NewInMemEmailQueue() *InMemEmailQueue {
+	return &InMemEmailQueue{ch: make(chan Email, 1)}
 }

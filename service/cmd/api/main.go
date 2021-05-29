@@ -69,13 +69,12 @@ func run(l domain.Logger, cl domain.Clock) error {
 	if err != nil {
 		return fmt.Errorf("cannot instantiate service component: http server: %w", err)
 	}
-
-	// setup email queue runner
-	emailQueueRunner, err := app.NewEmailQueueRunner(cnt)
+	cmpEmlQ, err := app.NewEmailQueueRunner(cnt)
 	if err != nil {
 		return fmt.Errorf("cannot instantiate email queue runner: %w", err)
 	}
 
+	// setup service
 	svc, err := app.NewService("prediction-league", 5, l)
 	if err != nil {
 		return fmt.Errorf("cannot instantiate service: %w", err)
@@ -83,7 +82,7 @@ func run(l domain.Logger, cl domain.Clock) error {
 	svc.MustRun(
 		context.Background(),
 		cmpServer,
-		emailQueueRunner,
+		cmpEmlQ,
 	)
 
 	return nil

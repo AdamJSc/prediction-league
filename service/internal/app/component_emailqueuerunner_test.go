@@ -15,11 +15,11 @@ func TestNewEmailQueueRunner(t *testing.T) {
 	}
 
 	mg := &mailgun.Client{}
-	q := make(chan domain.Email)
+	q := domain.NewInMemEmailQueue()
 	l, _ := logger.NewLogger(os.Stdout, &domain.RealClock{})
 
 	tt := []struct {
-		emlQ chan domain.Email
+		emlQ domain.EmailQueue
 		l    domain.Logger
 	}{
 		{nil, l},

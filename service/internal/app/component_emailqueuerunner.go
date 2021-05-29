@@ -10,7 +10,7 @@ import (
 // EmailQueueRunner handles the sending of emails added to the email queue
 type EmailQueueRunner struct {
 	emlCl domain.EmailClient
-	emlQ  chan domain.Email
+	emlQ  domain.EmailQueue
 	l     domain.Logger
 }
 
@@ -22,7 +22,7 @@ func (e *EmailQueueRunner) Run(_ context.Context) error {
 		e.l.Info("missing email client: transactional email content will be printed to log...")
 	}
 
-	for msg := range e.emlQ {
+	for msg := range e.emlQ.Read() {
 		if e.emlCl == nil {
 			// email client config is missing so just print to the logs instead
 			e.l.Infof("email on queue: %+v", msg)
@@ -45,7 +45,9 @@ func (e *EmailQueueRunner) Run(_ context.Context) error {
 // Halt stops the queue runner
 func (e *EmailQueueRunner) Halt(context.Context) error {
 	e.l.Info("stopping email queue runner...")
-	close(e.emlQ)
+	if err := e.emlQ.Close(); err != nil {
+		return fmt.Errorf("failed to close email queue: %w", err)
+	}
 	return nil
 }
 

@@ -14,30 +14,30 @@ import (
 
 func TestNewCommunicationsAgent(t *testing.T) {
 	t.Run("passing nil must return expected error", func(t *testing.T) {
-		eml := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
 		tt := []struct {
-			er  domain.EntryRepository
-			epr domain.EntryPredictionRepository
-			sr  domain.StandingsRepository
-			eml chan domain.Email
-			tpl *domain.Templates
-			sc  domain.SeasonCollection
-			tc  domain.TeamCollection
-			rc  domain.RealmCollection
+			er   domain.EntryRepository
+			epr  domain.EntryPredictionRepository
+			sr   domain.StandingsRepository
+			emlQ domain.EmailQueue
+			tpl  *domain.Templates
+			sc   domain.SeasonCollection
+			tc   domain.TeamCollection
+			rc   domain.RealmCollection
 		}{
-			{nil, epr, sr, eml, tpl, sc, tc, rc},
-			{er, nil, sr, eml, tpl, sc, tc, rc},
-			{er, epr, nil, eml, tpl, sc, tc, rc},
+			{nil, epr, sr, emlQ, tpl, sc, tc, rc},
+			{er, nil, sr, emlQ, tpl, sc, tc, rc},
+			{er, epr, nil, emlQ, tpl, sc, tc, rc},
 			{er, epr, sr, nil, tpl, sc, tc, rc},
-			{er, epr, sr, eml, nil, sc, tc, rc},
-			{er, epr, sr, eml, tpl, nil, tc, rc},
-			{er, epr, sr, eml, tpl, sc, nil, rc},
-			{er, epr, sr, eml, tpl, sc, tc, nil},
+			{er, epr, sr, emlQ, nil, sc, tc, rc},
+			{er, epr, sr, emlQ, tpl, nil, tc, rc},
+			{er, epr, sr, emlQ, tpl, sc, nil, rc},
+			{er, epr, sr, emlQ, tpl, sc, tc, nil},
 		}
 
 		for _, tc := range tt {
-			_, gotErr := domain.NewCommunicationsAgent(tc.er, tc.epr, tc.sr, tc.eml, tc.tpl, tc.sc, tc.tc, tc.rc)
+			_, gotErr := domain.NewCommunicationsAgent(tc.er, tc.epr, tc.sr, tc.emlQ, tc.tpl, tc.sc, tc.tc, tc.rc)
 			if !errors.Is(gotErr, domain.ErrIsNil) {
 				t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
 			}
@@ -65,9 +65,9 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 			"harry.redknapp@football.net",
 		)
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -76,13 +76,20 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		close(queue)
-
-		if len(queue) != 1 {
-			expectedGot(t, 1, queue)
+		if err := emlQ.Close(); err != nil {
+			t.Fatal(err)
 		}
 
-		email := <-queue
+		emls := make([]domain.Email, 0)
+		for eml := range emlQ.Read() {
+			emls = append(emls, eml)
+		}
+
+		if len(emls) != 1 {
+			t.Fatalf("want 1 email, got %d", len(emls))
+		}
+
+		email := emls[0]
 
 		expectedSubject := domain.EmailSubjectNewEntry
 
@@ -129,9 +136,9 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -153,9 +160,9 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 			"harry.redknapp@football.net",
 		)
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -180,9 +187,9 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 		missingAmount := payment
 		missingAmount.Amount = ""
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -220,9 +227,9 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 
 		entry.RealmName = "not_a_valid_realm"
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -246,9 +253,9 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 
 		entry.SeasonID = "not_a_valid_season"
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -297,9 +304,9 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			LeaderBoardURL:    fmt.Sprintf("%s/leaderboard", rlm.Origin),
 		})
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -307,12 +314,20 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		if err := agent.IssueRoundCompleteEmail(ctx, scoredEntryPrediction, false); err != nil {
 			t.Fatal(err)
 		}
-
-		if len(queue) != 1 {
-			expectedGot(t, 1, queue)
+		if err := emlQ.Close(); err != nil {
+			t.Fatal(err)
 		}
 
-		email := <-queue
+		emls := make([]domain.Email, 0)
+		for eml := range emlQ.Read() {
+			emls = append(emls, eml)
+		}
+
+		if len(emls) != 1 {
+			t.Fatalf("want 1 email, got %d", len(emls))
+		}
+
+		email := emls[0]
 
 		if email.From.Name != rlm.Contact.Name {
 			expectedGot(t, rlm.Contact.Name, email.From.Name)
@@ -364,9 +379,9 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			LeaderBoardURL:    fmt.Sprintf("%s/leaderboard", rlm.Origin),
 		})
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -375,11 +390,20 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(queue) != 1 {
-			expectedGot(t, 1, queue)
+		if err := emlQ.Close(); err != nil {
+			t.Fatal(err)
 		}
 
-		email := <-queue
+		emls := make([]domain.Email, 0)
+		for eml := range emlQ.Read() {
+			emls = append(emls, eml)
+		}
+
+		if len(emls) != 1 {
+			t.Fatalf("want 1 email, got %d", len(emls))
+		}
+
+		email := emls[0]
 
 		if email.From.Name != rlm.Contact.Name {
 			expectedGot(t, rlm.Contact.Name, email.From.Name)
@@ -419,9 +443,9 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		sep := scoredEntryPrediction
 		sep.EntryPredictionID = invalidUUID
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -444,9 +468,9 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		sep := scoredEntryPrediction
 		sep.StandingsID = invalidUUID
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -472,9 +496,9 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		invalidEntryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, entryWithInvalidRealm.ID))
 		invalidScoredEntryPrediction := insertScoredEntryPrediction(t, generateTestScoredEntryPrediction(t, invalidEntryPrediction.ID, standings.ID))
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -500,9 +524,9 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		invalidEntryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, entryWithInvalidSeason.ID))
 		invalidScoredEntryPrediction := insertScoredEntryPrediction(t, generateTestScoredEntryPrediction(t, invalidEntryPrediction.ID, standings.ID))
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -520,9 +544,9 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		sep := scoredEntryPrediction
 		sep.Rankings = nil
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -550,9 +574,9 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 
 		resetToken := "RESET12345"
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -561,11 +585,20 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(queue) != 1 {
-			expectedGot(t, 1, queue)
+		if err := emlQ.Close(); err != nil {
+			t.Fatal(err)
 		}
 
-		email := <-queue
+		emls := make([]domain.Email, 0)
+		for eml := range emlQ.Read() {
+			emls = append(emls, eml)
+		}
+
+		if len(emls) != 1 {
+			t.Fatalf("want 1 email, got %d", len(emls))
+		}
+
+		email := emls[0]
 
 		expectedSubject := domain.EmailSubjectShortCodeResetBegin
 
@@ -610,9 +643,9 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -636,9 +669,9 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 
 		entry.RealmName = "not_a_valid_realm"
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -662,9 +695,9 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 
 		entry.SeasonID = "not_a_valid_season"
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -690,9 +723,9 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 			"harry.redknapp@football.net",
 		)
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -701,11 +734,20 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(queue) != 1 {
-			expectedGot(t, 1, queue)
+		if err := emlQ.Close(); err != nil {
+			t.Fatal(err)
 		}
 
-		email := <-queue
+		emls := make([]domain.Email, 0)
+		for eml := range emlQ.Read() {
+			emls = append(emls, eml)
+		}
+
+		if len(emls) != 1 {
+			t.Fatalf("want 1 email, got %d", len(emls))
+		}
+
+		email := emls[0]
 
 		expectedSubject := domain.EmailSubjectShortCodeResetComplete
 
@@ -751,9 +793,9 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -777,9 +819,9 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 
 		entry.RealmName = "not_a_valid_realm"
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -803,9 +845,9 @@ func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
 
 		entry.SeasonID = "not_a_valid_season"
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -845,9 +887,9 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 			},
 		}
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -856,11 +898,20 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(queue) != 1 {
-			expectedGot(t, 1, queue)
+		if err := emlQ.Close(); err != nil {
+			t.Fatal(err)
 		}
 
-		email := <-queue
+		emls := make([]domain.Email, 0)
+		for eml := range emlQ.Read() {
+			emls = append(emls, eml)
+		}
+
+		if len(emls) != 1 {
+			t.Fatalf("want 1 email, got %d", len(emls))
+		}
+
+		email := emls[0]
 
 		expectedSubject := domain.EmailSubjectPredictionWindowOpen
 
@@ -928,9 +979,9 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 			},
 		}
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -939,11 +990,20 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(queue) != 1 {
-			expectedGot(t, 1, queue)
+		if err := emlQ.Close(); err != nil {
+			t.Fatal(err)
 		}
 
-		email := <-queue
+		emls := make([]domain.Email, 0)
+		for eml := range emlQ.Read() {
+			emls = append(emls, eml)
+		}
+
+		if len(emls) != 1 {
+			t.Fatalf("want 1 email, got %d", len(emls))
+		}
+
+		email := emls[0]
 
 		expectedSubject := domain.EmailSubjectPredictionWindowOpenFinal
 
@@ -995,9 +1055,9 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1021,9 +1081,9 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 
 		entry.RealmName = "not_a_valid_realm"
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1047,9 +1107,9 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 
 		entry.SeasonID = "not_a_valid_season"
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1083,9 +1143,9 @@ func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
 
 		expectedErrMsg := domain.ErrCurrentTimeFrameIsMissing.Error()
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1129,9 +1189,9 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 			},
 		}
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1140,11 +1200,20 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(queue) != 1 {
-			expectedGot(t, 1, queue)
+		if err := emlQ.Close(); err != nil {
+			t.Fatal(err)
 		}
 
-		email := <-queue
+		emls := make([]domain.Email, 0)
+		for eml := range emlQ.Read() {
+			emls = append(emls, eml)
+		}
+
+		if len(emls) != 1 {
+			t.Fatalf("want 1 email, got %d", len(emls))
+		}
+
+		email := emls[0]
 
 		expectedSubject := domain.EmailSubjectPredictionWindowClosing
 
@@ -1214,9 +1283,9 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 			},
 		}
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1225,11 +1294,20 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(queue) != 1 {
-			expectedGot(t, 1, queue)
+		if err := emlQ.Close(); err != nil {
+			t.Fatal(err)
 		}
 
-		email := <-queue
+		emls := make([]domain.Email, 0)
+		for eml := range emlQ.Read() {
+			emls = append(emls, eml)
+		}
+
+		if len(emls) != 1 {
+			t.Fatalf("want 1 email, got %d", len(emls))
+		}
+
+		email := emls[0]
 
 		expectedSubject := domain.EmailSubjectPredictionWindowClosingFinal
 
@@ -1281,9 +1359,9 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1307,9 +1385,9 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 		entry.RealmName = "not_a_valid_realm"
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1333,9 +1411,9 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 		entry.SeasonID = "not_a_valid_season"
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1369,9 +1447,9 @@ func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
 
 		expectedErrMsg := domain.ErrCurrentTimeFrameIsMissing.Error()
 
-		queue := make(chan domain.Email, 1)
+		emlQ := domain.NewInMemEmailQueue()
 
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, queue, tpl, sc, tc, rc)
+		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
 		if err != nil {
 			t.Fatal(err)
 		}
