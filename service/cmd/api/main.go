@@ -48,11 +48,6 @@ func run(l domain.Logger, cl domain.Clock) error {
 	}()
 
 	// TODO - implement as Service with Component interface (Run/Halt)
-	if err := app.Seed(cnt); err != nil {
-		return fmt.Errorf("cannot run seeder: %w", err)
-	}
-
-	// TODO - implement as Service with Component interface (Run/Halt)
 	// start cron
 	crFac, err := app.NewCronFactory(cnt)
 	if err != nil {
@@ -73,6 +68,10 @@ func run(l domain.Logger, cl domain.Clock) error {
 	if err != nil {
 		return fmt.Errorf("cannot instantiate email queue runner: %w", err)
 	}
+	cmpSeeder, err := app.NewSeeder(cnt)
+	if err != nil {
+		return fmt.Errorf("cannot instantiate seeder: %w", err)
+	}
 
 	// setup service
 	svc, err := app.NewService("prediction-league", 5, l)
@@ -83,6 +82,7 @@ func run(l domain.Logger, cl domain.Clock) error {
 		context.Background(),
 		cmpServer,
 		cmpEmlQ,
+		cmpSeeder,
 	)
 
 	return nil

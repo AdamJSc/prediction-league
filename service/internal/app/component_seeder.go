@@ -8,8 +8,14 @@ import (
 	"time"
 )
 
-// Seed runs the seeder for the app startup
-func Seed(cnt *container) error {
+type seeder struct {
+	ea *domain.EntryAgent
+	l  domain.Logger
+}
+
+func (s *seeder) Run(_ context.Context) error {
+	s.l.Info("starting seeder...")
+
 	seeds, err := generateSeedEntries()
 	if err != nil {
 		return fmt.Errorf("cannot generate entries to seed: %w", err)
@@ -21,7 +27,7 @@ func Seed(cnt *container) error {
 	chErr := make(chan error, 1)
 	chDone := make(chan struct{}, 1)
 	go func() {
-		if err := cnt.entryAgent.SeedEntries(ctx, seeds); err != nil {
+		if err := s.ea.SeedEntries(ctx, seeds); err != nil {
 			chErr <- err
 		}
 		chDone <- struct{}{}
@@ -34,9 +40,28 @@ func Seed(cnt *container) error {
 		case err := <-chErr:
 			return fmt.Errorf("cannot seed entries: %w", err)
 		case <-chDone:
+			s.l.Info("seeder complete...")
 			return nil
 		}
 	}
+}
+
+func (s *seeder) Halt(_ context.Context) error {
+	s.l.Info("halting seeder...")
+	return nil
+}
+
+func NewSeeder(cnt *container) (*seeder, error) {
+	if cnt == nil {
+		return nil, fmt.Errorf("container: %w", domain.ErrIsNil)
+	}
+	if cnt.entryAgent == nil {
+		return nil, fmt.Errorf("entry agent: %w", domain.ErrIsNil)
+	}
+	if cnt.logger == nil {
+		return nil, fmt.Errorf("logger: %w", domain.ErrIsNil)
+	}
+	return &seeder{cnt.entryAgent, cnt.logger}, nil
 }
 
 func generateSeedEntries() ([]domain.Entry, error) {
