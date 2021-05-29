@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/robfig/cron/v3"
@@ -21,8 +22,8 @@ const (
 	retrieveLatestStandingsCronSpec = "@every 0h15m"
 )
 
-// CronFactory encapsulates the logic required to generate our cron jobs
-type CronFactory struct {
+// CronHandler encapsulates the logic required to generate our cron jobs
+type CronHandler struct {
 	ea   *domain.EntryAgent
 	sa   *domain.StandingsAgent
 	sepa *domain.ScoredEntryPredictionAgent
@@ -35,54 +36,23 @@ type CronFactory struct {
 	fds  domain.FootballDataSource
 }
 
-func NewCronFactory(cnt *container) (*CronFactory, error) {
-	if cnt == nil {
-		return nil, fmt.Errorf("container: %w", domain.ErrIsNil)
+func (c *CronHandler) Run(_ context.Context) error {
+	c.l.Info("running cron handler...")
+	cr, err := c.generateCron()
+	if err != nil {
+		return fmt.Errorf("cannot generate cron: %w", err)
 	}
-	if cnt.entryAgent == nil {
-		return nil, fmt.Errorf("entry agent: %w", domain.ErrIsNil)
-	}
-	if cnt.standingsAgent == nil {
-		return nil, fmt.Errorf("standings agent: %w", domain.ErrIsNil)
-	}
-	if cnt.sepAgent == nil {
-		return nil, fmt.Errorf("scored entry prediction agent: %w", domain.ErrIsNil)
-	}
-	if cnt.commsAgent == nil {
-		return nil, fmt.Errorf("communications agent: %w", domain.ErrIsNil)
-	}
-	if cnt.seasons == nil {
-		return nil, fmt.Errorf("season collection: %w", domain.ErrIsNil)
-	}
-	if cnt.teams == nil {
-		return nil, fmt.Errorf("team collection: %w", domain.ErrIsNil)
-	}
-	if cnt.realms == nil {
-		return nil, fmt.Errorf("realms: %w", domain.ErrIsNil)
-	}
-	if cnt.clock == nil {
-		return nil, fmt.Errorf("clock: %w", domain.ErrIsNil)
-	}
-	if cnt.logger == nil {
-		return nil, fmt.Errorf("logger: %w", domain.ErrIsNil)
-	}
-	// do not check fds, allow nil
-	return &CronFactory{
-		cnt.entryAgent,
-		cnt.standingsAgent,
-		cnt.sepAgent,
-		cnt.commsAgent,
-		cnt.seasons,
-		cnt.teams,
-		cnt.realms,
-		cnt.clock,
-		cnt.logger,
-		cnt.ftblDataSrc,
-	}, nil
+	cr.Start()
+	return nil
 }
 
-// Make generates our populated cron
-func (c *CronFactory) Make() (*cron.Cron, error) {
+func (c *CronHandler) Halt(_ context.Context) error {
+	c.l.Info("halting cron handler...")
+	return nil
+}
+
+// generateCron generates a populated cron
+func (c *CronHandler) generateCron() (*cron.Cron, error) {
 	// get unique season IDs for all realms
 	sIDs := make(map[string]struct{})
 	for _, rlm := range c.rc {
@@ -117,7 +87,7 @@ func (c *CronFactory) Make() (*cron.Cron, error) {
 }
 
 // generateJobConfigs returns a slice of job configs for all jobs required by each provided Season
-func (c *CronFactory) generateJobConfigs(seasons []domain.Season) ([]*jobConfig, error) {
+func (c *CronHandler) generateJobConfigs(seasons []domain.Season) ([]*jobConfig, error) {
 	jobs := make([]*jobConfig, 0)
 
 	for _, s := range seasons {
@@ -154,7 +124,7 @@ func (c *CronFactory) generateJobConfigs(seasons []domain.Season) ([]*jobConfig,
 
 // newPredictionWindowOpenJob returns a new job that issues emails to entrants
 // when a new Prediction Window has been opened for the provided season
-func (c *CronFactory) newPredictionWindowOpenJob(s domain.Season) (*jobConfig, error) {
+func (c *CronHandler) newPredictionWindowOpenJob(s domain.Season) (*jobConfig, error) {
 	jobName := strings.ToLower(fmt.Sprintf("prediction-window-open-%s", s.ID))
 
 	w, err := domain.NewPredictionWindowOpenWorker(s, c.cl, c.ea, c.ca)
@@ -172,7 +142,7 @@ func (c *CronFactory) newPredictionWindowOpenJob(s domain.Season) (*jobConfig, e
 
 // newPredictionWindowClosingJob returns a new job that issues emails to entrants
 // when an active Prediction Window is due to close for the provided season
-func (c *CronFactory) newPredictionWindowClosingJob(s domain.Season) (*jobConfig, error) {
+func (c *CronHandler) newPredictionWindowClosingJob(s domain.Season) (*jobConfig, error) {
 	jobName := strings.ToLower(fmt.Sprintf("prediction-window-closing-%s", s.ID))
 
 	w, err := domain.NewPredictionWindowClosingWorker(s, c.cl, c.ea, c.ca)
@@ -189,7 +159,7 @@ func (c *CronFactory) newPredictionWindowClosingJob(s domain.Season) (*jobConfig
 }
 
 // newRetrieveLatestStandingsJob returns a new job that retrieves the latest standings, pertaining to the provided season
-func (c *CronFactory) newRetrieveLatestStandingsJob(s domain.Season) (*jobConfig, error) {
+func (c *CronHandler) newRetrieveLatestStandingsJob(s domain.Season) (*jobConfig, error) {
 	jobName := strings.ToLower(fmt.Sprintf("retrieve-latest-standings-%s", s.ID))
 
 	w, err := domain.NewRetrieveLatestStandingsWorker(s, c.tc, c.cl, c.ea, c.sa, c.sepa, c.ca, c.fds)
@@ -202,6 +172,52 @@ func (c *CronFactory) newRetrieveLatestStandingsJob(s domain.Season) (*jobConfig
 	return &jobConfig{
 		spec: retrieveLatestStandingsCronSpec,
 		task: task,
+	}, nil
+}
+
+func NewCronHandler(cnt *container) (*CronHandler, error) {
+	if cnt == nil {
+		return nil, fmt.Errorf("container: %w", domain.ErrIsNil)
+	}
+	if cnt.entryAgent == nil {
+		return nil, fmt.Errorf("entry agent: %w", domain.ErrIsNil)
+	}
+	if cnt.standingsAgent == nil {
+		return nil, fmt.Errorf("standings agent: %w", domain.ErrIsNil)
+	}
+	if cnt.sepAgent == nil {
+		return nil, fmt.Errorf("scored entry prediction agent: %w", domain.ErrIsNil)
+	}
+	if cnt.commsAgent == nil {
+		return nil, fmt.Errorf("communications agent: %w", domain.ErrIsNil)
+	}
+	if cnt.seasons == nil {
+		return nil, fmt.Errorf("season collection: %w", domain.ErrIsNil)
+	}
+	if cnt.teams == nil {
+		return nil, fmt.Errorf("team collection: %w", domain.ErrIsNil)
+	}
+	if cnt.realms == nil {
+		return nil, fmt.Errorf("realms: %w", domain.ErrIsNil)
+	}
+	if cnt.clock == nil {
+		return nil, fmt.Errorf("clock: %w", domain.ErrIsNil)
+	}
+	if cnt.logger == nil {
+		return nil, fmt.Errorf("logger: %w", domain.ErrIsNil)
+	}
+	// do not check fds, allow nil
+	return &CronHandler{
+		cnt.entryAgent,
+		cnt.standingsAgent,
+		cnt.sepAgent,
+		cnt.commsAgent,
+		cnt.seasons,
+		cnt.teams,
+		cnt.realms,
+		cnt.clock,
+		cnt.logger,
+		cnt.ftblDataSrc,
 	}, nil
 }
 

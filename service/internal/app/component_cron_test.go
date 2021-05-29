@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func TestNewCronFactory(t *testing.T) {
+func TestNewCronHandler(t *testing.T) {
 	t.Run("passing nil must return expected error", func(t *testing.T) {
 		ea := &domain.EntryAgent{}
 		sa := &domain.StandingsAgent{}
@@ -61,7 +61,7 @@ func TestNewCronFactory(t *testing.T) {
 				logger:         tc.l,
 				ftblDataSrc:    fds,
 			}
-			_, gotErr := NewCronFactory(cnt)
+			_, gotErr := NewCronHandler(cnt)
 			if !errors.Is(gotErr, domain.ErrIsNil) {
 				t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
 			}
@@ -79,17 +79,17 @@ func TestNewCronFactory(t *testing.T) {
 			clock:          cl,
 			logger:         l,
 		}
-		if _, err := NewCronFactory(cnt); err != nil {
+		if _, err := NewCronHandler(cnt); err != nil {
 			t.Fatal(err)
 		}
 	})
 }
 
-func TestCronFactory_Make(t *testing.T) {
+func TestCronFactory_GenerateCron(t *testing.T) {
 	t.Run("must fail if no seasons", func(t *testing.T) {
-		cf := &CronFactory{}
+		cf := &CronHandler{}
 		wantErrMsg := "need at least one season for active realms"
-		if _, gotErr := cf.Make(); gotErr == nil || gotErr.Error() != wantErrMsg {
+		if _, gotErr := cf.generateCron(); gotErr == nil || gotErr.Error() != wantErrMsg {
 			t.Fatalf("want err %s, got %+v", wantErrMsg, gotErr)
 		}
 	})
@@ -101,9 +101,9 @@ func TestCronFactory_Make(t *testing.T) {
 
 		sc := domain.SeasonCollection{"season-id": domain.Season{}}
 
-		cf := &CronFactory{rc: rc, sc: sc}
+		cf := &CronHandler{rc: rc, sc: sc}
 		wantErrMsg := "cannot retrieve season by id 'non-existent-season-id': season id non-existent-season-id: not found"
-		if _, gotErr := cf.Make(); gotErr == nil || gotErr.Error() != wantErrMsg {
+		if _, gotErr := cf.generateCron(); gotErr == nil || gotErr.Error() != wantErrMsg {
 			t.Fatalf("want err %s, got %+v", wantErrMsg, gotErr)
 		}
 	})
@@ -115,9 +115,9 @@ func TestCronFactory_Make(t *testing.T) {
 
 		sc := domain.SeasonCollection{"season-id": domain.Season{}}
 
-		cf := &CronFactory{rc: rc, sc: sc}
+		cf := &CronHandler{rc: rc, sc: sc}
 		wantErrMsg := "cannot generate job configs: cannot generate new prediction window open job: cannot instantiate prediction window open worker: clock: is nil"
-		if _, gotErr := cf.Make(); gotErr == nil || gotErr.Error() != wantErrMsg {
+		if _, gotErr := cf.generateCron(); gotErr == nil || gotErr.Error() != wantErrMsg {
 			t.Fatalf("want err %s, got %+v", wantErrMsg, gotErr)
 		}
 	})
@@ -148,8 +148,8 @@ func TestCronFactory_Make(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cf := &CronFactory{rc: rc, sc: sc, cl: cl, ea: ea, ca: ca, l: l}
-		cr, err := cf.Make()
+		cf := &CronHandler{rc: rc, sc: sc, cl: cl, ea: ea, ca: ca, l: l}
+		cr, err := cf.generateCron()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -195,8 +195,8 @@ func TestCronFactory_Make(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cf := &CronFactory{rc: rc, sc: sc, tc: tc, cl: cl, ea: ea, ca: ca, sa: sa, sepa: sepa, l: l, fds: fds}
-		cr, err := cf.Make()
+		cf := &CronHandler{rc: rc, sc: sc, tc: tc, cl: cl, ea: ea, ca: ca, sa: sa, sepa: sepa, l: l, fds: fds}
+		cr, err := cf.generateCron()
 		if err != nil {
 			t.Fatal(err)
 		}

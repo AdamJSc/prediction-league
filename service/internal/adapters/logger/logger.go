@@ -7,6 +7,7 @@ import (
 	"prediction-league/service/internal/domain"
 	"runtime"
 	"strings"
+	"time"
 )
 
 const (
@@ -44,7 +45,7 @@ func (l *Logger) Errorf(msg string, a ...interface{}) {
 func (l *Logger) prefixMsgArgs(prefix, msg string, a ...interface{}) string {
 	msgWithArgs := fmt.Sprintf(msg, a...)
 	ref := getCallerRef()
-	ts := l.cl.Now().Format("2006-01-02T15:04:05Z07:00")
+	ts := l.cl.Now().Format(time.RFC3339)
 	return fmt.Sprintf("%s %s: %s%s\n", ts, prefix, ref, msgWithArgs)
 }
 

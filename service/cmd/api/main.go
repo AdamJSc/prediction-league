@@ -47,18 +47,6 @@ func run(l domain.Logger, cl domain.Clock) error {
 		}
 	}()
 
-	// TODO - implement as Service with Component interface (Run/Halt)
-	// start cron
-	crFac, err := app.NewCronFactory(cnt)
-	if err != nil {
-		return fmt.Errorf("cannot instantiate cron factory: %w", err)
-	}
-	cr, err := crFac.Make()
-	if err != nil {
-		return fmt.Errorf("cannot make cron: %w", err)
-	}
-	cr.Start()
-
 	// setup components
 	cmpServer, err := app.NewHTTPServer(cnt)
 	if err != nil {
@@ -67,6 +55,10 @@ func run(l domain.Logger, cl domain.Clock) error {
 	cmpEmlQ, err := app.NewEmailQueueRunner(cnt)
 	if err != nil {
 		return fmt.Errorf("cannot instantiate email queue runner: %w", err)
+	}
+	cmpCron, err := app.NewCronHandler(cnt)
+	if err != nil {
+		return fmt.Errorf("cannot instantiate cron handler: %w", err)
 	}
 	cmpSeeder, err := app.NewSeeder(cnt)
 	if err != nil {
@@ -82,6 +74,7 @@ func run(l domain.Logger, cl domain.Clock) error {
 		context.Background(),
 		cmpServer,
 		cmpEmlQ,
+		cmpCron,
 		cmpSeeder,
 	)
 
