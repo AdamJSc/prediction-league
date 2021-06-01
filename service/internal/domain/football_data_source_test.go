@@ -11,7 +11,7 @@ func TestNewNoopFootballDataSource(t *testing.T) {
 		l := &mockLogger{}
 
 		if _, gotErr := NewNoopFootballDataSource(nil); !errors.Is(gotErr, ErrIsNil) {
-			t.Fatalf("waNewNoopFootballDataSourcent ErrIsNil, got %s (%T)", gotErr, gotErr)
+			t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
 		}
 
 		fds, err := NewNoopFootballDataSource(l)

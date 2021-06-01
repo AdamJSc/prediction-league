@@ -11,15 +11,22 @@ import (
 )
 
 const (
+	prefixDebug = "DEBUG"
 	prefixError = "ERROR"
 	prefixInfo  = "INFO"
 )
 
+// TODO - logger: implement logging level
 // Logger defines a standard Logger
 type Logger struct {
 	domain.Logger
 	w  io.Writer
 	cl domain.Clock
+}
+
+// Debugf implements domain.Logger
+func (l *Logger) Debugf(msg string, a ...interface{}) {
+	l.w.Write([]byte(l.prefixMsgArgs(prefixDebug, msg, a...)))
 }
 
 // Info implements domain.Logger

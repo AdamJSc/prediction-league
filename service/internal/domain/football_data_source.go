@@ -17,8 +17,7 @@ type NoopFootballDataSource struct {
 
 // RetrieveLatestStandingsBySeason implements FootballDataSource
 func (l *NoopFootballDataSource) RetrieveLatestStandingsBySeason(_ context.Context, s Season) (Standings, error) {
-	// TODO - logger: replace with debugf logger method
-	l.l.Infof("noop retrieved latest standings for season: %s", s.ID)
+	l.l.Debugf("noop retrieved latest standings for season: %s", s.ID)
 	return Standings{}, errors.New("process aborted")
 }
 
