@@ -16,6 +16,7 @@ import (
 
 func TestNewCommunicationsAgent(t *testing.T) {
 	t.Run("passing nil must return expected error", func(t *testing.T) {
+		// TODO - tests: add wantErr
 		emlQ := domain.NewInMemEmailQueue()
 
 		tt := []struct {
@@ -1561,6 +1562,7 @@ func mustExecuteTemplate(t *testing.T, templates *domain.Templates, templateName
 
 func TestNewLoggerEmailClient(t *testing.T) {
 	t.Run("passing nil must return expected error", func(t *testing.T) {
+		// TODO - tests: replace with tt and wantErr
 		l := &logger.Logger{}
 
 		if _, gotErr := domain.NewLoggerEmailClient(nil); !errors.Is(gotErr, domain.ErrIsNil) {

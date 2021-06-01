@@ -12,6 +12,7 @@ import (
 
 func TestNewLeaderBoardAgent(t *testing.T) {
 	t.Run("passing nil must return expected error", func(t *testing.T) {
+		// TODO - tests: add wantErr
 		tt := []struct {
 			er   domain.EntryRepository
 			epr  domain.EntryPredictionRepository

@@ -103,20 +103,12 @@ func (c *CronHandler) generateJobConfigs(seasons []domain.Season) ([]*jobConfig,
 
 		jobs = append(jobs, oj, cj)
 
-		// TODO - remove switch when replaced with alt domain.FootballDataSource
-		switch {
-		case c.fds == nil:
-			c.l.Infof("skipping retrieve latest standings job for season %s: no football data source configured", s.ID)
+		j, err := c.newRetrieveLatestStandingsJob(s)
+		if err != nil {
+			return nil, fmt.Errorf("cannot generate new retrieve latest standings job: %w", err)
 		}
 
-		if c.fds != nil {
-			j, err := c.newRetrieveLatestStandingsJob(s)
-			if err != nil {
-				return nil, fmt.Errorf("cannot generate new retrieve latest standings job: %w", err)
-			}
-
-			jobs = append(jobs, j)
-		}
+		jobs = append(jobs, j)
 	}
 
 	return jobs, nil
@@ -206,7 +198,9 @@ func NewCronHandler(cnt *container) (*CronHandler, error) {
 	if cnt.logger == nil {
 		return nil, fmt.Errorf("logger: %w", domain.ErrIsNil)
 	}
-	// do not check fds, allow nil
+	if cnt.ftblDataSrc == nil {
+		return nil, fmt.Errorf("football data source: %w", domain.ErrIsNil)
+	}
 	return &CronHandler{
 		cnt.entryAgent,
 		cnt.standingsAgent,

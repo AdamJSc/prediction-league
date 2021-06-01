@@ -28,8 +28,7 @@ type container struct {
 	emailClient    domain.EmailClient
 	emailQueue     domain.EmailQueue
 	ftblDataSrc    domain.FootballDataSource
-	// TODO - replace with clock usage
-	debugTs        *time.Time
+	debugTs        *time.Time // TODO - clock: replace with clock usage
 	logger         domain.Logger
 	clock          domain.Clock
 }
@@ -75,7 +74,7 @@ func NewContainer(cfg *config, l domain.Logger, cl domain.Clock, rawTs *string) 
 		}
 	}
 
-	// TODO - replace with clock usage
+	// TODO - clock: replace with clock usage
 	debugTs, err := parseTimeString(rawTs)
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot parse debug time string: %w", err)
@@ -92,13 +91,19 @@ func NewContainer(cfg *config, l domain.Logger, cl domain.Clock, rawTs *string) 
 	}
 	tc := domain.GetTeamCollection()
 
-	// TODO - replace with alt domain.FootballDataSource if api token is missing
 	// instantiate football-data.org client
 	var fds domain.FootballDataSource
-	if cfg.FootballDataAPIToken != "" {
+	switch {
+	case cfg.FootballDataAPIToken != "":
 		fds, err = footballdataorg.NewClient(cfg.FootballDataAPIToken, tc)
 		if err != nil {
 			return nil, nil, fmt.Errorf("cannot instantiate football-data.org client: %w", err)
+		}
+	default:
+		l.Info("missing football data api token: retrieving latest standings will not occur in upstream...")
+		fds, err = domain.NewNoopFootballDataSource(l)
+		if err != nil {
+			return nil, nil, fmt.Errorf("cannot instantiate noop football data source: %w", err)
 		}
 	}
 

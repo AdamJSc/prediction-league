@@ -53,7 +53,7 @@ func NewContext() (context.Context, context.CancelFunc) {
 
 // TimestampFromContext retrieves a timestamp override if set on the provided context, otherwise returns current timestamp
 func TimestampFromContext(ctx context.Context) time.Time {
-	// TODO - replace usages of this method with retrieving clock from container or receiver struct
+	// TODO - clock: replace usages of this method with retrieving clock from container or receiver struct
 	var ts = time.Now()
 
 	val := ctx.Value(contextKeyTimestamp)

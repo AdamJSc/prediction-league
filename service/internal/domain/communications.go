@@ -543,6 +543,7 @@ type EmailClient interface {
 	SendEmail(ctx context.Context, em Email) error
 }
 
+// TODO - misc: replace with NoopEmailClient
 // LoggerEmailClient provides an EmailClient implementation that logs details of a sent email
 type LoggerEmailClient struct {
 	l Logger

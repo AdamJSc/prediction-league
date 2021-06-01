@@ -36,6 +36,8 @@ func (r *RetrieveLatestStandingsWorker) DoWork(ctx context.Context) error {
 			return fmt.Errorf("no entry predictions")
 		case errors.As(err, &ConflictError{}):
 			// season is not active, so exit early
+			// TODO - logger: implement debugf logger method
+			// TODO - logger: accept logger to worker and log (debug) that season is not active
 			return nil
 		default:
 			// something else went wrong, so exit early

@@ -13,6 +13,47 @@ import (
 	"time"
 )
 
+func TestNewRetrieveLatestStandingsWorker(t *testing.T) {
+	t.Run("passing nil must return expected error", func(t *testing.T) {
+		tc := make(map[string]domain.Team)
+		cl := &domain.RealClock{}
+		ea := &domain.EntryAgent{}
+		sa := &domain.StandingsAgent{}
+		sepa := &domain.ScoredEntryPredictionAgent{}
+		ca := &domain.CommunicationsAgent{}
+		fds := &domain.NoopFootballDataSource{}
+
+		tt := []struct {
+			tc domain.TeamCollection
+			cl domain.Clock
+			ea *domain.EntryAgent
+			sa *domain.StandingsAgent
+			sepa *domain.ScoredEntryPredictionAgent
+			ca *domain.CommunicationsAgent
+			fds domain.FootballDataSource
+			wantErr bool
+		}{
+			{nil, cl, ea, sa, sepa,ca,fds, true},
+			{tc, nil, ea, sa, sepa,ca,fds, true},
+			{tc, cl, nil, sa, sepa,ca,fds, true},
+			{tc, cl, ea, nil, sepa,ca,fds, true},
+			{tc, cl, ea, sa, nil,ca,fds, true},
+			{tc, cl, ea, sa, sepa,nil,fds, true},
+			{tc, cl, ea, sa, sepa,ca,nil, true},
+			{tc, cl, ea, sa, sepa,ca,fds, false},
+		}
+		for idx, tc := range tt {
+			w, gotErr := domain.NewRetrieveLatestStandingsWorker(domain.Season{}, tc.tc, tc.cl, tc.ea, tc.sa, tc.sepa, tc.ca, tc.fds)
+			if tc.wantErr && !errors.Is(gotErr, domain.ErrIsNil) {
+				t.Fatalf("tc #%d: want ErrIsNil, got %s (%T)", idx, gotErr, gotErr)
+			}
+			if !tc.wantErr && w == nil {
+				t.Fatalf("tc #%d: want non-empty worker, got nil", idx)
+			}
+		}
+	})
+}
+
 func TestRetrieveLatestStandingsWorker_ProcessExistingStandings(t *testing.T) {
 	t.Run("happy path must produce the expected results", func(t *testing.T) {
 		defer truncate(t)

@@ -547,6 +547,10 @@ func GetSeasonCollection() (SeasonCollection, error) {
 		ID:       fakeSeasonID,
 		ClientID: nil, // will not invoke requests to client when running in retrieve latest standings job
 		Name:     "Localhost Season",
+		Active: TimeFrame{
+			From:  time.Now(),
+			Until: time.Now().Add(60 * time.Minute),
+		},
 		EntriesAccepted: TimeFrame{
 			From:  time.Now(),
 			Until: time.Now().Add(20 * time.Minute),

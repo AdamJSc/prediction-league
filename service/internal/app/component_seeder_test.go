@@ -9,6 +9,7 @@ import (
 
 func TestNewSeeder(t *testing.T) {
 	t.Run("passing nil must return expected error", func(t *testing.T) {
+		// TODO - tests: replace with tt and wantErr
 		ea := &domain.EntryAgent{}
 		l := &logger.Logger{}
 

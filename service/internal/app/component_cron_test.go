@@ -21,34 +21,35 @@ func TestNewCronHandler(t *testing.T) {
 		rlms := make(domain.RealmCollection)
 		cl := &domain.RealClock{}
 		l := &logger.Logger{}
-		fds, err := footballdataorg.NewClient("", tc)
-		if err != nil {
-			t.Fatal(err)
-		}
+		fds := &footballdataorg.Client{}
 
 		tt := []struct {
-			ea   *domain.EntryAgent
-			sa   *domain.StandingsAgent
-			sepa *domain.ScoredEntryPredictionAgent
-			ca   *domain.CommunicationsAgent
-			sc   domain.SeasonCollection
-			tc   domain.TeamCollection
-			rlms domain.RealmCollection
-			cl   domain.Clock
-			l    domain.Logger
+			ea      *domain.EntryAgent
+			sa      *domain.StandingsAgent
+			sepa    *domain.ScoredEntryPredictionAgent
+			ca      *domain.CommunicationsAgent
+			sc      domain.SeasonCollection
+			tc      domain.TeamCollection
+			rlms    domain.RealmCollection
+			cl      domain.Clock
+			l       domain.Logger
+			fds     domain.FootballDataSource
+			wantErr bool
 		}{
-			{nil, sa, sepa, ca, sc, tc, rlms, cl, l},
-			{ea, nil, sepa, ca, sc, tc, rlms, cl, l},
-			{ea, sa, nil, ca, sc, tc, rlms, cl, l},
-			{ea, sa, sepa, nil, sc, tc, rlms, cl, l},
-			{ea, sa, sepa, ca, nil, tc, rlms, cl, l},
-			{ea, sa, sepa, ca, sc, nil, rlms, cl, l},
-			{ea, sa, sepa, ca, sc, tc, nil, cl, l},
-			{ea, sa, sepa, ca, sc, tc, rlms, nil, l},
-			{ea, sa, sepa, ca, sc, tc, rlms, cl, nil},
+			{nil, sa, sepa, ca, sc, tc, rlms, cl, l, fds, true},
+			{ea, nil, sepa, ca, sc, tc, rlms, cl, l, fds, true},
+			{ea, sa, nil, ca, sc, tc, rlms, cl, l, fds, true},
+			{ea, sa, sepa, nil, sc, tc, rlms, cl, l, fds, true},
+			{ea, sa, sepa, ca, nil, tc, rlms, cl, l, fds, true},
+			{ea, sa, sepa, ca, sc, nil, rlms, cl, l, fds, true},
+			{ea, sa, sepa, ca, sc, tc, nil, cl, l, fds, true},
+			{ea, sa, sepa, ca, sc, tc, rlms, nil, l, fds, true},
+			{ea, sa, sepa, ca, sc, tc, rlms, cl, nil, fds, true},
+			{ea, sa, sepa, ca, sc, tc, rlms, cl, l, nil, true},
+			{ea, sa, sepa, ca, sc, tc, rlms, cl, l, fds, false},
 		}
 
-		for _, tc := range tt {
+		for idx, tc := range tt {
 			cnt := &container{
 				entryAgent:     tc.ea,
 				standingsAgent: tc.sa,
@@ -59,28 +60,15 @@ func TestNewCronHandler(t *testing.T) {
 				realms:         tc.rlms,
 				clock:          tc.cl,
 				logger:         tc.l,
-				ftblDataSrc:    fds,
+				ftblDataSrc:    tc.fds,
 			}
-			_, gotErr := NewCronHandler(cnt)
-			if !errors.Is(gotErr, domain.ErrIsNil) {
-				t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+			cr, gotErr := NewCronHandler(cnt)
+			if tc.wantErr && !errors.Is(gotErr, domain.ErrIsNil) {
+				t.Fatalf("tc #%d: want ErrIsNil, got %s (%T)", idx, gotErr, gotErr)
 			}
-		}
-
-		// allow nil fds
-		cnt := &container{
-			entryAgent:     ea,
-			standingsAgent: sa,
-			sepAgent:       sepa,
-			commsAgent:     ca,
-			seasons:        sc,
-			teams:          tc,
-			realms:         rlms,
-			clock:          cl,
-			logger:         l,
-		}
-		if _, err := NewCronHandler(cnt); err != nil {
-			t.Fatal(err)
+			if !tc.wantErr && cr == nil {
+				t.Fatalf("tc #%d: want non-empty logger, got nil", idx)
+			}
 		}
 	})
 }
