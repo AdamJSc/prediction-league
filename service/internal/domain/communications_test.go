@@ -8,7 +8,6 @@ import (
 	gocmp "github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"gotest.tools/assert/cmp"
-	"prediction-league/service/internal/adapters/logger"
 	"prediction-league/service/internal/domain"
 	"testing"
 	"time"
@@ -1560,42 +1559,34 @@ func mustExecuteTemplate(t *testing.T, templates *domain.Templates, templateName
 	return buf.String()
 }
 
-func TestNewLoggerEmailClient(t *testing.T) {
+func TestNewNoopEmailClient(t *testing.T) {
 	t.Run("passing nil must return expected error", func(t *testing.T) {
-		// TODO - tests: replace with tt and wantErr
-		l := &logger.Logger{}
+		l := &mockLogger{}
 
-		if _, gotErr := domain.NewLoggerEmailClient(nil); !errors.Is(gotErr, domain.ErrIsNil) {
-			t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+		tt := []struct {
+			l       domain.Logger
+			wantErr bool
+		}{
+			{nil, true},
+			{l, false},
 		}
-
-		emlCl, err := domain.NewLoggerEmailClient(l)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if emlCl == nil {
-			t.Fatal("want non-empty logger email client, got nil")
+		for idx, tc := range tt {
+			emlCl, gotErr := domain.NewNoopEmailClient(tc.l)
+			if tc.wantErr && !errors.Is(gotErr, domain.ErrIsNil) {
+				t.Fatalf("tc #%d: want ErrIsNil, got %s (%T)", idx, gotErr, gotErr)
+			}
+			if !tc.wantErr && emlCl == nil {
+				t.Fatalf("tc #%d: want non-empty email client, got nil", idx)
+			}
 		}
 	})
 }
 
-func TestLoggerEmailClient_SendEmail(t *testing.T) {
+func TestNoopEmailClient_SendEmail(t *testing.T) {
 	t.Run("happy path must log the expected output", func(t *testing.T) {
-		loc, err := time.LoadLocation("Europe/London")
-		if err != nil {
-			t.Fatal(err)
-		}
+		l := newMockLogger()
 
-		ts := time.Date(2018, 5, 26, 14, 0, 0, 0, loc)
-		cl := &mockClock{t: ts}
-		buf := &bytes.Buffer{}
-
-		l, err := logger.NewLogger(buf, cl)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		emCl, err := domain.NewLoggerEmailClient(l)
+		emCl, err := domain.NewNoopEmailClient(l)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1617,15 +1608,15 @@ func TestLoggerEmailClient_SendEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		wantOutput := "2018-05-26T14:00:00+01:00 INFO: [domain/communications.go:554] sent email: {" +
+		wantOutput := "sent email: {" +
 			"From:{Name:Paul Mc Address:Bass Town} " +
 			"To:{Name:John L Address:Sunglassesville} " +
 			"ReplyTo:{Name: Address:} " +
 			"SenderDomain:bands.liverpool.net " +
 			"Subject:Cavern Bar " +
 			"PlainText:We're out of lime cordial, can you pick some up?" +
-			"}\n"
-		gotOutput := buf.String()
+			"}"
+		gotOutput := l.buf.String()
 
 		diff := gocmp.Diff(wantOutput, gotOutput)
 		if diff != "" {

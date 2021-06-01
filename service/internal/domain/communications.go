@@ -543,21 +543,20 @@ type EmailClient interface {
 	SendEmail(ctx context.Context, em Email) error
 }
 
-// TODO - misc: replace with NoopEmailClient
-// LoggerEmailClient provides an EmailClient implementation that logs details of a sent email
-type LoggerEmailClient struct {
+// NoopEmailClient provides an EmailClient implementation that logs details of a sent email
+type NoopEmailClient struct {
 	l Logger
 }
 
 // SendEmail implements EmailClient
-func (l *LoggerEmailClient) SendEmail(_ context.Context, em Email) error {
+func (l *NoopEmailClient) SendEmail(_ context.Context, em Email) error {
 	l.l.Infof("sent email: %+v", em)
 	return nil
 }
 
-func NewLoggerEmailClient(l Logger) (*LoggerEmailClient, error) {
+func NewNoopEmailClient(l Logger) (*NoopEmailClient, error) {
 	if l == nil {
 		return nil, fmt.Errorf("logger: %w", ErrIsNil)
 	}
-	return &LoggerEmailClient{l}, nil
+	return &NoopEmailClient{l}, nil
 }

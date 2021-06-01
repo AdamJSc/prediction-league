@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
@@ -420,4 +421,16 @@ func (m *mockClock) Now() time.Time {
 	return m.t
 }
 
-type mockLogger struct{ domain.Logger }
+type mockLogger struct {
+	domain.Logger
+	buf *bytes.Buffer
+}
+
+func newMockLogger() *mockLogger {
+	return &mockLogger{buf: &bytes.Buffer{}}
+}
+
+func (m *mockLogger) Infof(msg string, a ...interface{}) {
+	msg = fmt.Sprintf(msg, a...)
+	m.buf.Write([]byte(msg))
+}

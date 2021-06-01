@@ -68,7 +68,7 @@ func NewContainer(cfg *config, l domain.Logger, cl domain.Clock, rawTs *string) 
 		}
 	default:
 		l.Info("missing mailgun client credentials: transactional email content will be printed to log...")
-		emlCl, err = domain.NewLoggerEmailClient(l)
+		emlCl, err = domain.NewNoopEmailClient(l)
 		if err != nil {
 			return nil, nil, fmt.Errorf("cannot instantiate logger email client: %w", err)
 		}
