@@ -419,3 +419,5 @@ type mockClock struct {
 func (m *mockClock) Now() time.Time {
 	return m.t
 }
+
+type mockLogger struct{ domain.Logger }

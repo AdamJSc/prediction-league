@@ -154,7 +154,7 @@ func (c *CronHandler) newPredictionWindowClosingJob(s domain.Season) (*jobConfig
 func (c *CronHandler) newRetrieveLatestStandingsJob(s domain.Season) (*jobConfig, error) {
 	jobName := strings.ToLower(fmt.Sprintf("retrieve-latest-standings-%s", s.ID))
 
-	w, err := domain.NewRetrieveLatestStandingsWorker(s, c.tc, c.cl, c.ea, c.sa, c.sepa, c.ca, c.fds)
+	w, err := domain.NewRetrieveLatestStandingsWorker(s, c.tc, c.cl, c.l, c.ea, c.sa, c.sepa, c.ca, c.fds)
 	if err != nil {
 		return nil, fmt.Errorf("cannot instantiate retrieve last standings worker: %w", err)
 	}

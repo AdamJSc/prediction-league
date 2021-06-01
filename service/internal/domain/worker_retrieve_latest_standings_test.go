@@ -16,7 +16,8 @@ import (
 func TestNewRetrieveLatestStandingsWorker(t *testing.T) {
 	t.Run("passing nil must return expected error", func(t *testing.T) {
 		tc := make(map[string]domain.Team)
-		cl := &domain.RealClock{}
+		cl := &mockClock{}
+		l := &mockLogger{}
 		ea := &domain.EntryAgent{}
 		sa := &domain.StandingsAgent{}
 		sepa := &domain.ScoredEntryPredictionAgent{}
@@ -24,26 +25,28 @@ func TestNewRetrieveLatestStandingsWorker(t *testing.T) {
 		fds := &domain.NoopFootballDataSource{}
 
 		tt := []struct {
-			tc domain.TeamCollection
-			cl domain.Clock
-			ea *domain.EntryAgent
-			sa *domain.StandingsAgent
-			sepa *domain.ScoredEntryPredictionAgent
-			ca *domain.CommunicationsAgent
-			fds domain.FootballDataSource
+			tc      domain.TeamCollection
+			cl      domain.Clock
+			l       domain.Logger
+			ea      *domain.EntryAgent
+			sa      *domain.StandingsAgent
+			sepa    *domain.ScoredEntryPredictionAgent
+			ca      *domain.CommunicationsAgent
+			fds     domain.FootballDataSource
 			wantErr bool
 		}{
-			{nil, cl, ea, sa, sepa,ca,fds, true},
-			{tc, nil, ea, sa, sepa,ca,fds, true},
-			{tc, cl, nil, sa, sepa,ca,fds, true},
-			{tc, cl, ea, nil, sepa,ca,fds, true},
-			{tc, cl, ea, sa, nil,ca,fds, true},
-			{tc, cl, ea, sa, sepa,nil,fds, true},
-			{tc, cl, ea, sa, sepa,ca,nil, true},
-			{tc, cl, ea, sa, sepa,ca,fds, false},
+			{nil, cl, l, ea, sa, sepa, ca, fds, true},
+			{tc, nil, l, ea, sa, sepa, ca, fds, true},
+			{tc, cl, nil, ea, sa, sepa, ca, fds, true},
+			{tc, cl, l, nil, sa, sepa, ca, fds, true},
+			{tc, cl, l, ea, nil, sepa, ca, fds, true},
+			{tc, cl, l, ea, sa, nil, ca, fds, true},
+			{tc, cl, l, ea, sa, sepa, nil, fds, true},
+			{tc, cl, l, ea, sa, sepa, ca, nil, true},
+			{tc, cl, l, ea, sa, sepa, ca, fds, false},
 		}
 		for idx, tc := range tt {
-			w, gotErr := domain.NewRetrieveLatestStandingsWorker(domain.Season{}, tc.tc, tc.cl, tc.ea, tc.sa, tc.sepa, tc.ca, tc.fds)
+			w, gotErr := domain.NewRetrieveLatestStandingsWorker(domain.Season{}, tc.tc, tc.cl, tc.l, tc.ea, tc.sa, tc.sepa, tc.ca, tc.fds)
 			if tc.wantErr && !errors.Is(gotErr, domain.ErrIsNil) {
 				t.Fatalf("tc #%d: want ErrIsNil, got %s (%T)", idx, gotErr, gotErr)
 			}
@@ -91,7 +94,7 @@ func TestRetrieveLatestStandingsWorker_ProcessExistingStandings(t *testing.T) {
 			t.Fatal(sa)
 		}
 
-		r := domain.NewTestRetrieveLatestStandingsWorker(domain.Season{}, nil, nil, nil, sa, nil, nil, nil)
+		r := domain.NewTestRetrieveLatestStandingsWorker(domain.Season{}, nil, nil, nil, nil, sa, nil, nil, nil)
 
 		gotStnd, err := r.ProcessExistingStandings(ctx, existStnd, clientStnd)
 		if err != nil {
@@ -126,7 +129,7 @@ func TestRetrieveLatestStandingsWorker_ProcessNewStandings(t *testing.T) {
 		t.Fatal(sa)
 	}
 
-	r := domain.NewTestRetrieveLatestStandingsWorker(domain.Season{}, nil, nil, nil, sa, nil, nil, nil)
+	r := domain.NewTestRetrieveLatestStandingsWorker(domain.Season{}, nil, nil, nil, nil, sa, nil, nil, nil)
 
 	id1 := uuid.New()
 	id2 := uuid.New()
@@ -255,7 +258,7 @@ func TestRetrieveLatestStandingsWorker_HasFinalisedLastRound(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		r := domain.NewTestRetrieveLatestStandingsWorker(s, nil, nil, nil, nil, nil, nil, nil)
+		r := domain.NewTestRetrieveLatestStandingsWorker(s, nil, nil, nil, nil, nil, nil, nil, nil)
 		if r.HasFinalisedLastRound(tc.stnd) != tc.want {
 			t.Fatalf("want %t, got %t", tc.want, !tc.want)
 		}
@@ -338,7 +341,7 @@ func TestRetrieveLatestStandingsWorker_IssueEmails(t *testing.T) {
 				wantFinalRound: tc.wantFinalRound,
 			}
 
-			r := domain.NewTestRetrieveLatestStandingsWorker(tc.s, nil, nil, nil, nil, nil, mrcei, nil)
+			r := domain.NewTestRetrieveLatestStandingsWorker(tc.s, nil, nil, nil, nil, nil, nil, mrcei, nil)
 
 			if err := r.IssueEmails(context.Background(), tc.st, tc.seps); err != nil {
 				t.Fatal(err)
@@ -389,7 +392,7 @@ func TestRetrieveLatestStandingsWorker_IssueEmails(t *testing.T) {
 			errs: make(map[string]error),
 		}
 
-		r := domain.NewTestRetrieveLatestStandingsWorker(s, nil, nil, nil, nil, nil, mrcei, nil)
+		r := domain.NewTestRetrieveLatestStandingsWorker(s, nil, nil, nil, nil, nil, nil, mrcei, nil)
 
 		err := r.IssueEmails(context.Background(), st, seps)
 		mErr := domain.MultiError{}

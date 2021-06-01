@@ -110,44 +110,6 @@ func TestCronFactory_GenerateCron(t *testing.T) {
 		}
 	})
 
-	t.Run("must produce 4 cron entries when no football data source is provided", func(t *testing.T) {
-		rc := domain.RealmCollection{
-			"realm-1-id": {SeasonID: "season-1-id"},
-			"realm-2-id": {SeasonID: "season-2-id"},
-		}
-
-		sc := domain.SeasonCollection{
-			"season-1-id": domain.Season{},
-			"season-2-id": domain.Season{},
-		}
-
-		cl := &domain.RealClock{}
-		ea := &domain.EntryAgent{}
-		ca := &domain.CommunicationsAgent{}
-
-		buf := &bytes.Buffer{}
-		loc, err := time.LoadLocation("Europe/London")
-		if err != nil {
-			t.Fatal(err)
-		}
-		dt := time.Date(2018, 5, 26, 14, 0, 0, 0, loc)
-		l, err := logger.NewLogger(buf, &mockClock{t: dt})
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		cf := &CronHandler{rc: rc, sc: sc, cl: cl, ea: ea, ca: ca, l: l}
-		cr, err := cf.generateCron()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		// 2 jobs per season
-		if len(cr.Entries()) != 4 {
-			t.Fatalf("want 4 cron entries, got %d", len(cr.Entries()))
-		}
-	})
-
 	t.Run("must produce 6 cron entries when football data source is provided", func(t *testing.T) {
 		rc := domain.RealmCollection{
 			"realm-1-id": {SeasonID: "season-1-id"},

@@ -1617,7 +1617,7 @@ func TestLoggerEmailClient_SendEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		wantOutput := "2018-05-26T14:00:00+01:00 INFO: [domain/communications.go:553] sent email: {" +
+		wantOutput := "2018-05-26T14:00:00+01:00 INFO: [domain/communications.go:554] sent email: {" +
 			"From:{Name:Paul Mc Address:Bass Town} " +
 			"To:{Name:John L Address:Sunglassesville} " +
 			"ReplyTo:{Name: Address:} " +

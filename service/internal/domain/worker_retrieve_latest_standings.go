@@ -18,6 +18,7 @@ type RetrieveLatestStandingsWorker struct {
 	s    Season
 	tc   TeamCollection
 	cl   Clock
+	l    Logger
 	ea   *EntryAgent
 	sa   *StandingsAgent
 	sepa *ScoredEntryPredictionAgent
@@ -37,7 +38,7 @@ func (r *RetrieveLatestStandingsWorker) DoWork(ctx context.Context) error {
 		case errors.As(err, &ConflictError{}):
 			// season is not active, so exit early
 			// TODO - logger: implement debugf logger method
-			// TODO - logger: accept logger to worker and log (debug) that season is not active
+			r.l.Infof("season is not active: %s", r.s.ID)
 			return nil
 		default:
 			// something else went wrong, so exit early
@@ -269,6 +270,7 @@ func NewRetrieveLatestStandingsWorker(
 	s Season,
 	tc TeamCollection,
 	cl Clock,
+	l Logger,
 	ea *EntryAgent,
 	sa *StandingsAgent,
 	sepa *ScoredEntryPredictionAgent,
@@ -280,6 +282,9 @@ func NewRetrieveLatestStandingsWorker(
 	}
 	if cl == nil {
 		return nil, fmt.Errorf("clock: %w", ErrIsNil)
+	}
+	if l == nil {
+		return nil, fmt.Errorf("logger: %w", ErrIsNil)
 	}
 	if ea == nil {
 		return nil, fmt.Errorf("entry agent: %w", ErrIsNil)
@@ -296,20 +301,22 @@ func NewRetrieveLatestStandingsWorker(
 	if fds == nil {
 		return nil, fmt.Errorf("football data source: %w", ErrIsNil)
 	}
-	return &RetrieveLatestStandingsWorker{s, tc, cl, ea, sa, sepa, ca, fds}, nil
+	return &RetrieveLatestStandingsWorker{s, tc, cl, l, ea, sa, sepa, ca, fds}, nil
 }
 
+// TODO - tests: move to domain package and remove this constructor
 func NewTestRetrieveLatestStandingsWorker(
 	s Season,
 	tc TeamCollection,
 	cl Clock,
+	l Logger,
 	ea *EntryAgent,
 	sa *StandingsAgent,
 	sepa *ScoredEntryPredictionAgent,
 	rcei RoundCompleteEmailIssuer,
 	fds FootballDataSource,
 ) *RetrieveLatestStandingsWorker {
-	return &RetrieveLatestStandingsWorker{s, tc, cl, ea, sa, sepa, rcei, fds}
+	return &RetrieveLatestStandingsWorker{s, tc, cl, l, ea, sa, sepa, rcei, fds}
 }
 
 // GenerateScoredEntryPrediction generates a scored entry prediction from the provided entry prediction and standings
