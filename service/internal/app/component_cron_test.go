@@ -135,7 +135,7 @@ func TestCronFactory_GenerateCron(t *testing.T) {
 			t.Fatal(err)
 		}
 		dt := time.Date(2018, 5, 26, 14, 0, 0, 0, loc)
-		l, err := logger.NewLogger(buf, &mockClock{t: dt})
+		l, err := logger.NewLogger(logger.LevelDebug, buf, &mockClock{t: dt})
 		if err != nil {
 			t.Fatal(err)
 		}

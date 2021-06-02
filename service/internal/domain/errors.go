@@ -11,6 +11,8 @@ var (
 	ErrIsNil = errors.New("is nil")
 	// ErrIsEmpty defines an error that represents an empty argument passed to a constructor function
 	ErrIsEmpty = errors.New("is empty")
+	// ErrIsInvalid defines an error that represents an argument passed with an invalid value
+	ErrIsInvalid = errors.New("is invalid")
 	// ErrCurrentTimeFrameIsMissing defines an error representing a missing timeframe
 	ErrCurrentTimeFrameIsMissing = errors.New("current timeframe is missing")
 	// ErrNoMatchingPredictionWindow defines an error representing a no matching prediction windows

@@ -13,7 +13,8 @@ import (
 
 func main() {
 	cl := &domain.RealClock{}
-	l, err := logger.NewLogger(os.Stdout, cl)
+	// TODO - logger: parse logger level from config
+	l, err := logger.NewLogger(logger.LevelDebug, os.Stdout, cl)
 	if err != nil {
 		log.Fatalf("cannot instantiate logger: %s", err.Error())
 	}

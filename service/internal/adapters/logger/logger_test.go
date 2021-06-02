@@ -1,4 +1,4 @@
-package logger_test
+package logger
 
 import (
 	"bytes"
@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"prediction-league/service/internal/adapters/logger"
 	"prediction-league/service/internal/domain"
 	"testing"
 	"time"
@@ -40,22 +39,24 @@ func (m *mockClock) Now() time.Time {
 }
 
 func TestNewLogger(t *testing.T) {
-	t.Run("passing nil must return expected error", func(t *testing.T) {
+	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
 		tt := []struct {
+			lvl     level
 			w       io.Writer
 			cl      domain.Clock
-			wantErr bool
+			wantErr error
 		}{
-			{nil, &domain.RealClock{}, true},
-			{os.Stdout, nil, true},
-			{os.Stdout, &domain.RealClock{}, false},
+			{level(123), os.Stdout, &domain.RealClock{}, domain.ErrIsInvalid},
+			{LevelDebug, nil, &domain.RealClock{}, domain.ErrIsNil},
+			{LevelDebug, os.Stdout, nil, domain.ErrIsNil},
+			{LevelDebug, os.Stdout, &domain.RealClock{}, nil},
 		}
 		for idx, tc := range tt {
-			l, gotErr := logger.NewLogger(tc.w, tc.cl)
-			if tc.wantErr && !errors.Is(gotErr, domain.ErrIsNil) {
-				t.Fatalf("tc #%d: want ErrIsNil, got %s (%T)", idx, gotErr, gotErr)
+			l, gotErr := NewLogger(tc.lvl, tc.w, tc.cl)
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
 			}
-			if !tc.wantErr && l == nil {
+			if tc.wantErr == nil && l == nil {
 				t.Fatalf("tc #%d: want non-empty logger, got nil", idx)
 			}
 		}
@@ -65,74 +66,139 @@ func TestNewLogger(t *testing.T) {
 func TestLogger_Debugf(t *testing.T) {
 	wr := &mockWriter{buf: &bytes.Buffer{}}
 	c := &mockClock{t: testDate}
-	l, _ := logger.NewLogger(wr, c)
 
-	l.Debugf("hello %d", 123)
+	tt := []struct {
+		lvl       level
+		shouldLog bool
+	}{
+		{LevelDebug, true},
+		{LevelInfo, true},
+		{LevelError, true},
+	}
 
-	want := "2018-05-26T14:00:00+01:00 DEBUG: [logger/logger_test.go:70] hello 123\n"
-	got := wr.buf.String()
-
-	if got != want {
-		t.Fatalf("want %s, got %s", want, got)
+	for idx, tc := range tt {
+		l, _ := NewLogger(tc.lvl, wr, c)
+		l.Debugf("hello %d", 123)
+		var wantOut string
+		if tc.shouldLog {
+			wantOut = "2018-05-26T14:00:00+01:00 DEBUG: [logger/logger_test.go:81] hello 123\n"
+		}
+		got := wr.buf.String()
+		if got != wantOut {
+			t.Fatalf("tc #%d: want %s, got %s", idx, wantOut, got)
+		}
+		wr.buf.Reset()
 	}
 }
 
 func TestLogger_Info(t *testing.T) {
 	wr := &mockWriter{buf: &bytes.Buffer{}}
 	c := &mockClock{t: testDate}
-	l, _ := logger.NewLogger(wr, c)
 
-	l.Info("hello world")
+	tt := []struct {
+		lvl       level
+		shouldLog bool
+	}{
+		{LevelDebug, false},
+		{LevelInfo, true},
+		{LevelError, true},
+	}
 
-	want := "2018-05-26T14:00:00+01:00 INFO: [logger/logger_test.go:85] hello world\n"
-	got := wr.buf.String()
-
-	if got != want {
-		t.Fatalf("want %s, got %s", want, got)
+	for idx, tc := range tt {
+		l, _ := NewLogger(tc.lvl, wr, c)
+		l.Info("hello world")
+		var wantOut string
+		if tc.shouldLog {
+			wantOut = "2018-05-26T14:00:00+01:00 INFO: [logger/logger_test.go:109] hello world\n"
+		}
+		got := wr.buf.String()
+		if got != wantOut {
+			t.Fatalf("tc #%d: want %s, got %s", idx, wantOut, got)
+		}
+		wr.buf.Reset()
 	}
 }
 
 func TestLogger_Infof(t *testing.T) {
 	wr := &mockWriter{buf: &bytes.Buffer{}}
 	c := &mockClock{t: testDate}
-	l, _ := logger.NewLogger(wr, c)
 
-	l.Infof("hello %d", 123)
+	tt := []struct {
+		lvl       level
+		shouldLog bool
+	}{
+		{LevelDebug, false},
+		{LevelInfo, true},
+		{LevelError, true},
+	}
 
-	want := "2018-05-26T14:00:00+01:00 INFO: [logger/logger_test.go:100] hello 123\n"
-	got := wr.buf.String()
-
-	if got != want {
-		t.Fatalf("want %s, got %s", want, got)
+	for idx, tc := range tt {
+		l, _ := NewLogger(tc.lvl, wr, c)
+		l.Infof("hello %d", 123)
+		var wantOut string
+		if tc.shouldLog {
+			wantOut = "2018-05-26T14:00:00+01:00 INFO: [logger/logger_test.go:137] hello 123\n"
+		}
+		got := wr.buf.String()
+		if got != wantOut {
+			t.Fatalf("tc #%d: want %s, got %s", idx, wantOut, got)
+		}
+		wr.buf.Reset()
 	}
 }
 
 func TestLogger_Error(t *testing.T) {
 	wr := &mockWriter{buf: &bytes.Buffer{}}
 	c := &mockClock{t: testDate}
-	l, _ := logger.NewLogger(wr, c)
 
-	l.Error("hello world")
+	tt := []struct {
+		lvl       level
+		shouldLog bool
+	}{
+		{LevelDebug, false},
+		{LevelInfo, false},
+		{LevelError, true},
+	}
 
-	want := "2018-05-26T14:00:00+01:00 ERROR: [logger/logger_test.go:115] hello world\n"
-	got := wr.buf.String()
-
-	if got != want {
-		t.Fatalf("want %s, got %s", want, got)
+	for idx, tc := range tt {
+		l, _ := NewLogger(tc.lvl, wr, c)
+		l.Error("hello world")
+		var wantOut string
+		if tc.shouldLog {
+			wantOut = "2018-05-26T14:00:00+01:00 ERROR: [logger/logger_test.go:165] hello world\n"
+		}
+		got := wr.buf.String()
+		if got != wantOut {
+			t.Fatalf("tc #%d: want %s, got %s", idx, wantOut, got)
+		}
+		wr.buf.Reset()
 	}
 }
 
 func TestLogger_Errorf(t *testing.T) {
 	wr := &mockWriter{buf: &bytes.Buffer{}}
 	c := &mockClock{t: testDate}
-	l, _ := logger.NewLogger(wr, c)
 
-	l.Errorf("hello %d", 123)
+	tt := []struct {
+		lvl       level
+		shouldLog bool
+	}{
+		{LevelDebug, false},
+		{LevelInfo, false},
+		{LevelError, true},
+	}
 
-	want := "2018-05-26T14:00:00+01:00 ERROR: [logger/logger_test.go:130] hello 123\n"
-	got := wr.buf.String()
-
-	if got != want {
-		t.Fatalf("want %s, got %s", want, got)
+	for idx, tc := range tt {
+		l, _ := NewLogger(tc.lvl, wr, c)
+		l.Errorf("hello %d", 123)
+		var wantOut string
+		if tc.shouldLog {
+			wantOut = "2018-05-26T14:00:00+01:00 ERROR: [logger/logger_test.go:193] hello 123\n"
+		}
+		got := wr.buf.String()
+		if got != wantOut {
+			t.Fatalf("tc #%d: want %s, got %s", idx, wantOut, got)
+		}
+		wr.buf.Reset()
 	}
 }

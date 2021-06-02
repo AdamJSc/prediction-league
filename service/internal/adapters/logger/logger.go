@@ -16,37 +16,58 @@ const (
 	prefixInfo  = "INFO"
 )
 
-// TODO - logger: implement logging level
+const (
+	LevelDebug level = iota
+	LevelInfo
+	LevelError
+)
+
+type level int
+
+func (l level) isValid() bool {
+	return l >= LevelDebug && l <= LevelError
+}
+
 // Logger defines a standard Logger
 type Logger struct {
-	domain.Logger
-	w  io.Writer
-	cl domain.Clock
+	lvl level
+	w   io.Writer
+	cl  domain.Clock
 }
 
 // Debugf implements domain.Logger
 func (l *Logger) Debugf(msg string, a ...interface{}) {
-	l.w.Write([]byte(l.prefixMsgArgs(prefixDebug, msg, a...)))
+	if l.lvl >= LevelDebug {
+		l.w.Write([]byte(l.prefixMsgArgs(prefixDebug, msg, a...)))
+	}
 }
 
 // Info implements domain.Logger
 func (l *Logger) Info(msg string) {
-	l.w.Write([]byte(l.prefixMsgArgs(prefixInfo, msg)))
+	if l.lvl >= LevelInfo {
+		l.w.Write([]byte(l.prefixMsgArgs(prefixInfo, msg)))
+	}
 }
 
 // Infof implements domain.Logger
 func (l *Logger) Infof(msg string, a ...interface{}) {
-	l.w.Write([]byte(l.prefixMsgArgs(prefixInfo, msg, a...)))
+	if l.lvl >= LevelInfo {
+		l.w.Write([]byte(l.prefixMsgArgs(prefixInfo, msg, a...)))
+	}
 }
 
 // Info implements domain.Logger
 func (l *Logger) Error(msg string) {
-	l.w.Write([]byte(l.prefixMsgArgs(prefixError, msg)))
+	if l.lvl >= LevelError {
+		l.w.Write([]byte(l.prefixMsgArgs(prefixError, msg)))
+	}
 }
 
 // Errorf implements domain.Logger
 func (l *Logger) Errorf(msg string, a ...interface{}) {
-	l.w.Write([]byte(l.prefixMsgArgs(prefixError, msg, a...)))
+	if l.lvl >= LevelError {
+		l.w.Write([]byte(l.prefixMsgArgs(prefixError, msg, a...)))
+	}
 }
 
 func (l *Logger) prefixMsgArgs(prefix, msg string, a ...interface{}) string {
@@ -57,14 +78,17 @@ func (l *Logger) prefixMsgArgs(prefix, msg string, a ...interface{}) string {
 }
 
 // NewLogger returns a new Logger using the provided writer
-func NewLogger(w io.Writer, cl domain.Clock) (*Logger, error) {
+func NewLogger(l level, w io.Writer, cl domain.Clock) (*Logger, error) {
+	if !l.isValid() {
+		return nil, fmt.Errorf("level: %w", domain.ErrIsInvalid)
+	}
 	if w == nil {
 		return nil, fmt.Errorf("writer: %w", domain.ErrIsNil)
 	}
 	if cl == nil {
 		return nil, fmt.Errorf("clock: %w", domain.ErrIsNil)
 	}
-	return &Logger{w: w, cl: cl}, nil
+	return &Logger{l, w, cl}, nil
 }
 
 // getCallerRef returns the line and filename of the function that called an exported logger method

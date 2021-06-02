@@ -73,7 +73,7 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	l, err := logger.NewLogger(os.Stdout, &domain.RealClock{})
+	l, err := logger.NewLogger(logger.LevelDebug, os.Stdout, &domain.RealClock{})
 	if err != nil {
 		log.Fatal(err)
 	}
