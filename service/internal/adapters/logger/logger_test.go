@@ -72,8 +72,8 @@ func TestLogger_Debugf(t *testing.T) {
 		shouldLog bool
 	}{
 		{LevelDebug, true},
-		{LevelInfo, true},
-		{LevelError, true},
+		{LevelInfo, false},
+		{LevelError, false},
 	}
 
 	for idx, tc := range tt {
@@ -99,9 +99,9 @@ func TestLogger_Info(t *testing.T) {
 		lvl       level
 		shouldLog bool
 	}{
-		{LevelDebug, false},
+		{LevelDebug, true},
 		{LevelInfo, true},
-		{LevelError, true},
+		{LevelError, false},
 	}
 
 	for idx, tc := range tt {
@@ -127,9 +127,9 @@ func TestLogger_Infof(t *testing.T) {
 		lvl       level
 		shouldLog bool
 	}{
-		{LevelDebug, false},
+		{LevelDebug, true},
 		{LevelInfo, true},
-		{LevelError, true},
+		{LevelError, false},
 	}
 
 	for idx, tc := range tt {
@@ -155,8 +155,8 @@ func TestLogger_Error(t *testing.T) {
 		lvl       level
 		shouldLog bool
 	}{
-		{LevelDebug, false},
-		{LevelInfo, false},
+		{LevelDebug, true},
+		{LevelInfo, true},
 		{LevelError, true},
 	}
 
@@ -183,8 +183,8 @@ func TestLogger_Errorf(t *testing.T) {
 		lvl       level
 		shouldLog bool
 	}{
-		{LevelDebug, false},
-		{LevelInfo, false},
+		{LevelDebug, true},
+		{LevelInfo, true},
 		{LevelError, true},
 	}
 

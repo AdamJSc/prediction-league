@@ -37,35 +37,35 @@ type Logger struct {
 
 // Debugf implements domain.Logger
 func (l *Logger) Debugf(msg string, a ...interface{}) {
-	if l.lvl >= LevelDebug {
+	if l.lvl <= LevelDebug {
 		l.w.Write([]byte(l.prefixMsgArgs(prefixDebug, msg, a...)))
 	}
 }
 
 // Info implements domain.Logger
 func (l *Logger) Info(msg string) {
-	if l.lvl >= LevelInfo {
+	if l.lvl <= LevelInfo {
 		l.w.Write([]byte(l.prefixMsgArgs(prefixInfo, msg)))
 	}
 }
 
 // Infof implements domain.Logger
 func (l *Logger) Infof(msg string, a ...interface{}) {
-	if l.lvl >= LevelInfo {
+	if l.lvl <= LevelInfo {
 		l.w.Write([]byte(l.prefixMsgArgs(prefixInfo, msg, a...)))
 	}
 }
 
 // Info implements domain.Logger
 func (l *Logger) Error(msg string) {
-	if l.lvl >= LevelError {
+	if l.lvl <= LevelError {
 		l.w.Write([]byte(l.prefixMsgArgs(prefixError, msg)))
 	}
 }
 
 // Errorf implements domain.Logger
 func (l *Logger) Errorf(msg string, a ...interface{}) {
-	if l.lvl >= LevelError {
+	if l.lvl <= LevelError {
 		l.w.Write([]byte(l.prefixMsgArgs(prefixError, msg, a...)))
 	}
 }
