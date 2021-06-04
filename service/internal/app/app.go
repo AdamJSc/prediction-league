@@ -53,7 +53,6 @@ func contextFromRequest(r *http.Request, c *container) (context.Context, context
 
 	config := c.config
 	realms := c.realms
-	debugTs := c.debugTs
 
 	// realm name is host (strip port)
 	realmName := stripPort(r.Host)
@@ -79,13 +78,8 @@ func contextFromRequest(r *http.Request, c *container) (context.Context, context
 		}
 	}
 
-	// if debug timestamp has been provided, add this to context
-	var ts = time.Now()
-	if debugTs != nil {
-		ts = *debugTs
-	}
-
-	ctx = domain.SetTimestampOnContext(ctx, ts)
+	// add clock timestamp to context
+	ctx = domain.SetTimestampOnContext(ctx, c.clock.Now())
 
 	return ctx, cancel, nil
 }

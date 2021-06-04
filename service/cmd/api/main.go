@@ -9,10 +9,15 @@ import (
 	"prediction-league/service/internal/adapters/logger"
 	"prediction-league/service/internal/app"
 	"prediction-league/service/internal/domain"
+	"time"
 )
 
 func main() {
-	cl := &domain.RealClock{}
+	cl := getClock()
+	if cl == nil {
+		log.Fatal("clock is nil")
+	}
+
 	// TODO - logger: parse logger level from config
 	l, err := logger.NewLogger(logger.LevelDebug, os.Stdout, cl)
 	if err != nil {
@@ -24,12 +29,32 @@ func main() {
 	}
 }
 
-func run(l domain.Logger, cl domain.Clock) error {
-	// TODO - clock: replace with clock usage (implement domain.FrozenClock)
-	// permit flag that provides a debug mode by overriding timestamp for time-sensitive operations
+func getClock() domain.Clock {
 	ts := flag.String("ts", "", "override timestamp used by time-sensitive operations, in the format yyyymmddhhmmss")
 	flag.Parse()
 
+	if ts == nil {
+		return &domain.RealClock{}
+	}
+	if t := parseTime("20060102150405", *ts); t != nil {
+		return &domain.FrozenClock{Time: *t}
+	}
+	if t := parseTime("20060102", *ts); t != nil {
+		return &domain.FrozenClock{Time: *t}
+	}
+
+	return &domain.RealClock{}
+}
+
+func parseTime(layout, value string) *time.Time {
+	parsed, err := time.Parse(layout, value)
+	if err != nil {
+		return nil
+	}
+	return &parsed
+}
+
+func run(l domain.Logger, cl domain.Clock) error {
 	// setup env and config
 	cfg, err := app.NewConfigFromEnvPaths(l, ".env", "infra/app.env")
 	if err != nil {
@@ -37,7 +62,7 @@ func run(l domain.Logger, cl domain.Clock) error {
 	}
 
 	// setup container
-	cnt, cleanup, err := app.NewContainer(cfg, l, cl, ts)
+	cnt, cleanup, err := app.NewContainer(cfg, l, cl)
 	if err != nil {
 		return fmt.Errorf("cannot instantiate container: %w", err)
 	}

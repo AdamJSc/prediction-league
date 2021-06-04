@@ -9,7 +9,6 @@ import (
 	"prediction-league/service/internal/adapters/mailgun"
 	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/domain"
-	"time"
 )
 
 // container encapsulates the app dependencies
@@ -28,13 +27,12 @@ type container struct {
 	emailClient    domain.EmailClient
 	emailQueue     domain.EmailQueue
 	ftblDataSrc    domain.FootballDataSource
-	debugTs        *time.Time // TODO - clock: replace with clock usage
 	logger         domain.Logger
 	clock          domain.Clock
 }
 
 // NewContainer instantiates a new container from the provided config object
-func NewContainer(cfg *config, l domain.Logger, cl domain.Clock, rawTs *string) (*container, func() error, error) {
+func NewContainer(cfg *config, l domain.Logger, cl domain.Clock) (*container, func() error, error) {
 	if cfg == nil {
 		return nil, nil, fmt.Errorf("config: %w", domain.ErrIsNil)
 	}
@@ -72,12 +70,6 @@ func NewContainer(cfg *config, l domain.Logger, cl domain.Clock, rawTs *string) 
 		if err != nil {
 			return nil, nil, fmt.Errorf("cannot instantiate logger email client: %w", err)
 		}
-	}
-
-	// TODO - clock: replace with clock usage
-	debugTs, err := parseTimeString(rawTs)
-	if err != nil {
-		return nil, nil, fmt.Errorf("cannot parse debug time string: %w", err)
 	}
 
 	// instantiate collections
@@ -170,7 +162,6 @@ func NewContainer(cfg *config, l domain.Logger, cl domain.Clock, rawTs *string) 
 		emlCl,
 		emlQ,
 		fds,
-		debugTs,
 		l,
 		cl,
 	}
@@ -198,28 +189,4 @@ func sqlConnectAndMigrate(dbURL, migURL string, l domain.Logger) (*sql.DB, error
 	}
 
 	return db, nil
-}
-
-func parseTimeString(str *string) (*time.Time, error) {
-	if str == nil || *str == "" {
-		// nothing to parse
-		return nil, nil
-	}
-
-	strVal := *str
-
-	var (
-		parsed time.Time
-		err    error
-	)
-
-	parsed, err = time.Parse("20060102150405", strVal)
-	if err != nil {
-		parsed, err = time.Parse("20060102", strVal)
-		if err != nil {
-			return nil, fmt.Errorf("cannot parse time string '%s': %w", strVal, err)
-		}
-	}
-
-	return &parsed, nil
 }
