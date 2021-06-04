@@ -14,34 +14,38 @@ import (
 )
 
 func TestNewCommunicationsAgent(t *testing.T) {
-	t.Run("passing nil must return expected error", func(t *testing.T) {
-		// TODO - tests: add wantErr
-		emlQ := domain.NewInMemEmailQueue()
+	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
+		emlQ := &domain.InMemEmailQueue{}
 
 		tt := []struct {
-			er   domain.EntryRepository
-			epr  domain.EntryPredictionRepository
-			sr   domain.StandingsRepository
-			emlQ domain.EmailQueue
-			tpl  *domain.Templates
-			sc   domain.SeasonCollection
-			tc   domain.TeamCollection
-			rc   domain.RealmCollection
+			er      domain.EntryRepository
+			epr     domain.EntryPredictionRepository
+			sr      domain.StandingsRepository
+			emlQ    domain.EmailQueue
+			tpl     *domain.Templates
+			sc      domain.SeasonCollection
+			tc      domain.TeamCollection
+			rc      domain.RealmCollection
+			wantErr error
 		}{
-			{nil, epr, sr, emlQ, tpl, sc, tc, rc},
-			{er, nil, sr, emlQ, tpl, sc, tc, rc},
-			{er, epr, nil, emlQ, tpl, sc, tc, rc},
-			{er, epr, sr, nil, tpl, sc, tc, rc},
-			{er, epr, sr, emlQ, nil, sc, tc, rc},
-			{er, epr, sr, emlQ, tpl, nil, tc, rc},
-			{er, epr, sr, emlQ, tpl, sc, nil, rc},
-			{er, epr, sr, emlQ, tpl, sc, tc, nil},
+			{nil, epr, sr, emlQ, tpl, sc, tc, rc, domain.ErrIsNil},
+			{er, nil, sr, emlQ, tpl, sc, tc, rc, domain.ErrIsNil},
+			{er, epr, nil, emlQ, tpl, sc, tc, rc, domain.ErrIsNil},
+			{er, epr, sr, nil, tpl, sc, tc, rc, domain.ErrIsNil},
+			{er, epr, sr, emlQ, nil, sc, tc, rc, domain.ErrIsNil},
+			{er, epr, sr, emlQ, tpl, nil, tc, rc, domain.ErrIsNil},
+			{er, epr, sr, emlQ, tpl, sc, nil, rc, domain.ErrIsNil},
+			{er, epr, sr, emlQ, tpl, sc, tc, nil, domain.ErrIsNil},
+			{er, epr, sr, emlQ, tpl, sc, tc, rc, nil},
 		}
 
-		for _, tc := range tt {
-			_, gotErr := domain.NewCommunicationsAgent(tc.er, tc.epr, tc.sr, tc.emlQ, tc.tpl, tc.sc, tc.tc, tc.rc)
-			if !errors.Is(gotErr, domain.ErrIsNil) {
-				t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+		for idx, tc := range tt {
+			agent, gotErr := domain.NewCommunicationsAgent(tc.er, tc.epr, tc.sr, tc.emlQ, tc.tpl, tc.sc, tc.tc, tc.rc)
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
+			}
+			if tc.wantErr == nil && agent == nil {
+				t.Fatalf("tc #%d: want non-empty agent, got nil", idx)
 			}
 		}
 	})
@@ -1560,22 +1564,22 @@ func mustExecuteTemplate(t *testing.T, templates *domain.Templates, templateName
 }
 
 func TestNewNoopEmailClient(t *testing.T) {
-	t.Run("passing nil must return expected error", func(t *testing.T) {
+	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
 		l := &mockLogger{}
 
 		tt := []struct {
 			l       domain.Logger
-			wantErr bool
+			wantErr error
 		}{
-			{nil, true},
-			{l, false},
+			{nil, domain.ErrIsNil},
+			{l, nil},
 		}
 		for idx, tc := range tt {
 			emlCl, gotErr := domain.NewNoopEmailClient(tc.l)
-			if tc.wantErr && !errors.Is(gotErr, domain.ErrIsNil) {
-				t.Fatalf("tc #%d: want ErrIsNil, got %s (%T)", idx, gotErr, gotErr)
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
 			}
-			if !tc.wantErr && emlCl == nil {
+			if tc.wantErr == nil && emlCl == nil {
 				t.Fatalf("tc #%d: want non-empty email client, got nil", idx)
 			}
 		}

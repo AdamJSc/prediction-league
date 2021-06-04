@@ -8,11 +8,24 @@ import (
 )
 
 func TestNewClient(t *testing.T) {
-	t.Run("passing nil must return expected error", func(t *testing.T) {
-		// TODO - tests: replace with tt and wantErr
-		_, gotErr := footballdataorg.NewClient("12345", nil)
-		if !errors.Is(gotErr, domain.ErrIsNil) {
-			t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
+		tc := make(domain.TeamCollection)
+
+		tt := []struct {
+			tc      domain.TeamCollection
+			wantErr error
+		}{
+			{nil, domain.ErrIsNil},
+			{tc, nil},
+		}
+		for idx, tc := range tt {
+			fdCl, gotErr := footballdataorg.NewClient("12345", tc.tc)
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
+			}
+			if tc.wantErr == nil && fdCl == nil {
+				t.Fatalf("tc #%d: want non-empty client, got nil", idx)
+			}
 		}
 	})
 }

@@ -6,24 +6,25 @@ import (
 )
 
 func TestHandleWorker(t *testing.T) {
-	t.Run("passing nil must return the expected error", func(t *testing.T) {
+	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
 		w := &mockWorker{}
 		l := &mockLogger{}
+
 		tt := []struct {
 			w       Worker
 			l       Logger
-			wantErr bool
+			wantErr error
 		}{
-			{nil, l, true},
-			{w, nil, true},
-			{w, l, false},
+			{nil, l, ErrIsNil},
+			{w, nil, ErrIsNil},
+			{w, l, nil},
 		}
 		for idx, tc := range tt {
 			fn, gotErr := HandleWorker("aaa", 123, tc.w, tc.l)
-			if tc.wantErr && !errors.Is(gotErr, ErrIsNil) {
-				t.Fatalf("tc #%d: want ErrIsNil, got %s (%T)", idx, gotErr, gotErr)
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
 			}
-			if !tc.wantErr && fn == nil {
+			if tc.wantErr == nil && fn == nil {
 				t.Fatalf("tc #%d: want non-empty worker function, got nil", idx)
 			}
 		}

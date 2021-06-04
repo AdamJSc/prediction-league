@@ -10,11 +10,22 @@ import (
 )
 
 func TestNewTokenAgent(t *testing.T) {
-	t.Run("passing nil must return expected error", func(t *testing.T) {
-		// TODO - tests: replace with tt and wantErr
-		_, gotErr := domain.NewTokenAgent(nil)
-		if !errors.Is(gotErr, domain.ErrIsNil) {
-			t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
+		tt := []struct {
+			tr      domain.TokenRepository
+			wantErr error
+		}{
+			{nil, domain.ErrIsNil},
+			{tr, nil},
+		}
+		for idx, tc := range tt {
+			agent, gotErr := domain.NewTokenAgent(tc.tr)
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
+			}
+			if tc.wantErr == nil && agent == nil {
+				t.Fatalf("tc #%d: want non-empty agent, got nil", idx)
+			}
 		}
 	})
 }

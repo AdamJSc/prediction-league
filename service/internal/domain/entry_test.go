@@ -14,22 +14,26 @@ import (
 )
 
 func TestNewEntryAgent(t *testing.T) {
-	t.Run("passing nil must return expected error", func(t *testing.T) {
-		// TODO - tests: add wantErr
+	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
 		tt := []struct {
-			er  domain.EntryRepository
-			epr domain.EntryPredictionRepository
-			sc  domain.SeasonCollection
+			er      domain.EntryRepository
+			epr     domain.EntryPredictionRepository
+			sc      domain.SeasonCollection
+			wantErr error
 		}{
-			{nil, epr, sc},
-			{er, nil, sc},
-			{er, epr, nil},
+			{nil, epr, sc, domain.ErrIsNil},
+			{er, nil, sc, domain.ErrIsNil},
+			{er, epr, nil, domain.ErrIsNil},
+			{er, epr, sc, nil},
 		}
 
-		for _, tc := range tt {
-			_, gotErr := domain.NewEntryAgent(tc.er, tc.epr, tc.sc)
-			if !errors.Is(gotErr, domain.ErrIsNil) {
-				t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+		for idx, tc := range tt {
+			agent, gotErr := domain.NewEntryAgent(tc.er, tc.epr, tc.sc)
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
+			}
+			if tc.wantErr == nil && agent == nil {
+				t.Fatalf("tc #%d: want non-empty agent, got nil", idx)
 			}
 		}
 	})

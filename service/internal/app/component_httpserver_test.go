@@ -2,44 +2,38 @@ package app
 
 import (
 	"errors"
-	"prediction-league/service/internal/adapters/logger"
 	"prediction-league/service/internal/domain"
 	"testing"
 )
 
 func TestNewHTTPServer(t *testing.T) {
-	t.Run("passing nil must return expected error", func(t *testing.T) {
-		// TODO - tests: replace second test with wantErr
+	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
 		if _, gotErr := NewHTTPServer(nil); !errors.Is(gotErr, domain.ErrIsNil) {
 			t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
 		}
 
 		c := &config{}
-		l := &logger.Logger{}
+		l := &mockLogger{}
 
 		tt := []struct {
-			c *config
-			l domain.Logger
+			c       *config
+			l       domain.Logger
+			wantErr error
 		}{
-			{nil, l},
-			{c, nil},
+			{nil, l, domain.ErrIsNil},
+			{c, nil, domain.ErrIsNil},
+			{c, l, nil},
 		}
 
-		for _, tc := range tt {
+		for idx, tc := range tt {
 			cnt := &container{config: tc.c, logger: tc.l}
-			if _, gotErr := NewHTTPServer(cnt); !errors.Is(gotErr, domain.ErrIsNil) {
-				t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+			srv, gotErr := NewHTTPServer(cnt)
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
 			}
-		}
-
-		// want no error
-		cnt := &container{config: c, logger: l}
-		srv, err := NewHTTPServer(cnt)
-		if err != nil {
-			t.Fatalf("want nil err, got %s (%T)", err, err)
-		}
-		if srv == nil {
-			t.Fatal("want non-empty http server, got nil")
+			if tc.wantErr == nil && srv == nil {
+				t.Fatalf("tc #%d: want non-empty server, got nil", idx)
+			}
 		}
 	})
 }

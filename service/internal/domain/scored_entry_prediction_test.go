@@ -12,24 +12,28 @@ import (
 )
 
 func TestNewScoredEntryPredictionAgent(t *testing.T) {
-	t.Run("passing nil must return expected error", func(t *testing.T) {
-		// TODO - tests: add wantErr
+	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
 		tt := []struct {
-			er   domain.EntryRepository
-			epr  domain.EntryPredictionRepository
-			sr   domain.StandingsRepository
-			sepr domain.ScoredEntryPredictionRepository
+			er      domain.EntryRepository
+			epr     domain.EntryPredictionRepository
+			sr      domain.StandingsRepository
+			sepr    domain.ScoredEntryPredictionRepository
+			wantErr error
 		}{
-			{nil, epr, sr, sepr},
-			{er, nil, sr, sepr},
-			{er, epr, nil, sepr},
-			{er, epr, sr, nil},
+			{nil, epr, sr, sepr, domain.ErrIsNil},
+			{er, nil, sr, sepr, domain.ErrIsNil},
+			{er, epr, nil, sepr, domain.ErrIsNil},
+			{er, epr, sr, nil, domain.ErrIsNil},
+			{er, epr, sr, sepr, nil},
 		}
 
-		for _, tc := range tt {
-			_, gotErr := domain.NewScoredEntryPredictionAgent(tc.er, tc.epr, tc.sr, tc.sepr)
-			if !errors.Is(gotErr, domain.ErrIsNil) {
-				t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+		for idx, tc := range tt {
+			agent, gotErr := domain.NewScoredEntryPredictionAgent(tc.er, tc.epr, tc.sr, tc.sepr)
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
+			}
+			if tc.wantErr == nil && agent == nil {
+				t.Fatalf("tc #%d: want non-empty agent, got nil", idx)
 			}
 		}
 	})

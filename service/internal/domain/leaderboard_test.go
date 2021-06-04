@@ -11,26 +11,30 @@ import (
 )
 
 func TestNewLeaderBoardAgent(t *testing.T) {
-	t.Run("passing nil must return expected error", func(t *testing.T) {
-		// TODO - tests: add wantErr
+	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
 		tt := []struct {
-			er   domain.EntryRepository
-			epr  domain.EntryPredictionRepository
-			sr   domain.StandingsRepository
-			sepr domain.ScoredEntryPredictionRepository
-			sc   domain.SeasonCollection
+			er      domain.EntryRepository
+			epr     domain.EntryPredictionRepository
+			sr      domain.StandingsRepository
+			sepr    domain.ScoredEntryPredictionRepository
+			sc      domain.SeasonCollection
+			wantErr error
 		}{
-			{nil, epr, sr, sepr, sc},
-			{er, nil, sr, sepr, sc},
-			{er, epr, nil, sepr, sc},
-			{er, epr, sr, nil, sc},
-			{er, epr, sr, sepr, nil},
+			{nil, epr, sr, sepr, sc, domain.ErrIsNil},
+			{er, nil, sr, sepr, sc, domain.ErrIsNil},
+			{er, epr, nil, sepr, sc, domain.ErrIsNil},
+			{er, epr, sr, nil, sc, domain.ErrIsNil},
+			{er, epr, sr, sepr, nil, domain.ErrIsNil},
+			{er, epr, sr, sepr, sc, nil},
 		}
 
-		for _, tc := range tt {
-			_, gotErr := domain.NewLeaderBoardAgent(tc.er, tc.epr, tc.sr, tc.sepr, tc.sc)
-			if !errors.Is(gotErr, domain.ErrIsNil) {
-				t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+		for idx, tc := range tt {
+			agent, gotErr := domain.NewLeaderBoardAgent(tc.er, tc.epr, tc.sr, tc.sepr, tc.sc)
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
+			}
+			if tc.wantErr == nil && agent == nil {
+				t.Fatalf("tc #%d: want non-empty agent, got nil", idx)
 			}
 		}
 	})

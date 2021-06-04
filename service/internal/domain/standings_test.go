@@ -11,11 +11,22 @@ import (
 )
 
 func TestNewStandingsAgent(t *testing.T) {
-	t.Run("passing nil must return expected error", func(t *testing.T) {
-		// TODO - tests: replace with tt and wantErr
-		_, gotErr := domain.NewStandingsAgent(nil)
-		if !errors.Is(gotErr, domain.ErrIsNil) {
-			t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
+		tt := []struct {
+			sr      domain.StandingsRepository
+			wantErr error
+		}{
+			{nil, domain.ErrIsNil},
+			{sr, nil},
+		}
+		for idx, tc := range tt {
+			agent, gotErr := domain.NewStandingsAgent(tc.sr)
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
+			}
+			if tc.wantErr == nil && agent == nil {
+				t.Fatalf("tc #%d: want non-empty agent, got nil", idx)
+			}
 		}
 	})
 }

@@ -6,20 +6,24 @@ import (
 )
 
 func TestNewNoopFootballDataSource(t *testing.T) {
-	t.Run("passing nil must return expected error", func(t *testing.T) {
-		// TODO - tests: replace with tt and wantErr
+	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
 		l := &mockLogger{}
 
-		if _, gotErr := NewNoopFootballDataSource(nil); !errors.Is(gotErr, ErrIsNil) {
-			t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
+		tt := []struct {
+			l Logger
+			wantErr error
+		}{
+			{nil, ErrIsNil},
+			{l, nil},
 		}
-
-		fds, err := NewNoopFootballDataSource(l)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if fds == nil {
-			t.Fatal("want non-empty logger football data source, got nil")
+		for idx, tc := range tt {
+			fds, gotErr := NewNoopFootballDataSource(tc.l)
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
+			}
+			if tc.wantErr == nil && fds == nil {
+				t.Fatalf("tc #%d: want non-empty football data srouce, got nil", idx)
+			}
 		}
 	})
 }

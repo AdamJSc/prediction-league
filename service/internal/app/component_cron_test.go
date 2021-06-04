@@ -11,7 +11,7 @@ import (
 )
 
 func TestNewCronHandler(t *testing.T) {
-	t.Run("passing nil must return expected error", func(t *testing.T) {
+	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
 		ea := &domain.EntryAgent{}
 		sa := &domain.StandingsAgent{}
 		sepa := &domain.ScoredEntryPredictionAgent{}
@@ -20,7 +20,7 @@ func TestNewCronHandler(t *testing.T) {
 		tc := make(domain.TeamCollection)
 		rlms := make(domain.RealmCollection)
 		cl := &domain.RealClock{}
-		l := &logger.Logger{}
+		l := &mockLogger{}
 		fds := &footballdataorg.Client{}
 
 		tt := []struct {
@@ -34,19 +34,19 @@ func TestNewCronHandler(t *testing.T) {
 			cl      domain.Clock
 			l       domain.Logger
 			fds     domain.FootballDataSource
-			wantErr bool
+			wantErr error
 		}{
-			{nil, sa, sepa, ca, sc, tc, rlms, cl, l, fds, true},
-			{ea, nil, sepa, ca, sc, tc, rlms, cl, l, fds, true},
-			{ea, sa, nil, ca, sc, tc, rlms, cl, l, fds, true},
-			{ea, sa, sepa, nil, sc, tc, rlms, cl, l, fds, true},
-			{ea, sa, sepa, ca, nil, tc, rlms, cl, l, fds, true},
-			{ea, sa, sepa, ca, sc, nil, rlms, cl, l, fds, true},
-			{ea, sa, sepa, ca, sc, tc, nil, cl, l, fds, true},
-			{ea, sa, sepa, ca, sc, tc, rlms, nil, l, fds, true},
-			{ea, sa, sepa, ca, sc, tc, rlms, cl, nil, fds, true},
-			{ea, sa, sepa, ca, sc, tc, rlms, cl, l, nil, true},
-			{ea, sa, sepa, ca, sc, tc, rlms, cl, l, fds, false},
+			{nil, sa, sepa, ca, sc, tc, rlms, cl, l, fds, domain.ErrIsNil},
+			{ea, nil, sepa, ca, sc, tc, rlms, cl, l, fds, domain.ErrIsNil},
+			{ea, sa, nil, ca, sc, tc, rlms, cl, l, fds, domain.ErrIsNil},
+			{ea, sa, sepa, nil, sc, tc, rlms, cl, l, fds, domain.ErrIsNil},
+			{ea, sa, sepa, ca, nil, tc, rlms, cl, l, fds, domain.ErrIsNil},
+			{ea, sa, sepa, ca, sc, nil, rlms, cl, l, fds, domain.ErrIsNil},
+			{ea, sa, sepa, ca, sc, tc, nil, cl, l, fds, domain.ErrIsNil},
+			{ea, sa, sepa, ca, sc, tc, rlms, nil, l, fds, domain.ErrIsNil},
+			{ea, sa, sepa, ca, sc, tc, rlms, cl, nil, fds, domain.ErrIsNil},
+			{ea, sa, sepa, ca, sc, tc, rlms, cl, l, nil, domain.ErrIsNil},
+			{ea, sa, sepa, ca, sc, tc, rlms, cl, l, fds, nil},
 		}
 
 		for idx, tc := range tt {
@@ -63,11 +63,11 @@ func TestNewCronHandler(t *testing.T) {
 				ftblDataSrc:    tc.fds,
 			}
 			cr, gotErr := NewCronHandler(cnt)
-			if tc.wantErr && !errors.Is(gotErr, domain.ErrIsNil) {
-				t.Fatalf("tc #%d: want ErrIsNil, got %s (%T)", idx, gotErr, gotErr)
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
 			}
-			if !tc.wantErr && cr == nil {
-				t.Fatalf("tc #%d: want non-empty logger, got nil", idx)
+			if tc.wantErr == nil && cr == nil {
+				t.Fatalf("tc #%d: want non-empty cron handler, got nil", idx)
 			}
 		}
 	})

@@ -20,6 +20,7 @@ type Client struct {
 
 // RetrieveLatestStandingsBySeason implements this method on the clients.FootballDataSource interface
 func (c *Client) RetrieveLatestStandingsBySeason(ctx context.Context, s domain.Season) (domain.Standings, error) {
+	// TODO - football data source: abstract http call upstream
 	var url = getFullURL(fmt.Sprintf("/v2/competitions/%s/standings?season=%d&standingType=TOTAL",
 		s.ClientID.Value(),
 		s.Active.From.Year()),
