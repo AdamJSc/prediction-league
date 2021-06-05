@@ -7,7 +7,7 @@ import (
 	"prediction-league/service/internal/view"
 )
 
-func getLeaderBoardPageData(ctx context.Context, entryAgent *domain.EntryAgent, standingsAgent *domain.StandingsAgent, leaderBoardAgent *domain.LeaderBoardAgent, sc domain.SeasonCollection, tc domain.TeamCollection) view.LeaderBoardPageData {
+func getLeaderBoardPageData(ctx context.Context, entryAgent *domain.EntryAgent, standingsAgent *domain.StandingsAgent, leaderBoardAgent *domain.LeaderBoardAgent, sc domain.SeasonCollection, tc domain.TeamCollection, cl domain.Clock) view.LeaderBoardPageData {
 	var data view.LeaderBoardPageData
 
 	ctxRealm := domain.RealmFromContext(ctx)
@@ -18,7 +18,7 @@ func getLeaderBoardPageData(ctx context.Context, entryAgent *domain.EntryAgent, 
 
 	// retrieve round number
 	roundNumber := 1
-	latestStandings, err := standingsAgent.RetrieveLatestStandingsBySeasonIDAndTimestamp(ctx, seasonID, domain.TimestampFromContext(ctx))
+	latestStandings, err := standingsAgent.RetrieveLatestStandingsBySeasonIDAndTimestamp(ctx, seasonID, cl.Now())
 	switch err.(type) {
 	case domain.NotFoundError:
 	// do nothing, defaults to round number 1

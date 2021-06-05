@@ -126,7 +126,7 @@ func NewContainer(cfg *Config, l domain.Logger, cl domain.Clock) (*container, fu
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot instantiate communications agent: %w", err)
 	}
-	ea, err := domain.NewEntryAgent(er, epr, sc)
+	ea, err := domain.NewEntryAgent(er, epr, sc, cl)
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot instantiate entry agent: %w", err)
 	}
@@ -138,7 +138,7 @@ func NewContainer(cfg *Config, l domain.Logger, cl domain.Clock) (*container, fu
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot instantiate scored entry prediction agent: %w", err)
 	}
-	ta, err := domain.NewTokenAgent(tr)
+	ta, err := domain.NewTokenAgent(tr, cl)
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot instantiate token agent: %w", err)
 	}

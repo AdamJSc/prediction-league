@@ -60,6 +60,7 @@ func frontendLeaderBoardHandler(c *container) func(w http.ResponseWriter, r *htt
 			c.lbAgent,
 			c.seasons,
 			c.teams,
+			c.clock,
 		)
 
 		writeResponse(data)
@@ -151,6 +152,7 @@ func frontendPredictionHandler(c *container) func(w http.ResponseWriter, r *http
 			c.tokenAgent,
 			c.seasons,
 			c.teams,
+			c.clock,
 		)
 
 		writeResponse(data)
@@ -274,7 +276,7 @@ func frontendShortCodeResetCompleteHandler(c *container) func(w http.ResponseWri
 		}
 
 		// has token expired?
-		if token.ExpiresAt.Before(domain.TimestampFromContext(ctx)) {
+		if token.ExpiresAt.Before(c.clock.Now()) {
 			writeResponse(view.ShortCodeResetCompletePageData{Err: invalidTokenErr})
 			return
 		}

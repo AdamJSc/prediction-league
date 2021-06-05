@@ -218,7 +218,7 @@ func retrieveLatestEntryPredictionHandler(c *container) func(w http.ResponseWrit
 		}
 
 		// get entry prediction that pertains to context timestamp
-		entryPrediction, err := c.entryAgent.RetrieveEntryPredictionByTimestamp(ctx, entry, domain.TimestampFromContext(ctx))
+		entryPrediction, err := c.entryAgent.RetrieveEntryPredictionByTimestamp(ctx, entry, c.clock.Now())
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return

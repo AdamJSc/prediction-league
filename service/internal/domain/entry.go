@@ -85,6 +85,7 @@ type EntryAgent struct {
 	er  EntryRepository
 	epr EntryPredictionRepository
 	sc  SeasonCollection
+	cl  Clock
 }
 
 // CreateEntry handles the creation of a new Entry in the database
@@ -100,7 +101,7 @@ func (e *EntryAgent) CreateEntry(ctx context.Context, entry Entry, s *Season) (E
 	}
 
 	// check if season is currently accepting entries
-	if !s.GetState(TimestampFromContext(ctx)).IsAcceptingEntries {
+	if !s.GetState(e.cl.Now()).IsAcceptingEntries {
 		return Entry{}, ConflictError{errors.New("season is not currently accepting entries")}
 	}
 
@@ -369,7 +370,7 @@ func (e *EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPredict
 	}
 
 	// check if season is currently accepting entries
-	if !season.GetState(TimestampFromContext(ctx)).IsAcceptingPredictions {
+	if !season.GetState(e.cl.Now()).IsAcceptingPredictions {
 		return Entry{}, ConflictError{errors.New("season is not currently accepting entries")}
 	}
 
@@ -544,7 +545,7 @@ func (e *EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode stri
 		return Entry{}, ConflictError{errors.New("entry has already been approved")}
 	}
 
-	ts := TimestampFromContext(ctx).Truncate(time.Second)
+	ts := e.cl.Now()
 	entry.ApprovedAt = &ts
 
 	// write to database
@@ -637,7 +638,7 @@ func (e *EntryAgent) SeedEntries(ctx context.Context, entries []Entry) error {
 }
 
 // NewEntryAgent returns a new EntryAgent using the provided repositories
-func NewEntryAgent(er EntryRepository, epr EntryPredictionRepository, sc SeasonCollection) (*EntryAgent, error) {
+func NewEntryAgent(er EntryRepository, epr EntryPredictionRepository, sc SeasonCollection, cl Clock) (*EntryAgent, error) {
 	switch {
 	case er == nil:
 		return nil, fmt.Errorf("entry repository: %w", ErrIsNil)
@@ -645,13 +646,11 @@ func NewEntryAgent(er EntryRepository, epr EntryPredictionRepository, sc SeasonC
 		return nil, fmt.Errorf("entry prediction repository: %w", ErrIsNil)
 	case sc == nil:
 		return nil, fmt.Errorf("season collection: %w", ErrIsNil)
+	case cl == nil:
+		return nil, fmt.Errorf("clock: %w", ErrIsNil)
 	}
 
-	return &EntryAgent{
-		er:  er,
-		epr: epr,
-		sc:  sc,
-	}, nil
+	return &EntryAgent{er, epr, sc, cl}, nil
 }
 
 // sanitiseEntry sanitises and validates an Entry

@@ -76,7 +76,7 @@ func predictionLoginHandler(c *container) func(http.ResponseWriter, *http.Reques
 	}
 }
 
-func getPredictionPageData(ctx context.Context, authToken string, entryAgent *domain.EntryAgent, tokenAgent *domain.TokenAgent, sc domain.SeasonCollection, tc domain.TeamCollection) view.PredictionPageData {
+func getPredictionPageData(ctx context.Context, authToken string, entryAgent *domain.EntryAgent, tokenAgent *domain.TokenAgent, sc domain.SeasonCollection, tc domain.TeamCollection, cl domain.Clock) view.PredictionPageData {
 	var data view.PredictionPageData
 
 	// retrieve season and determine its current state
@@ -87,7 +87,9 @@ func getPredictionPageData(ctx context.Context, authToken string, entryAgent *do
 		return data
 	}
 
-	seasonState := season.GetState(domain.TimestampFromContext(ctx))
+	ts := cl.Now()
+
+	seasonState := season.GetState(ts)
 	data.Predictions.BeingAccepted = seasonState.IsAcceptingPredictions
 	if seasonState.NextPredictionsWindow != nil {
 		if data.Predictions.BeingAccepted {
@@ -127,7 +129,7 @@ func getPredictionPageData(ctx context.Context, authToken string, entryAgent *do
 
 		// if entry has an associated entry prediction
 		// then override the default season team IDs with the most recent prediction
-		entryPrediction, err := entryAgent.RetrieveEntryPredictionByTimestamp(ctx, entry, domain.TimestampFromContext(ctx))
+		entryPrediction, err := entryAgent.RetrieveEntryPredictionByTimestamp(ctx, entry, ts)
 		if err == nil {
 			// we have an entry prediction, let's capture what we need for our view
 			data.Teams.LastUpdated = entryPrediction.CreatedAt

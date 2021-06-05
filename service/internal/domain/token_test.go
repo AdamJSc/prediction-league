@@ -11,15 +11,19 @@ import (
 
 func TestNewTokenAgent(t *testing.T) {
 	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
+		cl := &mockClock{}
+
 		tt := []struct {
 			tr      domain.TokenRepository
+			cl      domain.Clock
 			wantErr error
 		}{
-			{nil, domain.ErrIsNil},
-			{tr, nil},
+			{nil, cl, domain.ErrIsNil},
+			{tr, nil, domain.ErrIsNil},
+			{tr, cl, nil},
 		}
 		for idx, tc := range tt {
-			agent, gotErr := domain.NewTokenAgent(tc.tr)
+			agent, gotErr := domain.NewTokenAgent(tc.tr, tc.cl)
 			if !errors.Is(gotErr, tc.wantErr) {
 				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
 			}
@@ -33,17 +37,13 @@ func TestNewTokenAgent(t *testing.T) {
 func TestTokenAgent_GenerateToken(t *testing.T) {
 	defer truncate(t)
 
-	agent, err := domain.NewTokenAgent(tr)
+	agent, err := domain.NewTokenAgent(tr, &mockClock{t: dt})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// arbitrary timestamp that isn't the current moment
-	ts := time.Now().Add(-24 * time.Hour)
-
 	t.Run("generate an auth token must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
-		ctx = domain.SetTimestampOnContext(ctx, ts)
 		defer cancel()
 
 		expectedType := domain.TokenTypeAuth
@@ -63,10 +63,10 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 		if token.Value != expectedValue {
 			expectedGot(t, expectedValue, token.Value)
 		}
-		if !token.IssuedAt.Equal(ts) {
-			expectedGot(t, ts, token.IssuedAt)
+		if !token.IssuedAt.Equal(dt) {
+			expectedGot(t, dt, token.IssuedAt)
 		}
-		expectedExpires := ts.Add(domain.TokenValidityDuration[expectedType])
+		expectedExpires := dt.Add(domain.TokenValidityDuration[expectedType])
 		if !token.ExpiresAt.Equal(expectedExpires) {
 			expectedGot(t, expectedExpires, token.ExpiresAt)
 		}
@@ -80,7 +80,6 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 
 	t.Run("generate a short code reset token must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
-		ctx = domain.SetTimestampOnContext(ctx, ts)
 		defer cancel()
 
 		expectedType := domain.TokenTypeShortCodeResetToken
@@ -100,10 +99,10 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 		if token.Value != expectedValue {
 			expectedGot(t, expectedValue, token.Value)
 		}
-		if !token.IssuedAt.Equal(ts) {
-			expectedGot(t, ts, token.IssuedAt)
+		if !token.IssuedAt.Equal(dt) {
+			expectedGot(t, dt, token.IssuedAt)
 		}
-		expectedExpires := ts.Add(domain.TokenValidityDuration[expectedType])
+		expectedExpires := dt.Add(domain.TokenValidityDuration[expectedType])
 		if !token.ExpiresAt.Equal(expectedExpires) {
 			expectedGot(t, expectedExpires, token.ExpiresAt)
 		}
@@ -117,7 +116,6 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 
 	t.Run("generate a token of a non-existent token type must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
-		ctx = domain.SetTimestampOnContext(ctx, ts)
 		defer cancel()
 
 		nonExistentTokenType := 123456
@@ -132,7 +130,7 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 	defer truncate(t)
 
-	agent, err := domain.NewTokenAgent(tr)
+	agent, err := domain.NewTokenAgent(tr, &mockClock{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,7 +180,7 @@ func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 func TestTokenAgent_DeleteToken(t *testing.T) {
 	defer truncate(t)
 
-	agent, err := domain.NewTokenAgent(tr)
+	agent, err := domain.NewTokenAgent(tr, &mockClock{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -211,7 +209,7 @@ func TestTokenAgent_DeleteToken(t *testing.T) {
 func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 	defer truncate(t)
 
-	agent, err := domain.NewTokenAgent(tr)
+	agent, err := domain.NewTokenAgent(tr, &mockClock{})
 	if err != nil {
 		t.Fatal(err)
 	}

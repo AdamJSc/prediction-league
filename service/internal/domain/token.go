@@ -38,6 +38,7 @@ type TokenRepository interface {
 // TokenAgent defines the behaviours for handling Tokens
 type TokenAgent struct {
 	tr TokenRepository
+	cl Clock
 }
 
 // GenerateToken generates a new unique token
@@ -52,7 +53,7 @@ func (t *TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (
 		return nil, NotFoundError{fmt.Errorf("token type %d has no validity duration", typ)}
 	}
 
-	now := TimestampFromContext(ctx)
+	now := t.cl.Now()
 
 	token := Token{
 		ID:        id,
@@ -117,9 +118,12 @@ func (t *TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp tim
 }
 
 // NewTokenAgent returns a new TokenAgent using the provided repository
-func NewTokenAgent(tr TokenRepository) (*TokenAgent, error) {
-	if tr == nil {
+func NewTokenAgent(tr TokenRepository, cl Clock) (*TokenAgent, error) {
+	switch {
+	case tr == nil:
 		return nil, fmt.Errorf("token repository: %w", ErrIsNil)
+	case cl == nil:
+		return nil, fmt.Errorf("clock: %w", ErrIsNil)
 	}
-	return &TokenAgent{tr: tr}, nil
+	return &TokenAgent{tr, cl}, nil
 }

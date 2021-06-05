@@ -24,6 +24,7 @@ import (
 
 var (
 	db         *sql.DB
+	dt         time.Time
 	epr        domain.EntryPredictionRepository
 	er         domain.EntryRepository
 	rc         domain.RealmCollection
@@ -46,6 +47,13 @@ const (
 // TestMain provides a testing bootstrap
 func TestMain(m *testing.M) {
 	var err error
+
+	loc, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dt = time.Date(2018, 5, 26, 14, 0, 0, 0, loc)
 
 	// get working directory
 	wd, err := os.Getwd()

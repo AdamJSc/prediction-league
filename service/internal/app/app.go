@@ -78,9 +78,6 @@ func contextFromRequest(r *http.Request, c *container) (context.Context, context
 		}
 	}
 
-	// add clock timestamp to context
-	ctx = domain.SetTimestampOnContext(ctx, c.clock.Now())
-
 	return ctx, cancel, nil
 }
 
