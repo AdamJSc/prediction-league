@@ -41,15 +41,20 @@ func (m *mockClock) Now() time.Time {
 func TestNewLogger(t *testing.T) {
 	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
 		tt := []struct {
-			lvl     level
+			lvl     string
 			w       io.Writer
 			cl      domain.Clock
 			wantErr error
 		}{
-			{level(123), os.Stdout, &domain.RealClock{}, domain.ErrIsInvalid},
-			{LevelDebug, nil, &domain.RealClock{}, domain.ErrIsNil},
-			{LevelDebug, os.Stdout, nil, domain.ErrIsNil},
-			{LevelDebug, os.Stdout, &domain.RealClock{}, nil},
+			{"not_a_valid_level", os.Stdout, &domain.RealClock{}, domain.ErrIsInvalid},
+			{"", os.Stdout, &domain.RealClock{}, domain.ErrIsInvalid},
+			{"DEBUG", nil, &domain.RealClock{}, domain.ErrIsNil},
+			{"DEBUG", os.Stdout, nil, domain.ErrIsNil},
+			{"DEBUG", os.Stdout, &domain.RealClock{}, nil},
+			{"INFO", os.Stdout, &domain.RealClock{}, nil},
+			{"ERROR", os.Stdout, &domain.RealClock{}, nil},
+			{"eRrOr", os.Stdout, &domain.RealClock{}, nil},
+			{"error", os.Stdout, &domain.RealClock{}, nil},
 		}
 		for idx, tc := range tt {
 			l, gotErr := NewLogger(tc.lvl, tc.w, tc.cl)
@@ -68,12 +73,12 @@ func TestLogger_Debugf(t *testing.T) {
 	c := &mockClock{t: testDate}
 
 	tt := []struct {
-		lvl       level
+		lvl       string
 		shouldLog bool
 	}{
-		{LevelDebug, true},
-		{LevelInfo, false},
-		{LevelError, false},
+		{"DEBUG", true},
+		{"INFO", false},
+		{"ERROR", false},
 	}
 
 	for idx, tc := range tt {
@@ -81,7 +86,7 @@ func TestLogger_Debugf(t *testing.T) {
 		l.Debugf("hello %d", 123)
 		var wantOut string
 		if tc.shouldLog {
-			wantOut = "2018-05-26T14:00:00+01:00 DEBUG: [logger/logger_test.go:81] hello 123\n"
+			wantOut = "2018-05-26T14:00:00+01:00 DEBUG: [logger/logger_test.go:86] hello 123\n"
 		}
 		got := wr.buf.String()
 		if got != wantOut {
@@ -96,12 +101,12 @@ func TestLogger_Info(t *testing.T) {
 	c := &mockClock{t: testDate}
 
 	tt := []struct {
-		lvl       level
+		lvl       string
 		shouldLog bool
 	}{
-		{LevelDebug, true},
-		{LevelInfo, true},
-		{LevelError, false},
+		{"DEBUG", true},
+		{"INFO", true},
+		{"ERROR", false},
 	}
 
 	for idx, tc := range tt {
@@ -109,7 +114,7 @@ func TestLogger_Info(t *testing.T) {
 		l.Info("hello world")
 		var wantOut string
 		if tc.shouldLog {
-			wantOut = "2018-05-26T14:00:00+01:00 INFO: [logger/logger_test.go:109] hello world\n"
+			wantOut = "2018-05-26T14:00:00+01:00 INFO: [logger/logger_test.go:114] hello world\n"
 		}
 		got := wr.buf.String()
 		if got != wantOut {
@@ -124,12 +129,12 @@ func TestLogger_Infof(t *testing.T) {
 	c := &mockClock{t: testDate}
 
 	tt := []struct {
-		lvl       level
+		lvl       string
 		shouldLog bool
 	}{
-		{LevelDebug, true},
-		{LevelInfo, true},
-		{LevelError, false},
+		{"DEBUG", true},
+		{"INFO", true},
+		{"ERROR", false},
 	}
 
 	for idx, tc := range tt {
@@ -137,7 +142,7 @@ func TestLogger_Infof(t *testing.T) {
 		l.Infof("hello %d", 123)
 		var wantOut string
 		if tc.shouldLog {
-			wantOut = "2018-05-26T14:00:00+01:00 INFO: [logger/logger_test.go:137] hello 123\n"
+			wantOut = "2018-05-26T14:00:00+01:00 INFO: [logger/logger_test.go:142] hello 123\n"
 		}
 		got := wr.buf.String()
 		if got != wantOut {
@@ -152,12 +157,12 @@ func TestLogger_Error(t *testing.T) {
 	c := &mockClock{t: testDate}
 
 	tt := []struct {
-		lvl       level
+		lvl       string
 		shouldLog bool
 	}{
-		{LevelDebug, true},
-		{LevelInfo, true},
-		{LevelError, true},
+		{"DEBUG", true},
+		{"INFO", true},
+		{"ERROR", true},
 	}
 
 	for idx, tc := range tt {
@@ -165,7 +170,7 @@ func TestLogger_Error(t *testing.T) {
 		l.Error("hello world")
 		var wantOut string
 		if tc.shouldLog {
-			wantOut = "2018-05-26T14:00:00+01:00 ERROR: [logger/logger_test.go:165] hello world\n"
+			wantOut = "2018-05-26T14:00:00+01:00 ERROR: [logger/logger_test.go:170] hello world\n"
 		}
 		got := wr.buf.String()
 		if got != wantOut {
@@ -180,12 +185,12 @@ func TestLogger_Errorf(t *testing.T) {
 	c := &mockClock{t: testDate}
 
 	tt := []struct {
-		lvl       level
+		lvl       string
 		shouldLog bool
 	}{
-		{LevelDebug, true},
-		{LevelInfo, true},
-		{LevelError, true},
+		{"DEBUG", true},
+		{"INFO", true},
+		{"ERROR", true},
 	}
 
 	for idx, tc := range tt {
@@ -193,7 +198,7 @@ func TestLogger_Errorf(t *testing.T) {
 		l.Errorf("hello %d", 123)
 		var wantOut string
 		if tc.shouldLog {
-			wantOut = "2018-05-26T14:00:00+01:00 ERROR: [logger/logger_test.go:193] hello 123\n"
+			wantOut = "2018-05-26T14:00:00+01:00 ERROR: [logger/logger_test.go:198] hello 123\n"
 		}
 		got := wr.buf.String()
 		if got != wantOut {

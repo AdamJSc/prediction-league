@@ -13,19 +13,37 @@ import (
 )
 
 func main() {
-	cl := getClock()
-	if cl == nil {
-		log.Fatal("clock is nil")
-	}
-
-	// TODO - logger: parse logger level from config
-	l, err := logger.NewLogger(logger.LevelDebug, os.Stdout, cl)
+	// base logger
+	l, err := logger.NewLogger("DEBUG", os.Stdout, &domain.RealClock{})
 	if err != nil {
 		log.Fatalf("cannot instantiate logger: %s", err.Error())
 	}
 
-	if err := run(l, cl); err != nil {
+	// setup env and config
+	cfg, err := app.NewConfigFromEnvPaths(l, ".env", "infra/app.env")
+	if err != nil {
+		l.Errorf("cannot parse config from env: %s", err.Error())
+		os.Exit(1)
+	}
+
+	// instantiate clock
+	cl := getClock()
+	if cl == nil {
+		l.Error("clock is nil")
+		os.Exit(1)
+	}
+
+	// re-configure logger
+	l, err = logger.NewLogger(cfg.LogLevel, os.Stdout, cl)
+	if err != nil {
+		l.Errorf("cannot instantiate logger: %s", err.Error())
+		os.Exit(1)
+	}
+
+	// build and run
+	if err := run(cfg, l, cl); err != nil {
 		l.Errorf("run failed: %s", err.Error())
+		os.Exit(1)
 	}
 }
 
@@ -37,6 +55,9 @@ func getClock() domain.Clock {
 		return &domain.RealClock{}
 	}
 	if t := parseTime("20060102150405", *ts); t != nil {
+		return &domain.FrozenClock{Time: *t}
+	}
+	if t := parseTime("200601021504", *ts); t != nil {
 		return &domain.FrozenClock{Time: *t}
 	}
 	if t := parseTime("20060102", *ts); t != nil {
@@ -54,13 +75,7 @@ func parseTime(layout, value string) *time.Time {
 	return &parsed
 }
 
-func run(l domain.Logger, cl domain.Clock) error {
-	// setup env and config
-	cfg, err := app.NewConfigFromEnvPaths(l, ".env", "infra/app.env")
-	if err != nil {
-		return fmt.Errorf("cannot parse config from end: %w", err)
-	}
-
+func run(cfg *app.Config, l domain.Logger, cl domain.Clock) error {
 	// setup container
 	cnt, cleanup, err := app.NewContainer(cfg, l, cl)
 	if err != nil {

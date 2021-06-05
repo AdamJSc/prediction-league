@@ -10,11 +10,7 @@ import (
 	"time"
 )
 
-const (
-	prefixDebug = "DEBUG"
-	prefixError = "ERROR"
-	prefixInfo  = "INFO"
-)
+type level int
 
 const (
 	LevelDebug level = iota
@@ -22,10 +18,16 @@ const (
 	LevelError
 )
 
-type level int
+const (
+	prefixDebug = "DEBUG"
+	prefixInfo  = "INFO"
+	prefixError = "ERROR"
+)
 
-func (l level) isValid() bool {
-	return l >= LevelDebug && l <= LevelError
+var levels = map[string]level{
+	prefixDebug: LevelDebug,
+	prefixInfo:  LevelInfo,
+	prefixError: LevelError,
 }
 
 // Logger defines a standard Logger
@@ -78,9 +80,11 @@ func (l *Logger) prefixMsgArgs(prefix, msg string, a ...interface{}) string {
 }
 
 // NewLogger returns a new Logger using the provided writer
-func NewLogger(l level, w io.Writer, cl domain.Clock) (*Logger, error) {
-	if !l.isValid() {
-		return nil, fmt.Errorf("level: %w", domain.ErrIsInvalid)
+func NewLogger(lvl string, w io.Writer, cl domain.Clock) (*Logger, error) {
+	lvl = strings.ToUpper(lvl)
+	l, ok := getLevelFromLabel(lvl)
+	if !ok {
+		return nil, fmt.Errorf("level '%s': %w", lvl, domain.ErrIsInvalid)
 	}
 	if w == nil {
 		return nil, fmt.Errorf("writer: %w", domain.ErrIsNil)
@@ -104,4 +108,10 @@ func getCallerRef() string {
 		fdir = parts[len(parts)-2] + string(os.PathSeparator)
 	}
 	return fmt.Sprintf("[%s%s:%d] ", fdir, fname, line)
+}
+
+// getLevelFromLabel returns the level value that corresponds to the provided label
+func getLevelFromLabel(lbl string) (level, bool) {
+	lvl, ok := levels[lbl]
+	return lvl, ok
 }

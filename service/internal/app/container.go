@@ -13,7 +13,7 @@ import (
 
 // container encapsulates the app dependencies
 type container struct {
-	*config
+	config         *Config
 	realms         domain.RealmCollection
 	seasons        domain.SeasonCollection
 	teams          domain.TeamCollection
@@ -32,7 +32,7 @@ type container struct {
 }
 
 // NewContainer instantiates a new container from the provided config object
-func NewContainer(cfg *config, l domain.Logger, cl domain.Clock) (*container, func() error, error) {
+func NewContainer(cfg *Config, l domain.Logger, cl domain.Clock) (*container, func() error, error) {
 	if cfg == nil {
 		return nil, nil, fmt.Errorf("config: %w", domain.ErrIsNil)
 	}
