@@ -12,11 +12,11 @@ func TestNewHTTPServer(t *testing.T) {
 			t.Fatalf("want ErrIsNil, got %s (%T)", gotErr, gotErr)
 		}
 
-		c := &config{}
+		c := &Config{}
 		l := &mockLogger{}
 
 		tt := []struct {
-			c       *config
+			c       *Config
 			l       domain.Logger
 			wantErr error
 		}{
