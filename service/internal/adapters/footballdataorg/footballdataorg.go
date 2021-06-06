@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"prediction-league/service/internal/adapters"
 	"prediction-league/service/internal/domain"
-	"strings"
 )
 
 const baseURL = "https://api.football-data.org"
@@ -17,44 +17,44 @@ const baseURL = "https://api.football-data.org"
 type Client struct {
 	apiToken string
 	tc       domain.TeamCollection
+	hc       adapters.HTTPClient
 }
 
 // RetrieveLatestStandingsBySeason implements this method on the clients.FootballDataSource interface
 func (c *Client) RetrieveLatestStandingsBySeason(ctx context.Context, s domain.Season) (domain.Standings, error) {
-	// TODO - football data source: abstract http call upstream
-	var url = getFullURL(fmt.Sprintf("/v2/competitions/%s/standings?season=%d",
-		s.ClientID.Value(),
-		s.Active.From.Year()),
-	)
-
-	httpResponse, err := getResponse(c, ctx, url)
+	req, err := c.prepareRetrieveStandingsRequest(ctx, s.ClientID.Value(), s.Active.From.Year())
 	if err != nil {
-		return domain.Standings{}, err
+		return domain.Standings{}, fmt.Errorf("cannot prepare retrieve standings request: %w", err)
 	}
 
-	body, err := ioutil.ReadAll(httpResponse.Body)
+	resp, err := c.hc.Do(req)
 	if err != nil {
-		return domain.Standings{}, err
+		return domain.Standings{}, fmt.Errorf("cannot get retrieve standings response: %w", err)
 	}
 
-	var standingsResponse competitionStandingsGetResponse
-	if err := json.Unmarshal(body, &standingsResponse); err != nil {
-		return domain.Standings{}, err
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return domain.Standings{}, fmt.Errorf("cannot read retrieve standings response body: %w", err)
 	}
 
-	ovSt, err := getOverallStandings(standingsResponse)
+	var stndResp competitionStandingsGetResponse
+	if err := json.Unmarshal(body, &stndResp); err != nil {
+		return domain.Standings{}, fmt.Errorf("cannot unmarshal retrieve standings response: %w", err)
+	}
+
+	ovSt, err := getOverallStandings(stndResp)
 	if err != nil {
 		return domain.Standings{}, fmt.Errorf("cannot get overall standings: %w", err)
 	}
 
 	standings := domain.Standings{
 		SeasonID:    s.ID,
-		RoundNumber: standingsResponse.Season.CurrentMatchday,
+		RoundNumber: stndResp.Season.CurrentMatchday,
 	}
 	for _, tableElem := range ovSt.Table {
 		ranking, err := tableElem.toRankingWithMeta(c.tc)
 		if err != nil {
-			return domain.Standings{}, err
+			return domain.Standings{}, fmt.Errorf("cannot convert table elem to ranking with meta: %w", err)
 		}
 		standings.Rankings = append(standings.Rankings, ranking)
 	}
@@ -63,36 +63,27 @@ func (c *Client) RetrieveLatestStandingsBySeason(ctx context.Context, s domain.S
 }
 
 // NewClient generates a new Client
-func NewClient(apiToken string, tc domain.TeamCollection) (*Client, error) {
+func NewClient(apiToken string, tc domain.TeamCollection, hc adapters.HTTPClient) (*Client, error) {
 	if tc == nil {
 		return nil, fmt.Errorf("team collection: %w", domain.ErrIsNil)
 	}
-	return &Client{
-		apiToken: apiToken,
-		tc:       tc,
-	}, nil
+	if hc == nil {
+		return nil, fmt.Errorf("http client: %w", domain.ErrIsNil)
+	}
+	return &Client{apiToken, tc, hc}, nil
 }
 
-// getFullURL appends the provided endpoint to the known base URL
-func getFullURL(endpoint string) string {
-	return fmt.Sprintf("%s/%s", baseURL, strings.Trim(endpoint, "/"))
-}
+func (c *Client) prepareRetrieveStandingsRequest(ctx context.Context, compID string, year int) (*http.Request, error) {
+	url := fmt.Sprintf("%s/v2/competitions/%s/standings?season=%d", baseURL, compID, year)
 
-// getResponse performs a GET request to the provided URL and returns a response object
-func getResponse(c *Client, ctx context.Context, url string) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot generate request: url '%s': %w", url, err)
 	}
 
 	req.Header.Add("X-Auth-Token", c.apiToken)
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return req, nil
 }
 
 // competitionStandingsGetResponse defines the expected payload structure of the request to retrieve the current standings

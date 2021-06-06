@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang-migrate/migrate/v4"
+	"prediction-league/service/internal/adapters"
 	"prediction-league/service/internal/adapters/footballdataorg"
 	"prediction-league/service/internal/adapters/mailgun"
 	"prediction-league/service/internal/adapters/mysqldb"
@@ -87,7 +88,8 @@ func NewContainer(cfg *Config, l domain.Logger, cl domain.Clock) (*container, fu
 	var fds domain.FootballDataSource
 	switch {
 	case cfg.FootballDataAPIToken != "":
-		fds, err = footballdataorg.NewClient(cfg.FootballDataAPIToken, tc)
+		hc := adapters.NewRealHTTPClient(10)
+		fds, err = footballdataorg.NewClient(cfg.FootballDataAPIToken, tc, hc)
 		if err != nil {
 			return nil, nil, fmt.Errorf("cannot instantiate football-data.org client: %w", err)
 		}

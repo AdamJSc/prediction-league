@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"errors"
+	"net/http"
 	"prediction-league/service/internal/adapters/footballdataorg"
 	"prediction-league/service/internal/adapters/logger"
 	"prediction-league/service/internal/domain"
@@ -122,6 +123,7 @@ func TestCronFactory_GenerateCron(t *testing.T) {
 		}
 
 		tc := make(domain.TeamCollection)
+		hc := &mockHTTPClient{}
 
 		cl := &domain.RealClock{}
 		ea := &domain.EntryAgent{}
@@ -140,7 +142,7 @@ func TestCronFactory_GenerateCron(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		fds, err := footballdataorg.NewClient("12345", tc)
+		fds, err := footballdataorg.NewClient("12345", tc, hc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -165,4 +167,14 @@ type mockClock struct {
 
 func (m *mockClock) Now() time.Time {
 	return m.t
+}
+
+type doFunc func(*http.Request) (*http.Response, error)
+
+type mockHTTPClient struct {
+	doFunc
+}
+
+func (m *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	return m.doFunc(req)
 }
