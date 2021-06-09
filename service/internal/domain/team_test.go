@@ -3,15 +3,40 @@ package domain_test
 import (
 	"errors"
 	"fmt"
-	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 	"testing"
 )
 
+func TestTeamCollection_GetByID(t *testing.T) {
+	collection := domain.TeamCollection{
+		"team_1": domain.Team{ID: "team_1"},
+		"team_2": domain.Team{ID: "team_2"},
+		"team_3": domain.Team{ID: "team_3"},
+	}
+
+	t.Run("retrieving an existing team by id must succeed", func(t *testing.T) {
+		id := "team_2"
+		s, err := collection.GetByID(id)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if s.ID != id {
+			expectedGot(t, id, s.ID)
+		}
+	})
+
+	t.Run("retrieving a non-existing team by id must fail", func(t *testing.T) {
+		id := "not_existent_team_id"
+		if _, err := collection.GetByID(id); err == nil {
+			expectedNonEmpty(t, "team collection getbyid error")
+		}
+	})
+}
+
 func TestTeam_CheckValidation(t *testing.T) {
 	t.Run("validate teams", func(t *testing.T) {
-		for id, team := range datastore.Teams {
+		for id, team := range domain.GetTeamCollection() {
 			if id != team.ID {
 				t.Fatal(fmt.Errorf("mismatched team id: %s != %s", id, team.ID))
 			}
@@ -24,10 +49,10 @@ func TestTeam_CheckValidation(t *testing.T) {
 }
 
 func TestTeam_FilterTeamsByIDs(t *testing.T) {
-	collection := models.TeamCollection{
-		"ID123": models.Team{ID: "ID123"},
-		"ID456": models.Team{ID: "ID456"},
-		"ID789": models.Team{ID: "ID789"},
+	collection := domain.TeamCollection{
+		"ID123": domain.Team{ID: "ID123"},
+		"ID456": domain.Team{ID: "ID456"},
+		"ID789": domain.Team{ID: "ID789"},
 	}
 
 	t.Run("filter teams by valid ids must succeed", func(t *testing.T) {
@@ -36,7 +61,7 @@ func TestTeam_FilterTeamsByIDs(t *testing.T) {
 			"ID789",
 		}
 
-		expectedResult := []models.Team{
+		expectedResult := []domain.Team{
 			{ID: "ID123"},
 			{ID: "ID789"},
 		}

@@ -1,9 +1,22 @@
 package domain
 
 import (
+	"errors"
 	"fmt"
-	"prediction-league/service/internal/repositories"
 	"strings"
+)
+
+var (
+	// ErrIsNil defines an error that represents a missing argument passed to a constructor function
+	ErrIsNil = errors.New("is nil")
+	// ErrIsEmpty defines an error that represents an empty argument passed to a constructor function
+	ErrIsEmpty = errors.New("is empty")
+	// ErrIsInvalid defines an error that represents an argument passed with an invalid value
+	ErrIsInvalid = errors.New("is invalid")
+	// ErrCurrentTimeFrameIsMissing defines an error representing a missing timeframe
+	ErrCurrentTimeFrameIsMissing = errors.New("current timeframe is missing")
+	// ErrNoMatchingPredictionWindow defines an error representing a no matching prediction windows
+	ErrNoMatchingPredictionWindow = errors.New("no matching prediction window")
 )
 
 // BadRequestError translates to a 400 Bad Request response status code
@@ -38,11 +51,38 @@ type InternalError struct{ error }
 // domainErrorFromRepositoryError returns the appropriate domain-level error from a repository-specific error
 func domainErrorFromRepositoryError(err error) error {
 	switch err.(type) {
-	case repositories.DuplicateDBRecordError:
+	case DuplicateDBRecordError:
 		return ConflictError{err}
-	case repositories.MissingDBRecordError:
+	case MissingDBRecordError:
 		return NotFoundError{err}
 	}
 
 	return InternalError{err}
+}
+
+// MissingDBRecordError represents an error from an SQL agent that pertains to a missing record
+type MissingDBRecordError struct {
+	Err error
+}
+
+func (m MissingDBRecordError) Error() string {
+	return m.Err.Error()
+}
+
+// DuplicateDBRecordError represents an error from an SQL agent that pertains to a unique constraint violation
+type DuplicateDBRecordError struct {
+	Err error
+}
+
+func (d DuplicateDBRecordError) Error() string {
+	return d.Err.Error()
+}
+
+// MultiError encapsulates multiple errors
+type MultiError struct {
+	Errs []error
+}
+
+func (m MultiError) Error() string {
+	return "multiple errors occurred"
 }

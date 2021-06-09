@@ -51,20 +51,6 @@ func NewContext() (context.Context, context.CancelFunc) {
 	return ctx, cancel
 }
 
-// TimestampFromContext retrieves a timestamp override if set on the provided context, otherwise returns current timestamp
-func TimestampFromContext(ctx context.Context) time.Time {
-	var ts = time.Now()
-
-	val := ctx.Value(contextKeyTimestamp)
-
-	switch val.(type) {
-	case time.Time:
-		return val.(time.Time)
-	}
-
-	return ts
-}
-
 // GuardFromContext retrieves the Guard from the provided context
 func GuardFromContext(ctx context.Context) *Guard {
 	var g = &Guard{}
@@ -116,9 +102,4 @@ func IsBasicAuthSuccessful(ctx context.Context) bool {
 	}
 
 	return false
-}
-
-// SetTimestampOnContext sets the provided timestamp on the provided context
-func SetTimestampOnContext(ctx context.Context, ts time.Time) context.Context {
-	return context.WithValue(ctx, contextKeyTimestamp, ts)
 }

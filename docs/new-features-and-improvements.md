@@ -1,13 +1,10 @@
-[Back to README](../README.md)
-
 # New Features
+
+[Back to README](../README.md)
 
 Here is a brief outline of some new features that could form part of the project's Roadmap.
 
-* Implement additional means of communication for transactional events, such as SMS or rich-text/HTML emails.
-
-* Implement transactional emails for additional events, such as notifying users when a new
-[Prediction](domain-knowledge.md#entryprediction) window opens, or is about to close.
+* Implement additional channels for transactional events, such as SMS or rich-text/HTML emails.
 
 
 # Improvements
@@ -17,26 +14,17 @@ Here is a brief outline of some improvements that could be made to the system's 
 The majority of these have arisen due to time-constraints prior to the initial project roll-out, which had to be
 launched in time for the 2020/21 football season!
 
-## Global Data Store
+## Testing with Season and Team Collections
 
-* The [Seasons](domain-knowledge.md#season) and [Teams](domain-knowledge.md#team) data available to the system is 
-configured in code as a central in-memory data store (see `datastore.Seasons` and `datastore.Teams` respectively).
+* Work has been done to pass `SeasonCollection` and `TeamCollection` as dependencies to any domain agents/workers as required.
+This replaces the previous implementation of a global data store for each one.
 
-* This is a deliberate design decision, in order that this data (which changes only once a year, before a real-world
-season begins) can be carefully managed by the project maintainer, and does not require CRUD exposure from an end-user
-perspective.
+* However, for convenience the testsuites were updated to simply call `domain.GetSeasonCollection()` and assign the
+first returned value as a `testSeason`. A similar approach has been taken with `domain.GetTeamCollection()`, so this data
+is still effectively leveraging a global data store, instead of setting Season and Team expectations per test case.
 
-* However, this also means that agent methods must access these global data stores directly. This unfortunately prevents
-the ability to mock [Season](domain-knowledge.md#season) and [Team](domain-knowledge.md#team) data when running tests
-(particularly unit tests).
-
-* The tests themselves must therefore access this global data directly when performing any setup within the test bootstrap.
-
-* A much cleaner solution would instead require that the app's dependency container comprises a
-"[Season](domain-knowledge.md#season) Data Provider" and a "[Team](domain-knowledge.md#team) Data Provider".
-
-* This would enable the agent methods to retrieve this data from the container instead, which means the providers can be
-easily mocked on the test dependency container that is injected into the agent constructors.
+* It would be useful to separate the test case logic properly, such that Season and Team expectations are explicitly defined
+at the top of each test case for clarity.
 
 ## Email Retries
 
@@ -52,7 +40,7 @@ non-receipt of this type of email **will** prevent the user from engaging with t
 total with an increasing cool-off period of several seconds occurring between each attempt.
 
 * Any emails that fail on all 3 attempts should be sent to a "dead letter" queue, which persists external to the
-existing in-memory queue/channel so that appropriate action can be taken at a later date.
+existing in-memory queue/channel so that appropriate subsequent action can be taken.
 
 ## Short Codes
 
@@ -98,9 +86,9 @@ be reset...
 password mechanism.
 
     * If Short Codes are to be retained, they should become **ephemeral** - i.e. single-use for a limited timeframe, and
-    discarded as soon as they have been consumed.
+    discarded as soon as they have been consumed (so more like a typical "magic link").
     
-    * Alternatively, traditional passwords will require the usual hashing, additional considerations around storage and
+    * Alternatively, a traditional password will require the usual hashing, additional considerations around storage and
     security of the system's data source, and sensible UX workflows that enable a user to set/reset their own password
     at any time (and not just during the pre-determined timeframe windows that allow a [Prediction](domain-knowledge.md#entryprediction)
     to be updated).
@@ -133,27 +121,27 @@ after the first [Entry](domain-knowledge.md#entry) creation stage has been succe
 
 ## Cookies / Logout
 
-* When user "logs out" after making a prediction, consider clearing cookie on the backend (and deleting the token)
-rather than the frontend
+* When user "logs out" after making a prediction, consider clearing the cookie on the Backend (and deleting the token)
+rather than just the Frontend
 
 ## Concurrency within Scheduled Tasks
 
 * In the cron job that retrieves latest standings, consider generating scores concurrently (i.e. where
-`domain.ScoreEntryPredictionBasedOnStandings()` is invoked within a loop).
+`domain.GenerateScoredEntryPrediction()` is invoked within a loop).
 
 * This process only runs once every 15 minutes anyway and scale is expected to be very minimal, but performance benefits
 are always fun regardless.
 
 ## Guard
 
-* [Guards](domain-knowledge.md#guard) are arbitrary permissions-based mechanisms that provide agent methods with
+* [Guards](domain-knowledge.md#guard) are an arbitrary permissions-based mechanism that provide agent methods with
 the optional ability to determine whether or not an operation should be permitted.
 
 * Guards belong to a custom context and must have their "attempt" value set within the request handler, such that the
 agent method has the option of checking whether this is a match for a known "target" value.
 
 * Perhaps consider something more robust/generic - e.g. an interface with a `Permit()` method that accepts a request object
-and returns a `bool`. An implementation of this interface can then be passed to an agent methods that requires the check.
+and returns a `bool`. An implementation of this interface can then be passed to an agent method that requires the check.
 
 ## Vue integration
 
@@ -183,5 +171,5 @@ repositories here would remove any meaningful business logic and therefore reduc
 * Given that CI/CD for this project uses Bitbucket Pipelines, it is fortunately trivial to run integration tests as part
 of the deployment pipeline since a MySQL container can be configured as a pipeline dependency.
 
-* However, for the sake of sound engineering practice, consider enabling unit and integration testsuites to be run
-independently of each other.
+* However, for the sake of sound engineering practice, consider writing separate unit and integration testsuites which
+can be run independently of each other.

@@ -35,7 +35,7 @@ services:
     working_dir: /go/src/app
     ports:
       - 3000:3000
-    command: go run service/main.go
+    command: go run service/cmd/api/main.go
 
   db_test:
     image: mysql:5.7

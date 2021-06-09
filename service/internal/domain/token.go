@@ -3,17 +3,13 @@ package domain
 import (
 	"context"
 	"fmt"
-	coresql "github.com/LUSHDigital/core-sql"
-	"math/rand"
-	"prediction-league/service/internal/models"
-	"prediction-league/service/internal/repositories"
 	"time"
 )
 
 const (
-	TokenLength   = 32
 	TokenTypeAuth = iota
 	TokenTypeShortCodeResetToken
+	TokenLength = 32
 )
 
 var TokenValidityDuration = map[int]time.Duration{
@@ -21,19 +17,33 @@ var TokenValidityDuration = map[int]time.Duration{
 	TokenTypeShortCodeResetToken: time.Minute * 10,
 }
 
-// TokenAgentInjector defines the dependencies required by our TokenAgent
-type TokenAgentInjector interface {
-	MySQL() coresql.Agent
+// Token defines a token model
+type Token struct {
+	ID        string    `db:"id"`
+	Type      int       `db:"type"`
+	Value     string    `db:"value"`
+	IssuedAt  time.Time `db:"issued_at"`
+	ExpiresAt time.Time `db:"expires_at"`
+}
+
+// TokenRepository defines the interface for transacting with our Token data source
+type TokenRepository interface {
+	Insert(ctx context.Context, token *Token) error
+	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]Token, error)
+	ExistsByID(ctx context.Context, id string) error
+	DeleteByID(ctx context.Context, id string) error
+	GenerateUniqueTokenID(ctx context.Context) (string, error)
 }
 
 // TokenAgent defines the behaviours for handling Tokens
-type TokenAgent struct{ TokenAgentInjector }
+type TokenAgent struct {
+	tr TokenRepository
+	cl Clock
+}
 
 // GenerateToken generates a new unique token
-func (t TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (*models.Token, error) {
-	tokenRepo := repositories.NewTokenDatabaseRepository(t.MySQL())
-
-	id, err := generateUniqueTokenID(ctx, tokenRepo)
+func (t *TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (*Token, error) {
+	id, err := t.tr.GenerateUniqueTokenID(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -43,9 +53,9 @@ func (t TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (*
 		return nil, NotFoundError{fmt.Errorf("token type %d has no validity duration", typ)}
 	}
 
-	now := TimestampFromContext(ctx)
+	now := t.cl.Now()
 
-	token := models.Token{
+	token := Token{
 		ID:        id,
 		Type:      typ,
 		Value:     value,
@@ -53,7 +63,7 @@ func (t TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (*
 		ExpiresAt: now.Add(tokenDur),
 	}
 
-	if err := tokenRepo.Insert(ctx, &token); err != nil {
+	if err := t.tr.Insert(ctx, &token); err != nil {
 		return nil, domainErrorFromRepositoryError(err)
 	}
 
@@ -61,10 +71,8 @@ func (t TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (*
 }
 
 // RetrieveTokenByID retrieves an existing token by the provided ID
-func (t TokenAgent) RetrieveTokenByID(ctx context.Context, id string) (*models.Token, error) {
-	tokenRepo := repositories.NewTokenDatabaseRepository(t.MySQL())
-
-	tokens, err := tokenRepo.Select(ctx, map[string]interface{}{
+func (t *TokenAgent) RetrieveTokenByID(ctx context.Context, id string) (*Token, error) {
+	tokens, err := t.tr.Select(ctx, map[string]interface{}{
 		"id": id,
 	}, false)
 	if err != nil {
@@ -79,10 +87,8 @@ func (t TokenAgent) RetrieveTokenByID(ctx context.Context, id string) (*models.T
 }
 
 // DeleteToken removes the provided token
-func (t TokenAgent) DeleteToken(ctx context.Context, token models.Token) error {
-	tokenRepo := repositories.NewTokenDatabaseRepository(t.MySQL())
-
-	err := tokenRepo.DeleteByID(ctx, token.ID)
+func (t *TokenAgent) DeleteToken(ctx context.Context, token Token) error {
+	err := t.tr.DeleteByID(ctx, token.ID)
 	if err != nil {
 		return domainErrorFromRepositoryError(err)
 	}
@@ -91,11 +97,9 @@ func (t TokenAgent) DeleteToken(ctx context.Context, token models.Token) error {
 }
 
 // DeleteTokensExpiredAfter removes tokens that have expired since the provide timestamp
-func (t TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp time.Time) error {
-	tokenRepo := repositories.NewTokenDatabaseRepository(t.MySQL())
-
-	tokens, err := tokenRepo.Select(ctx, map[string]interface{}{
-		"expires_at": repositories.Condition{
+func (t *TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp time.Time) error {
+	tokens, err := t.tr.Select(ctx, map[string]interface{}{
+		"expires_at": DBQueryCondition{
 			Operator: "<=",
 			Operand:  timestamp,
 		},
@@ -105,7 +109,7 @@ func (t TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp time
 	}
 
 	for _, token := range tokens {
-		if err := tokenRepo.DeleteByID(ctx, token.ID); err != nil {
+		if err := t.tr.DeleteByID(ctx, token.ID); err != nil {
 			return domainErrorFromRepositoryError(err)
 		}
 	}
@@ -113,35 +117,13 @@ func (t TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp time
 	return nil
 }
 
-// generateUniqueTokenID returns a string representing a unique token ID
-func generateUniqueTokenID(ctx context.Context, tokenRepo repositories.TokenRepository) (string, error) {
-	id := generateAlphaNumericString(TokenLength)
-
-	if err := tokenRepo.ExistsByID(ctx, id); err != nil {
-		switch err.(type) {
-		case repositories.MissingDBRecordError:
-			return id, nil
-		default:
-			return "", err
-		}
+// NewTokenAgent returns a new TokenAgent using the provided repository
+func NewTokenAgent(tr TokenRepository, cl Clock) (*TokenAgent, error) {
+	switch {
+	case tr == nil:
+		return nil, fmt.Errorf("token repository: %w", ErrIsNil)
+	case cl == nil:
+		return nil, fmt.Errorf("clock: %w", ErrIsNil)
 	}
-
-	return generateUniqueTokenID(ctx, tokenRepo)
-}
-
-// generateAlphaNumericString generates an alphanumeric string to the provided length
-func generateAlphaNumericString(length int) string {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	source := "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz"
-	var generated string
-
-	sourceLen := len(source)
-
-	for i := 0; i < length; i++ {
-		randInt := r.Int63n(int64(sourceLen))
-		randByte := []byte(source)[randInt]
-		generated += string(randByte)
-	}
-
-	return generated
+	return &TokenAgent{tr, cl}, nil
 }

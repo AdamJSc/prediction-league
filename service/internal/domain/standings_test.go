@@ -1,20 +1,42 @@
 package domain_test
 
 import (
-	"github.com/LUSHDigital/core-sql/sqltypes"
-	"github.com/LUSHDigital/uuid"
+	"errors"
 	gocmp "github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
 	"testing"
 	"time"
 )
 
+func TestNewStandingsAgent(t *testing.T) {
+	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
+		tt := []struct {
+			sr      domain.StandingsRepository
+			wantErr error
+		}{
+			{nil, domain.ErrIsNil},
+			{sr, nil},
+		}
+		for idx, tc := range tt {
+			agent, gotErr := domain.NewStandingsAgent(tc.sr)
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
+			}
+			if tc.wantErr == nil && agent == nil {
+				t.Fatalf("tc #%d: want non-empty agent, got nil", idx)
+			}
+		}
+	})
+}
+
 func TestStandingsAgent_CreateStandings(t *testing.T) {
 	defer truncate(t)
 
-	agent := domain.StandingsAgent{
-		StandingsAgentInjector: injector{db: db},
+	agent, err := domain.NewStandingsAgent(sr)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	standings := generateTestStandings(t)
@@ -48,7 +70,7 @@ func TestStandingsAgent_CreateStandings(t *testing.T) {
 		if createdStandings.CreatedAt.Equal(emptyTime) {
 			expectedNonEmpty(t, "CreatedAt")
 		}
-		if createdStandings.UpdatedAt.Valid {
+		if createdStandings.UpdatedAt != nil {
 			expectedEmpty(t, "UpdatedAt", createdStandings.UpdatedAt)
 		}
 
@@ -63,11 +85,12 @@ func TestStandingsAgent_CreateStandings(t *testing.T) {
 func TestStandingsAgent_UpdateStandings(t *testing.T) {
 	defer truncate(t)
 
-	standings := insertStandings(t, generateTestStandings(t))
-
-	agent := domain.StandingsAgent{
-		StandingsAgentInjector: injector{db: db},
+	agent, err := domain.NewStandingsAgent(sr)
+	if err != nil {
+		t.Fatal(err)
 	}
+
+	standings := insertStandings(t, generateTestStandings(t))
 
 	t.Run("update valid standings must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -102,7 +125,7 @@ func TestStandingsAgent_UpdateStandings(t *testing.T) {
 		if !changedStandings.CreatedAt.Equal(updatedStandings.CreatedAt) {
 			expectedGot(t, changedStandings.CreatedAt, updatedStandings.CreatedAt)
 		}
-		if !updatedStandings.UpdatedAt.Valid {
+		if updatedStandings.UpdatedAt == nil {
 			expectedNonEmpty(t, "UpdatedAt")
 		}
 	})
@@ -113,7 +136,7 @@ func TestStandingsAgent_UpdateStandings(t *testing.T) {
 
 		changedStandings := standings
 
-		id, err := uuid.NewV4()
+		id, err := uuid.NewRandom()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -134,11 +157,12 @@ func TestStandingsAgent_UpdateStandings(t *testing.T) {
 func TestStandingsAgent_RetrieveStandingsByID(t *testing.T) {
 	defer truncate(t)
 
-	standings := insertStandings(t, generateTestStandings(t))
-
-	agent := domain.StandingsAgent{
-		StandingsAgentInjector: injector{db: db},
+	agent, err := domain.NewStandingsAgent(sr)
+	if err != nil {
+		t.Fatal(err)
 	}
+
+	standings := insertStandings(t, generateTestStandings(t))
 
 	t.Run("retrieve existent standings must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -167,16 +191,14 @@ func TestStandingsAgent_RetrieveStandingsByID(t *testing.T) {
 		if !standings.CreatedAt.Equal(retrievedStandings.CreatedAt) {
 			expectedGot(t, standings.CreatedAt, retrievedStandings.CreatedAt)
 		}
-		if !standings.UpdatedAt.Time.Equal(retrievedStandings.UpdatedAt.Time) {
-			expectedGot(t, standings.UpdatedAt.Time, retrievedStandings.UpdatedAt.Time)
-		}
+		checkTimePtrMatch(t, standings.UpdatedAt, retrievedStandings.UpdatedAt)
 	})
 
 	t.Run("retrieve non-existent standings must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		nonExistentID, err := uuid.NewV4()
+		nonExistentID, err := uuid.NewRandom()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -191,6 +213,11 @@ func TestStandingsAgent_RetrieveStandingsByID(t *testing.T) {
 func TestStandingsAgent_RetrieveStandingsBySeasonAndRoundNumber(t *testing.T) {
 	defer truncate(t)
 
+	agent, err := domain.NewStandingsAgent(sr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// season ID won't match our method parameters, so this won't be returned
 	standings1 := generateTestStandings(t)
 	standings1.SeasonID = "nnnnnn"
@@ -204,10 +231,6 @@ func TestStandingsAgent_RetrieveStandingsBySeasonAndRoundNumber(t *testing.T) {
 	standings3 := generateTestStandings(t)
 	standings3.RoundNumber = 2
 	standings3 = insertStandings(t, standings3)
-
-	agent := domain.StandingsAgent{
-		StandingsAgentInjector: injector{db: db},
-	}
 
 	t.Run("retrieve existent standings must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -239,8 +262,19 @@ func TestStandingsAgent_RetrieveStandingsBySeasonAndRoundNumber(t *testing.T) {
 		if !standings2.CreatedAt.Equal(retrievedStandings.CreatedAt) {
 			expectedGot(t, standings2.CreatedAt, retrievedStandings.CreatedAt)
 		}
-		if !standings2.UpdatedAt.Time.Equal(retrievedStandings.UpdatedAt.Time) {
-			expectedGot(t, standings2.UpdatedAt.Time, retrievedStandings.UpdatedAt.Time)
+		checkTimePtrMatch(t, standings2.UpdatedAt, retrievedStandings.UpdatedAt)
+	})
+
+	t.Run("retrieving non-existent standings must provided the expected error", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		if _, err := agent.RetrieveStandingsBySeasonAndRoundNumber(ctx, "non-existent", 1); !errors.As(err, &domain.NotFoundError{}) {
+			t.Fatalf("want not found error, got %s (%T)", err.Error(), err)
+		}
+
+		if _, err := agent.RetrieveStandingsBySeasonAndRoundNumber(ctx, testSeason.ID, 1234); !errors.As(err, &domain.NotFoundError{}) {
+			t.Fatalf("want not found error, got %s (%T)", err.Error(), err)
 		}
 	})
 }
@@ -248,13 +282,19 @@ func TestStandingsAgent_RetrieveStandingsBySeasonAndRoundNumber(t *testing.T) {
 func TestStandingsAgent_RetrieveLatestStandingsBySeasonIDAndTimestamp(t *testing.T) {
 	defer truncate(t)
 
+	agent, err := domain.NewStandingsAgent(sr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	baseDate := time.Now().Truncate(time.Second)
+	baseDateOneHour := baseDate.Add(time.Hour)
 
 	// season ID won't match our method parameters, so this won't be returned
 	standings1 := generateTestStandings(t)
 	standings1.SeasonID = "nnnnnn"
 	standings1 = insertStandings(t, standings1)
-	standings1.UpdatedAt = sqltypes.ToNullTime(baseDate.Add(time.Hour))
+	standings1.UpdatedAt = &baseDateOneHour
 	standings1 = updateStandings(t, standings1)
 
 	// this will be returned by our agent method
@@ -262,7 +302,7 @@ func TestStandingsAgent_RetrieveLatestStandingsBySeasonIDAndTimestamp(t *testing
 	standings2.RoundNumber = 2
 	standings2.CreatedAt = baseDate
 	standings2 = insertStandings(t, standings2)
-	standings2.UpdatedAt = sqltypes.ToNullTime(baseDate.Add(time.Hour))
+	standings2.UpdatedAt = &baseDateOneHour
 	standings2 = updateStandings(t, standings2)
 
 	// this will be returned by our agent method
@@ -272,10 +312,6 @@ func TestStandingsAgent_RetrieveLatestStandingsBySeasonIDAndTimestamp(t *testing
 	standings3 = insertStandings(t, standings3)
 
 	seasonID := standings2.SeasonID
-
-	agent := domain.StandingsAgent{
-		StandingsAgentInjector: injector{db: db},
-	}
 
 	t.Run("retrieve latest standings by timestamp that occurs before first expected standings created date must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -316,9 +352,7 @@ func TestStandingsAgent_RetrieveLatestStandingsBySeasonIDAndTimestamp(t *testing
 		if !retrievedStandings.CreatedAt.Equal(expectedStandings.CreatedAt) {
 			expectedGot(t, expectedStandings.CreatedAt, retrievedStandings.CreatedAt)
 		}
-		if !retrievedStandings.UpdatedAt.Time.Equal(expectedStandings.UpdatedAt.Time) {
-			expectedGot(t, expectedStandings.UpdatedAt, retrievedStandings.UpdatedAt)
-		}
+		checkTimePtrMatch(t, expectedStandings.UpdatedAt, retrievedStandings.UpdatedAt)
 	})
 
 	t.Run("retrieve latest standings by timestamp that occurs before second expected standings created date must succeed", func(t *testing.T) {
@@ -350,9 +384,7 @@ func TestStandingsAgent_RetrieveLatestStandingsBySeasonIDAndTimestamp(t *testing
 		if !retrievedStandings.CreatedAt.Equal(expectedStandings.CreatedAt) {
 			expectedGot(t, expectedStandings.CreatedAt, retrievedStandings.CreatedAt)
 		}
-		if !retrievedStandings.UpdatedAt.Time.Equal(expectedStandings.UpdatedAt.Time) {
-			expectedGot(t, expectedStandings.UpdatedAt, retrievedStandings.UpdatedAt)
-		}
+		checkTimePtrMatch(t, expectedStandings.UpdatedAt, retrievedStandings.UpdatedAt)
 	})
 
 	t.Run("retrieve latest standings by timestamp that occurs on second expected standings created date must succeed", func(t *testing.T) {
@@ -384,9 +416,7 @@ func TestStandingsAgent_RetrieveLatestStandingsBySeasonIDAndTimestamp(t *testing
 		if !retrievedStandings.CreatedAt.Equal(expectedStandings.CreatedAt) {
 			expectedGot(t, expectedStandings.CreatedAt, retrievedStandings.CreatedAt)
 		}
-		if !retrievedStandings.UpdatedAt.Time.Equal(expectedStandings.UpdatedAt.Time) {
-			expectedGot(t, expectedStandings.UpdatedAt, retrievedStandings.UpdatedAt)
-		}
+		checkTimePtrMatch(t, expectedStandings.UpdatedAt, retrievedStandings.UpdatedAt)
 	})
 
 	t.Run("retrieve latest standings by timestamp that occurs just after second expected standings created date must succeed", func(t *testing.T) {
@@ -418,9 +448,7 @@ func TestStandingsAgent_RetrieveLatestStandingsBySeasonIDAndTimestamp(t *testing
 		if !retrievedStandings.CreatedAt.Equal(expectedStandings.CreatedAt) {
 			expectedGot(t, expectedStandings.CreatedAt, retrievedStandings.CreatedAt)
 		}
-		if !retrievedStandings.UpdatedAt.Time.Equal(expectedStandings.UpdatedAt.Time) {
-			expectedGot(t, expectedStandings.UpdatedAt, retrievedStandings.UpdatedAt)
-		}
+		checkTimePtrMatch(t, expectedStandings.UpdatedAt, retrievedStandings.UpdatedAt)
 	})
 
 	t.Run("retrieve latest standings by timestamp that occurs significantly after second expected standings created date must succeed", func(t *testing.T) {
@@ -452,8 +480,6 @@ func TestStandingsAgent_RetrieveLatestStandingsBySeasonIDAndTimestamp(t *testing
 		if !retrievedStandings.CreatedAt.Equal(expectedStandings.CreatedAt) {
 			expectedGot(t, expectedStandings.CreatedAt, retrievedStandings.CreatedAt)
 		}
-		if !retrievedStandings.UpdatedAt.Time.Equal(expectedStandings.UpdatedAt.Time) {
-			expectedGot(t, expectedStandings.UpdatedAt, retrievedStandings.UpdatedAt)
-		}
+		checkTimePtrMatch(t, expectedStandings.UpdatedAt, retrievedStandings.UpdatedAt)
 	})
 }

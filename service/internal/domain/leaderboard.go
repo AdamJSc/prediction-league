@@ -3,48 +3,61 @@ package domain
 import (
 	"context"
 	"fmt"
-	coresql "github.com/LUSHDigital/core-sql"
-	"prediction-league/service/internal/datastore"
-	"prediction-league/service/internal/models"
-	"prediction-league/service/internal/repositories"
 	"sort"
+	"time"
 )
 
-// LeaderBoardAgentInjector defines the dependencies required by our LeaderBoardAgent
-type LeaderBoardAgentInjector interface {
-	MySQL() coresql.Agent
+// LeaderBoard represents the state of all cumulative entry scores for any given season and round number
+type LeaderBoard struct {
+	RoundNumber int                  `json:"round_number"`
+	Rankings    []LeaderBoardRanking `json:"rankings"`
+	LastUpdated *time.Time           `json:"last_updated"`
+}
+
+// LeaderBoardRanking represents a single ranking on the leaderboard
+type LeaderBoardRanking struct {
+	RankingWithScore
+	MinScore   int `json:"min_score"`
+	TotalScore int `json:"total_score"`
 }
 
 // LeaderBoardAgent defines the behaviours for handling LeaderBoards
 type LeaderBoardAgent struct {
-	LeaderBoardAgentInjector
+	er   EntryRepository
+	epr  EntryPredictionRepository
+	sr   StandingsRepository
+	sepr ScoredEntryPredictionRepository
+	sc   SeasonCollection
 }
 
 // RetrieveLeaderBoardBySeasonAndRoundNumber handles the inflation of a LeaderBoard based on the provided season ID and round number
-func (l LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context.Context, seasonID string, roundNumber int) (*models.LeaderBoard, error) {
+func (l *LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context.Context, seasonID string, roundNumber int) (*LeaderBoard, error) {
 	// ensure that provided season exists
-	if _, err := datastore.Seasons.GetByID(seasonID); err != nil {
+	if _, err := l.sc.GetByID(seasonID); err != nil {
 		return nil, NotFoundError{fmt.Errorf("season id %s: not found", seasonID)}
 	}
 
 	// retrieve the standings model that pertains to the provided ids
-	standingsRepo := repositories.NewStandingsDatabaseRepository(l.MySQL())
-	retrievedStandings, err := standingsRepo.Select(ctx, map[string]interface{}{
+	retrievedStandings, err := l.sr.Select(ctx, map[string]interface{}{
 		"season_id":    seasonID,
 		"round_number": roundNumber,
 	}, false)
 	if err != nil {
 		switch err.(type) {
-		case repositories.MissingDBRecordError:
+		case MissingDBRecordError:
 			// we don't have a standings record for the provided round number
 			// if the current round number is 1, it means the game hasn't started yet
 			// so let's return an empty leaderboard - otherwise we return a standard 404
 			if roundNumber != 1 {
 				return nil, domainErrorFromRepositoryError(err)
 			}
-			lb, err := generateEmptyLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, roundNumber, &EntryAgent{EntryAgentInjector: l})
+			entries, err := l.er.SelectBySeasonIDAndApproved(ctx, seasonID, true)
 			if err != nil {
-				return nil, err
+				return nil, domainErrorFromRepositoryError(err)
+			}
+			lb, err := l.generateEmptyLeaderBoard(ctx, roundNumber, entries)
+			if err != nil {
+				return nil, fmt.Errorf("cannot generate empty leaderboard: %w", err)
 			}
 			return lb, nil
 		}
@@ -59,20 +72,23 @@ func (l LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context.
 	standings := retrievedStandings[0]
 	realmName := RealmFromContext(ctx).Name
 
-	scoredEntryPredictionRepo := repositories.NewScoredEntryPredictionDatabaseRepository(l.MySQL())
-	lbRankings, err := scoredEntryPredictionRepo.SelectEntryCumulativeScoresByRealm(ctx, realmName, seasonID, roundNumber)
+	lbRankings, err := l.sepr.SelectEntryCumulativeScoresByRealm(ctx, realmName, seasonID, roundNumber)
 	if err != nil {
 		switch err.(type) {
-		case repositories.MissingDBRecordError:
+		case MissingDBRecordError:
 			// this should never happen, because we should only have a standings record (established above) if we also
 			// have some affiliated scored entry predictions
 			// however, as a safety net let's check again for the first round and return an empty leaderboard if we have one
 			if roundNumber != 1 {
 				return nil, domainErrorFromRepositoryError(err)
 			}
-			lb, err := generateEmptyLeaderBoardBySeasonAndRoundNumber(ctx, seasonID, roundNumber, &EntryAgent{EntryAgentInjector: l})
+			entries, err := l.er.SelectBySeasonIDAndApproved(ctx, seasonID, true)
 			if err != nil {
-				return nil, err
+				return nil, domainErrorFromRepositoryError(err)
+			}
+			lb, err := l.generateEmptyLeaderBoard(ctx, roundNumber, entries)
+			if err != nil {
+				return nil, fmt.Errorf("cannot generate empty leaderboard: %w", err)
 			}
 			return lb, nil
 		}
@@ -80,26 +96,20 @@ func (l LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context.
 	}
 
 	lastUpdated := standings.CreatedAt
-	if standings.UpdatedAt.Valid {
-		lastUpdated = standings.UpdatedAt.Time
+	if standings.UpdatedAt != nil {
+		lastUpdated = *standings.UpdatedAt
 	}
 
-	return &models.LeaderBoard{
+	return &LeaderBoard{
 		RoundNumber: roundNumber,
 		Rankings:    lbRankings,
 		LastUpdated: &lastUpdated,
 	}, nil
 }
 
-// generateEmptyLeaderBoardBySeasonAndRoundNumber returns a leaderboard that comprises all entries belonging to
-// the provided season ID and realm name of the provided context, which are all scored with a 0
-func generateEmptyLeaderBoardBySeasonAndRoundNumber(ctx context.Context, seasonID string, roundNumber int, entryAgent *EntryAgent) (*models.LeaderBoard, error) {
-	entries, err := entryAgent.RetrieveEntriesBySeasonID(ctx, seasonID, true)
-	if err != nil {
-		return nil, err
-	}
-
-	lb := models.LeaderBoard{
+// generateEmptyLeaderBoard returns a leaderboard that comprises all of the provided entries scored with a 0
+func (l *LeaderBoardAgent) generateEmptyLeaderBoard(ctx context.Context, roundNumber int, entries []Entry) (*LeaderBoard, error) {
+	lb := LeaderBoard{
 		RoundNumber: roundNumber,
 	}
 
@@ -116,9 +126,9 @@ func generateEmptyLeaderBoardBySeasonAndRoundNumber(ctx context.Context, seasonI
 			continue
 		}
 		count++
-		lb.Rankings = append(lb.Rankings, models.LeaderBoardRanking{
-			RankingWithScore: models.RankingWithScore{
-				Ranking: models.Ranking{
+		lb.Rankings = append(lb.Rankings, LeaderBoardRanking{
+			RankingWithScore: RankingWithScore{
+				Ranking: Ranking{
 					ID:       entry.ID.String(),
 					Position: count,
 				},
@@ -127,4 +137,28 @@ func generateEmptyLeaderBoardBySeasonAndRoundNumber(ctx context.Context, seasonI
 	}
 
 	return &lb, nil
+}
+
+// NewLeaderBoardAgent returns a new LeaderBoardAgent using the provided repositories
+func NewLeaderBoardAgent(er EntryRepository, epr EntryPredictionRepository, sr StandingsRepository, sepr ScoredEntryPredictionRepository, sc SeasonCollection) (*LeaderBoardAgent, error) {
+	switch {
+	case er == nil:
+		return nil, fmt.Errorf("entry repository: %w", ErrIsNil)
+	case epr == nil:
+		return nil, fmt.Errorf("entry prediction repository: %w", ErrIsNil)
+	case sr == nil:
+		return nil, fmt.Errorf("standings repository: %w", ErrIsNil)
+	case sepr == nil:
+		return nil, fmt.Errorf("scored entry prediction repository: %w", ErrIsNil)
+	case sc == nil:
+		return nil, fmt.Errorf("season collection: %w", ErrIsNil)
+	}
+
+	return &LeaderBoardAgent{
+		er:   er,
+		epr:  epr,
+		sr:   sr,
+		sepr: sepr,
+		sc:   sc,
+	}, nil
 }

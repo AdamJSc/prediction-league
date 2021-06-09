@@ -1,62 +1,95 @@
 package domain_test
 
 import (
-	"context"
+	"errors"
 	"fmt"
-	"github.com/LUSHDigital/core-sql/sqltypes"
-	"github.com/LUSHDigital/uuid"
 	gocmp "github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 	"gotest.tools/assert/cmp"
-	"prediction-league/service/internal/datastore"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 	"sort"
 	"testing"
 	"time"
 )
 
+func TestNewEntryAgent(t *testing.T) {
+	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
+		cl := &mockClock{}
+
+		tt := []struct {
+			er      domain.EntryRepository
+			epr     domain.EntryPredictionRepository
+			sc      domain.SeasonCollection
+			cl      domain.Clock
+			wantErr error
+		}{
+			{nil, epr, sc, cl, domain.ErrIsNil},
+			{er, nil, sc, cl, domain.ErrIsNil},
+			{er, epr, nil, cl, domain.ErrIsNil},
+			{er, epr, sc, nil, domain.ErrIsNil},
+			{er, epr, sc, cl, nil},
+		}
+
+		for idx, tc := range tt {
+			agent, gotErr := domain.NewEntryAgent(tc.er, tc.epr, tc.sc, tc.cl)
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
+			}
+			if tc.wantErr == nil && agent == nil {
+				t.Fatalf("tc #%d: want non-empty agent, got nil", idx)
+			}
+		}
+	})
+}
+
 func TestEntryAgent_CreateEntry(t *testing.T) {
 	defer truncate(t)
 
-	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
+	agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: dt})
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	now := time.Now()
-
-	season := models.Season{
+	season := domain.Season{
 		ID: "199293_1",
-		EntriesAccepted: models.TimeFrame{
-			From:  now.Add(-12 * time.Hour),
-			Until: now.Add(12 * time.Hour),
+		EntriesAccepted: domain.TimeFrame{
+			From:  dt.Add(-12 * time.Hour),
+			Until: dt.Add(12 * time.Hour),
 		},
-		Active: models.TimeFrame{
-			From:  now.Add(12 * time.Hour),
-			Until: now.Add(24 * time.Hour),
+		Active: domain.TimeFrame{
+			From:  dt.Add(12 * time.Hour),
+			Until: dt.Add(24 * time.Hour),
 		},
 	}
 
 	paymentMethod := "entry_payment_method"
 	paymentRef := "entry_payment_ref"
 
-	entry := models.Entry{
+	entryID, err := uuid.NewRandom()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	entry := domain.Entry{
 		// these values should be populated
 		EntrantName:     "Harry Redknapp",
 		EntrantNickname: "MrHarryR",
 		EntrantEmail:    "harry.redknapp@football.net",
 
 		// these values should be overridden
-		ID:            uuid.Must(uuid.NewV4()),
+		ID:            entryID,
 		ShortCode:     "entry_short_code",
 		SeasonID:      "entry_season_id",
 		RealmName:     "entry_realm_name",
 		Status:        "entry_status",
-		PaymentMethod: sqltypes.ToNullString(&paymentMethod),
-		PaymentRef:    sqltypes.ToNullString(&paymentRef),
-		EntryPredictions: []models.EntryPrediction{
-			models.NewEntryPrediction([]string{"entry_team_id_1", "entry_team_id_2"}),
+		PaymentMethod: &paymentMethod,
+		PaymentRef:    &paymentRef,
+		EntryPredictions: []domain.EntryPrediction{
+			domain.NewEntryPrediction([]string{"entry_team_id_1", "entry_team_id_2"}),
 		},
-		ApprovedAt: sqltypes.ToNullTime(time.Now()),
+		ApprovedAt: &dt,
 		CreatedAt:  time.Time{},
-		UpdatedAt:  sqltypes.ToNullTime(time.Now()),
+		UpdatedAt:  &dt,
 	}
 
 	t.Run("create a valid entry with a valid guard value must succeed", func(t *testing.T) {
@@ -83,7 +116,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		// check sanitised values
 		expectedSeasonID := season.ID
 		expectedRealm := domain.RealmFromContext(ctx).Name
-		expectedStatus := models.EntryStatusPending
+		expectedStatus := domain.EntryStatusPending
 
 		if createdEntry.ID.String() == "" {
 			expectedNonEmpty(t, "Entry.ID")
@@ -100,23 +133,23 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		if expectedStatus != createdEntry.Status {
 			expectedGot(t, expectedStatus, createdEntry.Status)
 		}
-		if createdEntry.PaymentMethod.Valid {
+		if createdEntry.PaymentMethod != nil {
 			expectedEmpty(t, "Entry.PaymentMethod", createdEntry.PaymentMethod)
 		}
-		if createdEntry.PaymentRef.Valid {
+		if createdEntry.PaymentRef != nil {
 			expectedEmpty(t, "Entry.PaymentRef", createdEntry.PaymentRef)
 		}
 		if len(createdEntry.EntryPredictions) != 0 {
 			expectedEmpty(t, "Entry.EntryPredictions", createdEntry.EntryPredictions)
 		}
-		if createdEntry.ApprovedAt.Valid {
-			expectedEmpty(t, "Entry.ApprovedAt", createdEntry.ApprovedAt)
+		if createdEntry.ApprovedAt != nil {
+			expectedEmpty(t, "Entry.ApprovedAt", *createdEntry.ApprovedAt)
 		}
 		if createdEntry.CreatedAt.Equal(time.Time{}) {
 			expectedNonEmpty(t, "Entry.CreatedAt")
 		}
-		if createdEntry.UpdatedAt.Valid {
-			expectedEmpty(t, "Entry.UpdatedAt", createdEntry.UpdatedAt)
+		if createdEntry.UpdatedAt != nil {
+			expectedEmpty(t, "Entry.UpdatedAt", *createdEntry.UpdatedAt)
 		}
 
 		// inserting same entry a second time should fail
@@ -175,7 +208,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		var invalidEntry models.Entry
+		var invalidEntry domain.Entry
 		var err error
 
 		// missing entrant name
@@ -264,22 +297,27 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		"harry.redknapp@football.net",
 	))
 
-	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
-
 	t.Run("add an entry prediction to an existing entry with valid guard value must succeed", func(t *testing.T) {
+		// predictions are accepted
+		ts := testSeason.PredictionsAccepted[0].From.Add(time.Nanosecond)
+
+		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
-		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
-		teamIDs := models.NewRankingCollectionFromIDs(testSeason.TeamIDs)
+		teamIDs := domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)
 
 		// reverse order of team IDs to ensure this is still an acceptable set of rankings when adding an entry prediction
-		var rankings models.RankingCollection
+		var rankings domain.RankingCollection
 		for i := len(teamIDs) - 1; i >= 0; i-- {
 			rankings = append(rankings, teamIDs[i])
 		}
 
-		entryPrediction := models.EntryPrediction{Rankings: rankings}
+		entryPrediction := domain.EntryPrediction{Rankings: rankings}
 
 		entryWithPrediction, err := agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
 		if err != nil {
@@ -296,41 +334,62 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 	})
 
 	t.Run("add an entry prediction to an existing entry with invalid guard attempt must fail", func(t *testing.T) {
+		// predictions are accepted
+		ts := testSeason.PredictionsAccepted[0].From.Add(time.Nanosecond)
+
+		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		ctx, cancel := testContextWithGuardAttempt(t, "not_the_same_as_entry.ShortCode")
-		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
-		entryPrediction := models.EntryPrediction{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
+		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
 
-		_, err := agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
+		_, err = agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
 		if !cmp.ErrorType(err, domain.UnauthorizedError{})().Success() {
 			expectedTypeOfGot(t, domain.UnauthorizedError{}, err)
 		}
 	})
 
 	t.Run("add an entry prediction to an existing entry with invalid realm name must fail", func(t *testing.T) {
+		// predictions are accepted
+		ts := testSeason.PredictionsAccepted[0].From.Add(time.Nanosecond)
+
+		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
-		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
 		domain.RealmFromContext(ctx).Name = "NOT_TEST_REALM"
 
-		entryPrediction := models.EntryPrediction{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
+		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
 
-		_, err := agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
+		_, err = agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
 	})
 
 	t.Run("add an entry prediction to a non-existing entry must fail", func(t *testing.T) {
+		// predictions are accepted
+		ts := testSeason.PredictionsAccepted[0].From.Add(time.Nanosecond)
+
+		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
-		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
-		entryPrediction := models.EntryPrediction{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
+		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
 
-		nonExistentEntryID, err := uuid.NewV4()
+		nonExistentEntryID, err := uuid.NewRandom()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -345,47 +404,67 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 	})
 
 	t.Run("add an entry prediction to an entry with an invalid season must fail", func(t *testing.T) {
+		// predictions are accepted
+		ts := testSeason.PredictionsAccepted[0].From.Add(time.Nanosecond)
+
+		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
-		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
-		entryPrediction := models.EntryPrediction{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
+		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
 
 		entryWithInvalidSeason := entry
 		entryWithInvalidSeason.SeasonID = "not_a_valid_season"
 
-		_, err := agent.AddEntryPredictionToEntry(ctx, entryPrediction, entryWithInvalidSeason)
+		_, err = agent.AddEntryPredictionToEntry(ctx, entryPrediction, entryWithInvalidSeason)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
 	})
 
 	t.Run("add an entry prediction to an entry whose season is not currently accepting entries must fail", func(t *testing.T) {
+		// predictions are NOT accepted
+		ts := testSeason.PredictionsAccepted[0].From.Add(-time.Nanosecond)
+
+		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
-		// ensure that context timestamp falls outside an accepting entries timeframe for the provided season
-		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, false)
 		defer cancel()
 
-		entryPrediction := models.EntryPrediction{Rankings: models.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
+		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
 
-		_, err := agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
+		_, err = agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
 	})
 
 	t.Run("add an entry prediction with rankings that include an invalid team ID must fail", func(t *testing.T) {
+		// predictions are accepted
+		ts := testSeason.PredictionsAccepted[0].From.Add(time.Nanosecond)
+
+		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
-		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
-		rankings := models.NewRankingCollectionFromIDs(testSeason.TeamIDs)
-		rankings = append(rankings, models.Ranking{ID: "not_a_valid_team_id"})
+		rankings := domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)
+		rankings = append(rankings, domain.Ranking{ID: "not_a_valid_team_id"})
 		expectedMessage := "Invalid Team ID: not_a_valid_team_id"
 
-		entryPrediction := models.EntryPrediction{Rankings: rankings}
+		entryPrediction := domain.EntryPrediction{Rankings: rankings}
 
-		_, err := agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
+		_, err = agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
 
 		verr, ok := err.(domain.ValidationError)
 		if !ok {
@@ -398,11 +477,18 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 	})
 
 	t.Run("add an entry prediction with rankings that include a missing team ID must fail", func(t *testing.T) {
+		// predictions are accepted
+		ts := testSeason.PredictionsAccepted[0].From.Add(time.Nanosecond)
+
+		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
-		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
-		rankings := models.NewRankingCollectionFromIDs(testSeason.TeamIDs)
+		rankings := domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)
 		if len(rankings) < 1 {
 			t.Fatalf("expected rankings length of at least 1, got %d", len(rankings))
 		}
@@ -414,9 +500,9 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		// trim final ranking
 		rankings = rankings[:uIdx]
 
-		entryPrediction := models.EntryPrediction{Rankings: rankings}
+		entryPrediction := domain.EntryPrediction{Rankings: rankings}
 
-		_, err := agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
+		_, err = agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
 
 		verr, ok := err.(domain.ValidationError)
 		if !ok {
@@ -429,11 +515,18 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 	})
 
 	t.Run("add an entry prediction with rankings that include a duplicate team ID must fail", func(t *testing.T) {
+		// predictions are accepted
+		ts := testSeason.PredictionsAccepted[0].From.Add(time.Nanosecond)
+
+		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
-		ctx = setContextTimestampRelativeToSeasonAcceptingEntries(t, ctx, entry.SeasonID, true)
 		defer cancel()
 
-		rankings := models.NewRankingCollectionFromIDs(testSeason.TeamIDs)
+		rankings := domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)
 		if len(rankings) < 2 {
 			t.Fatalf("expected rankings length of at least 2, got %d", len(rankings))
 		}
@@ -443,11 +536,11 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		expectedMessage := fmt.Sprintf("Duplicate Team ID: %s", duplicateID)
 
 		// append duplicate ID to rankings
-		rankings = append(rankings, models.Ranking{ID: duplicateID})
+		rankings = append(rankings, domain.Ranking{ID: duplicateID})
 
-		entryPrediction := models.EntryPrediction{Rankings: rankings}
+		entryPrediction := domain.EntryPrediction{Rankings: rankings}
 
-		_, err := agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
+		_, err = agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
 
 		verr, ok := err.(domain.ValidationError)
 		if !ok {
@@ -473,7 +566,10 @@ func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
 		entry.EntryPredictions = append(entry.EntryPredictions, insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID)))
 	}
 
-	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
+	agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("retrieve an existent entry with valid credentials must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -510,24 +606,19 @@ func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
 		if entry.Status != retrievedEntry.Status {
 			expectedGot(t, entry.Status, retrievedEntry.Status)
 		}
-		if entry.PaymentMethod != retrievedEntry.PaymentMethod {
-			expectedGot(t, entry.PaymentMethod, retrievedEntry.PaymentMethod)
-		}
-		if entry.PaymentRef != retrievedEntry.PaymentRef {
-			expectedGot(t, entry.PaymentRef, retrievedEntry.PaymentRef)
-		}
+
+		checkStringPtrMatch(t, entry.PaymentMethod, retrievedEntry.PaymentMethod)
+		checkStringPtrMatch(t, entry.PaymentRef, retrievedEntry.PaymentRef)
+
 		if len(entry.EntryPredictions) != len(retrievedEntry.EntryPredictions) {
 			t.Fatal(gocmp.Diff(entry.EntryPredictions, retrievedEntry.EntryPredictions))
-		}
-		if entry.ApprovedAt.Time.In(utc) != retrievedEntry.ApprovedAt.Time.In(utc) {
-			expectedGot(t, entry.ApprovedAt, retrievedEntry.ApprovedAt)
 		}
 		if entry.CreatedAt.In(utc) != retrievedEntry.CreatedAt.In(utc) {
 			expectedGot(t, entry.CreatedAt, retrievedEntry.CreatedAt)
 		}
-		if entry.UpdatedAt.Time.In(utc) != retrievedEntry.UpdatedAt.Time.In(utc) {
-			expectedGot(t, entry.UpdatedAt, retrievedEntry.UpdatedAt)
-		}
+
+		checkTimePtrMatch(t, entry.ApprovedAt, retrievedEntry.ApprovedAt)
+		checkTimePtrMatch(t, entry.UpdatedAt, retrievedEntry.UpdatedAt)
 	})
 
 	t.Run("retrieve a non-existent entry must fail", func(t *testing.T) {
@@ -566,7 +657,10 @@ func TestEntryAgent_RetrieveEntryByEntrantEmail(t *testing.T) {
 		entry.EntryPredictions = append(entry.EntryPredictions, insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID)))
 	}
 
-	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
+	agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("retrieve an existent entry with valid credentials must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -603,24 +697,19 @@ func TestEntryAgent_RetrieveEntryByEntrantEmail(t *testing.T) {
 		if entry.Status != retrievedEntry.Status {
 			expectedGot(t, entry.Status, retrievedEntry.Status)
 		}
-		if entry.PaymentMethod != retrievedEntry.PaymentMethod {
-			expectedGot(t, entry.PaymentMethod, retrievedEntry.PaymentMethod)
-		}
-		if entry.PaymentRef != retrievedEntry.PaymentRef {
-			expectedGot(t, entry.PaymentRef, retrievedEntry.PaymentRef)
-		}
+
+		checkStringPtrMatch(t, entry.PaymentMethod, retrievedEntry.PaymentMethod)
+		checkStringPtrMatch(t, entry.PaymentRef, retrievedEntry.PaymentRef)
+
 		if len(entry.EntryPredictions) != len(retrievedEntry.EntryPredictions) {
 			t.Fatal(gocmp.Diff(entry.EntryPredictions, retrievedEntry.EntryPredictions))
-		}
-		if entry.ApprovedAt.Time.In(utc) != retrievedEntry.ApprovedAt.Time.In(utc) {
-			expectedGot(t, entry.ApprovedAt, retrievedEntry.ApprovedAt)
 		}
 		if entry.CreatedAt.In(utc) != retrievedEntry.CreatedAt.In(utc) {
 			expectedGot(t, entry.CreatedAt, retrievedEntry.CreatedAt)
 		}
-		if entry.UpdatedAt.Time.In(utc) != retrievedEntry.UpdatedAt.Time.In(utc) {
-			expectedGot(t, entry.UpdatedAt, retrievedEntry.UpdatedAt)
-		}
+
+		checkTimePtrMatch(t, entry.ApprovedAt, retrievedEntry.ApprovedAt)
+		checkTimePtrMatch(t, entry.UpdatedAt, retrievedEntry.UpdatedAt)
 	})
 
 	t.Run("retrieve a non-existent entry must fail", func(t *testing.T) {
@@ -669,7 +758,10 @@ func TestEntryAgent_RetrieveEntryByEntrantNickname(t *testing.T) {
 		entry.EntryPredictions = append(entry.EntryPredictions, insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID)))
 	}
 
-	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
+	agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("retrieve an existent entry with valid credentials must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -706,24 +798,19 @@ func TestEntryAgent_RetrieveEntryByEntrantNickname(t *testing.T) {
 		if entry.Status != retrievedEntry.Status {
 			expectedGot(t, entry.Status, retrievedEntry.Status)
 		}
-		if entry.PaymentMethod != retrievedEntry.PaymentMethod {
-			expectedGot(t, entry.PaymentMethod, retrievedEntry.PaymentMethod)
-		}
-		if entry.PaymentRef != retrievedEntry.PaymentRef {
-			expectedGot(t, entry.PaymentRef, retrievedEntry.PaymentRef)
-		}
+
+		checkStringPtrMatch(t, entry.PaymentMethod, retrievedEntry.PaymentMethod)
+		checkStringPtrMatch(t, entry.PaymentRef, retrievedEntry.PaymentRef)
+
 		if len(entry.EntryPredictions) != len(retrievedEntry.EntryPredictions) {
 			t.Fatal(gocmp.Diff(entry.EntryPredictions, retrievedEntry.EntryPredictions))
-		}
-		if entry.ApprovedAt.Time.In(utc) != retrievedEntry.ApprovedAt.Time.In(utc) {
-			expectedGot(t, entry.ApprovedAt, retrievedEntry.ApprovedAt)
 		}
 		if entry.CreatedAt.In(utc) != retrievedEntry.CreatedAt.In(utc) {
 			expectedGot(t, entry.CreatedAt, retrievedEntry.CreatedAt)
 		}
-		if entry.UpdatedAt.Time.In(utc) != retrievedEntry.UpdatedAt.Time.In(utc) {
-			expectedGot(t, entry.UpdatedAt, retrievedEntry.UpdatedAt)
-		}
+
+		checkTimePtrMatch(t, entry.ApprovedAt, retrievedEntry.ApprovedAt)
+		checkTimePtrMatch(t, entry.UpdatedAt, retrievedEntry.UpdatedAt)
 	})
 
 	t.Run("retrieve a non-existent entry must fail", func(t *testing.T) {
@@ -763,7 +850,7 @@ func TestEntryAgent_RetrieveEntriesBySeasonID(t *testing.T) {
 	defer truncate(t)
 
 	// generate entries
-	var generatedEntries = []models.Entry{
+	var generatedEntries = []domain.Entry{
 		generateTestEntry(t,
 			"Harry Redknapp",
 			"MrHarryR",
@@ -784,17 +871,20 @@ func TestEntryAgent_RetrieveEntriesBySeasonID(t *testing.T) {
 	// set our second entry to an invalid season ID, so that it won't be retrieved by our agent method
 	generatedEntries[1].SeasonID = "nnnnnn"
 
-	// set an approved date on our third entry so that we can verify retrieval of approved entires only
-	generatedEntries[2].ApprovedAt.Valid = true
-	generatedEntries[2].ApprovedAt.Time = time.Now()
+	// set an approved date on our third entry so that we can verify retrieval of approved entries only
+	now := time.Now()
+	generatedEntries[2].ApprovedAt = &now
 
 	// insert entries
-	var entries []models.Entry
+	var entries []domain.Entry
 	for _, entry := range generatedEntries {
 		entries = append(entries, insertEntry(t, entry))
 	}
 
-	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
+	agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("retrieve existing entries with valid credentials must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -862,7 +952,10 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		"harry.redknapp@football.net",
 	))
 
-	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
+	agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("update an existent entry with a valid alternative entry must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -871,7 +964,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		// define changed entry values
 		changedEntryPaymentRef := "changed_entry_payment_ref"
 
-		changedEntry := models.Entry{
+		changedEntry := domain.Entry{
 			ID:              entry.ID,
 			ShortCode:       "changed_entry_short_code",
 			SeasonID:        "67890",
@@ -879,8 +972,8 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 			EntrantName:     "Jamie Redknapp",
 			EntrantNickname: "MrJamieR",
 			EntrantEmail:    "jamie.redknapp@football.net",
-			Status:          models.EntryStatusReady,
-			PaymentRef:      sqltypes.ToNullString(&changedEntryPaymentRef),
+			Status:          domain.EntryStatusReady,
+			PaymentRef:      &changedEntryPaymentRef,
 			CreatedAt:       entry.CreatedAt,
 		}
 
@@ -923,7 +1016,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		if changedEntry.PaymentRef != updatedEntry.PaymentRef {
 			expectedGot(t, changedEntry.PaymentRef, updatedEntry.PaymentRef)
 		}
-		if !updatedEntry.UpdatedAt.Valid {
+		if updatedEntry.UpdatedAt == nil {
 			expectedNonEmpty(t, "Entry.UpdatedAt")
 		}
 	})
@@ -932,7 +1025,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		_, err := agent.UpdateEntry(ctx, models.Entry{ID: entry.ID, RealmName: "NOT_THE_ORIGINAL_REALM"})
+		_, err := agent.UpdateEntry(ctx, domain.Entry{ID: entry.ID, RealmName: "NOT_THE_ORIGINAL_REALM"})
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
@@ -942,7 +1035,12 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		_, err := agent.UpdateEntry(ctx, models.Entry{ID: uuid.Must(uuid.NewV4()), RealmName: entry.RealmName})
+		entryID, err := uuid.NewRandom()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		_, err = agent.UpdateEntry(ctx, domain.Entry{ID: entryID, RealmName: entry.RealmName})
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -952,7 +1050,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		var invalidEntry models.Entry
+		var invalidEntry domain.Entry
 		var err error
 
 		// missing entrant name
@@ -992,7 +1090,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		var invalidEntry models.Entry
+		var invalidEntry domain.Entry
 		var err error
 
 		// invalid nickname (non-alphanumeric characters)
@@ -1030,7 +1128,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		// invalid payment method
 		invalidEntry = entry
 		invalidPaymentMethod := "not_a_valid_payment_method"
-		invalidEntry.PaymentMethod = sqltypes.ToNullString(&invalidPaymentMethod)
+		invalidEntry.PaymentMethod = &invalidPaymentMethod
 		_, err = agent.UpdateEntry(ctx, invalidEntry)
 		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
 			expectedTypeOfGot(t, domain.ValidationError{}, err)
@@ -1047,7 +1145,10 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 		"harry.redknapp@football.net",
 	))
 
-	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
+	agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	paymentRef := "ABCD1234"
 
@@ -1058,7 +1159,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 		entryWithPaymentDetails, err := agent.UpdateEntryPaymentDetails(
 			ctx,
 			entry.ID.String(),
-			models.EntryPaymentMethodPayPal,
+			domain.EntryPaymentMethodPayPal,
 			paymentRef,
 			true,
 		)
@@ -1066,12 +1167,12 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if models.EntryPaymentMethodPayPal != entryWithPaymentDetails.PaymentMethod.String {
-			expectedGot(t, models.EntryPaymentMethodPayPal, entryWithPaymentDetails.PaymentMethod.String)
+		if domain.EntryPaymentMethodPayPal != *entryWithPaymentDetails.PaymentMethod {
+			expectedGot(t, domain.EntryPaymentMethodPayPal, *entryWithPaymentDetails.PaymentMethod)
 		}
 
-		if paymentRef != entryWithPaymentDetails.PaymentRef.String {
-			expectedGot(t, paymentRef, entryWithPaymentDetails.PaymentRef.String)
+		if paymentRef != *entryWithPaymentDetails.PaymentRef {
+			expectedGot(t, paymentRef, *entryWithPaymentDetails.PaymentRef)
 		}
 	})
 
@@ -1098,7 +1199,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
 			entry.ID.String(),
-			models.EntryPaymentMethodOther,
+			domain.EntryPaymentMethodOther,
 			paymentRef,
 			false,
 		)
@@ -1114,7 +1215,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
 			entry.ID.String(),
-			models.EntryPaymentMethodPayPal,
+			domain.EntryPaymentMethodPayPal,
 			"",
 			true,
 		)
@@ -1130,7 +1231,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
 			"not_an_existing_entry_id",
-			models.EntryPaymentMethodPayPal,
+			domain.EntryPaymentMethodPayPal,
 			paymentRef,
 			true,
 		)
@@ -1148,7 +1249,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
 			entry.ID.String(),
-			models.EntryPaymentMethodPayPal,
+			domain.EntryPaymentMethodPayPal,
 			paymentRef,
 			true,
 		)
@@ -1164,7 +1265,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
 			entry.ID.String(),
-			models.EntryPaymentMethodPayPal,
+			domain.EntryPaymentMethodPayPal,
 			paymentRef,
 			true,
 		)
@@ -1182,14 +1283,14 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 			"MrJamieR",
 			"jamie.redknapp@football.net",
 		)
-		entryWithInvalidStatus.Status = models.EntryStatusPaid
+		entryWithInvalidStatus.Status = domain.EntryStatusPaid
 		entryWithInvalidStatus = insertEntry(t, entryWithInvalidStatus)
 
 		// now running the operation we're testing should fail
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
 			entry.ID.String(),
-			models.EntryPaymentMethodPayPal,
+			domain.EntryPaymentMethodPayPal,
 			paymentRef,
 			true,
 		)
@@ -1213,7 +1314,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		"MrJamieR",
 		"jamie.redknapp@football.net",
 	)
-	entryWithPaidStatus.Status = models.EntryStatusPaid
+	entryWithPaidStatus.Status = domain.EntryStatusPaid
 	entryWithPaidStatus = insertEntry(t, entryWithPaidStatus)
 
 	entryWithReadyStatus := generateTestEntry(t,
@@ -1221,10 +1322,13 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		"FrankieLamps",
 		"frank.lampard@football.net",
 	)
-	entryWithReadyStatus.Status = models.EntryStatusReady
+	entryWithReadyStatus.Status = domain.EntryStatusReady
 	entryWithReadyStatus = insertEntry(t, entryWithReadyStatus)
 
-	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
+	agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: dt})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("approve existent entry short code with valid credentials must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -1239,7 +1343,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		if !approvedEntry.IsApproved() {
 			expectedGot(t, "approved entry true", "approved entry false")
 		}
-		if !approvedEntry.ApprovedAt.Valid {
+		if approvedEntry.ApprovedAt == nil {
 			expectedNonEmpty(t, "Entry.ApprovedAt")
 		}
 
@@ -1251,7 +1355,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		if !approvedEntry.IsApproved() {
 			expectedGot(t, "approved entry true", "approved entry false")
 		}
-		if !approvedEntry.ApprovedAt.Valid {
+		if approvedEntry.ApprovedAt == nil {
 			expectedNonEmpty(t, "Entry.ApprovedAt")
 		}
 	})
@@ -1324,7 +1428,7 @@ func TestEntryAgent_GetEntryPredictionByTimestamp(t *testing.T) {
 		"harry.redknapp@football.net",
 	))
 
-	var entryPredictions []models.EntryPrediction
+	var entryPredictions []domain.EntryPrediction
 	for i := 1; i <= 2; i++ {
 		// ensure each entry prediction is 48 hours apart
 		days := time.Duration(i) * 48 * time.Hour
@@ -1336,7 +1440,10 @@ func TestEntryAgent_GetEntryPredictionByTimestamp(t *testing.T) {
 		entryPredictions = append(entryPredictions, entryPrediction)
 	}
 
-	agent := domain.EntryAgent{EntryAgentInjector: injector{db: db}}
+	agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("retrieve entry prediction by timestamp that occurs before earliest prediction must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -1413,30 +1520,18 @@ func TestEntryAgent_GetEntryPredictionByTimestamp(t *testing.T) {
 	})
 }
 
-// TODO - tests for RetrieveEntryPredictionsForActiveSeasonByTimestamp
+// TODO - tests for EntryAgent.RetrieveEntryPredictionsForActiveSeasonByTimestamp
 
-func setContextTimestampRelativeToSeasonAcceptingEntries(t *testing.T, ctx context.Context, seasonID string, withinTimeframe bool) context.Context {
-	t.Helper()
-
-	season, ok := datastore.Seasons[seasonID]
-	if !ok {
-		return ctx
+func checkTimePtrMatch(t *testing.T, exp *time.Time, got *time.Time) {
+	switch {
+	case exp == nil && got == nil:
+		return
+	case exp == nil && got != nil:
+		expectedGot(t, nil, *got)
+	case exp != nil && got == nil:
+		expectedGot(t, *exp, nil)
 	}
-
-	if len(season.PredictionsAccepted) < 1 {
-		return ctx
+	if !exp.In(time.UTC).Equal(got.In(time.UTC)) {
+		expectedGot(t, *exp, *got)
 	}
-
-	tf := season.PredictionsAccepted[0]
-
-	// default timestamp to one which is OUTSIDE the first predictions accepted timeframe
-	var ts = tf.From.Add(-time.Nanosecond)
-	if withinTimeframe {
-		// set timestamp to one which is INSIDE the first predictions accepted timeframe
-		ts = tf.From.Add(time.Nanosecond)
-	}
-
-	ctx = domain.SetTimestampOnContext(ctx, ts)
-
-	return ctx
 }

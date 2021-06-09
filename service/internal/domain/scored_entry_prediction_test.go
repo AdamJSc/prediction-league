@@ -1,29 +1,56 @@
 package domain_test
 
 import (
+	"errors"
+	gocmp "github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/LUSHDigital/uuid"
-	gocmp "github.com/google/go-cmp/cmp"
 )
+
+func TestNewScoredEntryPredictionAgent(t *testing.T) {
+	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
+		tt := []struct {
+			er      domain.EntryRepository
+			epr     domain.EntryPredictionRepository
+			sr      domain.StandingsRepository
+			sepr    domain.ScoredEntryPredictionRepository
+			wantErr error
+		}{
+			{nil, epr, sr, sepr, domain.ErrIsNil},
+			{er, nil, sr, sepr, domain.ErrIsNil},
+			{er, epr, nil, sepr, domain.ErrIsNil},
+			{er, epr, sr, nil, domain.ErrIsNil},
+			{er, epr, sr, sepr, nil},
+		}
+
+		for idx, tc := range tt {
+			agent, gotErr := domain.NewScoredEntryPredictionAgent(tc.er, tc.epr, tc.sr, tc.sepr)
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
+			}
+			if tc.wantErr == nil && agent == nil {
+				t.Fatalf("tc #%d: want non-empty agent, got nil", idx)
+			}
+		}
+	})
+}
 
 func TestScoredEntryPredictionAgent_CreateScoredEntryPrediction(t *testing.T) {
 	defer truncate(t)
 
+	agent, err := domain.NewScoredEntryPredictionAgent(er, epr, sr, sepr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	entry := insertEntry(t, generateTestEntry(t, "Harry Redknapp", "MrHarryR", "harry.redknapp@football.net"))
 	entryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID))
 	standings := insertStandings(t, generateTestStandings(t))
-
 	scoredEntryPrediction := generateTestScoredEntryPrediction(t, entryPrediction.ID, standings.ID)
-
-	agent := domain.ScoredEntryPredictionAgent{
-		ScoredEntryPredictionAgentInjector: injector{db: db},
-	}
 
 	t.Run("create valid scored entry prediction must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -50,8 +77,8 @@ func TestScoredEntryPredictionAgent_CreateScoredEntryPrediction(t *testing.T) {
 		if createdScoredEntryPrediction.CreatedAt.Equal(emptyTime) {
 			expectedNonEmpty(t, "CreatedAt")
 		}
-		if createdScoredEntryPrediction.UpdatedAt.Valid {
-			expectedEmpty(t, "UpdatedAt", createdScoredEntryPrediction.UpdatedAt)
+		if createdScoredEntryPrediction.UpdatedAt != nil {
+			expectedEmpty(t, "UpdatedAt", *createdScoredEntryPrediction.UpdatedAt)
 		}
 
 		// inserting same scored entry prediction a second time should fail
@@ -84,7 +111,7 @@ func TestScoredEntryPredictionAgent_CreateScoredEntryPrediction(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		nonExistentID, err := uuid.NewV4()
+		nonExistentID, err := uuid.NewRandom()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -108,15 +135,15 @@ func TestScoredEntryPredictionAgent_CreateScoredEntryPrediction(t *testing.T) {
 func TestScoredEntryPredictionAgent_UpdateScoredEntryPrediction(t *testing.T) {
 	defer truncate(t)
 
+	agent, err := domain.NewScoredEntryPredictionAgent(er, epr, sr, sepr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	entry := insertEntry(t, generateTestEntry(t, "Harry Redknapp", "MrHarryR", "harry.redknapp@football.net"))
 	entryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID))
 	standings := insertStandings(t, generateTestStandings(t))
-
 	scoredEntryPrediction := insertScoredEntryPrediction(t, generateTestScoredEntryPrediction(t, entryPrediction.ID, standings.ID))
-
-	agent := domain.ScoredEntryPredictionAgent{
-		ScoredEntryPredictionAgentInjector: injector{db: db},
-	}
 
 	t.Run("update valid scored entry prediction must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -124,7 +151,7 @@ func TestScoredEntryPredictionAgent_UpdateScoredEntryPrediction(t *testing.T) {
 
 		changedScoredEntryPrediction := scoredEntryPrediction
 		changedScoredEntryPrediction.Score = 456
-		changedScoredEntryPrediction.Rankings = models.NewRankingWithScoreCollectionFromIDs([]string{"changedID_1", "changedID_2", "changedID_3"})
+		changedScoredEntryPrediction.Rankings = domain.NewRankingWithScoreCollectionFromIDs([]string{"changedID_1", "changedID_2", "changedID_3"})
 
 		updatedScoredEntryPrediction, err := agent.UpdateScoredEntryPrediction(ctx, changedScoredEntryPrediction)
 		if err != nil {
@@ -146,7 +173,7 @@ func TestScoredEntryPredictionAgent_UpdateScoredEntryPrediction(t *testing.T) {
 		if !updatedScoredEntryPrediction.CreatedAt.Equal(changedScoredEntryPrediction.CreatedAt) {
 			expectedGot(t, changedScoredEntryPrediction.CreatedAt, updatedScoredEntryPrediction.CreatedAt)
 		}
-		if !updatedScoredEntryPrediction.UpdatedAt.Valid {
+		if updatedScoredEntryPrediction.UpdatedAt == nil {
 			expectedNonEmpty(t, "UpdatedAt")
 		}
 	})
@@ -155,7 +182,7 @@ func TestScoredEntryPredictionAgent_UpdateScoredEntryPrediction(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		nonExistentID, err := uuid.NewV4()
+		nonExistentID, err := uuid.NewRandom()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -176,69 +203,69 @@ func TestScoredEntryPredictionAgent_UpdateScoredEntryPrediction(t *testing.T) {
 	})
 }
 
-// TODO - tests for ScoreEntryPredictionBasedOnStandings
+// TODO - tests for GenerateScoredEntryPrediction
 
 func TestScoredEntryPredictionAgent_RetrieveScoredEntryPredictionByIDs(t *testing.T) {
 	defer truncate(t)
 
-	entry := insertEntry(t, generateTestEntry(t, "Harry Redknapp", "MrHarryR", "harry.redknapp@football.net"))
-	entryPrediction := insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID))
-	standings := insertStandings(t, generateTestStandings(t))
+	agent, err := domain.NewScoredEntryPredictionAgent(er, epr, sr, sepr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	e := insertEntry(t, generateTestEntry(t, "Harry Redknapp", "MrHarryR", "harry.redknapp@football.net"))
+	ep := insertEntryPrediction(t, generateTestEntryPrediction(t, e.ID))
+	st := insertStandings(t, generateTestStandings(t))
 
 	now := time.Now().Truncate(time.Second)
-	scoredEntryPrediction := generateTestScoredEntryPrediction(t, entryPrediction.ID, standings.ID)
-	scoredEntryPrediction.CreatedAt = now
-	scoredEntryPrediction = insertScoredEntryPrediction(t, scoredEntryPrediction)
-
-	agent := domain.ScoredEntryPredictionAgent{
-		ScoredEntryPredictionAgentInjector: injector{db: db},
-	}
+	sep := generateTestScoredEntryPrediction(t, ep.ID, st.ID)
+	sep.CreatedAt = now
+	sep = insertScoredEntryPrediction(t, sep)
 
 	t.Run("retrieve existent scored entry prediction must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		retrievedScoredEntryPrediction, err := agent.RetrieveScoredEntryPredictionByIDs(ctx, entryPrediction.ID.String(), standings.ID.String())
+		rtrSep, err := agent.RetrieveScoredEntryPredictionByIDs(ctx, ep.ID.String(), st.ID.String())
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if retrievedScoredEntryPrediction.EntryPredictionID != scoredEntryPrediction.EntryPredictionID {
-			expectedGot(t, scoredEntryPrediction.EntryPredictionID, retrievedScoredEntryPrediction.EntryPredictionID)
+		if rtrSep.EntryPredictionID != sep.EntryPredictionID {
+			expectedGot(t, sep.EntryPredictionID, rtrSep.EntryPredictionID)
 		}
-		if retrievedScoredEntryPrediction.StandingsID != scoredEntryPrediction.StandingsID {
-			expectedGot(t, scoredEntryPrediction.StandingsID, retrievedScoredEntryPrediction.StandingsID)
+		if rtrSep.StandingsID != sep.StandingsID {
+			expectedGot(t, sep.StandingsID, rtrSep.StandingsID)
 		}
-		if !gocmp.Equal(retrievedScoredEntryPrediction.Rankings, scoredEntryPrediction.Rankings) {
-			t.Fatal(gocmp.Diff(scoredEntryPrediction.Rankings, retrievedScoredEntryPrediction.Rankings))
+		if !gocmp.Equal(rtrSep.Rankings, sep.Rankings) {
+			t.Fatal(gocmp.Diff(sep.Rankings, rtrSep.Rankings))
 		}
-		if retrievedScoredEntryPrediction.Score != scoredEntryPrediction.Score {
-			expectedGot(t, scoredEntryPrediction.Score, retrievedScoredEntryPrediction.Score)
+		if rtrSep.Score != sep.Score {
+			expectedGot(t, sep.Score, rtrSep.Score)
 		}
-		if !retrievedScoredEntryPrediction.CreatedAt.In(utc).Equal(now.In(utc)) {
-			expectedGot(t, now, retrievedScoredEntryPrediction.CreatedAt)
+		if !rtrSep.CreatedAt.In(utc).Equal(now.In(utc)) {
+			expectedGot(t, now, rtrSep.CreatedAt)
 		}
-		if retrievedScoredEntryPrediction.UpdatedAt.Valid {
-			expectedEmpty(t, "UpdatedAt", retrievedScoredEntryPrediction.UpdatedAt)
+		if rtrSep.UpdatedAt != nil {
+			expectedEmpty(t, "UpdatedAt", *rtrSep.UpdatedAt)
 		}
 	})
 
-	t.Run("retrieve non-existent scored entry prediction must fail", func(t *testing.T) {
+	t.Run("retrieve non-existent scored entry prediction must produce expected error", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		nonExistentID, err := uuid.NewV4()
+		newUUID, err := uuid.NewRandom()
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		_, err = agent.RetrieveScoredEntryPredictionByIDs(ctx, nonExistentID.String(), scoredEntryPrediction.StandingsID.String())
-		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+		nID := newUUID.String()
+
+		if _, err = agent.RetrieveScoredEntryPredictionByIDs(ctx, nID, sep.StandingsID.String()); !errors.As(err, &domain.NotFoundError{}) {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
-
-		_, err = agent.RetrieveScoredEntryPredictionByIDs(ctx, scoredEntryPrediction.EntryPredictionID.String(), nonExistentID.String())
-		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
+		if _, err = agent.RetrieveScoredEntryPredictionByIDs(ctx, sep.EntryPredictionID.String(), nID); !errors.As(err, &domain.NotFoundError{}) {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
 	})
@@ -246,6 +273,11 @@ func TestScoredEntryPredictionAgent_RetrieveScoredEntryPredictionByIDs(t *testin
 
 func TestScoredEntryPredictionAgent_RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(t *testing.T) {
 	defer truncate(t)
+
+	agent, err := domain.NewScoredEntryPredictionAgent(er, epr, sr, sepr)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	entry := insertEntry(t, generateTestEntry(t, "Harry Redknapp", "MrHarryR", "harry.redknapp@football.net"))
 	standings := insertStandings(t, generateTestStandings(t))
@@ -260,10 +292,6 @@ func TestScoredEntryPredictionAgent_RetrieveLatestScoredEntryPredictionByEntryID
 	mostRecentScoredEntryPrediction := generateTestScoredEntryPrediction(t, differentEntryPrediction.ID, standings.ID)
 	mostRecentScoredEntryPrediction.CreatedAt = now.Add(time.Second) // created most recently
 	mostRecentScoredEntryPrediction = insertScoredEntryPrediction(t, mostRecentScoredEntryPrediction)
-
-	agent := domain.ScoredEntryPredictionAgent{
-		ScoredEntryPredictionAgentInjector: injector{db: db},
-	}
 
 	t.Run("retrieve latest scored entry prediction by existent entry id and round number must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -293,8 +321,8 @@ func TestScoredEntryPredictionAgent_RetrieveLatestScoredEntryPredictionByEntryID
 		if !retrievedScoredEntryPrediction.CreatedAt.In(utc).Equal(mostRecentScoredEntryPrediction.CreatedAt.In(utc)) {
 			expectedGot(t, mostRecentScoredEntryPrediction.CreatedAt, retrievedScoredEntryPrediction.CreatedAt)
 		}
-		if retrievedScoredEntryPrediction.UpdatedAt.Valid {
-			expectedEmpty(t, "UpdatedAt", retrievedScoredEntryPrediction.UpdatedAt)
+		if retrievedScoredEntryPrediction.UpdatedAt != nil {
+			expectedEmpty(t, "UpdatedAt", *retrievedScoredEntryPrediction.UpdatedAt)
 		}
 	})
 
@@ -302,7 +330,7 @@ func TestScoredEntryPredictionAgent_RetrieveLatestScoredEntryPredictionByEntryID
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		nonExistentID, err := uuid.NewV4()
+		nonExistentID, err := uuid.NewRandom()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -317,7 +345,7 @@ func TestScoredEntryPredictionAgent_RetrieveLatestScoredEntryPredictionByEntryID
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		nonExistentID, err := uuid.NewV4()
+		nonExistentID, err := uuid.NewRandom()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -330,58 +358,58 @@ func TestScoredEntryPredictionAgent_RetrieveLatestScoredEntryPredictionByEntryID
 }
 
 func TestTeamRankingsAsStrings(t *testing.T) {
-	testRankingsWithScore := []models.RankingWithScore{
+	testRankingsWithScore := []domain.RankingWithScore{
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "AFC",
 				Position: 1,
 			},
 			Score: 11111111,
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "AVFC",
 				Position: 2,
 			},
 			Score: 1111111,
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "AFCB",
 				Position: 3,
 			},
 			Score: 111111,
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "BFC",
 				Position: 4,
 			},
 			Score: 11111,
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "BHAFC",
 				Position: 5,
 			},
 			Score: 1111,
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "CFC",
 				Position: 6,
 			},
 			Score: 111,
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "CPFC",
 				Position: 7,
 			},
 			Score: 11,
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "EFC",
 				Position: 8,
 			},
@@ -389,51 +417,51 @@ func TestTeamRankingsAsStrings(t *testing.T) {
 		},
 	}
 
-	testRankingsWithMeta := []models.RankingWithMeta{
+	testRankingsWithMeta := []domain.RankingWithMeta{
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "EFC",
 				Position: 12,
 			},
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "CPFC",
 				Position: 34,
 			},
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "CFC",
 				Position: 56,
 			},
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "BHAFC",
 				Position: 78,
 			},
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "BFC",
 				Position: 90,
 			},
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "AFCB",
 				Position: 123,
 			},
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "AVFC",
 				Position: 456,
 			},
 		},
 		{
-			Ranking: models.Ranking{
+			Ranking: domain.Ranking{
 				ID:       "AFC",
 				Position: 7890,
 			},
@@ -441,7 +469,7 @@ func TestTeamRankingsAsStrings(t *testing.T) {
 	}
 
 	t.Run("generating strings from valid team rankings must succeed", func(t *testing.T) {
-		actualStrings, err := domain.TeamRankingsAsStrings(testRankingsWithScore, testRankingsWithMeta)
+		actualStrings, err := domain.TeamRankingsAsStrings(testRankingsWithScore, testRankingsWithMeta, tc)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -467,63 +495,63 @@ func TestTeamRankingsAsStrings(t *testing.T) {
 	})
 
 	t.Run("generating strings from empty scored entry prediction rankings must fail", func(t *testing.T) {
-		_, err := domain.TeamRankingsAsStrings(nil, testRankingsWithMeta)
+		_, err := domain.TeamRankingsAsStrings(nil, testRankingsWithMeta, tc)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
-		_, err = domain.TeamRankingsAsStrings([]models.RankingWithScore{}, testRankingsWithMeta)
+		_, err = domain.TeamRankingsAsStrings([]domain.RankingWithScore{}, testRankingsWithMeta, tc)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
 	})
 
 	t.Run("generating strings from empty standings rankings must fail", func(t *testing.T) {
-		_, err := domain.TeamRankingsAsStrings(testRankingsWithScore, nil)
+		_, err := domain.TeamRankingsAsStrings(testRankingsWithScore, nil, tc)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
-		_, err = domain.TeamRankingsAsStrings(testRankingsWithScore, []models.RankingWithMeta{})
+		_, err = domain.TeamRankingsAsStrings(testRankingsWithScore, []domain.RankingWithMeta{}, tc)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
 	})
 
 	t.Run("generating strings from team rankings with a score character length exceeding max must fail", func(t *testing.T) {
-		var rwsThatShouldFail []models.RankingWithScore
+		var rwsThatShouldFail []domain.RankingWithScore
 		rwsThatShouldFail = append(rwsThatShouldFail, testRankingsWithScore...)
 		rwsThatShouldFail[0].Score = 100000000 // max char length is 9
 
 		expectedErrorMessage := "total score character length cannot exceed 8: actual length 9"
 
-		_, err := domain.TeamRankingsAsStrings(rwsThatShouldFail, testRankingsWithMeta)
+		_, err := domain.TeamRankingsAsStrings(rwsThatShouldFail, testRankingsWithMeta, tc)
 		if !cmp.Error(err, expectedErrorMessage)().Success() {
 			expectedGot(t, expectedErrorMessage, err)
 		}
 	})
 
 	t.Run("generating strings from team rankings with a position character length exceeding max must fail", func(t *testing.T) {
-		var rwsThatShouldFail []models.RankingWithScore
+		var rwsThatShouldFail []domain.RankingWithScore
 		rwsThatShouldFail = append(rwsThatShouldFail, testRankingsWithScore...)
 		rwsThatShouldFail[0].Ranking.Position = 10000 // max char length is 4
 
 		expectedErrorMessage := "prediction position character length cannot exceed 4: actual length 5"
 
-		_, err := domain.TeamRankingsAsStrings(rwsThatShouldFail, testRankingsWithMeta)
+		_, err := domain.TeamRankingsAsStrings(rwsThatShouldFail, testRankingsWithMeta, tc)
 		if !cmp.Error(err, expectedErrorMessage)().Success() {
 			expectedGot(t, expectedErrorMessage, err)
 		}
 	})
 
 	t.Run("generating strings from team rankings with a non-existent ID must fail", func(t *testing.T) {
-		rwsThatShouldFail := []models.RankingWithScore{
+		rwsThatShouldFail := []domain.RankingWithScore{
 			{
-				Ranking: models.Ranking{
+				Ranking: domain.Ranking{
 					ID: "non_existent_team",
 				},
 			},
 		}
 
-		_, err := domain.TeamRankingsAsStrings(rwsThatShouldFail, []models.RankingWithMeta{})
+		_, err := domain.TeamRankingsAsStrings(rwsThatShouldFail, []domain.RankingWithMeta{}, tc)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}

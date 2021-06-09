@@ -2,27 +2,48 @@ package domain_test
 
 import (
 	"context"
+	"errors"
 	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
-	"prediction-league/service/internal/models"
-	"prediction-league/service/internal/repositories"
 	"testing"
 	"time"
 )
 
+func TestNewTokenAgent(t *testing.T) {
+	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
+		cl := &mockClock{}
+
+		tt := []struct {
+			tr      domain.TokenRepository
+			cl      domain.Clock
+			wantErr error
+		}{
+			{nil, cl, domain.ErrIsNil},
+			{tr, nil, domain.ErrIsNil},
+			{tr, cl, nil},
+		}
+		for idx, tc := range tt {
+			agent, gotErr := domain.NewTokenAgent(tc.tr, tc.cl)
+			if !errors.Is(gotErr, tc.wantErr) {
+				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
+			}
+			if tc.wantErr == nil && agent == nil {
+				t.Fatalf("tc #%d: want non-empty agent, got nil", idx)
+			}
+		}
+	})
+}
+
 func TestTokenAgent_GenerateToken(t *testing.T) {
 	defer truncate(t)
 
-	agent := domain.TokenAgent{
-		TokenAgentInjector: injector{db: db},
+	agent, err := domain.NewTokenAgent(tr, &mockClock{t: dt})
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	// arbitrary timestamp that isn't the current moment
-	ts := time.Now().Add(-24 * time.Hour)
 
 	t.Run("generate an auth token must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
-		ctx = domain.SetTimestampOnContext(ctx, ts)
 		defer cancel()
 
 		expectedType := domain.TokenTypeAuth
@@ -42,24 +63,23 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 		if token.Value != expectedValue {
 			expectedGot(t, expectedValue, token.Value)
 		}
-		if !token.IssuedAt.Equal(ts) {
-			expectedGot(t, ts, token.IssuedAt)
+		if !token.IssuedAt.Equal(dt) {
+			expectedGot(t, dt, token.IssuedAt)
 		}
-		expectedExpires := ts.Add(domain.TokenValidityDuration[expectedType])
+		expectedExpires := dt.Add(domain.TokenValidityDuration[expectedType])
 		if !token.ExpiresAt.Equal(expectedExpires) {
 			expectedGot(t, expectedExpires, token.ExpiresAt)
 		}
 
 		// inserting same token a second time must fail
-		err = repositories.NewTokenDatabaseRepository(db).Insert(ctx, token)
-		if !cmp.ErrorType(err, repositories.DuplicateDBRecordError{})().Success() {
-			expectedTypeOfGot(t, repositories.DuplicateDBRecordError{}, err)
+		err = tr.Insert(ctx, token)
+		if !cmp.ErrorType(err, domain.DuplicateDBRecordError{})().Success() {
+			expectedTypeOfGot(t, domain.DuplicateDBRecordError{}, err)
 		}
 	})
 
 	t.Run("generate a short code reset token must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
-		ctx = domain.SetTimestampOnContext(ctx, ts)
 		defer cancel()
 
 		expectedType := domain.TokenTypeShortCodeResetToken
@@ -79,24 +99,23 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 		if token.Value != expectedValue {
 			expectedGot(t, expectedValue, token.Value)
 		}
-		if !token.IssuedAt.Equal(ts) {
-			expectedGot(t, ts, token.IssuedAt)
+		if !token.IssuedAt.Equal(dt) {
+			expectedGot(t, dt, token.IssuedAt)
 		}
-		expectedExpires := ts.Add(domain.TokenValidityDuration[expectedType])
+		expectedExpires := dt.Add(domain.TokenValidityDuration[expectedType])
 		if !token.ExpiresAt.Equal(expectedExpires) {
 			expectedGot(t, expectedExpires, token.ExpiresAt)
 		}
 
 		// inserting same token a second time must fail
-		err = repositories.NewTokenDatabaseRepository(db).Insert(ctx, token)
-		if !cmp.ErrorType(err, repositories.DuplicateDBRecordError{})().Success() {
-			expectedTypeOfGot(t, repositories.DuplicateDBRecordError{}, err)
+		err = tr.Insert(ctx, token)
+		if !cmp.ErrorType(err, domain.DuplicateDBRecordError{})().Success() {
+			expectedTypeOfGot(t, domain.DuplicateDBRecordError{}, err)
 		}
 	})
 
 	t.Run("generate a token of a non-existent token type must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
-		ctx = domain.SetTimestampOnContext(ctx, ts)
 		defer cancel()
 
 		nonExistentTokenType := 123456
@@ -111,14 +130,14 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 	defer truncate(t)
 
-	token := generateTestToken()
-	tokenRepo := repositories.NewTokenDatabaseRepository(db)
-	if err := tokenRepo.Insert(context.Background(), token); err != nil {
+	agent, err := domain.NewTokenAgent(tr, &mockClock{})
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	agent := domain.TokenAgent{
-		TokenAgentInjector: injector{db: db},
+	token := generateTestToken()
+	if err := tr.Insert(context.Background(), token); err != nil {
+		t.Fatal(err)
 	}
 
 	t.Run("retrieve an existing token must succeed", func(t *testing.T) {
@@ -161,14 +180,14 @@ func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 func TestTokenAgent_DeleteToken(t *testing.T) {
 	defer truncate(t)
 
-	token := generateTestToken()
-	tokenRepo := repositories.NewTokenDatabaseRepository(db)
-	if err := tokenRepo.Insert(context.Background(), token); err != nil {
+	agent, err := domain.NewTokenAgent(tr, &mockClock{})
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	agent := domain.TokenAgent{
-		TokenAgentInjector: injector{db: db},
+	token := generateTestToken()
+	if err := tr.Insert(context.Background(), token); err != nil {
+		t.Fatal(err)
 	}
 
 	t.Run("delete an existing token must succeed", func(t *testing.T) {
@@ -180,15 +199,20 @@ func TestTokenAgent_DeleteToken(t *testing.T) {
 		}
 
 		// token must have been deleted
-		err := tokenRepo.ExistsByID(ctx, token.ID)
-		if !cmp.ErrorType(err, repositories.MissingDBRecordError{})().Success() {
-			expectedTypeOfGot(t, repositories.MissingDBRecordError{}, err)
+		err := tr.ExistsByID(ctx, token.ID)
+		if !cmp.ErrorType(err, domain.MissingDBRecordError{})().Success() {
+			expectedTypeOfGot(t, domain.MissingDBRecordError{}, err)
 		}
 	})
 }
 
 func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 	defer truncate(t)
+
+	agent, err := domain.NewTokenAgent(tr, &mockClock{})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	now := time.Now().Truncate(time.Second)
 
@@ -207,21 +231,16 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 	token3.ID = "test_token_3"
 	token3.ExpiresAt = now.Add(time.Second)
 
-	var tokens = []*models.Token{
+	var tokens = []*domain.Token{
 		token1,
 		token2,
 		token3,
 	}
 
-	tokenRepo := repositories.NewTokenDatabaseRepository(db)
 	for _, token := range tokens {
-		if err := tokenRepo.Insert(context.Background(), token); err != nil {
+		if err := tr.Insert(context.Background(), token); err != nil {
 			t.Fatal(err)
 		}
-	}
-
-	agent := domain.TokenAgent{
-		TokenAgentInjector: injector{db: db},
 	}
 
 	t.Run("delete tokens expired after valid timestamp must succeed", func(t *testing.T) {
@@ -233,29 +252,29 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 		}
 
 		// token 1 must have been deleted
-		err := tokenRepo.ExistsByID(ctx, token1.ID)
-		if !cmp.ErrorType(err, repositories.MissingDBRecordError{})().Success() {
-			expectedTypeOfGot(t, repositories.MissingDBRecordError{}, err)
+		err := tr.ExistsByID(ctx, token1.ID)
+		if !cmp.ErrorType(err, domain.MissingDBRecordError{})().Success() {
+			expectedTypeOfGot(t, domain.MissingDBRecordError{}, err)
 		}
 
 		// token 2 must have been deleted
-		err = tokenRepo.ExistsByID(ctx, token2.ID)
-		if !cmp.ErrorType(err, repositories.MissingDBRecordError{})().Success() {
-			expectedTypeOfGot(t, repositories.MissingDBRecordError{}, err)
+		err = tr.ExistsByID(ctx, token2.ID)
+		if !cmp.ErrorType(err, domain.MissingDBRecordError{})().Success() {
+			expectedTypeOfGot(t, domain.MissingDBRecordError{}, err)
 		}
 
 		// token 3 must have been deleted
-		if err := tokenRepo.ExistsByID(ctx, token3.ID); err != nil {
+		if err := tr.ExistsByID(ctx, token3.ID); err != nil {
 			t.Fatal(err)
 		}
 	})
 }
 
-func generateTestToken() *models.Token {
+func generateTestToken() *domain.Token {
 	// arbitrary timestamp that isn't the current moment
 	ts := time.Now().Truncate(time.Second).Add(-24 * time.Hour)
 
-	return &models.Token{
+	return &domain.Token{
 		ID:        "token_id",
 		Type:      123,
 		Value:     "Hello World",
