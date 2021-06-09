@@ -20,8 +20,7 @@ This project is a digital representation of the game, which implements a Fronten
 payment workflows, management of predictions and scoring of points (which are now accrued on a cumulative basis throughout
 the season instead of just at the end).
 
-It's written in [Golang](https://golang.org/), using Go [templates](https://golang.org/pkg/text/template/) for HTML and
-elements of the [LUSH Core](https://github.com/LUSHDigital/core) library for bootstrapping.
+It's written in [Golang](https://golang.org/), using Go [templates](https://golang.org/pkg/text/template/) for HTML.
 
 [Vuejs](https://vuejs.org/) and [Bootstrap](https://getbootstrap.com/) are used on the Frontend.
 [Sass](https://sass-lang.com/) is used for pre-processing CSS and [npm](https://npmjs.com/) + [Webpack](https://webpack.js.org/)
@@ -56,7 +55,7 @@ Leaving these blank will result in the default behaviour as described.
 * `FOOTBALLDATA_API_TOKEN`
     * API Key required by [football-data.org](https://www.football-data.org/) integration for consumption of real-world
     football league table data.
-    * If left blank, the cron job that updates the scores for each prediction is skipped.
+    * If left blank, no latest league table standings are retrieved and processed by the cron job.
 
 ### Fully-Dockerised Setup
 
@@ -154,32 +153,36 @@ with an empty value.
 
 ### Scoring
 
-[Entries](docs/domain-knowledge.md#entry) receive 1 "penalty point" for each position they have predicted incorrectly.
+For every [Game Week](#game-weeks), each [Prediction](docs/domain-knowledge.md#entryprediction) receives a score, which produces
+a [Scored Prediction](docs/domain-knowledge.md#scoredentryprediction) for that Game Week.
+
+[Scored Predictions](docs/domain-knowledge.md#scoredentryprediction) receive 1 "penalty point" for each position that the
+Prediction has incorrectly placed a [Team](docs/domain-knowledge.md#team).
 
 For example, if Team A are in 3rd place but are predicted to finish 1st, `2` penalty points will be received.
 
-Likewise, placing Team B at the bottom (in 20th), who then finish 15th, will cause `5` penalty points to be issued.
+Likewise, placing Team B at the bottom (in 20th), who currently sit in 15th, will cause `5` penalty points to be issued.
 
 Placing a team in the exact position they are in the real-world table will receive `0` penalty points.
 
 ### Game Weeks
 
-Each [Season](docs/domain-knowledge.md#season) is broken down into a number of "game weeks", which work exactly the same as in
+Each [Season](docs/domain-knowledge.md#season) is broken down into a number of "Game Weeks", which work exactly the same as in
 [Fantasy Football](https://fantasy.premierleague.com/).
 
-i.e. For a Premier League season with 20 teams, there are 38 game weeks.
-For a Championship season with 24 teams, there are 46 game weeks.
+i.e. For a Premier League season with 20 teams, there are 38 Game Weeks.
+For a Championship season with 24 teams, there are 46 Game Weeks.
 
-Once a new game week starts, the previous game week’s score is frozen and the next game week begins with a score of `0`.
+Once a new Game Week starts, the previous Game Week’s score is frozen and the next Game Week begins with a score of `0`.
 
 ### LeaderBoard
 
-The total cumulative score over all game weeks for each [Entry](docs/domain-knowledge.md#entry) is calculated and used to
+The total cumulative score for all [Scored Predictions](docs/domain-knowledge.md#scoredentryprediction) is calculated and used to
 produce the [LeaderBoard](docs/domain-knowledge.md#leaderboard). The [LeaderBoard](docs/domain-knowledge.md#leaderboard)
 is topped by the [Entry](docs/domain-knowledge.md#entry) with the lowest cumulative score of penalty points.
 
 In the event of a tie on the [LeaderBoard](docs/domain-knowledge.md#leaderboard), the tied [Entries](docs/domain-knowledge.md#entry) will
-be ordered by the **minimum** score that each one has gained throughout all game weeks so far, lowest first. You can think
+be ordered by the **minimum** score that each one has gained throughout all Game Weeks so far, lowest first. You can think
 of this as the equivalent of “goal difference” when ranking teams on equal points in the real-world.
 
 ### Data Source
@@ -187,9 +190,9 @@ of this as the equivalent of “goal difference” when ranking teams on equal p
 The real-world league table data used to calculate each score is retrieved from [football-data.org](https://www.football-data.org/).
 
 This data source is polled every 15 minutes as a cron task. At this point, the most recently made [Prediction](docs/domain-knowledge.md#entryprediction)
-for each [Entry](docs/domain-knowledge.md#entry) is used to calculate the [Entry's](docs/domain-knowledge.md#entry) new
-score for the current game week. It is also used to determine if a new game week has begun, or if the final game week has
-ended (at which point the [Season](docs/domain-knowledge.md#season) is considered to be complete).
+for each [Entry](docs/domain-knowledge.md#entry) is used to calculate the [Scored Prediction](docs/domain-knowledge.md#scoredentryprediction)
+for the current Game Week. It is also used to determine if a new Game Week has begun, or if the final Game Week has
+ended (at which point the [Season](docs/domain-knowledge.md#season) is considered to be complete and is therefore finalised).
 
 ### FAQ
 

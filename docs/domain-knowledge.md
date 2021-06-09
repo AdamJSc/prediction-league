@@ -51,17 +51,20 @@ e.g. `localhost` or `my.sub.domain.com`. See the file itself for an example.
     * `analytics_code`: Google Analytics code for Realm (optional, analytics ignored if left blank)
 
 * The values of these payloads are parsed as `Realm` objects within the main app bootstrap, and subsequently retrievable
-by accessing `realms.GetByName(realm_name)` on the app's container.
+by accessing `GetByName(realm_name)` on the `RealmCollection` which originates in the app's container and is passed as a dependency
+to each domain entity that requires it, such as handlers, agents, workers etc.
 
-* The default Realm Name when running locally is `localhost`.
+* The default Realm Name when running locally is `localhost`, so please ensure that you are issuing API requests to the
+ base URI `http://localhost` instead of any other variant such as `http://127.0.0.1` etc.
 
 ### Season
 
 * A `Season` represents a real-world tournament (such as "Premier League 2020/21").
 
-* The Seasons data used throughout the system is defined in code and instantiated within the app bootstrap (see `domain.GetSeasonCollection()`).
+* The Seasons data used throughout the system is defined in code and instantiated on the app container as `SeasonCollection`.
+Again, this is passed as a dependency to each domain entity that requires it, such as handlers, agents, workers etc.
 
-* This is deliberately controlled by the project maintainer as a one-off action that is required approximately once a year
+* This data is deliberately controlled by the project maintainer as a one-off action that is required approximately once a year
 (i.e. between one Season finishing and another beginning).
 
 * For details on the system's default Season, see ["FakeSeason"](#fakeseason) (below).
@@ -74,6 +77,12 @@ by accessing `realms.GetByName(realm_name)` on the app's container.
     * ...are presented to the User when setting their [Prediction](#entryprediction), and...
     * ...must be present within the ingested real-world [Standings](#standings) from the upstream data source
     for a given [Season](#season).
+
+* The Teams data used throughout the system is defined in code and instantiated on the app container as `TeamCollection`.
+Again, this is passed as a dependency to each domain entity that requires it, such as handlers, agents, workers etc.
+
+* This data is deliberately controlled by the project maintainer as a one-off action that is required approximately once a year
+(i.e. between one Season finishing and another beginning).
 
 ### Entry
 
@@ -92,7 +101,7 @@ when "logging in" to make changes to a [Prediction](#entryprediction)
 
 * It comprises a creation timestamp, as well as a JSON array containing a sequence of [Team](#team) IDs that are considered
 to be the chosen order of [Teams](#team) by which the [Entry](#entry) will accrue points for all current and subsequent
-game weeks (until a new EntryPrediction is made).
+Game Weeks (until a new Prediction is made).
 
 * Each EntryPrediction belongs to a single [Entry](#entry).
 
@@ -101,6 +110,11 @@ game weeks (until a new EntryPrediction is made).
 * The act of a user changing their existing EntryPrediction creates a new one with a more recent timestamp instead. This
 facilitates an "event-based" paradigm, providing a full historic audit trail of all EntryPredictions that have ever
 belonged to an [Entry](#entry).
+
+* Only one EntryPrediction per Entry is ever considered to be active/current at any given time.
+
+* The most recently-created EntryPrediction is used to generate the [Scored Prediciton](#scoredentryprediction) for the current
+and future Game Weeks (until a new EntryPrediction is created).
 
 ### Standings
 
@@ -111,8 +125,8 @@ such as number of matches played, won, drawn, lost etc. for each [Team](#team).
 
 * It is inflated as part of the [Retrieve Latest Standings](#retrieve-latest-standings) cron job.
 
-* Each Standings record is unique by SeasonID and Round Number (game week) which is overwritten by each cron job execution,
-until the next game week is reached (or the [Season](#season) reaches completion). 
+* Each Standings record is unique by SeasonID and Round Number (Game Week) which is overwritten by each cron job execution,
+until the next Game Week is reached (or the [Season](#season) reaches completion). 
 
 ### ScoredEntryPrediction
 
@@ -161,7 +175,7 @@ those found within a `scoredEntryPredictionResponseRanking` object.
 * A `LeaderBoard` represents the cumulative total scores for all [Entries](#entry) within a [Season](#season), ordered
 by total score (lowest first), then by minimum score (lowest first), then by current round score (lowest first).
 
-* It is unique to a Round Number (game week).
+* It is unique to a Round Number (Game Week).
 
 ### LeaderBoardRanking
 
@@ -201,10 +215,10 @@ ShortCode Reset Tokens are simply removed after having been used. This should id
 ### Retrieving Latest Standings
 
 Real-world league table standings are consumed from the [football-data.org](https://www.football-data.org/) API, for the
-purposes of calculating new scores for each [Entry](#entry) per game week (also known as
+purposes of calculating new scores for each [Entry](#entry) per Game Week (also known as
 [ScoredEntryPredictions](#scoredentryprediction)).
 
-This occurs within a cron job that is scheduled to run every 15 minutes (see `scheduler.newRetrieveLatestStandingsJob()`).
+This occurs within a cron job that is scheduled to run every 15 minutes (see `domain.RetrieveLatestStandingsWorker`).
 
 A separate cron job is instantiated for every existing [Season](#season) that fulfils all of the following criteria
 at the time the service boots up:
@@ -224,10 +238,10 @@ The cron job's task executes the following logic:
 
 * Validate and sort retrieved [Standings](#standings) - exit if error
 
-* Check for an existing [Standings](#standings) record that matches the Round Number (game week) of the retrieved
+* Check for an existing [Standings](#standings) record that matches the Round Number (Game Week) of the retrieved
 [Standings](#standings):
     * If we already have it, just update its Rankings
-    * Otherwise we have a new one, so retrieve the [Standings](#standings) for the **previous** Round Number (game week) 
+    * Otherwise we have a new one, so retrieve the [Standings](#standings) for the **previous** Round Number (Game Week) 
     mark it as "finalised", and continue with this one instead.
 
 * For each [Prediction](#entryprediction) we retrieved earlier:
@@ -272,7 +286,7 @@ The schedule takes place as follows:
 
 ### Transactional Emails
 
-When a new email is issued via one of the `domain.CommunicationsAgent` object methods, it is sent to a channel that
+When a new email is issued via one of the `domain.CommunicationsAgent` methods, it is sent to a channel that
 acts as an arbitrary message queue.
 
 This channel is consumed within a separate long-running _goroutine_ which is responsible for the physical dispatch of the
@@ -319,3 +333,5 @@ The handler will pass this context to the main agent method that it invokes (e.g
 
 The agent method can then invoke `domain.GuardFromContext(ctx).AttemptMatchesTarget(ctx.Realm.PIN)` which returns
 a `boolean` to determine whether or not the incoming request should be authorised.
+
+This permissions-based mechanism can most likely be simplified and should be revisited in the future.
