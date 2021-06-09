@@ -13,7 +13,7 @@ RELEASE_TAG=$2 RELEASE_TIMESTAMP=\"$NOW\" docker-compose up -d --build;
 
 if [ $? = 0 ]
 then
-    echo "v$2 released successfully!";
+    echo "version $2 released successfully!";
     exit 0;
 else
     echo "failed to release v$2";
@@ -25,7 +25,9 @@ fi
 /bin/sh ./re-release.sh
 
 # exit if failed
-if [ $? != 0 ]; then; exit 1; fi;
+if [ $? != 0 ]; then
+  exit 1
+fi
 
 # prune all non-running images
 docker image prune -af
