@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2021-06-09
+## Changed
+- Reorganise significant elements of project architecture.
+- Consolidate fragmented packages into `domain` and `adapters` layers.
+- Compose service structs using explicit dependencies rather than single all-encapsulating injector.
+- Re-implement cron and seeder as a runnable service component.
+- Re-implement cron jobs against `worker` interface.
+- Reduce required third-party Go modules.
+- Improve error-wrapping for context.
+- Improve logging.
+    - Pass domain logger as dependency.
+    - Implement logging levels.
+- Tidy up tightly-coupled business logic.
+- Implement clock interface dependency and replace "debug timestamp" with "frozen clock" instance.
+- Improve test coverage.
+- Update build and deployment pipeline.
+- Update docs.
+
 ## [1.1.4] - 2021-05-23
 ### Fixed
 - Accommodate deprecation of `standingsType` query param when retrieving Standings from upstream Football Data API.

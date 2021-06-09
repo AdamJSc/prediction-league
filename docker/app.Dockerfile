@@ -6,7 +6,7 @@ WORKDIR /build
 
 COPY . .
 
-RUN go build -mod=mod -o /prediction-league ./service
+RUN go build -mod=mod -o /prediction-league ./service/cmd/api
 
 FROM alpine
 
