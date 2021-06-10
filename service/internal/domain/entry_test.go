@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	gocmp "github.com/google/go-cmp/cmp"
@@ -19,19 +20,21 @@ func TestNewEntryAgent(t *testing.T) {
 		tt := []struct {
 			er      domain.EntryRepository
 			epr     domain.EntryPredictionRepository
+			sr      domain.StandingsRepository
 			sc      domain.SeasonCollection
 			cl      domain.Clock
 			wantErr error
 		}{
-			{nil, epr, sc, cl, domain.ErrIsNil},
-			{er, nil, sc, cl, domain.ErrIsNil},
-			{er, epr, nil, cl, domain.ErrIsNil},
-			{er, epr, sc, nil, domain.ErrIsNil},
-			{er, epr, sc, cl, nil},
+			{nil, epr, sr, sc, cl, domain.ErrIsNil},
+			{er, nil, sr, sc, cl, domain.ErrIsNil},
+			{er, epr, nil, sc, cl, domain.ErrIsNil},
+			{er, epr, sr, nil, cl, domain.ErrIsNil},
+			{er, epr, sr, sc, nil, domain.ErrIsNil},
+			{er, epr, sr, sc, cl, nil},
 		}
 
 		for idx, tc := range tt {
-			agent, gotErr := domain.NewEntryAgent(tc.er, tc.epr, tc.sc, tc.cl)
+			agent, gotErr := domain.NewEntryAgent(tc.er, tc.epr, tc.sr, tc.sc, tc.cl)
 			if !errors.Is(gotErr, tc.wantErr) {
 				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
 			}
@@ -45,7 +48,7 @@ func TestNewEntryAgent(t *testing.T) {
 func TestEntryAgent_CreateEntry(t *testing.T) {
 	defer truncate(t)
 
-	agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: dt})
+	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: dt})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -301,7 +304,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		// predictions are accepted
 		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
 
-		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
+		agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: ts})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -337,7 +340,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		// predictions are accepted
 		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
 
-		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
+		agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: ts})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -357,7 +360,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		// predictions are accepted
 		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
 
-		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
+		agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: ts})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -379,7 +382,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		// predictions are accepted
 		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
 
-		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
+		agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: ts})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -407,7 +410,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		// predictions are accepted
 		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
 
-		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
+		agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: ts})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -430,7 +433,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		// predictions are NOT accepted
 		ts := testSeason.PredictionsAccepted.From.Add(-time.Nanosecond)
 
-		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
+		agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: ts})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -450,7 +453,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		// predictions are accepted
 		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
 
-		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
+		agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: ts})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -480,7 +483,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		// predictions are accepted
 		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
 
-		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
+		agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: ts})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -518,7 +521,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		// predictions are accepted
 		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
 
-		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
+		agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: ts})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -566,7 +569,7 @@ func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
 		entry.EntryPredictions = append(entry.EntryPredictions, insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID)))
 	}
 
-	agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{})
+	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -657,7 +660,7 @@ func TestEntryAgent_RetrieveEntryByEntrantEmail(t *testing.T) {
 		entry.EntryPredictions = append(entry.EntryPredictions, insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID)))
 	}
 
-	agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{})
+	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -758,7 +761,7 @@ func TestEntryAgent_RetrieveEntryByEntrantNickname(t *testing.T) {
 		entry.EntryPredictions = append(entry.EntryPredictions, insertEntryPrediction(t, generateTestEntryPrediction(t, entry.ID)))
 	}
 
-	agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{})
+	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -881,7 +884,7 @@ func TestEntryAgent_RetrieveEntriesBySeasonID(t *testing.T) {
 		entries = append(entries, insertEntry(t, entry))
 	}
 
-	agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{})
+	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -952,7 +955,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		"harry.redknapp@football.net",
 	))
 
-	agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{})
+	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1145,7 +1148,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 		"harry.redknapp@football.net",
 	))
 
-	agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{})
+	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1325,7 +1328,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 	entryWithReadyStatus.Status = domain.EntryStatusReady
 	entryWithReadyStatus = insertEntry(t, entryWithReadyStatus)
 
-	agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: dt})
+	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: dt})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1440,7 +1443,7 @@ func TestEntryAgent_GetEntryPredictionByTimestamp(t *testing.T) {
 		entryPredictions = append(entryPredictions, entryPrediction)
 	}
 
-	agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{})
+	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1521,6 +1524,116 @@ func TestEntryAgent_GetEntryPredictionByTimestamp(t *testing.T) {
 }
 
 // TODO - tests for EntryAgent.RetrieveEntryPredictionsForActiveSeasonByTimestamp
+
+func TestEntryAgent_GetPredictionRankingLimit(t *testing.T) {
+	defer truncate(t)
+
+	loc, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dt := time.Date(2018, 5, 26, 14, 0, 0, 0, loc)
+
+	e := insertEntry(t, generateTestEntry(t,
+		"Harry Redknapp",
+		"MrHarryR",
+		"harry.redknapp@football.net",
+	))
+	e2 := insertEntry(t, generateTestEntry(t,
+		"Jamie Redknapp",
+		"MrJamieR",
+		"jamie.redknapp@football.net",
+	))
+
+	// entry prediction 1 created one hour after base date
+	ep1 := generateTestEntryPrediction(t, e.ID)
+	ep1.CreatedAt = dt.Add(time.Hour)
+	ep1 = insertEntryPrediction(t, ep1)
+
+	// standings created two hours after base date
+	st := generateTestStandings(t)
+	st.CreatedAt = dt.Add(2 * time.Hour)
+	st = insertStandings(t, st)
+
+	// entry prediction 2 created three hours after base date
+	ep2 := generateTestEntryPrediction(t, e.ID)
+	ep2.CreatedAt = dt.Add(3 * time.Hour)
+	ep2 = insertEntryPrediction(t, ep2)
+
+	t.Run("getting prediction ranking limit for the provided timestamp must return the expected limit value", func(t *testing.T) {
+		tt := []struct {
+			name      string
+			entryID   string
+			ts        time.Time
+			wantLimit int
+		}{
+			{
+				name:      "ts before first entry prediction, before standings (no limit)",
+				entryID:   e.ID.String(),
+				ts:        ep1.CreatedAt.Add(-time.Second),
+				wantLimit: domain.RankingLimitNone,
+			},
+			{
+				name:      "ts at time of first entry prediction, before standings (no limit)",
+				entryID:   e.ID.String(),
+				ts:        ep1.CreatedAt,
+				wantLimit: domain.RankingLimitNone,
+			},
+			{
+				name:      "ts after first entry prediction, before standings (no limit)",
+				entryID:   e.ID.String(),
+				ts:        ep1.CreatedAt.Add(time.Second),
+				wantLimit: domain.RankingLimitNone,
+			},
+			{
+				name:      "ts at time of standings, entry does not have a prediction already (no limit)",
+				entryID:   e2.ID.String(),
+				ts:        st.CreatedAt,
+				wantLimit: domain.RankingLimitNone,
+			},
+			{
+				name:      "ts at time of standings, entry does not have a new prediction since standings (regular limit)",
+				entryID:   e.ID.String(),
+				ts:        st.CreatedAt,
+				wantLimit: domain.RankingLimitRegular,
+			},
+			{
+				name:      "ts after standings, entry does not have a new prediction since standings (regular limit)",
+				entryID:   e.ID.String(),
+				ts:        st.CreatedAt.Add(time.Second),
+				wantLimit: domain.RankingLimitRegular,
+			},
+			{
+				name:      "ts after standings, at time of new prediction (limit of 0)",
+				entryID:   e.ID.String(),
+				ts:        ep2.CreatedAt,
+				wantLimit: 0,
+			},
+			{
+				name:      "ts after standings, after time of new prediction (limit of 0)",
+				entryID:   e.ID.String(),
+				ts:        ep2.CreatedAt.Add(time.Second),
+				wantLimit: 0,
+			},
+		}
+
+		for _, tc := range tt {
+			cl := &mockClock{t: tc.ts}
+			agent, err := domain.NewEntryAgent(er, epr, sr, sc, cl)
+			if err != nil {
+				t.Fatal(err)
+			}
+			gotLimit, err := agent.GetPredictionRankingLimit(context.Background(), tc.entryID, testSeason.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if gotLimit != tc.wantLimit {
+				t.Fatalf("tc '%s': want limit %d, got %d", tc.name, tc.wantLimit, gotLimit)
+			}
+		}
+	})
+}
 
 func checkTimePtrMatch(t *testing.T, exp *time.Time, got *time.Time) {
 	switch {
