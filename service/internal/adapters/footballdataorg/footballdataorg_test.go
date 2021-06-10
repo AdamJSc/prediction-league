@@ -50,7 +50,7 @@ func TestClient_RetrieveLatestStandingsBySeason(t *testing.T) {
 	s := domain.Season{
 		ID:       "season-id",
 		ClientID: domain.SeasonIdentifier{SeasonID: "season-client-id"},
-		Active:   domain.TimeFrame{From: dt},
+		Live:     domain.TimeFrame{From: dt},
 	}
 
 	t.Run("happy path must produce the expected standings", func(t *testing.T) {

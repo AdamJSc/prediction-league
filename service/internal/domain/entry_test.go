@@ -56,7 +56,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 			From:  dt.Add(-12 * time.Hour),
 			Until: dt.Add(12 * time.Hour),
 		},
-		Active: domain.TimeFrame{
+		Live: domain.TimeFrame{
 			From:  dt.Add(12 * time.Hour),
 			Until: dt.Add(24 * time.Hour),
 		},
@@ -187,7 +187,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 
 		// entry window doesn't begin until tomorrow
 		seasonNotAcceptingEntries.EntriesAccepted.From = time.Now().Add(24 * time.Hour)
-		seasonNotAcceptingEntries.Active.From = time.Now().Add(48 * time.Hour)
+		seasonNotAcceptingEntries.Live.From = time.Now().Add(48 * time.Hour)
 
 		_, err := agent.CreateEntry(ctx, entry, &seasonNotAcceptingEntries)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
@@ -196,7 +196,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 
 		// entry window has already elapsed
 		seasonNotAcceptingEntries.EntriesAccepted.From = time.Now().Add(-48 * time.Hour)
-		seasonNotAcceptingEntries.Active.From = time.Now().Add(-24 * time.Hour)
+		seasonNotAcceptingEntries.Live.From = time.Now().Add(-24 * time.Hour)
 
 		_, err = agent.CreateEntry(ctx, entry, &seasonNotAcceptingEntries)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
@@ -299,7 +299,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 
 	t.Run("add an entry prediction to an existing entry with valid guard value must succeed", func(t *testing.T) {
 		// predictions are accepted
-		ts := testSeason.PredictionsAccepted[0].From.Add(time.Nanosecond)
+		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
 
 		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
 		if err != nil {
@@ -335,7 +335,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 
 	t.Run("add an entry prediction to an existing entry with invalid guard attempt must fail", func(t *testing.T) {
 		// predictions are accepted
-		ts := testSeason.PredictionsAccepted[0].From.Add(time.Nanosecond)
+		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
 
 		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
 		if err != nil {
@@ -355,7 +355,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 
 	t.Run("add an entry prediction to an existing entry with invalid realm name must fail", func(t *testing.T) {
 		// predictions are accepted
-		ts := testSeason.PredictionsAccepted[0].From.Add(time.Nanosecond)
+		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
 
 		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
 		if err != nil {
@@ -377,7 +377,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 
 	t.Run("add an entry prediction to a non-existing entry must fail", func(t *testing.T) {
 		// predictions are accepted
-		ts := testSeason.PredictionsAccepted[0].From.Add(time.Nanosecond)
+		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
 
 		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
 		if err != nil {
@@ -405,7 +405,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 
 	t.Run("add an entry prediction to an entry with an invalid season must fail", func(t *testing.T) {
 		// predictions are accepted
-		ts := testSeason.PredictionsAccepted[0].From.Add(time.Nanosecond)
+		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
 
 		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
 		if err != nil {
@@ -428,7 +428,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 
 	t.Run("add an entry prediction to an entry whose season is not currently accepting entries must fail", func(t *testing.T) {
 		// predictions are NOT accepted
-		ts := testSeason.PredictionsAccepted[0].From.Add(-time.Nanosecond)
+		ts := testSeason.PredictionsAccepted.From.Add(-time.Nanosecond)
 
 		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
 		if err != nil {
@@ -448,7 +448,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 
 	t.Run("add an entry prediction with rankings that include an invalid team ID must fail", func(t *testing.T) {
 		// predictions are accepted
-		ts := testSeason.PredictionsAccepted[0].From.Add(time.Nanosecond)
+		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
 
 		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
 		if err != nil {
@@ -478,7 +478,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 
 	t.Run("add an entry prediction with rankings that include a missing team ID must fail", func(t *testing.T) {
 		// predictions are accepted
-		ts := testSeason.PredictionsAccepted[0].From.Add(time.Nanosecond)
+		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
 
 		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
 		if err != nil {
@@ -516,7 +516,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 
 	t.Run("add an entry prediction with rankings that include a duplicate team ID must fail", func(t *testing.T) {
 		// predictions are accepted
-		ts := testSeason.PredictionsAccepted[0].From.Add(time.Nanosecond)
+		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
 
 		agent, err := domain.NewEntryAgent(er, epr, sc, &mockClock{t: ts})
 		if err != nil {
