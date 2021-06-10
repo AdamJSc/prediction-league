@@ -23,9 +23,10 @@ type Base struct {
 type PredictionPageData struct {
 	Err         error
 	Predictions struct {
-		BeingAccepted    bool
-		NextAcceptedFrom *time.Time
-		AcceptedUntil    *time.Time
+		Status        string
+		IsClosing     bool
+		AcceptedFrom  time.Time
+		AcceptedUntil time.Time
 	}
 	Teams struct {
 		Raw         string

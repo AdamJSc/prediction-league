@@ -8,15 +8,17 @@
                 <p>{{.Err}}</p>
             </div>
         {{else}}
-            {{if .Predictions.BeingAccepted}}
-                <countdown label="Window closes in..." v-bind:unix="{{timestamp_as_unix .Predictions.AcceptedUntil}}"></countdown>
+            {{if eq .Predictions.Status "active"}}
+                {{if .Predictions.IsClosing}}
+                    <countdown label="Hurry! Window is closing in..." v-bind:unix="{{timestamp_as_unix .Predictions.AcceptedUntil}}"></countdown>
+                {{end}}
                 {{if $parent.IsLoggedIn}}
                     <open-prediction v-bind:entry="{id: '{{.Entry.ID}}', shortCode: '{{.Entry.ShortCode}}'}" raw-teams="{{.Teams.Raw}}" unix="{{timestamp_as_unix .Teams.LastUpdated}}"></open-prediction>
                 {{else}}
                     <prediction-login></prediction-login>
                 {{end}}
-            {{else if .Predictions.NextAcceptedFrom}}
-                <countdown label="Next window opens in..." v-bind:unix="{{timestamp_as_unix .Predictions.NextAcceptedFrom}}"></countdown>
+            {{else if eq .Predictions.Status "pending"}}
+                <countdown label="Window opens in..." v-bind:unix="{{timestamp_as_unix .Predictions.AcceptedFrom}}"></countdown>
             {{else}}
                 <div class="no-more-predictions-summary">
                     <p>That's it for the current season...</p>

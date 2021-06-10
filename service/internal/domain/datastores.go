@@ -364,40 +364,17 @@ func GetSeasonCollection() (SeasonCollection, error) {
 			ID:       "202021_1",
 			ClientID: SeasonIdentifier{SeasonID: "PL"},
 			Name:     "Premier League 2020/21",
-			Active: TimeFrame{
-				From:  time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
-				Until: time.Date(2021, 5, 23, 23, 59, 59, 0, loc),
+			Live: TimeFrame{
+				From:  time.Date(2020, 9, 12, 15, 0, 0, 0, loc),   // opening day kick-off
+				Until: time.Date(2021, 5, 23, 23, 59, 59, 0, loc), // end of final day (regular season)
 			},
 			EntriesAccepted: TimeFrame{
-				From:  time.Date(2020, 8, 29, 9, 0, 0, 0, loc),
-				Until: time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
+				From:  time.Date(2020, 8, 29, 9, 0, 0, 0, loc),  // competition opens
+				Until: time.Date(2020, 9, 12, 15, 0, 0, 0, loc), // opening day kick-off
 			},
-			PredictionsAccepted: []TimeFrame{
-				// Entries / Sign-ups
-				{
-					From:  time.Date(2020, 8, 29, 9, 0, 0, 0, loc),
-					Until: time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
-				},
-				// FIFA International Break weekend (Thurs to Thurs)
-				{
-					From:  time.Date(2020, 10, 8, 0, 0, 0, 0, loc),
-					Until: time.Date(2020, 10, 15, 23, 59, 59, 0, loc),
-				},
-				// FIFA International Break weekend (Thurs to Thurs)
-				{
-					From:  time.Date(2020, 11, 12, 0, 0, 0, 0, loc),
-					Until: time.Date(2020, 11, 19, 23, 59, 59, 0, loc),
-				},
-				// FA Cup Third Round weekend (Thurs to Thurs)
-				{
-					From:  time.Date(2021, 01, 07, 0, 0, 0, 0, loc),
-					Until: time.Date(2021, 01, 14, 23, 59, 59, 0, loc),
-				},
-				// FIFA International Break weekend (Thurs to Thurs)
-				{
-					From:  time.Date(2021, 03, 25, 0, 0, 0, 0, loc),
-					Until: time.Date(2021, 04, 01, 23, 59, 59, 0, loc),
-				},
+			PredictionsAccepted: TimeFrame{
+				From:  time.Date(2020, 8, 29, 9, 0, 0, 0, loc), // competition opens
+				Until: time.Date(2021, 5, 23, 0, 0, 0, 0, loc), // midnight on final day (regular season)
 			},
 			TeamIDs: []string{
 				"AFC",
@@ -429,40 +406,17 @@ func GetSeasonCollection() (SeasonCollection, error) {
 			ID:       "202021_2",
 			ClientID: SeasonIdentifier{SeasonID: "ELC"},
 			Name:     "Championship 2020/21",
-			Active: TimeFrame{
-				From:  time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
-				Until: time.Date(2021, 5, 9, 23, 59, 59, 0, loc),
+			Live: TimeFrame{
+				From:  time.Date(2020, 9, 12, 15, 0, 0, 0, loc),  // opening day kick-off
+				Until: time.Date(2021, 5, 9, 23, 59, 59, 0, loc), // end of final day (regular season)
 			},
 			EntriesAccepted: TimeFrame{
-				From:  time.Date(2020, 8, 29, 9, 0, 0, 0, loc),
-				Until: time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
+				From:  time.Date(2020, 8, 29, 9, 0, 0, 0, loc),  // competition opens
+				Until: time.Date(2020, 9, 12, 15, 0, 0, 0, loc), // opening day kick-off
 			},
-			PredictionsAccepted: []TimeFrame{
-				// Entries / Sign-ups
-				{
-					From:  time.Date(2020, 8, 29, 9, 0, 0, 0, loc),
-					Until: time.Date(2020, 9, 12, 15, 0, 0, 0, loc),
-				},
-				// FIFA International Break weekend (Thurs to Thurs)
-				{
-					From:  time.Date(2020, 10, 8, 0, 0, 0, 0, loc),
-					Until: time.Date(2020, 10, 15, 23, 59, 59, 0, loc),
-				},
-				// FIFA International Break weekend (Thurs to Thurs)
-				{
-					From:  time.Date(2020, 11, 12, 0, 0, 0, 0, loc),
-					Until: time.Date(2020, 11, 19, 23, 59, 59, 0, loc),
-				},
-				// FA Cup Third Round weekend (Thurs to Thurs)
-				{
-					From:  time.Date(2021, 01, 07, 0, 0, 0, 0, loc),
-					Until: time.Date(2021, 01, 14, 23, 59, 59, 0, loc),
-				},
-				// FIFA International Break weekend (Thurs to Thurs)
-				{
-					From:  time.Date(2021, 03, 25, 0, 0, 0, 0, loc),
-					Until: time.Date(2021, 04, 01, 23, 59, 59, 0, loc),
-				},
+			PredictionsAccepted: TimeFrame{
+				From:  time.Date(2020, 8, 29, 9, 0, 0, 0, loc), // competition opens
+				Until: time.Date(2021, 5, 9, 0, 0, 0, 0, loc),  // midnight on final day (regular season)
 			},
 			TeamIDs: []string{
 				"AFCB",
@@ -498,23 +452,17 @@ func GetSeasonCollection() (SeasonCollection, error) {
 			ID:       "201920_1",
 			ClientID: SeasonIdentifier{SeasonID: "PL"},
 			Name:     "Premier League 2019/20",
-			Active: TimeFrame{
-				From:  time.Date(2019, 8, 9, 19, 0, 0, 0, loc),
-				Until: time.Date(2020, 7, 26, 23, 59, 59, 0, loc),
+			Live: TimeFrame{
+				From:  time.Date(2019, 8, 9, 19, 0, 0, 0, loc),    // opening day kick-off
+				Until: time.Date(2020, 7, 26, 23, 59, 59, 0, loc), // end of final day (regular season)
 			},
 			EntriesAccepted: TimeFrame{
-				From:  time.Date(2019, 7, 1, 0, 0, 0, 0, loc),
-				Until: time.Date(2019, 8, 9, 19, 0, 0, 0, loc),
+				From:  time.Date(2019, 7, 1, 0, 0, 0, 0, loc),  // competition opens
+				Until: time.Date(2019, 8, 9, 19, 0, 0, 0, loc), // opening day kick-off
 			},
-			PredictionsAccepted: []TimeFrame{
-				{
-					From:  time.Date(2019, 7, 1, 0, 0, 0, 0, loc),
-					Until: time.Date(2019, 8, 9, 19, 0, 0, 0, loc),
-				},
-				{
-					From:  time.Date(2020, 7, 1, 0, 0, 0, 0, loc),
-					Until: time.Date(2020, 8, 31, 23, 59, 59, 0, loc),
-				},
+			PredictionsAccepted: TimeFrame{
+				From:  time.Date(2019, 7, 1, 0, 0, 0, 0, loc),  // competition opens
+				Until: time.Date(2020, 7, 26, 0, 0, 0, 0, loc), // midnight on final day (regular season)
 			},
 			TeamIDs: []string{
 				"AFC",
@@ -547,7 +495,7 @@ func GetSeasonCollection() (SeasonCollection, error) {
 		ID:       fakeSeasonID,
 		ClientID: nil, // will not invoke requests to client when running in retrieve latest standings job
 		Name:     "Localhost Season",
-		Active: TimeFrame{
+		Live: TimeFrame{
 			From:  time.Now(),
 			Until: time.Now().Add(60 * time.Minute),
 		},
@@ -555,15 +503,9 @@ func GetSeasonCollection() (SeasonCollection, error) {
 			From:  time.Now(),
 			Until: time.Now().Add(20 * time.Minute),
 		},
-		PredictionsAccepted: []TimeFrame{
-			{
-				From:  time.Now(),
-				Until: time.Now().Add(20 * time.Minute),
-			},
-			{
-				From:  time.Now().Add(40 * time.Minute),
-				Until: time.Now().Add(60 * time.Minute),
-			},
+		PredictionsAccepted: TimeFrame{
+			From:  time.Now(),
+			Until: time.Now().Add(60 * time.Minute),
 		},
 		TeamIDs:   sc[fakeSeasonKey].TeamIDs,
 		MaxRounds: sc[fakeSeasonKey].MaxRounds,

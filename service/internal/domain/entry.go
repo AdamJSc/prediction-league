@@ -101,7 +101,7 @@ func (e *EntryAgent) CreateEntry(ctx context.Context, entry Entry, s *Season) (E
 	}
 
 	// check if season is currently accepting entries
-	if !s.GetState(e.cl.Now()).IsAcceptingEntries {
+	if s.GetState(e.cl.Now()).EntriesStatus != SeasonStateActive {
 		return Entry{}, ConflictError{errors.New("season is not currently accepting entries")}
 	}
 
@@ -370,7 +370,7 @@ func (e *EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPredict
 	}
 
 	// check if season is currently accepting entries
-	if !season.GetState(e.cl.Now()).IsAcceptingPredictions {
+	if season.GetState(e.cl.Now()).EntriesStatus != SeasonStateActive {
 		return Entry{}, ConflictError{errors.New("season is not currently accepting entries")}
 	}
 
@@ -575,7 +575,7 @@ func (e *EntryAgent) RetrieveEntryPredictionsForActiveSeasonByTimestamp(
 	ts time.Time,
 ) ([]EntryPrediction, error) {
 	// ensure that season is active based on provided timestamp
-	if !season.Active.HasBegunBy(ts) || season.Active.HasElapsedBy(ts) {
+	if !season.Live.HasBegunBy(ts) || season.Live.HasElapsedBy(ts) {
 		return nil, ConflictError{fmt.Errorf("season not active: id %s", season.ID)}
 	}
 
