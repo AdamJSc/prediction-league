@@ -1564,55 +1564,55 @@ func TestEntryAgent_GetPredictionRankingLimit(t *testing.T) {
 	t.Run("getting prediction ranking limit for the provided timestamp must return the expected limit value", func(t *testing.T) {
 		tt := []struct {
 			name      string
-			entryID   string
+			entry     domain.Entry
 			ts        time.Time
 			wantLimit int
 		}{
 			{
 				name:      "ts before first entry prediction, before standings (no limit)",
-				entryID:   e.ID.String(),
+				entry:     e,
 				ts:        ep1.CreatedAt.Add(-time.Second),
 				wantLimit: domain.RankingLimitNone,
 			},
 			{
 				name:      "ts at time of first entry prediction, before standings (no limit)",
-				entryID:   e.ID.String(),
+				entry:     e,
 				ts:        ep1.CreatedAt,
 				wantLimit: domain.RankingLimitNone,
 			},
 			{
 				name:      "ts after first entry prediction, before standings (no limit)",
-				entryID:   e.ID.String(),
+				entry:     e,
 				ts:        ep1.CreatedAt.Add(time.Second),
 				wantLimit: domain.RankingLimitNone,
 			},
 			{
 				name:      "ts at time of standings, entry does not have a prediction already (no limit)",
-				entryID:   e2.ID.String(),
+				entry:     e2,
 				ts:        st.CreatedAt,
 				wantLimit: domain.RankingLimitNone,
 			},
 			{
 				name:      "ts at time of standings, entry does not have a new prediction since standings (regular limit)",
-				entryID:   e.ID.String(),
+				entry:     e,
 				ts:        st.CreatedAt,
 				wantLimit: domain.RankingLimitRegular,
 			},
 			{
 				name:      "ts after standings, entry does not have a new prediction since standings (regular limit)",
-				entryID:   e.ID.String(),
+				entry:     e,
 				ts:        st.CreatedAt.Add(time.Second),
 				wantLimit: domain.RankingLimitRegular,
 			},
 			{
 				name:      "ts after standings, at time of new prediction (limit of 0)",
-				entryID:   e.ID.String(),
+				entry:     e,
 				ts:        ep2.CreatedAt,
 				wantLimit: 0,
 			},
 			{
 				name:      "ts after standings, after time of new prediction (limit of 0)",
-				entryID:   e.ID.String(),
+				entry:     e,
 				ts:        ep2.CreatedAt.Add(time.Second),
 				wantLimit: 0,
 			},
@@ -1624,7 +1624,7 @@ func TestEntryAgent_GetPredictionRankingLimit(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			gotLimit, err := agent.GetPredictionRankingLimit(context.Background(), tc.entryID, testSeason.ID)
+			gotLimit, err := agent.GetPredictionRankingLimit(context.Background(), tc.entry)
 			if err != nil {
 				t.Fatal(err)
 			}

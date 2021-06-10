@@ -611,8 +611,8 @@ func (e *EntryAgent) RetrieveEntryPredictionsForActiveSeasonByTimestamp(
 // The Prediction Ranking Limit determines how many teams can change positions in a new Entry Prediction
 // that is made by the provided entry ID.
 // A return value of -1 indicates no limit, otherwise the return value represents the number of teams allowed to change (including 0).
-func (e *EntryAgent) GetPredictionRankingLimit(ctx context.Context, entryID, seasonID string) (int, error) {
-	st, err := e.sr.SelectLatestBySeasonIDAndTimestamp(ctx, seasonID, e.cl.Now())
+func (e *EntryAgent) GetPredictionRankingLimit(ctx context.Context, entry Entry) (int, error) {
+	st, err := e.sr.SelectLatestBySeasonIDAndTimestamp(ctx, entry.SeasonID, e.cl.Now())
 	if err != nil {
 		if errors.As(err, &MissingDBRecordError{}) {
 			// no standings exist for season - i.e. round 1 has not yet begun
@@ -623,7 +623,7 @@ func (e *EntryAgent) GetPredictionRankingLimit(ctx context.Context, entryID, sea
 		return 0, fmt.Errorf("cannot retrieve standings by season and timestamp: %w", err)
 	}
 
-	ep, err := e.epr.SelectByEntryIDAndTimestamp(ctx, entryID, e.cl.Now())
+	ep, err := e.epr.SelectByEntryIDAndTimestamp(ctx, entry.ID.String(), e.cl.Now())
 	if err != nil {
 		if errors.As(err, &MissingDBRecordError{}) {
 			// entry has not yet made a first entry prediction
