@@ -131,6 +131,8 @@ func getPredictionPageData(ctx context.Context, authToken string, entryAgent *do
 			data.Teams.LastUpdated = entryPrediction.CreatedAt
 			teamIDs = entryPrediction.Rankings.GetIDs()
 		}
+
+		// TODO - feat: retrieve ranking limit from entry
 	}
 
 	// filter all teams to just the IDs that we need
