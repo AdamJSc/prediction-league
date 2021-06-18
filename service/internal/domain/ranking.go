@@ -179,6 +179,32 @@ func CalculateRankingsScores(baseRC, comparisonRC RankingCollection) (*RankingWi
 	return &collection, nil
 }
 
+// GetChangedRankingIDs returns the Ranking IDs that differ between the two provided RankingCollection objects
+func GetChangedRankingIDs(x RankingCollection, y RankingCollection) []string {
+	diffMap := make(map[string]struct{}, 0)
+
+	for _, xRnk := range x {
+		yRnk, err := y.GetByID(xRnk.ID)
+		if err != nil || yRnk.Position != xRnk.Position {
+			diffMap[xRnk.ID] = struct{}{}
+		}
+	}
+
+	for _, yRnk := range y {
+		xRnk, err := x.GetByID(yRnk.ID)
+		if err != nil || xRnk.Position != yRnk.Position {
+			diffMap[yRnk.ID] = struct{}{}
+		}
+	}
+
+	diff := make([]string, 0)
+	for id := range diffMap {
+		diff = append(diff, id)
+	}
+
+	return diff
+}
+
 // rankingsIDsMatch returns an error if the provided RankingCollections do not match their respective IDs in full
 func rankingsIDsMatch(base, comparison RankingCollection) error {
 	baseIDs := base.GetIDs()
