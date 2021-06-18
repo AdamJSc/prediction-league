@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -94,38 +95,44 @@ type scoredEntryPredictionResponseRanking struct {
 
 // responseFromError returns a rest package-level error from a domain-level error
 func responseFromError(err error) *response {
-	switch err.(type) {
-	case domain.NotFoundError:
+	switch {
+
+	case errors.As(err, &domain.NotFoundError{}):
 		return notFoundError(err)
-	case domain.UnauthorizedError:
+
+	case errors.As(err, &domain.UnauthorizedError{}):
 		return unauthorizedError()
-	case domain.ConflictError:
-		if cErr, ok := err.(domain.ConflictError); ok {
-			return &response{
-				Code:    http.StatusConflict,
-				Message: "conflict error",
-				Data: &data{
-					Type:    "error",
-					Content: strings.Title(cErr.Error()),
-				},
-			}
+
+	case errors.As(err, &domain.ConflictError{}):
+		var cErr domain.ConflictError
+		errors.As(err, &cErr)
+		return &response{
+			Code:    http.StatusConflict,
+			Message: "conflict error",
+			Data: &data{
+				Type:    "error",
+				Content: strings.Title(cErr.Error()),
+			},
 		}
-	case domain.ValidationError:
-		if vErr, ok := err.(domain.ValidationError); ok {
-			return &response{
-				Code:    http.StatusUnprocessableEntity,
-				Message: "validation error",
-				Data: &data{
-					Type:    "error",
-					Content: vErr,
-				},
-			}
+
+	case errors.As(err, &domain.ValidationError{}):
+		var vErr domain.ValidationError
+		errors.As(err, &vErr)
+		return &response{
+			Code:    http.StatusUnprocessableEntity,
+			Message: "validation error",
+			Data: &data{
+				Type:    "error",
+				Content: vErr,
+			},
 		}
-	case domain.BadRequestError:
+
+	case errors.As(err, &domain.BadRequestError{}):
 		return &response{
 			Code:    http.StatusBadRequest,
 			Message: err.Error(),
 		}
+
 	}
 
 	return internalError(err)
