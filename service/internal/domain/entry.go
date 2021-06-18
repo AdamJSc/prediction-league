@@ -647,6 +647,11 @@ func (e *EntryAgent) GetPredictionRankingLimit(ctx context.Context, entry Entry)
 
 // CheckRankingLimit returns an error if the cahgnes entailed by provided EntryPrediction exceeds the provided limit
 func (e *EntryAgent) CheckRankingLimit(ctx context.Context, limit int, newEP EntryPrediction, entry Entry) error {
+	if limit == RankingLimitNone {
+		// no limit
+		return nil
+	}
+
 	// retrieve most recent existing entry prediction
 	latestEP, err := e.RetrieveEntryPredictionByTimestamp(ctx, entry, e.cl.Now())
 	if err != nil {

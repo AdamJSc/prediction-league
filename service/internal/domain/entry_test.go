@@ -1683,6 +1683,11 @@ func TestEntryAgent_CheckRankingLimit(t *testing.T) {
 		wantErrMsg string
 	}{
 		{
+			name: "no limit, must return no error",
+			lim:  domain.RankingLimitNone,
+			// want no error
+		},
+		{
 			name: "if no existing prediction, must return no error",
 			e:    entryNoPred,
 			// want no error
