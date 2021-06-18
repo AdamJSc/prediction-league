@@ -645,6 +645,26 @@ func (e *EntryAgent) GetPredictionRankingLimit(ctx context.Context, entry Entry)
 	return RankingLimitRegular, nil
 }
 
+// CheckRankingLimit returns an error if the cahgnes entailed by provided EntryPrediction exceeds the provided limit
+func (e *EntryAgent) CheckRankingLimit(ctx context.Context, limit int, newEP EntryPrediction, entry Entry) error {
+	// retrieve most recent existing entry prediction
+	latestEP, err := e.RetrieveEntryPredictionByTimestamp(ctx, entry, e.cl.Now())
+	if err != nil {
+		if errors.As(err, &NotFoundError{}) {
+			// no existing latest entry prediction, so nothing to check limit against
+			return nil
+		}
+		return fmt.Errorf("cannot retrieve entry prediction by timestamp: %w", err)
+	}
+
+	ids := GetChangedRankingIDs(newEP.Rankings, latestEP.Rankings)
+	if len(ids) > limit {
+		return ConflictError{fmt.Errorf("cannot change %d rankings (%d permitted)", len(ids), limit)}
+	}
+
+	return nil
+}
+
 func (e *EntryAgent) GenerateUniqueShortCode(ctx context.Context) (string, error) {
 	return e.er.GenerateUniqueShortCode(ctx)
 }
