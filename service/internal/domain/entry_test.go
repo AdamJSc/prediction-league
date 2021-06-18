@@ -1528,12 +1528,7 @@ func TestEntryAgent_GetEntryPredictionByTimestamp(t *testing.T) {
 func TestEntryAgent_GetPredictionRankingLimit(t *testing.T) {
 	defer truncate(t)
 
-	loc, err := time.LoadLocation("Europe/London")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	dt := time.Date(2018, 5, 26, 14, 0, 0, 0, loc)
+	dt := time.Date(2018, 5, 26, 14, 0, 0, 0, time.FixedZone("Europe/London", 3600))
 
 	e := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
@@ -1633,6 +1628,115 @@ func TestEntryAgent_GetPredictionRankingLimit(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestEntryAgent_CheckRankingLimit(t *testing.T) {
+	defer truncate(t)
+
+	dt := time.Date(2018, 5, 26, 14, 0, 0, 0, time.FixedZone("Europe/London", 3600))
+	cl := &mockClock{t: dt}
+	pughID, fletchID, pitmanID := "marc", "steve", "brett"
+
+	baseRankings := domain.RankingCollection{
+		{pughID, 1},
+		{fletchID, 2},
+		{pitmanID, 3},
+	}
+
+	entryWithPred := insertEntry(t, generateTestEntry(t,
+		"Harry Redknapp",
+		"MrHarryR",
+		"harry.redknapp@football.net",
+	))
+
+	// insert entry prediction for entryWithPred
+	insertEntryPrediction(t, domain.EntryPrediction{
+		ID:        uuid.New(),
+		EntryID:   entryWithPred.ID,
+		Rankings:  baseRankings,
+		CreatedAt: dt.Add(-time.Second), // ensure this is retrieved as latest entry prediction relative to test date
+	})
+
+	entryNoPred := insertEntry(t, generateTestEntry(t,
+		"Jamie Redknapp",
+		"MrJamieR",
+		"jamie.redknapp@football.net",
+	))
+
+	// changedRankings entails 2 changes compared to baseRankings
+	changedRankings := domain.RankingCollection{
+		{pughID, 1},
+		{pitmanID, 2}, // swapped with fletch
+		{fletchID, 3}, // swapped with pitman
+	}
+
+	entryPredChangedRank := domain.EntryPrediction{
+		EntryID:  entryWithPred.ID,
+		Rankings: changedRankings,
+	}
+
+	tt := []struct {
+		name       string
+		e          domain.Entry
+		ep         domain.EntryPrediction
+		lim        int
+		wantErrMsg string
+	}{
+		{
+			name: "if no existing prediction, must return no error",
+			e:    entryNoPred,
+			// want no error
+		},
+		{
+			name: "2 changes with limit of 3, must return no error",
+			e:    entryWithPred,
+			ep:   entryPredChangedRank,
+			lim:  3,
+			// want no error
+		},
+		{
+			name: "2 changes with limit of 2, must return no error",
+			e:    entryWithPred,
+			ep:   entryPredChangedRank,
+			lim:  2,
+			// want no error
+		},
+		{
+			name:       "2 changes with limit of 1, must return expected error",
+			e:          entryWithPred,
+			ep:         entryPredChangedRank,
+			lim:        1,
+			wantErrMsg: "cannot change 2 rankings (1 permitted)",
+		},
+		{
+			name:       "2 changes with limit of 0, must return expected error",
+			e:          entryWithPred,
+			ep:         entryPredChangedRank,
+			lim:        0,
+			wantErrMsg: "cannot change 2 rankings (0 permitted)",
+		},
+	}
+
+	for _, tc := range tt {
+		agent, err := domain.NewEntryAgent(er, epr, sr, sc, cl)
+		if err != nil {
+			t.Fatal(err)
+		}
+		gotErr := agent.CheckRankingLimit(context.Background(), tc.lim, tc.ep, tc.e)
+		if tc.wantErrMsg == "" && gotErr != nil {
+			t.Fatalf("tc '%s': want no error, got %s (%T)", tc.name, gotErr, gotErr)
+		}
+		if tc.wantErrMsg != "" {
+			if gotErr == nil || !errors.As(gotErr, &domain.ConflictError{}) || gotErr.Error() != tc.wantErrMsg {
+				t.Fatalf("tc '%s': want conflict error %s, got %s (%T)", tc.name, tc.wantErrMsg, gotErr, gotErr)
+			}
+		}
+		if tc.wantErrMsg != "" {
+			if gotErr == nil || gotErr.Error() != tc.wantErrMsg {
+				t.Fatalf("tc '%s': want error message '%s', got '%s' (%T)", tc.name, tc.wantErrMsg, gotErr, gotErr)
+			}
+		}
+	}
 }
 
 func checkTimePtrMatch(t *testing.T, exp *time.Time, got *time.Time) {
