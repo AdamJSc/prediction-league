@@ -1650,7 +1650,7 @@ func TestEntryAgent_CheckRankingLimit(t *testing.T) {
 	))
 
 	// insert entry prediction for entryWithPred
-	insertEntryPrediction(t, domain.EntryPrediction{
+	baseEntryPred := insertEntryPrediction(t, domain.EntryPrediction{
 		ID:        uuid.New(),
 		EntryID:   entryWithPred.ID,
 		Rankings:  baseRankings,
@@ -1686,6 +1686,12 @@ func TestEntryAgent_CheckRankingLimit(t *testing.T) {
 			name: "if no existing prediction, must return no error",
 			e:    entryNoPred,
 			// want no error
+		},
+		{
+			name:       "no changes, must return expected error",
+			e:          entryWithPred,
+			ep:         baseEntryPred,
+			wantErrMsg: "no changes to rankings",
 		},
 		{
 			name: "2 changes with limit of 3, must return no error",

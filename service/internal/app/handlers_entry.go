@@ -180,6 +180,8 @@ func createEntryPredictionHandler(c *container) func(w http.ResponseWriter, r *h
 			return
 		}
 
+		// TODO - feat: test handler end-to-end
+
 		// check current ranking limit
 		limit, err := c.entryAgent.GetPredictionRankingLimit(ctx, entry)
 		if err != nil {

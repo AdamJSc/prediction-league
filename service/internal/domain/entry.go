@@ -658,6 +658,9 @@ func (e *EntryAgent) CheckRankingLimit(ctx context.Context, limit int, newEP Ent
 	}
 
 	ids := GetChangedRankingIDs(newEP.Rankings, latestEP.Rankings)
+	if len(ids) == 0 {
+		return ConflictError{errors.New("no changes to rankings")}
+	}
 	if len(ids) > limit {
 		return ConflictError{fmt.Errorf("cannot change %d rankings (%d permitted)", len(ids), limit)}
 	}
