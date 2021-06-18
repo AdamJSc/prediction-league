@@ -10,6 +10,7 @@ type TimeFrame struct {
 	Until time.Time
 }
 
+// TODO - return error for failure context
 // Valid determines whether the associated TimeFrame is chronologically sound
 func (t TimeFrame) Valid() bool {
 	switch {

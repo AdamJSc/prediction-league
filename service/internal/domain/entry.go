@@ -23,6 +23,11 @@ const (
 	EntryPaymentMethodPayPal = "paypal"
 	// EntryPaymentMethodOther represents an Entry that has been paid by OTHER means
 	EntryPaymentMethodOther = "other"
+
+	// RankingLimitNone defines the value used to represent no limit to ranking changes
+	RankingLimitNone = -1
+	// RankingLimitRegular defines the standard value for limiting ranking changes
+	RankingLimitRegular = 2
 )
 
 // Entry defines a user's entry into the prediction league
@@ -84,6 +89,7 @@ type EntryPredictionRepository interface {
 type EntryAgent struct {
 	er  EntryRepository
 	epr EntryPredictionRepository
+	sr  StandingsRepository
 	sc  SeasonCollection
 	cl  Clock
 }
@@ -101,7 +107,7 @@ func (e *EntryAgent) CreateEntry(ctx context.Context, entry Entry, s *Season) (E
 	}
 
 	// check if season is currently accepting entries
-	if !s.GetState(e.cl.Now()).IsAcceptingEntries {
+	if s.GetState(e.cl.Now()).EntriesStatus != SeasonStateActive {
 		return Entry{}, ConflictError{errors.New("season is not currently accepting entries")}
 	}
 
@@ -370,7 +376,7 @@ func (e *EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPredict
 	}
 
 	// check if season is currently accepting entries
-	if !season.GetState(e.cl.Now()).IsAcceptingPredictions {
+	if season.GetState(e.cl.Now()).EntriesStatus != SeasonStateActive {
 		return Entry{}, ConflictError{errors.New("season is not currently accepting entries")}
 	}
 
@@ -575,7 +581,7 @@ func (e *EntryAgent) RetrieveEntryPredictionsForActiveSeasonByTimestamp(
 	ts time.Time,
 ) ([]EntryPrediction, error) {
 	// ensure that season is active based on provided timestamp
-	if !season.Active.HasBegunBy(ts) || season.Active.HasElapsedBy(ts) {
+	if !season.Live.HasBegunBy(ts) || season.Live.HasElapsedBy(ts) {
 		return nil, ConflictError{fmt.Errorf("season not active: id %s", season.ID)}
 	}
 
@@ -598,6 +604,45 @@ func (e *EntryAgent) RetrieveEntryPredictionsForActiveSeasonByTimestamp(
 	}
 
 	return currentEntryPredictions, nil
+}
+
+// GetPredictionRankingLimit returns any limits that apply to the provided entry ID based on the current clock timestamp.
+//
+// The Prediction Ranking Limit determines how many teams can change positions in a new Entry Prediction
+// that is made by the provided entry ID.
+// A return value of -1 indicates no limit, otherwise the return value represents the number of teams allowed to change (including 0).
+func (e *EntryAgent) GetPredictionRankingLimit(ctx context.Context, entry Entry) (int, error) {
+	st, err := e.sr.SelectLatestBySeasonIDAndTimestamp(ctx, entry.SeasonID, e.cl.Now())
+	if err != nil {
+		if errors.As(err, &MissingDBRecordError{}) {
+			// no standings exist for season - i.e. round 1 has not yet begun
+			// so return no ranking limit
+			return RankingLimitNone, nil
+		}
+
+		return 0, fmt.Errorf("cannot retrieve standings by season and timestamp: %w", err)
+	}
+
+	ep, err := e.epr.SelectByEntryIDAndTimestamp(ctx, entry.ID.String(), e.cl.Now())
+	if err != nil {
+		if errors.As(err, &MissingDBRecordError{}) {
+			// entry has not yet made a first entry prediction
+			// so return no ranking limit
+			return RankingLimitNone, nil
+		}
+
+		return 0, fmt.Errorf("cannot retrieve entry prediction by entry and timestamp: %w", err)
+	}
+
+	if !ep.CreatedAt.Before(st.CreatedAt) {
+		// a new entry prediction has already been created since the most recent standings were created (round started)
+		// so set a limit of 0
+		return 0, nil
+	}
+
+	// latest entry prediction was created prior to the current standings (round)
+	// so allow a regular limit
+	return RankingLimitRegular, nil
 }
 
 func (e *EntryAgent) GenerateUniqueShortCode(ctx context.Context) (string, error) {
@@ -638,19 +683,21 @@ func (e *EntryAgent) SeedEntries(ctx context.Context, entries []Entry) error {
 }
 
 // NewEntryAgent returns a new EntryAgent using the provided repositories
-func NewEntryAgent(er EntryRepository, epr EntryPredictionRepository, sc SeasonCollection, cl Clock) (*EntryAgent, error) {
+func NewEntryAgent(er EntryRepository, epr EntryPredictionRepository, sr StandingsRepository, sc SeasonCollection, cl Clock) (*EntryAgent, error) {
 	switch {
 	case er == nil:
 		return nil, fmt.Errorf("entry repository: %w", ErrIsNil)
 	case epr == nil:
 		return nil, fmt.Errorf("entry prediction repository: %w", ErrIsNil)
+	case sr == nil:
+		return nil, fmt.Errorf("standings repository: %w", ErrIsNil)
 	case sc == nil:
 		return nil, fmt.Errorf("season collection: %w", ErrIsNil)
 	case cl == nil:
 		return nil, fmt.Errorf("clock: %w", ErrIsNil)
 	}
 
-	return &EntryAgent{er, epr, sc, cl}, nil
+	return &EntryAgent{er, epr, sr, sc, cl}, nil
 }
 
 // sanitiseEntry sanitises and validates an Entry

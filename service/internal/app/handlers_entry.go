@@ -182,6 +182,8 @@ func createEntryPredictionHandler(c *container) func(w http.ResponseWriter, r *h
 
 		domain.GuardFromContext(ctx).SetAttempt(input.EntryShortCode)
 
+		// TODO - feat: check ranking limit - retrieve using entry
+
 		// create entry prediction for entry
 		if _, err := c.entryAgent.AddEntryPredictionToEntry(ctx, entryPrediction, entry); err != nil {
 			responseFromError(err).writeTo(w)

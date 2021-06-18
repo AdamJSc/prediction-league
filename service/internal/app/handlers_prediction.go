@@ -90,14 +90,10 @@ func getPredictionPageData(ctx context.Context, authToken string, entryAgent *do
 	ts := cl.Now()
 
 	seasonState := season.GetState(ts)
-	data.Predictions.BeingAccepted = seasonState.IsAcceptingPredictions
-	if seasonState.NextPredictionsWindow != nil {
-		if data.Predictions.BeingAccepted {
-			data.Predictions.AcceptedUntil = &seasonState.NextPredictionsWindow.Until
-		} else {
-			data.Predictions.NextAcceptedFrom = &seasonState.NextPredictionsWindow.From
-		}
-	}
+	data.Predictions.Status = seasonState.PredictionsStatus
+	data.Predictions.AcceptedFrom = season.PredictionsAccepted.From
+	data.Predictions.AcceptedUntil = season.PredictionsAccepted.Until
+	data.Predictions.IsClosing = seasonState.PredictionsClosing
 
 	// default teams IDs should reflect those of the current season
 	teamIDs := season.TeamIDs
@@ -135,6 +131,8 @@ func getPredictionPageData(ctx context.Context, authToken string, entryAgent *do
 			data.Teams.LastUpdated = entryPrediction.CreatedAt
 			teamIDs = entryPrediction.Rankings.GetIDs()
 		}
+
+		// TODO - feat: retrieve ranking limit from entry
 	}
 
 	// filter all teams to just the IDs that we need

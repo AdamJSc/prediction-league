@@ -7,12 +7,14 @@ import (
 )
 
 const (
-	// SeasonStatusPending represents a Season whose status is PENDING
-	SeasonStatusPending = "pending"
-	// SeasonStatusActive represents a Season whose status is ACTIVE
-	SeasonStatusActive = "active"
-	// SeasonStatusElapsed represents a Season whose status is ELAPSED
-	SeasonStatusElapsed = "elapsed"
+	// SeasonStatePending represents a Season timeframe whose status is PENDING
+	SeasonStatePending = "pending"
+	// SeasonStateActive represents a Season timeframe whose status is ACTIVE
+	SeasonStateActive = "active"
+	// SeasonStateElapsed represents a Season timeframe whose status is ELAPSED
+	SeasonStateElapsed = "elapsed"
+	// elapsingGracePeriod represents the grace period prior to a timeframe elapsing
+	elapsingGracePeriod = 6 * time.Hour
 )
 
 // Season defines the structure of a Season against which Entries are played
@@ -20,51 +22,39 @@ type Season struct {
 	ID                  string             // representation of season's start/end year along with instance number, e.g. 202021_1
 	ClientID            ResourceIdentifier // identifier within the football data source
 	Name                string             // season name, e.g. Premier League 2020/21
-	Active              TimeFrame          // timeframe for which the season is active (real-world standings will be consumed during this timeframe)
+	Live                TimeFrame          // timeframe for which the season is live (real-world standings will be consumed during this timeframe)
 	EntriesAccepted     TimeFrame          // timeframe within which new entries will be accepted
-	PredictionsAccepted []TimeFrame        // series of timeframes within which changes to entry predictions will be accepted
+	PredictionsAccepted TimeFrame          // timeframe within which changes to entry predictions will be accepted
 	TeamIDs             []string           // slice of strings representing valid team IDs that exist within TeamsCollection
 	MaxRounds           int                // number of rounds after which season is considered completed (maximum number of games to be played by each team)
 }
 
 // GetState determines a Season's state based on a supplied timestamp
 func (s Season) GetState(ts time.Time) SeasonState {
-	var state SeasonState
-
-	// determine season's current status
-	state.Status = SeasonStatusPending
-	switch {
-	case s.Active.HasBegunBy(ts) && !s.Active.HasElapsedBy(ts):
-		state.Status = SeasonStatusActive
-	case s.Active.HasElapsedBy(ts):
-		state.Status = SeasonStatusElapsed
-	}
-
-	// is season currently accepting entries?
-	if s.EntriesAccepted.HasBegunBy(ts) && !s.EntriesAccepted.HasElapsedBy(ts) {
-		state.IsAcceptingEntries = true
-	}
-
-	// is season currently accepting predictions?
-	for _, tf := range s.PredictionsAccepted {
-		thisTf := tf
-
-		if tf.HasBegunBy(ts) && !tf.HasElapsedBy(ts) {
-			// next predictions window should be the current timeframe if predictions are currently being accepted
-			state.IsAcceptingPredictions = true
-			state.NextPredictionsWindow = &thisTf
-			break
+	var getCurrentStatus = func(tf TimeFrame) string {
+		var status string
+		switch {
+		case tf.HasBegunBy(ts) && !tf.HasElapsedBy(ts):
+			status = SeasonStateActive
+		case tf.HasElapsedBy(ts):
+			status = SeasonStateElapsed
+		default:
+			status = SeasonStatePending
 		}
-
-		// if we aren't currently accepting predictions, does this tf represent the next time that we are?
-		if !state.IsAcceptingPredictions && !tf.HasBegunBy(ts) {
-			nextTf := tf
-			state.NextPredictionsWindow = &nextTf
-			break
-		}
+		return status
 	}
 
-	return state
+	var getIsClosing = func(tf TimeFrame) bool {
+		graceTs := ts.Add(elapsingGracePeriod)
+		return tf.HasElapsedBy(graceTs) && !tf.HasElapsedBy(ts)
+	}
+
+	return SeasonState{
+		LiveStatus:         getCurrentStatus(s.Live),
+		EntriesStatus:      getCurrentStatus(s.EntriesAccepted),
+		PredictionsStatus:  getCurrentStatus(s.PredictionsAccepted),
+		PredictionsClosing: getIsClosing(s.PredictionsAccepted),
+	}
 }
 
 // IsCompletedByStandings returns true if the provided standings represents a completed final round, otherwise false
@@ -89,24 +79,14 @@ func (s Season) IsCompletedByStandings(stnd Standings) bool {
 // GetPredictionWindowBeginsWithin returns the Prediction Window that begins within the provided TimeFrame,
 // or an error if no match is found
 func (s Season) GetPredictionWindowBeginsWithin(tf TimeFrame) (SequencedTimeFrame, error) {
-	total := len(s.PredictionsAccepted)
-	count := 0
-
-	for idx, window := range s.PredictionsAccepted {
-		count++
-		if window.BeginsWithin(tf) {
-			stf := SequencedTimeFrame{
-				Count:   count,
-				Total:   total,
-				Current: &window,
-			}
-
-			if count < total {
-				stf.Next = &s.PredictionsAccepted[idx+1]
-			}
-
-			return stf, nil
+	if s.PredictionsAccepted.BeginsWithin(tf) {
+		stf := SequencedTimeFrame{
+			Count:   1,
+			Total:   1,
+			Current: &s.PredictionsAccepted,
 		}
+
+		return stf, nil
 	}
 
 	return SequencedTimeFrame{}, ErrNoMatchingPredictionWindow
@@ -115,24 +95,14 @@ func (s Season) GetPredictionWindowBeginsWithin(tf TimeFrame) (SequencedTimeFram
 // GetPredictionWindowEndsWithin returns the Prediction Window that ends within the provided TimeFrame,
 // or an error if no match is found
 func (s Season) GetPredictionWindowEndsWithin(tf TimeFrame) (SequencedTimeFrame, error) {
-	total := len(s.PredictionsAccepted)
-	count := 0
-
-	for idx, window := range s.PredictionsAccepted {
-		count++
-		if window.EndsWithin(tf) {
-			stf := SequencedTimeFrame{
-				Count:   count,
-				Total:   total,
-				Current: &window,
-			}
-
-			if count < total {
-				stf.Next = &s.PredictionsAccepted[idx+1]
-			}
-
-			return stf, nil
+	if s.PredictionsAccepted.EndsWithin(tf) {
+		stf := SequencedTimeFrame{
+			Count:   1,
+			Total:   1,
+			Current: &s.PredictionsAccepted,
 		}
+
+		return stf, nil
 	}
 
 	return SequencedTimeFrame{}, ErrNoMatchingPredictionWindow
@@ -140,10 +110,10 @@ func (s Season) GetPredictionWindowEndsWithin(tf TimeFrame) (SequencedTimeFrame,
 
 // SeasonState defines the state of a Season
 type SeasonState struct {
-	Status                 string
-	IsAcceptingEntries     bool
-	IsAcceptingPredictions bool
-	NextPredictionsWindow  *TimeFrame
+	LiveStatus         string
+	EntriesStatus      string
+	PredictionsStatus  string
+	PredictionsClosing bool
 }
 
 // SeasonCollection is map of Season
@@ -182,6 +152,10 @@ func ValidateSeason(s Season, tc TeamCollection) error {
 		return nil
 	}
 
+	if s.ClientID == nil {
+		return errors.New("client id must not be nil")
+	}
+
 	// ensure strings are not empty
 	for k, v := range map[string]string{
 		"id":       s.ID,
@@ -194,38 +168,23 @@ func ValidateSeason(s Season, tc TeamCollection) error {
 	}
 
 	// ensure timeframes are valid
-	if !s.Active.Valid() {
-		return errors.New("active timeframe must be valid")
+	if !s.Live.Valid() {
+		return errors.New("live timeframe must be valid")
 	}
 	if !s.EntriesAccepted.Valid() {
 		return errors.New("entries accepted timeframe must be valid")
 	}
-	if s.EntriesAccepted.OverlapsWith(s.Active) {
-		return errors.New("entries accepted timeframe must have elapsed before active timeframe begins")
+	if s.EntriesAccepted.OverlapsWith(s.Live) {
+		return errors.New("entries accepted timeframe must have elapsed before live timeframe begins")
 	}
-	switch {
-	case len(s.PredictionsAccepted) < 1:
-		return errors.New("at least 1 predictions accepted timeframe must exist")
-	default:
-		if !s.PredictionsAccepted[0].From.Equal(s.EntriesAccepted.From) || !s.PredictionsAccepted[0].Until.Equal(s.EntriesAccepted.Until) {
-			return errors.New("first predictions accepted timeframe must be identical to entries accepted timeframe")
-		}
+	if !s.PredictionsAccepted.Valid() {
+		return errors.New("predictions accepted timeframe must be valid")
 	}
-
-	for idx := 0; idx < len(s.PredictionsAccepted)-1; idx++ {
-		nextIdx := idx + 1
-		thisTimeframe := s.PredictionsAccepted[idx]
-		nextTimeframe := s.PredictionsAccepted[nextIdx]
-
-		if !thisTimeframe.Valid() {
-			return fmt.Errorf("predictions accepted timeframe idx %d must be valid", idx)
-		}
-		if thisTimeframe.OverlapsWith(nextTimeframe) {
-			return fmt.Errorf("predictions accepted timeframe idx %d must not overlap with idx %d", idx, nextIdx)
-		}
-		if !thisTimeframe.Until.Before(nextTimeframe.From) {
-			return fmt.Errorf("predictions accepted timeframes idx %d and idx %d must be chronological", idx, nextIdx)
-		}
+	if !s.PredictionsAccepted.From.Equal(s.EntriesAccepted.From) {
+		return errors.New("predictions must be accepted from the same time as entries")
+	}
+	if !s.PredictionsAccepted.Until.After(s.EntriesAccepted.Until) {
+		return errors.New("predictions must be accepted for a longer duration than entries")
 	}
 
 	// verify that each team exists and is not duplicated

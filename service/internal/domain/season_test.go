@@ -1,14 +1,13 @@
 package domain_test
 
 import (
+	"errors"
 	"fmt"
 	"github.com/google/go-cmp/cmp"
 	"prediction-league/service/internal/domain"
 	"testing"
 	"time"
 )
-
-// TODO - tests for Season.GetState
 
 func TestSeason_IsCompletedByStandings(t *testing.T) {
 	s := domain.Season{ID: "season_id", MaxRounds: 5}
@@ -45,253 +44,185 @@ func TestSeason_IsCompletedByStandings(t *testing.T) {
 }
 
 func TestSeason_GetPredictionWindowBeginsWithin(t *testing.T) {
-	var now = time.Now()
-	var twoNanosecondsAgo = now.Add(-2 * time.Nanosecond)
-	var fiveNanosecondsAgo = now.Add(-5 * time.Nanosecond)
-	var sevenNanosecondsAgo = now.Add(-7 * time.Nanosecond)
-
-	window1 := domain.TimeFrame{
-		From:  sevenNanosecondsAgo,
-		Until: fiveNanosecondsAgo,
+	loc, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	window2 := domain.TimeFrame{
-		From:  twoNanosecondsAgo,
-		Until: now,
+	dt := time.Date(2018, 5, 26, 14, 0, 0, 0, loc)
+
+	predWindow := domain.TimeFrame{
+		From:  dt.Add(-7 * time.Nanosecond), // 7 nanoseconds before test date
+		Until: dt.Add(-5 * time.Nanosecond), // 5 nanoseconds before test date
 	}
 
 	season := domain.Season{
-		PredictionsAccepted: []domain.TimeFrame{window1, window2},
+		PredictionsAccepted: predWindow,
 	}
 
-	t.Run("timeframe that ends before first prediction window begins must return error", func(t *testing.T) {
-		if _, err := season.GetPredictionWindowBeginsWithin(domain.TimeFrame{
-			From:  window1.From.Add(-2 * time.Nanosecond),
-			Until: window1.From.Add(-time.Nanosecond),
-		}); err != domain.ErrNoMatchingPredictionWindow {
-			expectedGot(t, domain.ErrNoMatchingPredictionWindow, err)
+	t.Run("timeframe that prediction window begins within must return prediction window", func(t *testing.T) {
+		tt := []struct {
+			name string
+			tf   domain.TimeFrame
+		}{
+			{
+				name: "straddles predictions begin",
+				tf: domain.TimeFrame{
+					From:  predWindow.From.Add(-time.Nanosecond),
+					Until: predWindow.From.Add(time.Nanosecond),
+				},
+			},
+			{
+				name: "start is same as predictions begin",
+				tf: domain.TimeFrame{
+					From:  predWindow.From,
+					Until: predWindow.From.Add(time.Nanosecond),
+				},
+			},
+			{
+				name: "end is same as predictions begin",
+				tf: domain.TimeFrame{
+					From:  predWindow.From.Add(-time.Nanosecond),
+					Until: predWindow.From,
+				},
+			},
 		}
-	})
 
-	t.Run("timeframes that first prediction window begins within must return first prediction window", func(t *testing.T) {
-		testCases := []domain.TimeFrame{
-			// straddles window1 begin
-			{
-				From:  window1.From.Add(-time.Nanosecond),
-				Until: window1.From.Add(time.Nanosecond),
-			},
-			// start matches window1 begin
-			{
-				From:  window1.From,
-				Until: window1.From.Add(time.Nanosecond),
-			},
-			// end matches window1 begin
-			{
-				From:  window1.From.Add(-time.Nanosecond),
-				Until: window1.From,
-			},
-		}
-
-		expected := domain.SequencedTimeFrame{
+		wantSeqTF := domain.SequencedTimeFrame{
 			Count:   1,
-			Total:   2,
-			Current: &window1,
-			Next:    &window2,
+			Total:   1,
+			Current: &predWindow,
 		}
 
-		for _, tc := range testCases {
-			actual, err := season.GetPredictionWindowBeginsWithin(tc)
+		for _, tc := range tt {
+			gotSeqTF, err := season.GetPredictionWindowBeginsWithin(tc.tf)
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			diff := cmp.Diff(expected, actual)
+			diff := cmp.Diff(wantSeqTF, gotSeqTF)
 			if diff != "" {
-				expectedGot(t, "empty diff", diff)
+				t.Fatalf("tc '%s': want sequenced tf %+v, got %+v, diff: %s", tc.name, wantSeqTF, gotSeqTF, diff)
 			}
 		}
 	})
 
-	t.Run("timeframes that second prediction window begins within must return second prediction window", func(t *testing.T) {
-		testCases := []domain.TimeFrame{
-			// straddles window2 begin
+	t.Run("timeframe that does not fall within prediction window must return the expected error", func(t *testing.T) {
+		tt := []struct {
+			name string
+			tf   domain.TimeFrame
+		}{
 			{
-				From:  window2.From.Add(-time.Nanosecond),
-				Until: window2.From.Add(time.Nanosecond),
+				name: "ends before predictions begin",
+				tf: domain.TimeFrame{
+					From:  predWindow.From.Add(-2 * time.Nanosecond),
+					Until: predWindow.From.Add(-time.Nanosecond),
+				},
 			},
-			// start matches window2 begin
 			{
-				From:  window2.From,
-				Until: window2.From.Add(time.Nanosecond),
-			},
-			// end matches window2 begin
-			{
-				From:  window2.From.Add(-time.Nanosecond),
-				Until: window2.From,
+				name: "begins after predictions begin",
+				tf: domain.TimeFrame{
+					From:  predWindow.From.Add(time.Nanosecond),
+					Until: predWindow.From.Add(2 * time.Nanosecond),
+				},
 			},
 		}
 
-		expected := domain.SequencedTimeFrame{
-			Count:   2,
-			Total:   2,
-			Current: &window2,
-			Next:    nil,
-		}
-
-		for _, tc := range testCases {
-			actual, err := season.GetPredictionWindowBeginsWithin(tc)
-			if err != nil {
-				t.Fatal(err)
+		for _, tc := range tt {
+			if _, gotErr := season.GetPredictionWindowBeginsWithin(tc.tf); !errors.Is(gotErr, domain.ErrNoMatchingPredictionWindow) {
+				t.Fatalf("tc '%s': want no matching prediction window error, got %s (%T)", tc.name, gotErr, gotErr)
 			}
-
-			diff := cmp.Diff(expected, actual)
-			if diff != "" {
-				expectedGot(t, "empty diff", diff)
-			}
-		}
-	})
-
-	t.Run("timeframe that begins and ends between either prediction window must return error", func(t *testing.T) {
-		if _, err := season.GetPredictionWindowBeginsWithin(domain.TimeFrame{
-			From:  window1.Until.Add(time.Nanosecond),
-			Until: window2.From.Add(-time.Nanosecond),
-		}); err != domain.ErrNoMatchingPredictionWindow {
-			expectedGot(t, domain.ErrNoMatchingPredictionWindow, err)
-		}
-	})
-
-	t.Run("timeframe that begins after second prediction window begins must return error", func(t *testing.T) {
-		if _, err := season.GetPredictionWindowBeginsWithin(domain.TimeFrame{
-			From:  window2.From.Add(time.Nanosecond),
-			Until: window2.From.Add(2 * time.Nanosecond),
-		}); err != domain.ErrNoMatchingPredictionWindow {
-			expectedGot(t, domain.ErrNoMatchingPredictionWindow, err)
 		}
 	})
 }
 
 func TestSeason_GetPredictionWindowEndsWithin(t *testing.T) {
-	var now = time.Now()
-	var twoNanosecondsAgo = now.Add(-2 * time.Nanosecond)
-	var fiveNanosecondsAgo = now.Add(-5 * time.Nanosecond)
-	var sevenNanosecondsAgo = now.Add(-7 * time.Nanosecond)
-
-	window1 := domain.TimeFrame{
-		From:  sevenNanosecondsAgo,
-		Until: fiveNanosecondsAgo,
+	loc, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	window2 := domain.TimeFrame{
-		From:  twoNanosecondsAgo,
-		Until: now,
+	dt := time.Date(2018, 5, 26, 14, 0, 0, 0, loc)
+
+	predWindow := domain.TimeFrame{
+		From:  dt.Add(-7 * time.Nanosecond), // 7 nanoseconds before test date
+		Until: dt.Add(-5 * time.Nanosecond), // 5 nanoseconds before test date
 	}
 
 	season := domain.Season{
-		PredictionsAccepted: []domain.TimeFrame{window1, window2},
+		PredictionsAccepted: predWindow,
 	}
 
-	t.Run("timeframe that ends before first prediction window ends must return error", func(t *testing.T) {
-		if _, err := season.GetPredictionWindowEndsWithin(domain.TimeFrame{
-			From:  window1.Until.Add(-2 * time.Nanosecond),
-			Until: window1.Until.Add(-time.Nanosecond),
-		}); err != domain.ErrNoMatchingPredictionWindow {
-			expectedGot(t, domain.ErrNoMatchingPredictionWindow, err)
+	t.Run("timeframe that prediction window ends within must return prediction window", func(t *testing.T) {
+		tt := []struct {
+			name string
+			tf   domain.TimeFrame
+		}{
+			{
+				name: "straddles predictions end",
+				tf: domain.TimeFrame{
+					From:  predWindow.Until.Add(-time.Nanosecond),
+					Until: predWindow.Until.Add(time.Nanosecond),
+				},
+			},
+			{
+				name: "start is same as predictions end",
+				tf: domain.TimeFrame{
+					From:  predWindow.Until,
+					Until: predWindow.Until.Add(time.Nanosecond),
+				},
+			},
+			{
+				name: "end is same as predictions end",
+				tf: domain.TimeFrame{
+					From:  predWindow.Until.Add(-time.Nanosecond),
+					Until: predWindow.Until,
+				},
+			},
 		}
-	})
 
-	t.Run("timeframes that first prediction window ends within must return first prediction window", func(t *testing.T) {
-		testCases := []domain.TimeFrame{
-			// straddles window1 end
-			{
-				From:  window1.Until.Add(-time.Nanosecond),
-				Until: window1.Until.Add(time.Nanosecond),
-			},
-			// start matches window1 end
-			{
-				From:  window1.Until,
-				Until: window1.Until.Add(time.Nanosecond),
-			},
-			// end matches window1 end
-			{
-				From:  window1.Until.Add(-time.Nanosecond),
-				Until: window1.Until,
-			},
-		}
-
-		expected := domain.SequencedTimeFrame{
+		wantSeqTF := domain.SequencedTimeFrame{
 			Count:   1,
-			Total:   2,
-			Current: &window1,
-			Next:    &window2,
+			Total:   1,
+			Current: &predWindow,
 		}
 
-		for _, tc := range testCases {
-			actual, err := season.GetPredictionWindowEndsWithin(tc)
+		for _, tc := range tt {
+			gotSeqTF, err := season.GetPredictionWindowEndsWithin(tc.tf)
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			diff := cmp.Diff(expected, actual)
+			diff := cmp.Diff(wantSeqTF, gotSeqTF)
 			if diff != "" {
-				expectedGot(t, "empty diff", diff)
+				t.Fatalf("tc '%s': want sequenced tf %+v, got %+v, diff: %s", tc.name, wantSeqTF, gotSeqTF, diff)
 			}
 		}
 	})
 
-	t.Run("timeframes that second prediction window ends within must return second prediction window", func(t *testing.T) {
-		testCases := []domain.TimeFrame{
-			// straddles window2 end
+	t.Run("timeframe that does not fall within prediction window must return the expected error", func(t *testing.T) {
+		tt := []struct {
+			name string
+			tf   domain.TimeFrame
+		}{
 			{
-				From:  window2.Until.Add(-time.Nanosecond),
-				Until: window2.Until.Add(time.Nanosecond),
+				name: "ends before predictions end",
+				tf: domain.TimeFrame{
+					From:  predWindow.Until.Add(-2 * time.Nanosecond),
+					Until: predWindow.Until.Add(-time.Nanosecond),
+				},
 			},
-			// start matches window2 end
 			{
-				From:  window2.Until,
-				Until: window2.Until.Add(time.Nanosecond),
-			},
-			// end matches window2 end
-			{
-				From:  window2.Until.Add(-time.Nanosecond),
-				Until: window2.Until,
+				name: "begins after predictions end",
+				tf: domain.TimeFrame{
+					From:  predWindow.Until.Add(time.Nanosecond),
+					Until: predWindow.Until.Add(2 * time.Nanosecond),
+				},
 			},
 		}
 
-		expected := domain.SequencedTimeFrame{
-			Count:   2,
-			Total:   2,
-			Current: &window2,
-			Next:    nil,
-		}
-
-		for _, tc := range testCases {
-			actual, err := season.GetPredictionWindowEndsWithin(tc)
-			if err != nil {
-				t.Fatal(err)
+		for _, tc := range tt {
+			if _, gotErr := season.GetPredictionWindowEndsWithin(tc.tf); !errors.Is(gotErr, domain.ErrNoMatchingPredictionWindow) {
+				t.Fatalf("tc '%s': want no matching prediction window error, got %s (%T)", tc.name, gotErr, gotErr)
 			}
-
-			diff := cmp.Diff(expected, actual)
-			if diff != "" {
-				expectedGot(t, "empty diff", diff)
-			}
-		}
-	})
-
-	t.Run("timeframe that begins and ends between either prediction window must return error", func(t *testing.T) {
-		if _, err := season.GetPredictionWindowEndsWithin(domain.TimeFrame{
-			From:  window1.Until.Add(time.Nanosecond),
-			Until: window2.From.Add(-time.Nanosecond),
-		}); err != domain.ErrNoMatchingPredictionWindow {
-			expectedGot(t, domain.ErrNoMatchingPredictionWindow, err)
-		}
-	})
-
-	t.Run("timeframe that begins after second prediction window bendsegins must return error", func(t *testing.T) {
-		if _, err := season.GetPredictionWindowEndsWithin(domain.TimeFrame{
-			From:  window2.Until.Add(time.Nanosecond),
-			Until: window2.Until.Add(2 * time.Nanosecond),
-		}); err != domain.ErrNoMatchingPredictionWindow {
-			expectedGot(t, domain.ErrNoMatchingPredictionWindow, err)
 		}
 	})
 }
@@ -323,8 +254,36 @@ func TestSeasonCollection_GetByID(t *testing.T) {
 	})
 }
 
+func TestValidateSeason(t *testing.T) {
+	t.Run("failed season validation must return the expected error", func(t *testing.T) {
+		tt := []struct {
+			name    string
+			s       domain.Season
+			tc      domain.TeamCollection
+			wantErr error
+		}{
+			{
+				name: "fake season is skipped",
+				s:    domain.Season{ID: "FakeSeason"},
+			},
+		}
+
+		for _, tc := range tt {
+			gotErr := domain.ValidateSeason(tc.s, tc.tc)
+			switch {
+			case tc.wantErr == nil && gotErr != nil:
+				t.Fatalf("tc '%s': want no error, got %s (%T)", tc.name, gotErr, gotErr)
+			case tc.wantErr != nil && gotErr == nil:
+				t.Fatalf("tc '%s': want err %s (%T), got nil", tc.name, tc.wantErr, tc.wantErr)
+			case tc.wantErr != nil && gotErr != nil && tc.wantErr.Error() != gotErr.Error():
+				t.Fatalf("tc '%s': want err %s (%T), got err %s (%T)", tc.name, tc.wantErr, tc.wantErr, gotErr, gotErr)
+			}
+		}
+	})
+}
+
 func TestSeason_CheckValidation(t *testing.T) {
-	t.Run("validate seasons", func(t *testing.T) {
+	t.Run("run validation on seasons", func(t *testing.T) {
 		seasons, err := domain.GetSeasonCollection()
 		if err != nil {
 			t.Fatal(err)
@@ -335,231 +294,202 @@ func TestSeason_CheckValidation(t *testing.T) {
 			}
 
 			if err := domain.ValidateSeason(season, domain.GetTeamCollection()); err != nil {
-				t.Fatal(fmt.Errorf("invalid season id %s: %s", id, err.Error()))
+				t.Fatal(fmt.Errorf("invalid season: id %s: %s", id, err.Error()))
 			}
 		}
 	})
 }
 
 func TestSeason_GetState(t *testing.T) {
-	now := time.Now()
-	day := 24 * time.Hour
+	elapsingGracePeriod := 6 * time.Hour
 
-	activeTimeframe := domain.TimeFrame{
-		From:  now.Add(-7 * day), // 7 days ago
-		Until: now.Add(-2 * day), // 2 days ago
+	loc, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dt := time.Date(2018, 5, 26, 14, 0, 0, 0, loc)
+
+	liveTimeframe := domain.TimeFrame{
+		From:  dt.Add(-6 * time.Second),
+		Until: dt.Add(-5 * time.Second),
 	}
 
 	entriesAcceptedTimeframe := domain.TimeFrame{
-		From:  now.Add(-9 * day), // 9 days ago
-		Until: now.Add(-7 * day), // 7 days ago
+		From:  dt.Add(-4 * time.Second),
+		Until: dt.Add(-3 * time.Second),
 	}
 
-	predictionsAcceptedTimeframes := []domain.TimeFrame{
-		{
-			From:  now.Add(-9 * day), // 9 days ago
-			Until: now.Add(-7 * day), // 7 days ago
-		},
-		{
-			From:  now.Add(-5 * day), // 5 days ago
-			Until: now.Add(-3 * day), // 3 days ago
-		},
+	predictionsAcceptedTimeframe := domain.TimeFrame{
+		From:  dt.Add(-2 * time.Second),
+		Until: dt.Add(-time.Second),
 	}
 
 	season := domain.Season{
-		Active:              activeTimeframe,
+		Live:                liveTimeframe,
 		EntriesAccepted:     entriesAcceptedTimeframe,
-		PredictionsAccepted: predictionsAcceptedTimeframes,
+		PredictionsAccepted: predictionsAcceptedTimeframe,
 	}
 
-	t.Run("on a date prior to active from, season status must be pending", func(t *testing.T) {
-		ts := activeTimeframe.From.Add(-day)
+	t.Run("at a timestamp prior to live from, live status must be pending", func(t *testing.T) {
+		ts := liveTimeframe.From.Add(-time.Nanosecond)
 		state := season.GetState(ts)
-		if state.Status != domain.SeasonStatusPending {
-			expectedGot(t, domain.SeasonStatusPending, state.Status)
+		if state.LiveStatus != domain.SeasonStatePending {
+			expectedGot(t, domain.SeasonStatePending, state.LiveStatus)
 		}
 	})
 
-	t.Run("on active from date, season status must be active", func(t *testing.T) {
-		ts := activeTimeframe.From
+	t.Run("on live from date, live status must be active", func(t *testing.T) {
+		ts := liveTimeframe.From
 		state := season.GetState(ts)
-		if state.Status != domain.SeasonStatusActive {
-			expectedGot(t, domain.SeasonStatusActive, state.Status)
+		if state.LiveStatus != domain.SeasonStateActive {
+			expectedGot(t, domain.SeasonStateActive, state.LiveStatus)
 		}
 	})
 
-	t.Run("on a date between active from date and active until date, season status must be active", func(t *testing.T) {
-		ts := activeTimeframe.From.Add(day)
+	t.Run("at a timestamp between live from date and live until date, live status must be active", func(t *testing.T) {
+		ts := liveTimeframe.From.Add(time.Nanosecond)
 		state := season.GetState(ts)
-		if state.Status != domain.SeasonStatusActive {
-			expectedGot(t, domain.SeasonStatusActive, state.Status)
+		if state.LiveStatus != domain.SeasonStateActive {
+			expectedGot(t, domain.SeasonStateActive, state.LiveStatus)
 		}
 	})
 
-	t.Run("on active until date, season status must be elapsed", func(t *testing.T) {
-		ts := activeTimeframe.Until
+	t.Run("on live until date, live status must be elapsed", func(t *testing.T) {
+		ts := liveTimeframe.Until
 		state := season.GetState(ts)
-		if state.Status != domain.SeasonStatusElapsed {
-			expectedGot(t, domain.SeasonStatusElapsed, state.Status)
+		if state.LiveStatus != domain.SeasonStateElapsed {
+			expectedGot(t, domain.SeasonStateElapsed, state.LiveStatus)
 		}
 	})
 
-	t.Run("on a date after active until date, season status must be elapsed", func(t *testing.T) {
-		ts := activeTimeframe.Until.Add(day)
+	t.Run("at a timestamp after live until date, live status must be elapsed", func(t *testing.T) {
+		ts := liveTimeframe.Until.Add(time.Nanosecond)
 		state := season.GetState(ts)
-		if state.Status != domain.SeasonStatusElapsed {
-			expectedGot(t, domain.SeasonStatusElapsed, state.Status)
+		if state.LiveStatus != domain.SeasonStateElapsed {
+			expectedGot(t, domain.SeasonStateElapsed, state.LiveStatus)
 		}
 	})
 
-	t.Run("on a date prior to entries accepted from date, is_accepting_entries must be false", func(t *testing.T) {
-		ts := entriesAcceptedTimeframe.From.Add(-day)
+	t.Run("at a timestamp prior to entries accepted from, entries status must be pending", func(t *testing.T) {
+		ts := entriesAcceptedTimeframe.From.Add(-time.Nanosecond)
 		state := season.GetState(ts)
-		if state.IsAcceptingEntries {
-			t.Fatalf("expected season to not be accepting entries, but it was, state: %+v", state)
+		if state.EntriesStatus != domain.SeasonStatePending {
+			expectedGot(t, domain.SeasonStatePending, state.EntriesStatus)
 		}
 	})
 
-	t.Run("on entries accepted from date, is_accepting_entries must be true", func(t *testing.T) {
+	t.Run("on entries accepted from date, entries status must be active", func(t *testing.T) {
 		ts := entriesAcceptedTimeframe.From
 		state := season.GetState(ts)
-		if !state.IsAcceptingEntries {
-			t.Fatalf("expected season to be accepting entries, but it wasn't, state: %+v", state)
+		if state.EntriesStatus != domain.SeasonStateActive {
+			expectedGot(t, domain.SeasonStateActive, state.EntriesStatus)
 		}
 	})
 
-	t.Run("on a date between entries accepted from date and entries accepted until date, is_accepting_entries must be true", func(t *testing.T) {
-		ts := entriesAcceptedTimeframe.From.Add(day)
+	t.Run("at a timestamp between entries accepted from date and entries accepted until date, entries status must be active", func(t *testing.T) {
+		ts := entriesAcceptedTimeframe.From.Add(time.Nanosecond)
 		state := season.GetState(ts)
-		if !state.IsAcceptingEntries {
-			t.Fatalf("expected season to be accepting entries, but it wasn't, state: %+v", state)
+		if state.EntriesStatus != domain.SeasonStateActive {
+			expectedGot(t, domain.SeasonStateActive, state.EntriesStatus)
 		}
 	})
 
-	t.Run("on entries accepted until date, is_accepting_entries must be false", func(t *testing.T) {
+	t.Run("on entries accepted until date, entries status must be elapsed", func(t *testing.T) {
 		ts := entriesAcceptedTimeframe.Until
 		state := season.GetState(ts)
-		if state.IsAcceptingEntries {
-			t.Fatalf("expected season to not be accepting entries, but it was, state: %+v", state)
+		if state.EntriesStatus != domain.SeasonStateElapsed {
+			expectedGot(t, domain.SeasonStateElapsed, state.EntriesStatus)
 		}
 	})
 
-	t.Run("on a date after entries accepted until date, is_accepting_entries must be false", func(t *testing.T) {
-		ts := entriesAcceptedTimeframe.Until.Add(day)
+	t.Run("at a timestamp after entries accepted until date, entries status must be elapsed", func(t *testing.T) {
+		ts := entriesAcceptedTimeframe.Until.Add(time.Nanosecond)
 		state := season.GetState(ts)
-		if state.IsAcceptingEntries {
-			t.Fatalf("expected season to not be accepting entries, but it was, state: %+v", state)
+		if state.EntriesStatus != domain.SeasonStateElapsed {
+			expectedGot(t, domain.SeasonStateElapsed, state.EntriesStatus)
 		}
 	})
 
-	t.Run("on a date prior to first predictions accepted from date, is_accepting_predictions must be false and next_predictions_window must be first timeframe", func(t *testing.T) {
-		ts := predictionsAcceptedTimeframes[0].From.Add(-day)
+	t.Run("at a timestamp prior to predictions accepted from, predictions status must be pending", func(t *testing.T) {
+		ts := predictionsAcceptedTimeframe.From.Add(-time.Nanosecond)
 		state := season.GetState(ts)
-		if state.IsAcceptingPredictions {
-			t.Fatalf("expected season to not be accepting predictions, but it was, state: %+v", state)
-		}
-		if !cmp.Equal(*state.NextPredictionsWindow, predictionsAcceptedTimeframes[0]) {
-			t.Fatal(cmp.Diff(*state.NextPredictionsWindow, predictionsAcceptedTimeframes[0]))
+		if state.PredictionsStatus != domain.SeasonStatePending {
+			expectedGot(t, domain.SeasonStatePending, state.PredictionsStatus)
 		}
 	})
 
-	t.Run("on first predictions accepted from date, is_accepting_predictions must be true and next_predictions_window must be first timeframe", func(t *testing.T) {
-		ts := predictionsAcceptedTimeframes[0].From
+	t.Run("on predictions accepted from date, predictions status must be active", func(t *testing.T) {
+		ts := predictionsAcceptedTimeframe.From
 		state := season.GetState(ts)
-		if !state.IsAcceptingPredictions {
-			t.Fatalf("expected season to be accepting predictions, but it wasn't, state: %+v", state)
-		}
-		if !state.NextPredictionsWindow.From.Equal(predictionsAcceptedTimeframes[0].From) {
-			expectedGot(t, predictionsAcceptedTimeframes[0].From, state.NextPredictionsWindow.From)
-		}
-		if !state.NextPredictionsWindow.Until.Equal(predictionsAcceptedTimeframes[0].Until) {
-			expectedGot(t, predictionsAcceptedTimeframes[0].Until, state.NextPredictionsWindow.Until)
+		if state.PredictionsStatus != domain.SeasonStateActive {
+			expectedGot(t, domain.SeasonStateActive, state.PredictionsStatus)
 		}
 	})
 
-	t.Run("on a date between first predictions accepted from date and first predictions accepted until date, is_accepting_predictions must be true and next_predictions_window must be first timeframe", func(t *testing.T) {
-		ts := predictionsAcceptedTimeframes[0].From.Add(day)
+	t.Run("at a timestamp between predictions accepted from date and predictions accepted until date, predictions status must be active", func(t *testing.T) {
+		ts := predictionsAcceptedTimeframe.From.Add(time.Nanosecond)
 		state := season.GetState(ts)
-		if !state.IsAcceptingPredictions {
-			t.Fatalf("expected season to be accepting predictions, but it wasn't, state: %+v", state)
-		}
-		if !state.NextPredictionsWindow.From.Equal(predictionsAcceptedTimeframes[0].From) {
-			expectedGot(t, predictionsAcceptedTimeframes[0].From, state.NextPredictionsWindow.From)
-		}
-		if !state.NextPredictionsWindow.Until.Equal(predictionsAcceptedTimeframes[0].Until) {
-			expectedGot(t, predictionsAcceptedTimeframes[0].Until, state.NextPredictionsWindow.Until)
+		if state.PredictionsStatus != domain.SeasonStateActive {
+			expectedGot(t, domain.SeasonStateActive, state.PredictionsStatus)
 		}
 	})
 
-	t.Run("on first predictions accepted until date, is_accepting_predictions must be false and next_predictions_window must be second timeframe", func(t *testing.T) {
-		ts := predictionsAcceptedTimeframes[0].Until
+	t.Run("on predictions accepted until date, predictions status must be elapsed", func(t *testing.T) {
+		ts := predictionsAcceptedTimeframe.Until
 		state := season.GetState(ts)
-		if state.IsAcceptingPredictions {
-			t.Fatalf("expected season to not be accepting predictions, but it was, state: %+v", state)
-		}
-		if !cmp.Equal(*state.NextPredictionsWindow, predictionsAcceptedTimeframes[1]) {
-			t.Fatal(cmp.Diff(*state.NextPredictionsWindow, predictionsAcceptedTimeframes[1]))
+		if state.PredictionsStatus != domain.SeasonStateElapsed {
+			expectedGot(t, domain.SeasonStateElapsed, state.PredictionsStatus)
 		}
 	})
 
-	t.Run("on a date between first predictions accepted until date and second predictions accepted from date, is_accepting_predictions must be false and next_predictions_window must be second timeframe", func(t *testing.T) {
-		ts := predictionsAcceptedTimeframes[1].From.Add(-day)
+	t.Run("at a timestamp after predictions accepted until date, predictions status must be elapsed", func(t *testing.T) {
+		ts := predictionsAcceptedTimeframe.Until.Add(time.Nanosecond)
 		state := season.GetState(ts)
-		if state.IsAcceptingPredictions {
-			t.Fatalf("expected season to not be accepting predictions, but it was, state: %+v", state)
-		}
-		if !cmp.Equal(*state.NextPredictionsWindow, predictionsAcceptedTimeframes[1]) {
-			t.Fatal(cmp.Diff(*state.NextPredictionsWindow, predictionsAcceptedTimeframes[1]))
+		if state.PredictionsStatus != domain.SeasonStateElapsed {
+			expectedGot(t, domain.SeasonStateElapsed, state.PredictionsStatus)
 		}
 	})
 
-	t.Run("on second predictions accepted from date, is_accepting_predictions must be true and next_predictions_window must be second timeframe", func(t *testing.T) {
-		ts := predictionsAcceptedTimeframes[1].From
+	t.Run("at a timestamp prior to predictions accepted until minus grace period, predictions closing must be false", func(t *testing.T) {
+		offset := elapsingGracePeriod + time.Nanosecond
+		ts := predictionsAcceptedTimeframe.Until.Add(-offset)
 		state := season.GetState(ts)
-		if !state.IsAcceptingPredictions {
-			t.Fatalf("expected season to be accepting predictions, but it wasn't, state: %+v", state)
-		}
-		if !state.NextPredictionsWindow.From.Equal(predictionsAcceptedTimeframes[1].From) {
-			expectedGot(t, predictionsAcceptedTimeframes[1].From, state.NextPredictionsWindow.From)
-		}
-		if !state.NextPredictionsWindow.Until.Equal(predictionsAcceptedTimeframes[1].Until) {
-			expectedGot(t, predictionsAcceptedTimeframes[1].Until, state.NextPredictionsWindow.Until)
+		if state.PredictionsClosing {
+			t.Fatal("want predictions closing false, but got true")
 		}
 	})
 
-	t.Run("on a date between second predictions accepted from date and second predictions accepted until date, is_accepting_predictions must be true and predictions_next_accepted must be second timeframe", func(t *testing.T) {
-		ts := predictionsAcceptedTimeframes[1].From.Add(day)
+	t.Run("at a timestamp that is exactly predictions accepted until minus grace period, predictions closing must be true", func(t *testing.T) {
+		offset := elapsingGracePeriod
+		ts := predictionsAcceptedTimeframe.Until.Add(-offset)
 		state := season.GetState(ts)
-		if !state.IsAcceptingPredictions {
-			t.Fatalf("expected season to be accepting predictions, but it wasn't, state: %+v", state)
-		}
-		if !state.NextPredictionsWindow.From.Equal(predictionsAcceptedTimeframes[1].From) {
-			expectedGot(t, predictionsAcceptedTimeframes[1].From, state.NextPredictionsWindow.From)
-		}
-		if !state.NextPredictionsWindow.Until.Equal(predictionsAcceptedTimeframes[1].Until) {
-			expectedGot(t, predictionsAcceptedTimeframes[1].Until, state.NextPredictionsWindow.Until)
+		if !state.PredictionsClosing {
+			t.Fatal("want predictions closing true, but got false")
 		}
 	})
 
-	t.Run("on second predictions accepted until date, is_accepting_predictions must be false and predictions_next_accepted must be empty", func(t *testing.T) {
-		ts := predictionsAcceptedTimeframes[1].Until
+	t.Run("at a timestamp after predictions accepted until minus grace period, but before predictions accepted until, predictions closing must be true", func(t *testing.T) {
+		ts := predictionsAcceptedTimeframe.Until.Add(-time.Nanosecond)
 		state := season.GetState(ts)
-		if state.IsAcceptingPredictions {
-			t.Fatalf("expected season to not be accepting predictions, but it was, state: %+v", state)
-		}
-		if state.NextPredictionsWindow != nil {
-			expectedGot(t, nil, state.NextPredictionsWindow)
+		if !state.PredictionsClosing {
+			t.Fatal("want predictions closing true, but got false")
 		}
 	})
 
-	t.Run("on a date after second predictions accepted until date, is_accepting_predictions must be false and predictions_next_accepted must be empty", func(t *testing.T) {
-		ts := predictionsAcceptedTimeframes[1].Until.Add(day)
+	t.Run("on predictions accepted until date, predictions closing must be false", func(t *testing.T) {
+		ts := predictionsAcceptedTimeframe.Until
 		state := season.GetState(ts)
-		if state.IsAcceptingPredictions {
-			t.Fatalf("expected season to not be accepting predictions, but it was, state: %+v", state)
+		if state.PredictionsClosing {
+			t.Fatal("want predictions closing false, but got true")
 		}
-		if state.NextPredictionsWindow != nil {
-			expectedGot(t, nil, state.NextPredictionsWindow)
+	})
+
+	t.Run("at a timestamp after predictions accepted until date, predictions closing must be false", func(t *testing.T) {
+		ts := predictionsAcceptedTimeframe.Until.Add(time.Nanosecond)
+		state := season.GetState(ts)
+		if state.PredictionsClosing {
+			t.Fatal("want predictions closing false, but got true")
 		}
 	})
 }

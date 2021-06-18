@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// TODO - feat: remove prediction window open worker and issuer interface
 // PredictionWindowOpenEmailIssuer defines behaviours required to issue a Prediction Window Open email
 type PredictionWindowOpenEmailIssuer interface {
 	IssuePredictionWindowOpenEmail(ctx context.Context, e *Entry, stf SequencedTimeFrame) error

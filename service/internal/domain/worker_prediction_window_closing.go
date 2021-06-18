@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// TODO - feat: remove prediction window closing worker and issuer interface
 // PredictionWindowClosingEmailIssuer defines behaviours required to issue a Prediction Window Closing email
 type PredictionWindowClosingEmailIssuer interface {
 	IssuePredictionWindowClosingEmail(ctx context.Context, e *Entry, stf SequencedTimeFrame) error

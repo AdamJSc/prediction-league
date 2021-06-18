@@ -22,7 +22,7 @@ type Client struct {
 
 // RetrieveLatestStandingsBySeason implements this method on the clients.FootballDataSource interface
 func (c *Client) RetrieveLatestStandingsBySeason(ctx context.Context, s domain.Season) (domain.Standings, error) {
-	req, err := c.prepareRetrieveStandingsRequest(ctx, s.ClientID.Value(), s.Active.From.Year())
+	req, err := c.prepareRetrieveStandingsRequest(ctx, s.ClientID.Value(), s.Live.From.Year())
 	if err != nil {
 		return domain.Standings{}, fmt.Errorf("cannot prepare retrieve standings request: %w", err)
 	}
