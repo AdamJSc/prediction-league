@@ -13,7 +13,7 @@
                     <countdown label="Hurry! Window is closing in..." v-bind:unix="{{timestamp_as_unix .Predictions.AcceptedUntil}}"></countdown>
                 {{end}}
                 {{if $parent.IsLoggedIn}}
-                    <open-prediction v-bind:entry="{id: '{{.Entry.ID}}', shortCode: '{{.Entry.ShortCode}}'}" raw-teams="{{.Teams.Raw}}" unix="{{timestamp_as_unix .Teams.LastUpdated}}"></open-prediction>
+                    <open-prediction v-bind:entry="{id: '{{.Entry.ID}}', shortCode: '{{.Entry.ShortCode}}'}" pred-limit="{{.Predictions.Limit}}" raw-teams="{{.Teams.Raw}}" unix="{{timestamp_as_unix .Teams.LastUpdated}}"></open-prediction>
                 {{else}}
                     <prediction-login></prediction-login>
                 {{end}}

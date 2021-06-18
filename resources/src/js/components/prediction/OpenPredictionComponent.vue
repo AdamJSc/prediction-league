@@ -1,5 +1,8 @@
 <template>
     <div class="teams-container">
+        <div>
+          {{predLimitVerbose}}
+        </div>
         <p v-if="dirtyTeamIDs.length > 0">Changed {{dirtyTeamIDs.length}} team(s).</p>
         <p v-if="!isSelected()">Select a team to change their position.</p>
         <p v-else>Who do you want to swap {{getTeamByID(selectedTeamID).short_name}} with?</p>
@@ -56,10 +59,13 @@
         name: 'OpenPrediction',
         props: {
             entry: {
-                type: Object,
+                type: Object
+            },
+            predLimit: {
+                type: Number
             },
             rawTeams: {
-                type: String,
+                type: String
             },
             unix: {
                 type: String
@@ -190,6 +196,11 @@
                 const helpers = require('../../helpers.js')
                 return helpers.formatVerboseDate(this.lastUpdated)
             },
+            predLimitVerbose: function() {
+                // TODO - feat: add validation based on prediction limit
+                // TODO - feat: remove verbose method
+                return this.predLimit > 1 ? "predLimit is greater than 1": "predLimit is less than 1";
+            }
         }
     }
 </script>
