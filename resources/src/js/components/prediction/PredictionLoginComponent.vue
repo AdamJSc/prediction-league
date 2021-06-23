@@ -35,7 +35,7 @@
                                 @clicked="loginOnClick"
                                 :is-disabled="working"
                                 :is-working="working"
-                                is-primary="true"></action-button>
+                                :is-primary="true"></action-button>
                         <action-button
                                 label="Forgot my Short Code"
                                 @clicked="forgotShortCodeOnClick"

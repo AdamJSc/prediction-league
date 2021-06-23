@@ -1,12 +1,13 @@
 <template>
     <div class="teams-container">
-        <div>
-          {{predLimitVerbose}}
+        <div v-if="canReorder" class="text-center">
+          <p><strong>Make your changes!</strong></p>
+          <p>Select two teams to swap their positions.</p>
         </div>
-        <p v-if="dirtyTeamIDs.length > 0">Changed {{dirtyTeamIDs.length}} team(s).</p>
-        <p v-if="!isSelected()">Select a team to change their position.</p>
-        <p v-else>Who do you want to swap {{getTeamByID(selectedTeamID).short_name}} with?</p>
-        <table class="teams-reorder rankings clickable">
+        <div v-else class="text-center alert alert-block alert-info">
+            You have already made the maximum number of permitted changes for the current round.
+        </div>
+        <table v-bind:class="['teams-reorder', 'rankings', { 'clickable': canReorder }]">
             <tbody>
             <tr v-for="(id, index) in teamsIDSequence" v-on:click="teamOnClick" v-bind:team-id="id"
                 v-bind:class="['team-row', 'rankings-row', { 'selected': isSelected(id), 'dirty': isDirty(id) && !isSelected(id) }]">
@@ -31,16 +32,22 @@
                                         <p v-for="msg in errorMessages" v-html="msg"></p>
                                     </div>
                                 </transition>
+                                <div v-if="dirtyTeamIDs.length > 0" class="alert alert-warning">
+                                    Changed {{dirtyTeamIDs.length}} team(s).
+                                </div>
                                 <div v-if="success" class="alert alert-block alert-success">
                                     Your prediction has been updated. Good luck!
                                 </div>
-                                <div v-else>
+                                <div v-else-if="canReorder && exceedsLimit" class="alert alert-block alert-danger">
+                                    Sorry, you can only change up to {{predLimit}} teams! <a v-on:click="resetState" href="#">[Reset]</a>
+                                </div>
+                                <div v-else-if="canReorder">
                                     <action-button
                                             label="Update"
                                             @clicked="updateOnClick"
-                                            :is-disabled="dirtyTeamIDs.length === 0 || working"
+                                            :is-disabled="!canUpdate"
                                             :is-working="working"
-                                            is-primary="true"></action-button>
+                                            :is-primary="true"></action-button>
                                     <button v-on:click="resetState" class="btn btn-secondary">Reset</button>
                                 </div>
                             </div>
@@ -145,7 +152,7 @@
                 this.teams = teams
             },
             teamOnClick: function(e) {
-                if (this.success) {
+                if (this.success || !this.canReorder) {
                     return
                 }
 
@@ -196,10 +203,40 @@
                 const helpers = require('../../helpers.js')
                 return helpers.formatVerboseDate(this.lastUpdated)
             },
-            predLimitVerbose: function() {
-                // TODO - feat: add validation based on prediction limit
-                // TODO - feat: remove verbose method
-                return this.predLimit > 1 ? "predLimit is greater than 1": "predLimit is less than 1";
+            canUpdate: function() {
+                if (this.working) {
+                    // update is already in process
+                    return false
+                }
+                if (this.dirtyTeamIDs.length === 0) {
+                    // no teams have been changed
+                    return false
+                }
+                if (this.exceedsLimit) {
+                    // limit exceeded
+                    return false
+                }
+                // otherwise, ok to update
+                return true
+            },
+            canReorder: function() {
+                // can reorder teams if limit is anything other than 0
+                return !(this.predLimit === 0)
+            },
+            exceedsLimit: function() {
+                if (this.predLimit === -1) {
+                    // unlimited teams can be changed
+                    return false
+                }
+                if (this.predLimit === 0) {
+                    // no teams can be changed
+                    return true
+                }
+                if (this.dirtyTeamIDs.length > this.predLimit) {
+                    // number of changed teams exceeds the permitted limit
+                    return true
+                }
+                return false
             }
         }
     }

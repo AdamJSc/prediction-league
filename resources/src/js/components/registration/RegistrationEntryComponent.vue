@@ -101,7 +101,7 @@
                                 @clicked="enterOnClick"
                                 :is-disabled="working"
                                 :is-working="working"
-                                is-primary="true"></action-button>
+                                :is-primary="true"></action-button>
                     </div>
                 </div>
             </div>

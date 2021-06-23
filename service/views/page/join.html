@@ -30,7 +30,7 @@
                 <p class="text-highlight bigger">{{format_timestamp .Data.EntriesOpenTS "Monday 2 January 2006 at 3:04am"}}</p>
                 <p>Stick it in the diary!</p>
             </div>
-            <countdown label="" unix="{{timestamp_as_unix .Data.EntriesOpenTS}}"></countdown>
+            <countdown label="" v-bind:unix="{{timestamp_as_unix .Data.EntriesOpenTS}}"></countdown>
         {{end}}
     </div>
     {{template "footer" .}}
