@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changed
 - Replace sequence of Season prediction windows, with a single window/timeframe.
+- Implement ranking limit: permit a maximum of two teams to be swapped per Round/Game Week.
 
 ## [2.0.0] - 2021-06-09
 ## Changed
