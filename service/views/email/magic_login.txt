@@ -1,4 +1,4 @@
-{{define "email_txt_short_code_reset_begin"}}Reset your Short Code
+{{define "email_txt_magic_login"}}Reset your Short Code
 ============================
 
 Hey {{.Name}}!

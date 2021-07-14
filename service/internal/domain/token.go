@@ -8,13 +8,13 @@ import (
 
 const (
 	TokenTypeAuth = iota
-	TokenTypeShortCodeResetToken
+	TokenTypeMagicLogin
 	TokenLength = 32
 )
 
 var TokenValidityDuration = map[int]time.Duration{
-	TokenTypeAuth:                time.Minute * 60,
-	TokenTypeShortCodeResetToken: time.Minute * 10,
+	TokenTypeAuth:       time.Minute * 60,
+	TokenTypeMagicLogin: time.Minute * 10,
 }
 
 // Token defines a token model

@@ -159,22 +159,23 @@ func frontendPredictionHandler(c *container) func(w http.ResponseWriter, r *http
 	}
 }
 
-func frontendShortCodeResetBeginHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
+func frontendGenerateMagicLoginHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var writeResponse = func(data view.ShortCodeResetBeginPageData) {
-			p := newPage(r, c, "Reset my Short Code", "", "Reset my Short Code", data)
+		var writeResponse = func(data view.GenerateMagicLoginPageData) {
+			p := newPage(r, c, "Send me a magic login", "", "Login", data)
 
-			if err := c.templates.ExecuteTemplate(w, "short-code-reset-begin", p); err != nil {
+			// TODO - feat: update page template
+			if err := c.templates.ExecuteTemplate(w, "magic-login-generate", p); err != nil {
 				internalError(err).writeTo(w)
 			}
 		}
 
 		// parse request body (standard form)
 		if err := r.ParseForm(); err != nil {
-			writeResponse(view.ShortCodeResetBeginPageData{Err: err})
+			writeResponse(view.GenerateMagicLoginPageData{Err: err})
 			return
 		}
-		var input shortCodeResetRequest
+		var input generateMagicLoginRequest
 		for k, v := range r.Form {
 			if k == "email_nickname" && len(v) > 0 {
 				input.EmailNickname = v[0]
@@ -183,14 +184,14 @@ func frontendShortCodeResetBeginHandler(c *container) func(w http.ResponseWriter
 
 		// check that input is valid
 		if input.EmailNickname == "" {
-			writeResponse(view.ShortCodeResetBeginPageData{Err: errors.New("invalid request")})
+			writeResponse(view.GenerateMagicLoginPageData{Err: errors.New("invalid request")})
 			return
 		}
 
 		// get context from request
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
-			writeResponse(view.ShortCodeResetBeginPageData{Err: err})
+			writeResponse(view.GenerateMagicLoginPageData{Err: err})
 			return
 		}
 		defer cancel()
@@ -205,34 +206,34 @@ func frontendShortCodeResetBeginHandler(c *container) func(w http.ResponseWriter
 			case domain.NotFoundError:
 				// we can't find an existing entry, but we don't want to let the user know
 				// just pretend everything is ok...
-				writeResponse(view.ShortCodeResetBeginPageData{EmailNickname: input.EmailNickname})
+				writeResponse(view.GenerateMagicLoginPageData{EmailNickname: input.EmailNickname})
 				return
 			}
-			writeResponse(view.ShortCodeResetBeginPageData{Err: err})
+			writeResponse(view.GenerateMagicLoginPageData{Err: err})
 			return
 		}
 
 		// does realm name match our entry?
 		if domain.RealmFromContext(ctx).Name != entry.RealmName {
-			writeResponse(view.ShortCodeResetBeginPageData{Err: errors.New("invalid realm")})
+			writeResponse(view.GenerateMagicLoginPageData{Err: errors.New("invalid realm")})
 			return
 		}
 
-		// generate short code reset token
-		token, err := c.tokenAgent.GenerateToken(ctx, domain.TokenTypeShortCodeResetToken, entry.ID.String())
+		// generate magic login token
+		token, err := c.tokenAgent.GenerateToken(ctx, domain.TokenTypeMagicLogin, entry.ID.String())
 		if err != nil {
-			writeResponse(view.ShortCodeResetBeginPageData{Err: err})
+			writeResponse(view.GenerateMagicLoginPageData{Err: err})
 			return
 		}
 
-		// issue email with short code reset link
-		if err := c.commsAgent.IssueShortCodeResetBeginEmail(nil, entry, token.ID); err != nil {
-			writeResponse(view.ShortCodeResetBeginPageData{Err: err})
+		// issue email with magic login link
+		if err := c.commsAgent.IssueMagicLoginEmail(nil, entry, token.ID); err != nil {
+			writeResponse(view.GenerateMagicLoginPageData{Err: err})
 			return
 		}
 
 		// all good!
-		writeResponse(view.ShortCodeResetBeginPageData{EmailNickname: input.EmailNickname})
+		writeResponse(view.GenerateMagicLoginPageData{EmailNickname: input.EmailNickname})
 	}
 }
 
@@ -281,8 +282,8 @@ func frontendShortCodeResetCompleteHandler(c *container) func(w http.ResponseWri
 			return
 		}
 
-		// is token a short code refresh token?
-		if token.Type != domain.TokenTypeShortCodeResetToken {
+		// is token a magic login token?
+		if token.Type != domain.TokenTypeMagicLogin {
 			writeResponse(view.ShortCodeResetCompletePageData{Err: invalidTokenErr})
 			return
 		}

@@ -5,12 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	gocmp "github.com/google/go-cmp/cmp"
-	"github.com/google/uuid"
-	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
 	"testing"
 	"time"
+
+	gocmp "github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
+	"gotest.tools/assert/cmp"
 )
 
 func TestNewCommunicationsAgent(t *testing.T) {
@@ -564,10 +565,10 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 	})
 }
 
-func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
+func TestCommunicationsAgent_IssueMagicLoginEmail(t *testing.T) {
 	defer truncate(t)
 
-	t.Run("issue short code reset begin email with a valid entry must succeed", func(t *testing.T) {
+	t.Run("issue magic login email with a valid entry must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
@@ -587,7 +588,7 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := agent.IssueShortCodeResetBeginEmail(ctx, &entry, resetToken); err != nil {
+		if err := agent.IssueMagicLoginEmail(ctx, &entry, resetToken); err != nil {
 			t.Fatal(err)
 		}
 
@@ -606,9 +607,9 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 
 		email := emls[0]
 
-		expectedSubject := domain.EmailSubjectShortCodeResetBegin
+		expectedSubject := domain.EmailSubjectMagicLogin
 
-		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_short_code_reset_begin", domain.ShortCodeResetBeginEmail{
+		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_magic_login", domain.MagicLoginEmail{
 			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
@@ -616,6 +617,7 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 				URL:          rlm.Origin,
 				SupportEmail: rlm.Contact.EmailProper,
 			},
+			// TODO - feat: update login url
 			ResetURL: fmt.Sprintf("%s/reset/%s", rlm.Origin, resetToken),
 		})
 
@@ -645,7 +647,7 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 		}
 	})
 
-	t.Run("issue short code reset begin email with no entry must fail", func(t *testing.T) {
+	t.Run("issue magic login email with no entry must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
@@ -656,7 +658,7 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = agent.IssueShortCodeResetBeginEmail(ctx, nil, "dat_string")
+		err = agent.IssueMagicLoginEmail(ctx, nil, "dat_string")
 		if !cmp.ErrorType(err, domain.InternalError{})().Success() {
 			expectedTypeOfGot(t, domain.InternalError{}, err)
 		}
@@ -682,13 +684,13 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = agent.IssueShortCodeResetBeginEmail(ctx, &entry, "dat_string")
+		err = agent.IssueMagicLoginEmail(ctx, &entry, "dat_string")
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
 	})
 
-	t.Run("issue short code reset begin email with an entry whose season does not exist must fail", func(t *testing.T) {
+	t.Run("issue magic login email with an entry whose season does not exist must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
@@ -708,7 +710,7 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = agent.IssueShortCodeResetBeginEmail(ctx, &entry, "dat_string")
+		err = agent.IssueMagicLoginEmail(ctx, &entry, "dat_string")
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}

@@ -10,7 +10,7 @@ import (
 const (
 	EmailSubjectNewEntry                     = "You're In!"
 	EmailSubjectRoundComplete                = "End of Round %d"
-	EmailSubjectShortCodeResetBegin          = "Resetting your Short Code"
+	EmailSubjectMagicLogin                   = "Resetting your Short Code" // TODO - feat: update email subject
 	EmailSubjectShortCodeResetComplete       = "Your new Short Code"
 	EmailSubjectPredictionWindowOpen         = "Prediction Window Open!"
 	EmailSubjectPredictionWindowOpenFinal    = "Final Prediction Window Open!"
@@ -133,8 +133,8 @@ func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep S
 	return nil
 }
 
-// IssueShortCodeResetBeginEmail generates a "short code reset begin" email for the provided Entry and pushes it to the send queue
-func (c *CommunicationsAgent) IssueShortCodeResetBeginEmail(ctx context.Context, entry *Entry, resetToken string) error {
+// IssueMagicLoginEmail generates a magic login email for the provided Entry and pushes it to the send queue
+func (c *CommunicationsAgent) IssueMagicLoginEmail(ctx context.Context, entry *Entry, resetToken string) error {
 	if entry == nil {
 		return InternalError{errors.New("no entry provided")}
 	}
@@ -149,12 +149,14 @@ func (c *CommunicationsAgent) IssueShortCodeResetBeginEmail(ctx context.Context,
 		return NotFoundError{fmt.Errorf("cannot get season with id '%s': %w", entry.SeasonID, err)}
 	}
 
-	d := ShortCodeResetBeginEmail{
+	d := MagicLoginEmail{
 		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
+		// TODO - feat: update login url
 		ResetURL:       fmt.Sprintf("%s/reset/%s", realm.Origin, resetToken),
 	}
 	var emailContent bytes.Buffer
-	if err := c.tpl.ExecuteTemplate(&emailContent, "email_txt_short_code_reset_begin", d); err != nil {
+	// TODO - feat: update email template
+	if err := c.tpl.ExecuteTemplate(&emailContent, "email_txt_magic_login", d); err != nil {
 		return err
 	}
 
@@ -162,7 +164,7 @@ func (c *CommunicationsAgent) IssueShortCodeResetBeginEmail(ctx context.Context,
 		Name:    entry.EntrantName,
 		Address: entry.EntrantEmail,
 	}
-	email := newEmail(realm, recipient, EmailSubjectShortCodeResetBegin, emailContent.String())
+	email := newEmail(realm, recipient, EmailSubjectMagicLogin, emailContent.String())
 	if err := c.emlQ.Send(ctx, email); err != nil {
 		return fmt.Errorf("cannot send email to queue: %w", err)
 	}
@@ -487,13 +489,13 @@ type RoundCompleteEmailData struct {
 	LeaderBoardURL    string
 }
 
-// ShortCodeResetBeginEmail defines the fields relating to the content of a short code reset begin email
-type ShortCodeResetBeginEmail struct {
+// MagicLoginEmail defines the fields relating to the content of a short code reset begin email
+type MagicLoginEmail struct {
 	MessagePayload
 	ResetURL string
 }
 
-// ShortCodeResetBeginEmail defines the fields relating to the content of a short code reset begin email
+// MagicLoginEmail defines the fields relating to the content of a short code reset begin email
 type ShortCodeResetCompleteEmail struct {
 	MessagePayload
 	PredictionsURL string

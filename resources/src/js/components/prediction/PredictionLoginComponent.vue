@@ -8,7 +8,8 @@
                         <ul><li v-for="msg in errorMessages">{{msg}}</li></ul>
                     </div>
                 </transition>
-                <form v-if="showForgotShortCodeForm" class="form-primary" method="POST" action="/reset">
+                <!-- TODO - feat: remove form -->
+                <form v-if="showForgotShortCodeForm" class="form-primary" method="POST" action="/login/magic">
                     <div class="form-label-group">
                         <input type="text" id="inputForgotShortCodeEmailNickname" name="email_nickname" class="form-control" placeholder="Email or Nickname" required>
                         <label for="inputForgotShortCodeEmailNickname">Email or Nickname</label>
@@ -18,6 +19,7 @@
                         <button type="submit" class="btn btn-primary">Reset my Short Code</button>
                     </div>
                 </form>
+                <!-- TODO - feat: amend login form -->
                 <form v-else id="prediction-login-form" class="form-primary">
                     <div class="form-label-group">
                         <input v-model="formData.email_nickname" type="text" id="inputEmailNickname" name="email_nickname" class="form-control" placeholder="Email or Nickname" required>

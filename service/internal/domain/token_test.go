@@ -3,10 +3,11 @@ package domain_test
 import (
 	"context"
 	"errors"
-	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
 	"testing"
 	"time"
+
+	"gotest.tools/assert/cmp"
 )
 
 func TestNewTokenAgent(t *testing.T) {
@@ -82,7 +83,7 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		expectedType := domain.TokenTypeShortCodeResetToken
+		expectedType := domain.TokenTypeMagicLogin
 		expectedValue := "Hello World"
 
 		token, err := agent.GenerateToken(ctx, expectedType, expectedValue)

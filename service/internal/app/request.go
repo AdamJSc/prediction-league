@@ -41,6 +41,6 @@ type predictionLoginRequest struct {
 	ShortCode     string `json:"short_code"`
 }
 
-type shortCodeResetRequest struct {
+type generateMagicLoginRequest struct {
 	EmailNickname string
 }

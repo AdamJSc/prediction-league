@@ -109,7 +109,7 @@ func newRouter(cnt *container) *mux.Router {
 	rtr.HandleFunc("/join", frontendJoinHandler(cnt)).Methods(http.MethodGet)
 	rtr.HandleFunc("/prediction", frontendPredictionHandler(cnt)).Methods(http.MethodGet)
 
-	rtr.HandleFunc("/reset", frontendShortCodeResetBeginHandler(cnt)).Methods(http.MethodPost)
+	rtr.HandleFunc("/login/magic", frontendGenerateMagicLoginHandler(cnt)).Methods(http.MethodPost)
 	rtr.HandleFunc("/reset/{reset_token}", frontendShortCodeResetCompleteHandler(cnt)).Methods(http.MethodGet)
 
 	return rtr

@@ -73,7 +73,7 @@ type FAQItem struct {
 	Answer   template.HTML
 }
 
-type ShortCodeResetBeginPageData struct {
+type GenerateMagicLoginPageData struct {
 	Err           error
 	EmailNickname string
 }
