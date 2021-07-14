@@ -139,9 +139,9 @@ func TestCronFactory_GenerateCron(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// 2 jobs per season
-		if len(cr.Entries()) != 4 {
-			t.Fatalf("want 4 cron entries, got %d", len(cr.Entries()))
+		// 1 job per season
+		if len(cr.Entries()) != 2 {
+			t.Fatalf("want 2 cron entries, got %d", len(cr.Entries()))
 		}
 	})
 }
