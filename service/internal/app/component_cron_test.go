@@ -97,20 +97,6 @@ func TestCronFactory_GenerateCron(t *testing.T) {
 		}
 	})
 
-	t.Run("must fail if job cannot be generated", func(t *testing.T) {
-		rc := domain.RealmCollection{
-			"realm-id": {SeasonID: "season-id"},
-		}
-
-		sc := domain.SeasonCollection{"season-id": domain.Season{}}
-
-		cf := &CronHandler{rc: rc, sc: sc}
-		wantErrMsg := "cannot generate job configs: cannot generate new prediction window open job: cannot instantiate prediction window open worker: clock: is nil"
-		if _, gotErr := cf.generateCron(); gotErr == nil || gotErr.Error() != wantErrMsg {
-			t.Fatalf("want err %s, got %+v", wantErrMsg, gotErr)
-		}
-	})
-
 	t.Run("must produce 6 cron entries when football data source is provided", func(t *testing.T) {
 		rc := domain.RealmCollection{
 			"realm-1-id": {SeasonID: "season-1-id"},
@@ -153,9 +139,9 @@ func TestCronFactory_GenerateCron(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// 3 jobs per season
-		if len(cr.Entries()) != 6 {
-			t.Fatalf("want 6 cron entries, got %d", len(cr.Entries()))
+		// 1 job per season
+		if len(cr.Entries()) != 2 {
+			t.Fatalf("want 2 cron entries, got %d", len(cr.Entries()))
 		}
 	})
 }
