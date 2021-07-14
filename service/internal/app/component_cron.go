@@ -91,17 +91,12 @@ func (c *CronHandler) generateJobConfigs(seasons []domain.Season) ([]*jobConfig,
 	jobs := make([]*jobConfig, 0)
 
 	for _, s := range seasons {
-		oj, err := c.newPredictionWindowOpenJob(s)
-		if err != nil {
-			return nil, fmt.Errorf("cannot generate new prediction window open job: %w", err)
-		}
-
 		cj, err := c.newPredictionWindowClosingJob(s)
 		if err != nil {
 			return nil, fmt.Errorf("cannot generate new prediction window closing job: %w", err)
 		}
 
-		jobs = append(jobs, oj, cj)
+		jobs = append(jobs, cj)
 
 		j, err := c.newRetrieveLatestStandingsJob(s)
 		if err != nil {
@@ -112,24 +107,6 @@ func (c *CronHandler) generateJobConfigs(seasons []domain.Season) ([]*jobConfig,
 	}
 
 	return jobs, nil
-}
-
-// newPredictionWindowOpenJob returns a new job that issues emails to entrants
-// when a new Prediction Window has been opened for the provided season
-func (c *CronHandler) newPredictionWindowOpenJob(s domain.Season) (*jobConfig, error) {
-	jobName := strings.ToLower(fmt.Sprintf("prediction-window-open-%s", s.ID))
-
-	w, err := domain.NewPredictionWindowOpenWorker(s, c.cl, c.ea, c.ca)
-	if err != nil {
-		return nil, fmt.Errorf("cannot instantiate prediction window open worker: %w", err)
-	}
-
-	task, err := domain.HandleWorker(jobName, 5, w, c.l)
-
-	return &jobConfig{
-		spec: predictionWindowOpenCronSpec,
-		task: task,
-	}, nil
 }
 
 // newPredictionWindowClosingJob returns a new job that issues emails to entrants
