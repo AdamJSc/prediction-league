@@ -140,7 +140,20 @@ func updateEntryPaymentDetailsHandler(c *container) func(w http.ResponseWriter, 
 
 func createEntryPredictionHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var input createEntryPredictionRequest
+		// get context from request
+		ctx, cancel, err := contextFromRequest(r, c)
+		if err != nil {
+			responseFromError(err).writeTo(w)
+			return
+		}
+		defer cancel()
+
+		// parse entry ID from route
+		var entryID string
+		if err := getRouteParam(r, "entry_id", &entryID); err != nil {
+			responseFromError(err).writeTo(w)
+			return
+		}
 
 		// read request body
 		body, err := ioutil.ReadAll(r.Body)
@@ -151,25 +164,14 @@ func createEntryPredictionHandler(c *container) func(w http.ResponseWriter, r *h
 		defer closeBody(r)
 
 		// parse request body
+		var input createEntryPredictionRequest
 		if err := json.Unmarshal(body, &input); err != nil {
 			responseFromError(domain.BadRequestError{Err: err}).writeTo(w)
 			return
 		}
 
-		// parse entry ID from route
-		var entryID string
-		if err := getRouteParam(r, "entry_id", &entryID); err != nil {
-			responseFromError(err).writeTo(w)
-			return
-		}
-
-		// get context from request
-		ctx, cancel, err := contextFromRequest(r, c)
-		if err != nil {
-			responseFromError(err).writeTo(w)
-			return
-		}
-		defer cancel()
+		// transform to entry prediction model
+		newEP := input.ToEntryPredictionModel()
 
 		// get entry
 		entry, err := c.entryAgent.RetrieveEntryByID(ctx, entryID)
@@ -178,14 +180,22 @@ func createEntryPredictionHandler(c *container) func(w http.ResponseWriter, r *h
 			return
 		}
 
-		entryPrediction := input.ToEntryPredictionModel()
+		// check current ranking limit
+		limit, err := c.entryAgent.GetPredictionRankingLimit(ctx, entry)
+		if err != nil {
+			responseFromError(err).writeTo(w)
+			return
+		}
+		if err := c.entryAgent.CheckRankingLimit(ctx, limit, newEP, entry); err != nil {
+			responseFromError(err).writeTo(w)
+			return
+		}
 
+		// set guard attempt for next agent method
 		domain.GuardFromContext(ctx).SetAttempt(input.EntryShortCode)
 
-		// TODO - feat: check ranking limit - retrieve using entry
-
 		// create entry prediction for entry
-		if _, err := c.entryAgent.AddEntryPredictionToEntry(ctx, entryPrediction, entry); err != nil {
+		if _, err := c.entryAgent.AddEntryPredictionToEntry(ctx, newEP, entry); err != nil {
 			responseFromError(err).writeTo(w)
 			return
 		}

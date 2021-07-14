@@ -258,6 +258,81 @@ func TestCalculateRankingScores(t *testing.T) {
 	})
 }
 
+func TestGetChangedRankingIDs(t *testing.T) {
+	pughID, fletchID, pitmanID := "marc", "steve", "brett"
+
+	tt := []struct {
+		name    string
+		x       domain.RankingCollection
+		y       domain.RankingCollection
+		wantIDs []string
+	}{
+		{
+			name: "identical collections, no ids",
+			x: domain.RankingCollection{
+				{pughID, 1},
+				{fletchID, 2},
+				{pitmanID, 3},
+			},
+			y: domain.RankingCollection{
+				{pughID, 1},
+				{fletchID, 2},
+				{pitmanID, 3},
+			},
+			wantIDs: make([]string, 0),
+		},
+		{
+			name: "identical collection in alternative order, no ids",
+			x: domain.RankingCollection{
+				{pughID, 1},
+				{fletchID, 2},
+				{pitmanID, 3},
+			},
+			y: domain.RankingCollection{
+				{pitmanID, 3},
+				{fletchID, 2},
+				{pughID, 1},
+			},
+			wantIDs: make([]string, 0),
+		},
+		{
+			name: "two items swap one position, expect two ids",
+			x: domain.RankingCollection{
+				{pughID, 1},
+				{fletchID, 2},
+				{pitmanID, 3},
+			},
+			y: domain.RankingCollection{
+				{pughID, 1},
+				{pitmanID, 2}, // formerly position 3
+				{fletchID, 3}, // formerly position 2
+			},
+			wantIDs: []string{fletchID, pitmanID},
+		},
+		{
+			name: "identical ids but one is one position different, expect one id",
+			x: domain.RankingCollection{
+				{pughID, 1},
+				{fletchID, 2},
+				{pitmanID, 3},
+			},
+			y: domain.RankingCollection{
+				{pughID, 1},
+				{fletchID, 2},
+				{pitmanID, 4}, // formerly position 3
+			},
+			wantIDs: []string{pitmanID},
+		},
+	}
+
+	for _, tc := range tt {
+		gotIDs := domain.GetChangedRankingIDs(tc.x, tc.y)
+		if diff := cmp.Diff(tc.wantIDs, gotIDs); diff != "" {
+			t.Fatalf("want ids %+v, got %+v, diff: %s", tc.wantIDs, gotIDs, diff)
+		}
+	}
+}
+
 func generateRankingWithMeta(id string, pos int, metaVal int) domain.RankingWithMeta {
 	var rwm = domain.NewRankingWithMeta()
 

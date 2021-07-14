@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"prediction-league/service/internal/domain"
@@ -83,7 +84,7 @@ func getPredictionPageData(ctx context.Context, authToken string, entryAgent *do
 	seasonID := domain.RealmFromContext(ctx).SeasonID
 	season, err := sc.GetByID(seasonID)
 	if err != nil {
-		data.Err = err
+		data.Err = fmt.Errorf("oops! can't get season: %w", err)
 		return data
 	}
 
@@ -98,14 +99,13 @@ func getPredictionPageData(ctx context.Context, authToken string, entryAgent *do
 	// default teams IDs should reflect those of the current season
 	teamIDs := season.TeamIDs
 
-	switch {
-	case authToken != "":
+	if authToken != "" {
 		// retrieve the entry ID that the auth token pertains to
 		token, err := tokenAgent.RetrieveTokenByID(ctx, authToken)
 		if err != nil {
-			switch err.(type) {
-			case domain.NotFoundError:
-				data.Err = errors.New("invalid auth token")
+			switch {
+			case errors.As(err, &domain.NotFoundError{}):
+				data.Err = errors.New("oops! invalid auth token")
 			default:
 				data.Err = err
 			}
@@ -132,7 +132,14 @@ func getPredictionPageData(ctx context.Context, authToken string, entryAgent *do
 			teamIDs = entryPrediction.Rankings.GetIDs()
 		}
 
-		// TODO - feat: retrieve ranking limit from entry
+		// retrieve prediction ranking limit
+		lim, err := entryAgent.GetPredictionRankingLimit(ctx, entry)
+		if err != nil {
+			data.Err = fmt.Errorf("oops! can't get ranking limit: %w", err)
+			return data
+		}
+
+		data.Predictions.Limit = lim
 	}
 
 	// filter all teams to just the IDs that we need

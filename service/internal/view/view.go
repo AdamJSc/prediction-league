@@ -25,6 +25,7 @@ type PredictionPageData struct {
 	Predictions struct {
 		Status        string
 		IsClosing     bool
+		Limit         int
 		AcceptedFrom  time.Time
 		AcceptedUntil time.Time
 	}

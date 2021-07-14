@@ -26,14 +26,30 @@ func (e BadRequestError) Error() string {
 	return e.Err.Error()
 }
 
+func (e BadRequestError) Unwrap() error {
+	return e.Err
+}
+
 // UnauthorizedError translates to a 401 Unauthorized response status code
 type UnauthorizedError struct{ error }
+
+func (e UnauthorizedError) Unwrap() error {
+	return e.error
+}
 
 // NotFoundError translates to a 404 Not Found response status code
 type NotFoundError struct{ error }
 
+func (e NotFoundError) Unwrap() error {
+	return e.error
+}
+
 // ConflictError translates to a 409 Conflict response status code
 type ConflictError struct{ error }
+
+func (e ConflictError) Unwrap() error {
+	return e.error
+}
 
 // ValidationError translates to a 422 Unprocessable Entity response status code
 type ValidationError struct {
@@ -47,6 +63,10 @@ func (e ValidationError) Error() string {
 
 // InternalError translates to a 500 Internal Server Error response status code
 type InternalError struct{ error }
+
+func (e InternalError) Unwrap() error {
+	return e.error
+}
 
 // domainErrorFromRepositoryError returns the appropriate domain-level error from a repository-specific error
 func domainErrorFromRepositoryError(err error) error {

@@ -31,6 +31,10 @@
     color: $primary-light;
     background-color: $secondary-dark-tint-dark;
     border-color: $secondary-dark-tint-dark;
+
+    &:hover {
+      cursor: default;
+    }
   }
 
   &:not(:disabled) {

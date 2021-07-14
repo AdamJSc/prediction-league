@@ -150,6 +150,180 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "Create Entry Prediction",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"successful request\", function () {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{basic_auth_pass}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{basic_auth_user}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"entry_short_code\":\"{{entry_short_code}}\",\"ranking_ids\":[\n    \"WWFC\",\n    \"AFC\",\n    \"BFC\",\n    \"NCFC\",\n    \"THFC\",\n    \"WHUFC\",\n    \"AFCB\",\n    \"AVFC\",\n    \"BHAFC\",\n    \"CPFC\",\n    \"NUFC\",\n    \"CFC\",\n    \"EFC\",\n    \"LCFC\",\n    \"SUFC\",\n    \"LFC\",\n    \"MCFC\",\n    \"MUFC\",\n    \"SFC\",\n    \"WFC\"\n]}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/entry/{{entry_id}}/prediction",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"entry",
+						"{{entry_id}}",
+						"prediction"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Entry Prediction (4 changes, exceed Limit)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"successful request\", function () {",
+							"    pm.expect(pm.response.code).to.equal(409);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{basic_auth_pass}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{basic_auth_user}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"entry_short_code\":\"{{entry_short_code}}\",\"ranking_ids\":[\n    \"WWFC\",\n    \"AFC\",\n    \"NCFC\",\n    \"BFC\",\n    \"WHUFC\",\n    \"THFC\",\n    \"AFCB\",\n    \"AVFC\",\n    \"BHAFC\",\n    \"CPFC\",\n    \"NUFC\",\n    \"CFC\",\n    \"EFC\",\n    \"LCFC\",\n    \"SUFC\",\n    \"LFC\",\n    \"MCFC\",\n    \"MUFC\",\n    \"SFC\",\n    \"WFC\"\n]}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/entry/{{entry_id}}/prediction",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"entry",
+						"{{entry_id}}",
+						"prediction"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Entry Prediction (2 changes, within Limit)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"successful request\", function () {",
+							"    pm.expect(pm.response.code).to.equal(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{basic_auth_pass}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{basic_auth_user}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"entry_short_code\":\"{{entry_short_code}}\",\"ranking_ids\":[\n    \"WWFC\",\n    \"AFC\",\n    \"BFC\",\n    \"NCFC\",\n    \"THFC\",\n    \"WHUFC\",\n    \"AFCB\",\n    \"AVFC\",\n    \"BHAFC\",\n    \"CPFC\",\n    \"NUFC\",\n    \"CFC\",\n    \"EFC\",\n    \"LCFC\",\n    \"SUFC\",\n    \"LFC\",\n    \"MCFC\",\n    \"MUFC\",\n    \"SFC\",\n    \"WFC\"\n]}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/entry/{{entry_id}}/prediction",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"entry",
+						"{{entry_id}}",
+						"prediction"
+					]
+				}
+			},
+			"response": []
 		}
 	]
 }
