@@ -86,7 +86,6 @@ func newRouter(cnt *container) *mux.Router {
 
 	// api endpoints
 	api := rtr.PathPrefix("/api").Subrouter()
-	api.HandleFunc("/prediction/login", predictionLoginHandler(cnt)).Methods(http.MethodPost)
 
 	api.HandleFunc("/season/{season_id}", retrieveSeasonHandler(cnt)).Methods(http.MethodGet)
 	api.HandleFunc("/season/{season_id}/entry", createEntryHandler(cnt)).Methods(http.MethodPost)
@@ -109,8 +108,8 @@ func newRouter(cnt *container) *mux.Router {
 	rtr.HandleFunc("/join", frontendJoinHandler(cnt)).Methods(http.MethodGet)
 	rtr.HandleFunc("/prediction", frontendPredictionHandler(cnt)).Methods(http.MethodGet)
 
-	rtr.HandleFunc("/login/magic", frontendGenerateMagicLoginHandler(cnt)).Methods(http.MethodPost)
-	rtr.HandleFunc("/reset/{reset_token}", frontendShortCodeResetCompleteHandler(cnt)).Methods(http.MethodGet)
+	rtr.HandleFunc("/login", frontendGenerateMagicLoginHandler(cnt)).Methods(http.MethodPost)
+	rtr.HandleFunc("/login/magic/{magic_token_id}", frontendRedeemMagicLoginHandler(cnt)).Methods(http.MethodGet)
 
 	return rtr
 }

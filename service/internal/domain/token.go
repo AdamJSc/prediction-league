@@ -9,7 +9,7 @@ import (
 const (
 	TokenTypeAuth = iota
 	TokenTypeMagicLogin
-	TokenLength = 32
+	TokenLength = 32 // TODO - feat: extend token length to 64 (increase id field to VARCHAR 64)
 )
 
 var TokenValidityDuration = map[int]time.Duration{
@@ -17,6 +17,7 @@ var TokenValidityDuration = map[int]time.Duration{
 	TokenTypeMagicLogin: time.Minute * 10,
 }
 
+// TODO - feat: update to support RedeemedAt
 // Token defines a token model
 type Token struct {
 	ID        string    `db:"id"`

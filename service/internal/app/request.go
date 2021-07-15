@@ -36,11 +36,7 @@ func (r createEntryPredictionRequest) ToEntryPredictionModel() domain.EntryPredi
 	return domain.NewEntryPrediction(r.RankingIDs)
 }
 
-type predictionLoginRequest struct {
-	EmailNickname string `json:"email_nickname"`
-	ShortCode     string `json:"short_code"`
-}
-
+// TODO - feat: reduce to just email
 type generateMagicLoginRequest struct {
 	EmailNickname string
 }

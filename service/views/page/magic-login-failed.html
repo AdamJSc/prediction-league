@@ -1,10 +1,11 @@
-{{define "short-code-reset-complete"}}
+{{define "magic-login-failed"}}
     {{template "header" .}}
         {{if .Data.Err}}
             <div class="alert alert-danger">
                 <p>{{.Data.Err}}</p>
             </div>
         {{else}}
+            <!-- TODO - feat: update markup -->
             <p>We've successfully reset your Short Code!</p>
             <p>Here's your new one:</p>
             <h3>{{.Data.ShortCode}}</h3>

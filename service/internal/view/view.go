@@ -78,7 +78,7 @@ type GenerateMagicLoginPageData struct {
 	EmailNickname string
 }
 
-type ShortCodeResetCompletePageData struct {
+type RedeemMagicLoginPageData struct {
 	Err       error
 	ShortCode string
 }

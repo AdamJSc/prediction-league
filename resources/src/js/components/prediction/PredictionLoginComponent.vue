@@ -9,7 +9,7 @@
                     </div>
                 </transition>
                 <!-- TODO - feat: remove form -->
-                <form v-if="showForgotShortCodeForm" class="form-primary" method="POST" action="/login/magic">
+                <form v-if="showForgotShortCodeForm" class="form-primary" method="POST" action="/login">
                     <div class="form-label-group">
                         <input type="text" id="inputForgotShortCodeEmailNickname" name="email_nickname" class="form-control" placeholder="Email or Nickname" required>
                         <label for="inputForgotShortCodeEmailNickname">Email or Nickname</label>

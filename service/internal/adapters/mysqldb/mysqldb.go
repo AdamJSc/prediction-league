@@ -86,7 +86,7 @@ func dbWhereStmt(criteria map[string]interface{}, matchAny bool) (stmt string, p
 // generateAlphaNumericString generates an alphanumeric string to the provided length
 func generateAlphaNumericString(length int) string {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	source := "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz"
+	source := "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz-_"
 	var generated string
 
 	sourceLen := len(source)

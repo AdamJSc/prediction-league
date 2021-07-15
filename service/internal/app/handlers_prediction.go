@@ -5,77 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/view"
 )
-
-func predictionLoginHandler(c *container) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var input predictionLoginRequest
-
-		// read request body
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
-		}
-		defer closeBody(r)
-
-		// parse request body
-		if err := json.Unmarshal(body, &input); err != nil {
-			responseFromError(domain.BadRequestError{Err: err}).writeTo(w)
-			return
-		}
-
-		// get context from request
-		ctx, cancel, err := contextFromRequest(r, c)
-		if err != nil {
-			responseFromError(err).writeTo(w)
-			return
-		}
-		defer cancel()
-
-		// get realm from context
-		realm := domain.RealmFromContext(ctx)
-
-		// retrieve entry based on input
-		entry, err := retrieveEntryByEmailOrNickname(ctx, input.EmailNickname, realm.SeasonID, realm.Name, c.entryAgent)
-		if err != nil {
-			switch err.(type) {
-			case domain.NotFoundError:
-				// credentials are invalid so convert to an unauthorized error
-				unauthorizedError().writeTo(w)
-				return
-			}
-			responseFromError(err).writeTo(w)
-			return
-		}
-
-		// does realm name match our entry?
-		if domain.RealmFromContext(ctx).Name != entry.RealmName {
-			unauthorizedError().writeTo(w)
-			return
-		}
-
-		// does short code match our entry?
-		if entry.ShortCode != input.ShortCode {
-			unauthorizedError().writeTo(w)
-			return
-		}
-
-		// generate a new auth token for our entry, and set it as a cookie
-		token, err := c.tokenAgent.GenerateToken(ctx, domain.TokenTypeAuth, entry.ID.String())
-		if err != nil {
-			responseFromError(err).writeTo(w)
-			return
-		}
-		setAuthCookieValue(token.ID, w, r)
-
-		okResponse(nil).writeTo(w)
-	}
-}
 
 func getPredictionPageData(ctx context.Context, authToken string, entryAgent *domain.EntryAgent, tokenAgent *domain.TokenAgent, sc domain.SeasonCollection, tc domain.TeamCollection, cl domain.Clock) view.PredictionPageData {
 	var data view.PredictionPageData
