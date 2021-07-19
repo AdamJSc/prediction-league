@@ -75,7 +75,7 @@ type FAQItem struct {
 
 type GenerateMagicLoginPageData struct {
 	Err           error
-	EmailNickname string
+	EmailAddr string
 }
 
 type RedeemMagicLoginPageData struct {

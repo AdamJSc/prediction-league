@@ -5,9 +5,9 @@
                 <p>{{.Data.Err}}</p>
             </div>
         {{else}}
-            <p>Thanks!</p>
-            <p>If <strong>{{.Data.EmailNickname}}</strong> matches our entry records, we've just sent you an email with further instructions.</p>
-            <p>Click on the link in the email to reset your Short Code, or get in touch with us at
+            <p>Check your email!</p>
+            <p>If <strong>{{.Data.EmailAddr}}</strong> matches our records, we've just sent you a "magic link".</p>
+            <p>Click on the link to login, or get in touch with us at
                 <a href="mailto:{{.SupportEmailFormatted}}?subject=Please%20help%20me%20reset%20my%20Short%20Code!">{{.SupportEmailPlainText}}</a>
                 if you need any help.</p>
         {{end}}

@@ -170,7 +170,6 @@ func frontendGenerateMagicLoginHandler(c *container) func(w http.ResponseWriter,
 		var writeResponse = func(data view.GenerateMagicLoginPageData) {
 			p := newPage(r, c, "Login", "", "Login", data)
 
-			// TODO - feat: update page template
 			if err := c.templates.ExecuteTemplate(w, "magic-login-generate", p); err != nil {
 				internalError(fmt.Errorf("cannot execute template: %w", err)).writeTo(w)
 			}
@@ -184,13 +183,13 @@ func frontendGenerateMagicLoginHandler(c *container) func(w http.ResponseWriter,
 		}
 		var input generateMagicLoginRequest
 		for k, v := range r.Form {
-			if k == "email" && len(v) > 0 {
-				input.EmailNickname = v[0]
+			if k == "email_addr" && len(v) > 0 {
+				input.EmailAddr = v[0]
 			}
 		}
 
 		// check that input is valid
-		if input.EmailNickname == "" {
+		if input.EmailAddr == "" {
 			writeResponse(view.GenerateMagicLoginPageData{Err: errors.New("invalid request")})
 			return
 		}
@@ -208,16 +207,16 @@ func frontendGenerateMagicLoginHandler(c *container) func(w http.ResponseWriter,
 		realm := domain.RealmFromContext(ctx)
 
 		// retrieve entry
-		entry, err := retrieveEntryByEmailOrNickname(ctx, input.EmailNickname, realm.SeasonID, realm.Name, c.entryAgent)
+		entry, err := retrieveEntryByEmailAddr(ctx, input.EmailAddr, realm.SeasonID, realm.Name, c.entryAgent)
 		if err != nil {
 			switch {
 			case errors.As(err, &domain.NotFoundError{}):
 				// we can't find an existing entry, but we don't want to let the user know
 				// just pretend everything is ok...
-				writeResponse(view.GenerateMagicLoginPageData{EmailNickname: input.EmailNickname})
+				writeResponse(view.GenerateMagicLoginPageData{EmailAddr: input.EmailAddr})
 				return
 			}
-			c.logger.Errorf("cannot retrieve entry '%s': %s", input.EmailNickname, err.Error())
+			c.logger.Errorf("cannot retrieve entry for '%s': %s", input.EmailAddr, err.Error())
 			writeResponse(view.GenerateMagicLoginPageData{Err: genericErr})
 			return
 		}
@@ -247,7 +246,7 @@ func frontendGenerateMagicLoginHandler(c *container) func(w http.ResponseWriter,
 		}
 
 		// all good!
-		writeResponse(view.GenerateMagicLoginPageData{EmailNickname: input.EmailNickname})
+		writeResponse(view.GenerateMagicLoginPageData{EmailAddr: input.EmailAddr})
 	}
 }
 

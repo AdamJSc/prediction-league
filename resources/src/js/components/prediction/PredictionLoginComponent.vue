@@ -12,7 +12,7 @@
                   <div class="tagline">Get a Magic Link to login with:</div>
 
                   <div class="form-label-group">
-                    <input type="text" id="inputEmail" name="email" class="form-control" placeholder="Email" required>
+                    <input type="text" id="inputEmail" name="email_addr" class="form-control" placeholder="Email" required>
                     <label for="inputEmail">Email</label>
                   </div>
 
