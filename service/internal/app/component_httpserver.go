@@ -109,7 +109,8 @@ func newRouter(cnt *container) *mux.Router {
 	rtr.HandleFunc("/prediction", frontendPredictionHandler(cnt)).Methods(http.MethodGet)
 
 	rtr.HandleFunc("/login", frontendGenerateMagicLoginHandler(cnt)).Methods(http.MethodPost)
-	rtr.HandleFunc("/login/magic/{magic_token_id}", frontendRedeemMagicLoginHandler(cnt)).Methods(http.MethodGet)
+	rtr.HandleFunc("/login/failed", frontendMagicLoginFailedHandler(cnt)).Methods(http.MethodGet)
+	rtr.HandleFunc("/login/{magic_token_id}", frontendRedeemMagicLoginHandler(cnt)).Methods(http.MethodGet)
 
 	return rtr
 }

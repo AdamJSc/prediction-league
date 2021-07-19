@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,7 +10,7 @@ import (
 	"time"
 )
 
-var genericErr = errors.New("oh no! something went wrong :'( we've been told about it, so please try again")
+var genericErr = errors.New("oh no! something went wrong :'( we've been told about it... please try again")
 
 func frontendIndexHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -252,20 +253,19 @@ func frontendGenerateMagicLoginHandler(c *container) func(w http.ResponseWriter,
 
 func frontendRedeemMagicLoginHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// TODO - feat: redirect to login failed page with location header
-		var writeResponse = func(data view.RedeemMagicLoginPageData) {
-			p := newPage(r, c, "Login failed", "", "Login failed", data)
+		redirFail := "/login/failed"
+		redirOk := "/prediction"
 
-			if err := c.templates.ExecuteTemplate(w, "magic-login-failed", p); err != nil {
-				internalError(fmt.Errorf("cannot execute template: %w", err)).writeTo(w)
-			}
+		var writeRedirect = func(loc string) {
+			w.Header().Set("Location", loc)
+			w.WriteHeader(http.StatusFound)
 		}
 
 		// parse magic token from route
 		var mTknID string
 		if err := getRouteParam(r, "magic_token_id", &mTknID); err != nil {
 			c.logger.Errorf("cannot parse route param 'magic_token_id': %s", err.Error())
-			writeResponse(view.RedeemMagicLoginPageData{Err: genericErr})
+			writeRedirect(redirFail)
 			return
 		}
 
@@ -273,7 +273,7 @@ func frontendRedeemMagicLoginHandler(c *container) func(w http.ResponseWriter, r
 		ctx, cancel, err := contextFromRequest(r, c)
 		if err != nil {
 			c.logger.Errorf("cannot get context from request: %s", err.Error())
-			writeResponse(view.RedeemMagicLoginPageData{Err: genericErr})
+			writeRedirect(redirFail)
 			return
 		}
 		defer cancel()
@@ -284,25 +284,25 @@ func frontendRedeemMagicLoginHandler(c *container) func(w http.ResponseWriter, r
 			switch {
 			case errors.As(err, &domain.NotFoundError{}):
 				c.logger.Errorf("magic token '%s' not found", mTknID)
-				writeResponse(view.RedeemMagicLoginPageData{Err: genericErr})
+				writeRedirect(redirFail)
 				return
 			}
 			c.logger.Errorf("cannot retrieve magic token '%s': %s", mTknID, err.Error())
-			writeResponse(view.RedeemMagicLoginPageData{Err: genericErr})
+			writeRedirect(redirFail)
 			return
 		}
 
 		// is token a magic login token?
 		if mTkn.Type != domain.TokenTypeMagicLogin {
 			c.logger.Errorf("token id '%s' is not a magic token", mTkn.ID)
-			writeResponse(view.RedeemMagicLoginPageData{Err: genericErr})
+			writeRedirect(redirFail)
 			return
 		}
 
 		// has token expired?
 		if mTkn.ExpiresAt.Before(c.clock.Now()) {
 			c.logger.Errorf("magic token id '%s' has expired", mTkn.ID)
-			writeResponse(view.RedeemMagicLoginPageData{Err: genericErr})
+			writeRedirect(redirFail)
 			return
 		}
 
@@ -310,14 +310,14 @@ func frontendRedeemMagicLoginHandler(c *container) func(w http.ResponseWriter, r
 		entry, err := c.entryAgent.RetrieveEntryByID(ctx, mTkn.Value)
 		if err != nil {
 			c.logger.Errorf("cannot retrieve entry with magic token id '%s': value '%s': %s", mTkn.ID, mTkn.Value, err.Error())
-			writeResponse(view.RedeemMagicLoginPageData{Err: genericErr})
+			writeRedirect(redirFail)
 			return
 		}
 
 		// does realm name match our entry?
 		if ctxRealmName := domain.RealmFromContext(ctx).Name; ctxRealmName != entry.RealmName {
 			c.logger.Errorf("context realm name '%s' does not match entry realm name '%s'", ctxRealmName, entry.RealmName)
-			writeResponse(view.RedeemMagicLoginPageData{Err: genericErr})
+			writeRedirect(redirFail)
 			return
 		}
 
@@ -337,8 +337,19 @@ func frontendRedeemMagicLoginHandler(c *container) func(w http.ResponseWriter, r
 			c.logger.Errorf("cannot delete magic token id '%s': %s", mTkn.ID, err.Error())
 		}
 
-		// add redirect header
-		w.Header().Set("Location", "/prediction")
-		w.WriteHeader(http.StatusFound)
+		// all ok!
+		writeRedirect(redirOk)
+	}
+}
+
+func frontendMagicLoginFailedHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		buf := &bytes.Buffer{}
+		p := newPage(r, c, "Login", "", "Login", nil)
+		if err := c.templates.ExecuteTemplate(buf, "magic-login-failed", p); err != nil {
+			internalError(fmt.Errorf("cannot execute template: %w", err)).writeTo(w)
+			return
+		}
+		w.Write(buf.Bytes())
 	}
 }

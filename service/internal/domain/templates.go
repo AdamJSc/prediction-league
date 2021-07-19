@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+// TODO - proxy ExecuteTemplate method to prevent writing directly to http response writer
+// (negates superfluous WriteHeader call when invoking internalError(...).writeTo(w))
 type Templates struct{ *template.Template }
 
 var templateFunctions = template.FuncMap{
