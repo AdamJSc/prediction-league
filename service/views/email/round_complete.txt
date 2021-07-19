@@ -1,6 +1,8 @@
 {{define "email_txt_round_complete"}}Round {{.RoundNumber}} complete
 ==================
 
+// TODO - feat: amend copy
+
 Hey {{.Name}},
 
 A new round has begun!

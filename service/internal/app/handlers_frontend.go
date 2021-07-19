@@ -184,7 +184,7 @@ func frontendGenerateMagicLoginHandler(c *container) func(w http.ResponseWriter,
 		}
 		var input generateMagicLoginRequest
 		for k, v := range r.Form {
-			if k == "email_nickname" && len(v) > 0 {
+			if k == "email" && len(v) > 0 {
 				input.EmailNickname = v[0]
 			}
 		}

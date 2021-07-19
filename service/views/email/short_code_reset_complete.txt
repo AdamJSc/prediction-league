@@ -1,6 +1,8 @@
 {{define "email_txt_short_code_reset_complete"}}Your new Short Code!
 ============================
 
+// TODO - feat: remove template
+
 Hey {{.Name}}!
 
 We've successfully reset your Short Code as requested.
