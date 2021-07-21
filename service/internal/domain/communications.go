@@ -10,7 +10,7 @@ import (
 const (
 	EmailSubjectNewEntry                     = "You're In!"
 	EmailSubjectRoundComplete                = "End of Round %d"
-	EmailSubjectMagicLogin                   = "Resetting your Short Code" // TODO - feat: update email subject
+	EmailSubjectMagicLogin                   = "Your login link"
 	EmailSubjectShortCodeResetComplete       = "Your new Short Code"
 	EmailSubjectPredictionWindowOpen         = "Prediction Window Open!"
 	EmailSubjectPredictionWindowOpenFinal    = "Final Prediction Window Open!"
@@ -134,7 +134,7 @@ func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep S
 }
 
 // IssueMagicLoginEmail generates a magic login email for the provided Entry and pushes it to the send queue
-func (c *CommunicationsAgent) IssueMagicLoginEmail(ctx context.Context, entry *Entry, resetToken string) error {
+func (c *CommunicationsAgent) IssueMagicLoginEmail(ctx context.Context, entry *Entry, tokenId string) error {
 	if entry == nil {
 		return InternalError{errors.New("no entry provided")}
 	}
@@ -151,11 +151,9 @@ func (c *CommunicationsAgent) IssueMagicLoginEmail(ctx context.Context, entry *E
 
 	d := MagicLoginEmail{
 		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
-		// TODO - feat: update login url
-		ResetURL:       fmt.Sprintf("%s/reset/%s", realm.Origin, resetToken),
+		LoginURL:       fmt.Sprintf("%s/login/%s", realm.Origin, tokenId),
 	}
 	var emailContent bytes.Buffer
-	// TODO - feat: update email template
 	if err := c.tpl.ExecuteTemplate(&emailContent, "email_txt_magic_login", d); err != nil {
 		return err
 	}
@@ -492,7 +490,7 @@ type RoundCompleteEmailData struct {
 // MagicLoginEmail defines the fields relating to the content of a short code reset begin email
 type MagicLoginEmail struct {
 	MessagePayload
-	ResetURL string
+	LoginURL string
 }
 
 // MagicLoginEmail defines the fields relating to the content of a short code reset begin email

@@ -1,18 +1,13 @@
-{{define "email_txt_magic_login"}}Reset your Short Code
+{{define "email_txt_magic_login"}}Login
 ============================
-
-// TODO - feat: amend copy
 
 Hey {{.Name}}!
 
-Looks like you asked us to reset your Short Code.
+Use the following magic link to login:
 
-If this was you, use this link to reset it:
-{{.ResetURL}}
+{{.LoginURL}}
 
-The link will automatically expire after 10 minutes.
-
-If you haven't requested a Short Code reset, just ignore this email.
+This link will automatically expire after 10 minutes.
 
 In the meantime, Happy Predicting! 🧙🔮
 {{- template "email_txt_footer" .}}

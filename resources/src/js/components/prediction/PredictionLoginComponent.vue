@@ -9,7 +9,7 @@
                     </div>
                 </transition>
                 <form class="form-primary" method="POST" action="/login">
-                  <div class="tagline">Get a Magic Link to login with:</div>
+                  <div class="tagline">Enter your email to login</div>
 
                   <div class="form-label-group">
                     <input type="text" id="inputEmail" name="email_addr" class="form-control" placeholder="Email" required>
@@ -17,7 +17,7 @@
                   </div>
 
                   <div class="submit-wrapper">
-                    <button type="submit" class="btn btn-primary">Send Link</button>
+                    <button type="submit" class="btn btn-primary">Get Link</button>
                   </div>
                 </form>
             </div>

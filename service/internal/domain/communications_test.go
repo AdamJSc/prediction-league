@@ -579,7 +579,7 @@ func TestCommunicationsAgent_IssueMagicLoginEmail(t *testing.T) {
 			"harry.redknapp@football.net",
 		)
 
-		resetToken := "RESET12345"
+		tokenId := "MAGIC12345"
 
 		emlQ := domain.NewInMemEmailQueue()
 
@@ -588,7 +588,7 @@ func TestCommunicationsAgent_IssueMagicLoginEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := agent.IssueMagicLoginEmail(ctx, &entry, resetToken); err != nil {
+		if err := agent.IssueMagicLoginEmail(ctx, &entry, tokenId); err != nil {
 			t.Fatal(err)
 		}
 
@@ -617,8 +617,7 @@ func TestCommunicationsAgent_IssueMagicLoginEmail(t *testing.T) {
 				URL:          rlm.Origin,
 				SupportEmail: rlm.Contact.EmailProper,
 			},
-			// TODO - feat: update login url
-			ResetURL: fmt.Sprintf("%s/reset/%s", rlm.Origin, resetToken),
+			LoginURL: fmt.Sprintf("%s/login/%s", rlm.Origin, tokenId),
 		})
 
 		if email.From.Name != rlm.Contact.Name {
