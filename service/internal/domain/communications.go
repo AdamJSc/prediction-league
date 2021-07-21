@@ -11,8 +11,6 @@ const (
 	EmailSubjectNewEntry                     = "You're In!"
 	EmailSubjectRoundComplete                = "End of Round %d"
 	EmailSubjectMagicLogin                   = "Your login link"
-	EmailSubjectPredictionWindowOpen         = "Prediction Window Open!"
-	EmailSubjectPredictionWindowOpenFinal    = "Final Prediction Window Open!"
 	EmailSubjectPredictionWindowClosing      = "Last chance to revise your Prediction!"
 	EmailSubjectPredictionWindowClosingFinal = "Final chance to revise your Prediction this season!"
 )
@@ -162,55 +160,6 @@ func (c *CommunicationsAgent) IssueMagicLoginEmail(ctx context.Context, entry *E
 		Address: entry.EntrantEmail,
 	}
 	email := newEmail(realm, recipient, EmailSubjectMagicLogin, emailContent.String())
-	if err := c.emlQ.Send(ctx, email); err != nil {
-		return fmt.Errorf("cannot send email to queue: %w", err)
-	}
-
-	return nil
-}
-
-// IssuePredictionWindowOpenEmail generates a "prediction window open" email for the provided Entry and pushes it to the send queue
-func (c *CommunicationsAgent) IssuePredictionWindowOpenEmail(ctx context.Context, entry *Entry, tf SequencedTimeFrame) error {
-	if entry == nil {
-		return InternalError{errors.New("no entry provided")}
-	}
-
-	realm, err := c.rc.GetByName(entry.RealmName)
-	if err != nil {
-		return NotFoundError{fmt.Errorf("cannot get realm with id '%s': %w", entry.RealmName, err)}
-	}
-
-	season, err := c.sc.GetByID(entry.SeasonID)
-	if err != nil {
-		return NotFoundError{fmt.Errorf("cannot get season with id '%s': %w", entry.SeasonID, err)}
-	}
-
-	window, err := GenerateWindowDataFromSequencedTimeFrame(tf)
-	if err != nil {
-		return InternalError{err}
-	}
-
-	d := PredictionWindowEmail{
-		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
-		Window:         *window,
-		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
-	}
-	var emailContent bytes.Buffer
-	if err := c.tpl.ExecuteTemplate(&emailContent, "email_txt_prediction_window_open", d); err != nil {
-		return err
-	}
-
-	recipient := Identity{
-		Name:    entry.EntrantName,
-		Address: entry.EntrantEmail,
-	}
-
-	subject := EmailSubjectPredictionWindowOpen
-	if window.IsLast {
-		subject = EmailSubjectPredictionWindowOpenFinal
-	}
-
-	email := newEmail(realm, recipient, subject, emailContent.String())
 	if err := c.emlQ.Send(ctx, email); err != nil {
 		return fmt.Errorf("cannot send email to queue: %w", err)
 	}
