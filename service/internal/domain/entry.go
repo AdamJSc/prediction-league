@@ -33,7 +33,7 @@ const (
 // Entry defines a user's entry into the prediction league
 type Entry struct {
 	ID               uuid.UUID `db:"id"`
-	ShortCode        string    `db:"short_code"`
+	ShortCode        string    `db:"short_code"` // TODO - feat: deprecate ShortCode
 	SeasonID         string    `db:"season_id"`
 	RealmName        string    `db:"realm_name"`
 	EntrantName      string    `db:"entrant_name"`
