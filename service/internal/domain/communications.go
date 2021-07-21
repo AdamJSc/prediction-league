@@ -11,7 +11,6 @@ const (
 	EmailSubjectNewEntry                     = "You're In!"
 	EmailSubjectRoundComplete                = "End of Round %d"
 	EmailSubjectMagicLogin                   = "Your login link"
-	EmailSubjectShortCodeResetComplete       = "Your new Short Code"
 	EmailSubjectPredictionWindowOpen         = "Prediction Window Open!"
 	EmailSubjectPredictionWindowOpenFinal    = "Final Prediction Window Open!"
 	EmailSubjectPredictionWindowClosing      = "Last chance to revise your Prediction!"
@@ -163,44 +162,6 @@ func (c *CommunicationsAgent) IssueMagicLoginEmail(ctx context.Context, entry *E
 		Address: entry.EntrantEmail,
 	}
 	email := newEmail(realm, recipient, EmailSubjectMagicLogin, emailContent.String())
-	if err := c.emlQ.Send(ctx, email); err != nil {
-		return fmt.Errorf("cannot send email to queue: %w", err)
-	}
-
-	return nil
-}
-
-// IssueShortCodeResetCompleteEmail generates a "short code reset complete" email for the provided Entry and pushes it to the send queue
-func (c *CommunicationsAgent) IssueShortCodeResetCompleteEmail(ctx context.Context, entry *Entry) error {
-	if entry == nil {
-		return InternalError{errors.New("no entry provided")}
-	}
-
-	realm, err := c.rc.GetByName(entry.RealmName)
-	if err != nil {
-		return NotFoundError{fmt.Errorf("cannot get realm with id '%s': %w", entry.RealmName, err)}
-	}
-
-	season, err := c.sc.GetByID(entry.SeasonID)
-	if err != nil {
-		return NotFoundError{fmt.Errorf("cannot get season with id '%s': %w", entry.SeasonID, err)}
-	}
-
-	d := ShortCodeResetCompleteEmail{
-		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
-		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
-		ShortCode:      entry.ShortCode,
-	}
-	var emailContent bytes.Buffer
-	if err := c.tpl.ExecuteTemplate(&emailContent, "email_txt_short_code_reset_complete", d); err != nil {
-		return err
-	}
-
-	recipient := Identity{
-		Name:    entry.EntrantName,
-		Address: entry.EntrantEmail,
-	}
-	email := newEmail(realm, recipient, EmailSubjectShortCodeResetComplete, emailContent.String())
 	if err := c.emlQ.Send(ctx, email); err != nil {
 		return fmt.Errorf("cannot send email to queue: %w", err)
 	}
@@ -491,13 +452,6 @@ type RoundCompleteEmailData struct {
 type MagicLoginEmail struct {
 	MessagePayload
 	LoginURL string
-}
-
-// MagicLoginEmail defines the fields relating to the content of a short code reset begin email
-type ShortCodeResetCompleteEmail struct {
-	MessagePayload
-	PredictionsURL string
-	ShortCode      string
 }
 
 // PredictionWindowEmail defines the fields relating to the content of a prediction window email
