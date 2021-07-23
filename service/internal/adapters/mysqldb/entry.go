@@ -4,10 +4,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
 	"math/rand"
 	"prediction-league/service/internal/domain"
 	"time"
+
+	"golang.org/x/net/context"
 )
 
 // shortCodeLength represents the number of characters that a short code will contain

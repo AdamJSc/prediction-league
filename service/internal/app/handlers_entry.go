@@ -116,6 +116,7 @@ func updateEntryPaymentDetailsHandler(c *container) func(w http.ResponseWriter, 
 			MerchantName: input.MerchantName,
 		}
 
+		// TODO - ShortCode: migrate auth to use session token
 		domain.GuardFromContext(ctx).SetAttempt(input.ShortCode)
 
 		isPayPalConfigMissing := c.config.PayPalClientID == ""
@@ -192,6 +193,7 @@ func createEntryPredictionHandler(c *container) func(w http.ResponseWriter, r *h
 		}
 
 		// set guard attempt for next agent method
+		// TODO - ShortCode: migrate auth to use session token
 		domain.GuardFromContext(ctx).SetAttempt(input.EntryShortCode)
 
 		// create entry prediction for entry
@@ -254,6 +256,7 @@ func retrieveLatestEntryPredictionHandler(c *container) func(w http.ResponseWrit
 }
 
 func approveEntryByShortCodeHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
+	// TODO - ShortCode: migrate to approving by entry id
 	return func(w http.ResponseWriter, r *http.Request) {
 		// parse entry short code from route
 		var entryShortCode string

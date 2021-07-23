@@ -68,7 +68,7 @@ func internalError(msg interface{}) *response {
 type createEntryResponse struct {
 	ID           string `json:"id"`
 	Nickname     string `json:"nickname"`
-	ShortCode    string `json:"short_code"`
+	ShortCode    string `json:"short_code"` // TODO - ShortCode: deprecate
 	NeedsPayment bool   `json:"needs_payment"`
 }
 

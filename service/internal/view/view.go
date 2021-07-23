@@ -35,7 +35,7 @@ type PredictionPageData struct {
 	}
 	Entry struct {
 		ID        string
-		ShortCode string
+		ShortCode string // TODO - ShortCode: migrate auth to use session token
 	}
 }
 
@@ -74,11 +74,6 @@ type FAQItem struct {
 }
 
 type GenerateMagicLoginPageData struct {
-	Err           error
-	EmailAddr string
-}
-
-type RedeemMagicLoginPageData struct {
 	Err       error
-	ShortCode string
+	EmailAddr string
 }

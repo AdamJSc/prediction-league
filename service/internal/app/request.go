@@ -24,11 +24,11 @@ type updateEntryPaymentDetailsRequest struct {
 	PaymentRef    string `json:"payment_ref"`
 	PaymentAmount string `json:"payment_amount"`
 	MerchantName  string `json:"merchant_name"`
-	ShortCode     string `json:"short_code"`
+	ShortCode     string `json:"short_code"` // TODO - ShortCode: deprecate
 }
 
 type createEntryPredictionRequest struct {
-	EntryShortCode string   `json:"entry_short_code"`
+	EntryShortCode string   `json:"entry_short_code"` // TODO - ShortCode: deprecate
 	RankingIDs     []string `json:"ranking_ids"`
 }
 

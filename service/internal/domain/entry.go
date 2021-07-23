@@ -33,7 +33,7 @@ const (
 // Entry defines a user's entry into the prediction league
 type Entry struct {
 	ID               uuid.UUID `db:"id"`
-	ShortCode        string    `db:"short_code"` // TODO - feat: deprecate ShortCode
+	ShortCode        string    `db:"short_code"` // TODO - ShortCode: deprecate
 	SeasonID         string    `db:"season_id"`
 	RealmName        string    `db:"realm_name"`
 	EntrantName      string    `db:"entrant_name"`
@@ -74,7 +74,7 @@ type EntryRepository interface {
 	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]Entry, error)
 	SelectBySeasonIDAndApproved(ctx context.Context, seasonID string, approved bool) ([]Entry, error)
 	ExistsByID(ctx context.Context, id string) error
-	GenerateUniqueShortCode(ctx context.Context) (string, error)
+	GenerateUniqueShortCode(ctx context.Context) (string, error) // TODO - ShortCode: deprecate
 }
 
 // EntryPredictionRepository defines the interface for transacting with our EntryPredictions data source
@@ -355,6 +355,7 @@ func (e *EntryAgent) UpdateEntry(ctx context.Context, entry Entry) (Entry, error
 // AddEntryPredictionToEntry adds the provided EntryPrediction to the provided Entry
 func (e *EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPrediction EntryPrediction, entry Entry) (Entry, error) {
 	// check short code is ok
+	// TODO - ShortCode: migrate auth to use session token
 	if !GuardFromContext(ctx).AttemptMatches(entry.ShortCode) {
 		return Entry{}, UnauthorizedError{errors.New("invalid short code")}
 	}
@@ -486,6 +487,7 @@ func (e *EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, pay
 	}
 
 	// ensure that Guard value matches Entry ID
+	// TODO - ShortCode: migrate auth to use session token
 	if !GuardFromContext(ctx).AttemptMatches(entry.ShortCode) {
 		return Entry{}, ValidationError{
 			Reasons: []string{"Invalid Entry ID"},
@@ -511,6 +513,7 @@ func (e *EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, pay
 
 // ApproveEntryByShortCode provides a shortcut to approving an entry by its short code
 func (e *EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode string) (Entry, error) {
+	// TODO - ShortCode: migrate auth to use session token
 	// ensure basic auth has been provided and matches admin credentials
 	if !IsBasicAuthSuccessful(ctx) {
 		return Entry{}, UnauthorizedError{}
@@ -674,6 +677,7 @@ func (e *EntryAgent) CheckRankingLimit(ctx context.Context, limit int, newEP Ent
 }
 
 func (e *EntryAgent) GenerateUniqueShortCode(ctx context.Context) (string, error) {
+	// TODO - ShortCode: deprecate
 	return e.er.GenerateUniqueShortCode(ctx)
 }
 

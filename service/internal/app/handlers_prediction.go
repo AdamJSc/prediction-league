@@ -53,6 +53,7 @@ func getPredictionPageData(ctx context.Context, authToken string, entryAgent *do
 
 		// we have our entry, let's capture what we need for our view
 		data.Entry.ID = entry.ID.String()
+		// TODO - ShortCode: migrate auth to use session token
 		data.Entry.ShortCode = entry.ShortCode
 
 		// if entry has an associated entry prediction
