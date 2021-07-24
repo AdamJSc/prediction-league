@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	gocmp "github.com/google/go-cmp/cmp"
 	"gotest.tools/assert/cmp"
 )
 
@@ -274,7 +275,83 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 	})
 }
 
-// TODO - ShortCode: tests for IsTokenValid
+func TestTokenAgent_IsTokenValid(t *testing.T) {
+	tkn := &domain.Token{
+		ID:        "tkn-id",
+		Type:      domain.TokenTypeAuth,
+		Value:     "abcdef",
+		ExpiresAt: dt,
+	}
+
+	tt := []struct {
+		name       string
+		typ        int
+		val        string
+		now        time.Time
+		wantRes    bool
+		wantLogMsg string
+	}{
+		{
+			name:    "token with expiry that matches now must be valid",
+			typ:     domain.TokenTypeAuth,
+			val:     "abcdef",
+			now:     dt,
+			wantRes: true,
+		},
+		{
+			name:    "token with expiry that occurs after now must be valid",
+			typ:     domain.TokenTypeAuth,
+			val:     "abcdef",
+			now:     dt.Add(-time.Nanosecond),
+			wantRes: true,
+		},
+		{
+			name:       "token with alt type must not be valid",
+			typ:        domain.TokenTypeEntryRegistration,
+			val:        "abcdef",
+			now:        dt,
+			wantRes:    false,
+			wantLogMsg: "token id 'tkn-id': token type 0 is not 1",
+		},
+		{
+			name:       "token with alt value must not be valid",
+			typ:        domain.TokenTypeAuth,
+			val:        "ghijkl",
+			now:        dt,
+			wantRes:    false,
+			wantLogMsg: "token id 'tkn-id': token value 'abcdef' is not 'ghijkl'",
+		},
+		{
+			name:       "token that has expired must not be valid",
+			typ:        domain.TokenTypeAuth,
+			val:        "abcdef",
+			now:        dt.Add(time.Second),
+			wantRes:    false,
+			wantLogMsg: "token id 'tkn-id': expired",
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			l := newMockLogger()
+			cl := &mockClock{t: tc.now}
+
+			ta, err := domain.NewTokenAgent(tr, cl, l)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if gotRes := ta.IsTokenValid(tkn, tc.typ, tc.val); gotRes != tc.wantRes {
+				t.Fatalf("want result %t, got %t", tc.wantRes, gotRes)
+			}
+
+			gotLogMsg := l.buf.String()
+			if diff := gocmp.Diff(tc.wantLogMsg, gotLogMsg); diff != "" {
+				t.Fatalf("want log msg '%s', got '%s', diff: %s", tc.wantLogMsg, gotLogMsg, diff)
+			}
+		})
+	}
+}
 
 func generateTestToken() *domain.Token {
 	// arbitrary timestamp that isn't the current moment

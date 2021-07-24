@@ -433,3 +433,8 @@ func (m *mockLogger) Infof(msg string, a ...interface{}) {
 	msg = fmt.Sprintf(msg, a...)
 	m.buf.Write([]byte(msg))
 }
+
+func (m *mockLogger) Errorf(msg string, a ...interface{}) {
+	msg = fmt.Sprintf(msg, a...)
+	m.buf.Write([]byte(msg))
+}

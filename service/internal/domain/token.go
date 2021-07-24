@@ -134,7 +134,7 @@ func (t *TokenAgent) IsTokenValid(tkn *Token, typ int, val string) bool {
 		t.l.Errorf("token id '%s': token value '%s' is not '%s'", tkn.ID, tkn.Value, val)
 		return false
 	case now.After(tkn.ExpiresAt):
-		t.l.Errorf("token id '%s': token expiry %s is not %s", tkn.ID, tkn.ExpiresAt.Format(time.RFC3339), now.Format(time.RFC3339))
+		t.l.Errorf("token id '%s': expired", tkn.ID)
 		return false
 	}
 	return true
