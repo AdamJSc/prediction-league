@@ -27,7 +27,7 @@ func TestNewTokenAgent(t *testing.T) {
 			{tr, cl, l, nil},
 		}
 		for idx, tc := range tt {
-			agent, gotErr := domain.NewTokenAgent(tc.tr, tc.cl, nil)
+			agent, gotErr := domain.NewTokenAgent(tc.tr, tc.cl, tc.l)
 			if !errors.Is(gotErr, tc.wantErr) {
 				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
 			}
@@ -41,7 +41,7 @@ func TestNewTokenAgent(t *testing.T) {
 func TestTokenAgent_GenerateToken(t *testing.T) {
 	defer truncate(t)
 
-	agent, err := domain.NewTokenAgent(tr, &mockClock{t: dt}, nil)
+	agent, err := domain.NewTokenAgent(tr, &mockClock{t: dt}, &mockLogger{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,7 +134,7 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 	defer truncate(t)
 
-	agent, err := domain.NewTokenAgent(tr, &mockClock{}, nil)
+	agent, err := domain.NewTokenAgent(tr, &mockClock{}, &mockLogger{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,7 +184,7 @@ func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 func TestTokenAgent_DeleteToken(t *testing.T) {
 	defer truncate(t)
 
-	agent, err := domain.NewTokenAgent(tr, &mockClock{}, nil)
+	agent, err := domain.NewTokenAgent(tr, &mockClock{}, &mockLogger{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,7 +213,7 @@ func TestTokenAgent_DeleteToken(t *testing.T) {
 func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 	defer truncate(t)
 
-	agent, err := domain.NewTokenAgent(tr, &mockClock{}, nil)
+	agent, err := domain.NewTokenAgent(tr, &mockClock{}, &mockLogger{})
 	if err != nil {
 		t.Fatal(err)
 	}

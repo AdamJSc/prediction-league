@@ -1155,10 +1155,10 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 
 	paymentRef := "ABCD1234"
 
-	t.Run("update payment details for an existent entry with valid credentials must succeed", func(t *testing.T) {
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
-		defer cancel()
+	ctx, cancel := testContextDefault(t)
+	defer cancel()
 
+	t.Run("update payment details for an existent entry with valid credentials must succeed", func(t *testing.T) {
 		entryWithPaymentDetails, err := agent.UpdateEntryPaymentDetails(
 			ctx,
 			entry.ID.String(),
@@ -1180,9 +1180,6 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update invalid payment method for an existent entry must fail", func(t *testing.T) {
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ID.String())
-		defer cancel()
-
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
 			entry.ID.String(),
@@ -1196,9 +1193,6 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update entry with payment method 'other' when this is not accepted must fail", func(t *testing.T) {
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ID.String())
-		defer cancel()
-
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
 			entry.ID.String(),
@@ -1212,9 +1206,6 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update missing payment ref for an existent entry must fail", func(t *testing.T) {
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ID.String())
-		defer cancel()
-
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
 			entry.ID.String(),
@@ -1228,9 +1219,6 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update payment details for a non-existent entry must fail", func(t *testing.T) {
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ID.String())
-		defer cancel()
-
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
 			"not_an_existing_entry_id",
@@ -1244,9 +1232,6 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update payment details for an existing entry with an invalid realm must fail", func(t *testing.T) {
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ID.String())
-		defer cancel()
-
 		domain.RealmFromContext(ctx).Name = "DIFFERENT_REALM"
 
 		_, err := agent.UpdateEntryPaymentDetails(
@@ -1261,26 +1246,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 		}
 	})
 
-	t.Run("update payment details for an existing entry with an invalid lookup ref must fail", func(t *testing.T) {
-		ctx, cancel := testContextWithGuardAttempt(t, "not_the_correct_entry_short_code")
-		defer cancel()
-
-		_, err := agent.UpdateEntryPaymentDetails(
-			ctx,
-			entry.ID.String(),
-			domain.EntryPaymentMethodPayPal,
-			paymentRef,
-			true,
-		)
-		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
-			expectedTypeOfGot(t, domain.ValidationError{}, err)
-		}
-	})
-
 	t.Run("update payment details for an existing entry with an invalid status must fail", func(t *testing.T) {
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
-		defer cancel()
-
 		entryWithInvalidStatus := generateTestEntry(t,
 			"Jamie Redknapp",
 			"MrJamieR",
