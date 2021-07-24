@@ -498,9 +498,8 @@ func (e *EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, pay
 	return entry, nil
 }
 
-// ApproveEntryByShortCode provides a shortcut to approving an entry by its short code
-func (e *EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode string) (Entry, error) {
-	// TODO - ShortCode: migrate auth to use session token
+// ApproveEntryByID provides a shortcut to approving an Entry by its ID
+func (e *EntryAgent) ApproveEntryByID(ctx context.Context, id string) (Entry, error) {
 	// ensure basic auth has been provided and matches admin credentials
 	if !IsBasicAuthSuccessful(ctx) {
 		return Entry{}, UnauthorizedError{}
@@ -508,7 +507,7 @@ func (e *EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode stri
 
 	// retrieve entry
 	entries, err := e.er.Select(ctx, map[string]interface{}{
-		"short_code": shortCode,
+		"id": id,
 	}, false)
 	if err != nil {
 		return Entry{}, domainErrorFromRepositoryError(err)

@@ -296,12 +296,11 @@ func retrieveLatestEntryPredictionHandler(c *container) func(w http.ResponseWrit
 	}
 }
 
-func approveEntryByShortCodeHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
-	// TODO - ShortCode: migrate to approving by entry id
+func approveEntryByIDHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// parse entry short code from route
-		var entryShortCode string
-		if err := getRouteParam(r, "entry_short_code", &entryShortCode); err != nil {
+		// parse entry id from route
+		var entryID string
+		if err := getRouteParam(r, "entry_id", &entryID); err != nil {
 			responseFromError(err).writeTo(w)
 			return
 		}
@@ -314,7 +313,7 @@ func approveEntryByShortCodeHandler(c *container) func(w http.ResponseWriter, r 
 		defer cancel()
 
 		// approve entry
-		if _, err := c.entryAgent.ApproveEntryByShortCode(ctx, entryShortCode); err != nil {
+		if _, err := c.entryAgent.ApproveEntryByID(ctx, entryID); err != nil {
 			responseFromError(err).writeTo(w)
 			return
 		}

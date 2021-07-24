@@ -1249,7 +1249,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 }
 
-func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
+func TestEntryAgent_ApproveEntryByID(t *testing.T) {
 	defer truncate(t)
 
 	entry := insertEntry(t, generateTestEntry(t,
@@ -1279,13 +1279,13 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Run("approve existent entry short code with valid credentials must succeed", func(t *testing.T) {
+	t.Run("approve existent entry id with valid credentials must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		ctx = domain.SetBasicAuthSuccessfulOnContext(ctx)
 		defer cancel()
 
 		// attempt to approve entry with paid status
-		approvedEntry, err := agent.ApproveEntryByShortCode(ctx, entryWithPaidStatus.ShortCode)
+		approvedEntry, err := agent.ApproveEntryByID(ctx, entryWithPaidStatus.ID.String())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1297,7 +1297,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		}
 
 		// attempt to approve entry with ready status
-		approvedEntry, err = agent.ApproveEntryByShortCode(ctx, entryWithReadyStatus.ShortCode)
+		approvedEntry, err = agent.ApproveEntryByID(ctx, entryWithReadyStatus.ID.String())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1314,7 +1314,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		// basic auth success on context defaults to false so this should fail naturally
 		defer cancel()
 
-		_, err := agent.ApproveEntryByShortCode(ctx, entry.ShortCode)
+		_, err := agent.ApproveEntryByID(ctx, entry.ID.String())
 		if !cmp.ErrorType(err, domain.UnauthorizedError{})().Success() {
 			expectedTypeOfGot(t, domain.UnauthorizedError{}, err)
 		}
@@ -1325,7 +1325,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		ctx = domain.SetBasicAuthSuccessfulOnContext(ctx)
 		defer cancel()
 
-		_, err := agent.ApproveEntryByShortCode(ctx, "non_existent_short_code")
+		_, err := agent.ApproveEntryByID(ctx, "non_existent_id")
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -1337,7 +1337,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		defer cancel()
 
 		domain.RealmFromContext(ctx).Name = "DIFFERENT_REALM"
-		_, err := agent.ApproveEntryByShortCode(ctx, entry.ShortCode)
+		_, err := agent.ApproveEntryByID(ctx, entry.ID.String())
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
@@ -1349,7 +1349,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		defer cancel()
 
 		// initial entry object should still have default "pending" status so just attempt to approve this
-		_, err := agent.ApproveEntryByShortCode(ctx, entry.ShortCode)
+		_, err := agent.ApproveEntryByID(ctx, entry.ID.String())
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
@@ -1361,7 +1361,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		defer cancel()
 
 		// just try to approve the same entry again
-		_, err := agent.ApproveEntryByShortCode(ctx, entryWithPaidStatus.ShortCode)
+		_, err := agent.ApproveEntryByID(ctx, entryWithPaidStatus.ID.String())
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
