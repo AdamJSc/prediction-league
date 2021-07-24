@@ -32,7 +32,6 @@ const (
 // Entry defines a user's entry into the prediction league
 type Entry struct {
 	ID               uuid.UUID `db:"id"`
-	ShortCode        string    `db:"short_code"` // TODO - ShortCode: deprecate
 	SeasonID         string    `db:"season_id"`
 	RealmName        string    `db:"realm_name"`
 	EntrantName      string    `db:"entrant_name"`
@@ -707,7 +706,6 @@ func sanitiseEntry(entry *Entry) error {
 	regexNicknameFindResult := strings.Join(regexNickname.FindAllString(entry.EntrantNickname, -1), "")
 
 	// sanitise
-	entry.ShortCode = strings.Trim(entry.ShortCode, " ")
 	entry.SeasonID = strings.Trim(entry.SeasonID, " ")
 	entry.RealmName = strings.Trim(entry.RealmName, " ")
 	entry.EntrantName = strings.Trim(entry.EntrantName, " ")
@@ -722,7 +720,6 @@ func sanitiseEntry(entry *Entry) error {
 	// validate
 	for k, v := range map[string]string{
 		"ID":         entry.ID.String(),
-		"Short Code": entry.ShortCode,
 		"Season ID":  entry.SeasonID,
 		"Realm Name": entry.RealmName,
 		"Name":       entry.EntrantName,

@@ -307,7 +307,7 @@ type RoundCompleteEmailData struct {
 	LeaderBoardURL    string
 }
 
-// MagicLoginEmail defines the fields relating to the content of a short code reset begin email
+// MagicLoginEmail defines the fields relating to the content of a magic login email
 type MagicLoginEmail struct {
 	MessagePayload
 	LoginURL string

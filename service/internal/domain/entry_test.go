@@ -81,7 +81,6 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 
 		// these values should be overridden
 		ID:            entryID,
-		ShortCode:     "entry_short_code",
 		SeasonID:      "entry_season_id",
 		RealmName:     "entry_realm_name",
 		Status:        "entry_status",
@@ -123,9 +122,6 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 
 		if createdEntry.ID.String() == "" {
 			expectedNonEmpty(t, "Entry.ID")
-		}
-		if createdEntry.ShortCode == "" {
-			expectedNonEmpty(t, "Entry.ShortCode")
 		}
 		if expectedSeasonID != createdEntry.SeasonID {
 			expectedGot(t, expectedSeasonID, createdEntry.SeasonID)
@@ -568,9 +564,6 @@ func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
 		if entry.ID != retrievedEntry.ID {
 			expectedGot(t, entry.ID, retrievedEntry.ID)
 		}
-		if entry.ShortCode != retrievedEntry.ShortCode {
-			expectedGot(t, entry.ShortCode, retrievedEntry.ShortCode)
-		}
 		if entry.SeasonID != retrievedEntry.SeasonID {
 			expectedGot(t, entry.SeasonID, retrievedEntry.SeasonID)
 		}
@@ -658,9 +651,6 @@ func TestEntryAgent_RetrieveEntryByEntrantEmail(t *testing.T) {
 		// check values
 		if entry.ID != retrievedEntry.ID {
 			expectedGot(t, entry.ID, retrievedEntry.ID)
-		}
-		if entry.ShortCode != retrievedEntry.ShortCode {
-			expectedGot(t, entry.ShortCode, retrievedEntry.ShortCode)
 		}
 		if entry.SeasonID != retrievedEntry.SeasonID {
 			expectedGot(t, entry.SeasonID, retrievedEntry.SeasonID)
@@ -759,9 +749,6 @@ func TestEntryAgent_RetrieveEntryByEntrantNickname(t *testing.T) {
 		// check values
 		if entry.ID != retrievedEntry.ID {
 			expectedGot(t, entry.ID, retrievedEntry.ID)
-		}
-		if entry.ShortCode != retrievedEntry.ShortCode {
-			expectedGot(t, entry.ShortCode, retrievedEntry.ShortCode)
 		}
 		if entry.SeasonID != retrievedEntry.SeasonID {
 			expectedGot(t, entry.SeasonID, retrievedEntry.SeasonID)
@@ -949,7 +936,6 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 
 		changedEntry := domain.Entry{
 			ID:              entry.ID,
-			ShortCode:       "changed_entry_short_code",
 			SeasonID:        "67890",
 			RealmName:       entry.RealmName,
 			EntrantName:     "Jamie Redknapp",
@@ -978,9 +964,6 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		}
 
 		// check values that should have changed
-		if changedEntry.ShortCode != updatedEntry.ShortCode {
-			expectedGot(t, changedEntry.ShortCode, updatedEntry.ShortCode)
-		}
 		if changedEntry.SeasonID != updatedEntry.SeasonID {
 			expectedGot(t, changedEntry.SeasonID, updatedEntry.SeasonID)
 		}
