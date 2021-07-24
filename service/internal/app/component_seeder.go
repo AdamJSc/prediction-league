@@ -397,7 +397,7 @@ func generateSeedEntries() ([]domain.Entry, error) {
 		e.ID = entryID
 		e.SeasonID = seasonID
 		e.RealmName = realmName
-		e.Status = domain.EntryStatusReady
+		e.Status = domain.EntryStatusPaid
 		e.PaymentMethod = &paymentMethod
 		e.PaymentRef = &paymentRef
 		e.ApprovedAt = &approvedAt

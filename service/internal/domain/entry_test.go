@@ -955,7 +955,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 			EntrantName:     "Jamie Redknapp",
 			EntrantNickname: "MrJamieR",
 			EntrantEmail:    "jamie.redknapp@football.net",
-			Status:          domain.EntryStatusReady,
+			Status:          domain.EntryStatusPaid,
 			PaymentRef:      &changedEntryPaymentRef,
 			CreatedAt:       entry.CreatedAt,
 		}
@@ -1266,14 +1266,6 @@ func TestEntryAgent_ApproveEntryByID(t *testing.T) {
 	entryWithPaidStatus.Status = domain.EntryStatusPaid
 	entryWithPaidStatus = insertEntry(t, entryWithPaidStatus)
 
-	entryWithReadyStatus := generateTestEntry(t,
-		"Frank Lampard",
-		"FrankieLamps",
-		"frank.lampard@football.net",
-	)
-	entryWithReadyStatus.Status = domain.EntryStatusReady
-	entryWithReadyStatus = insertEntry(t, entryWithReadyStatus)
-
 	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: dt})
 	if err != nil {
 		t.Fatal(err)
@@ -1286,18 +1278,6 @@ func TestEntryAgent_ApproveEntryByID(t *testing.T) {
 
 		// attempt to approve entry with paid status
 		approvedEntry, err := agent.ApproveEntryByID(ctx, entryWithPaidStatus.ID.String())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !approvedEntry.IsApproved() {
-			expectedGot(t, "approved entry true", "approved entry false")
-		}
-		if approvedEntry.ApprovedAt == nil {
-			expectedNonEmpty(t, "Entry.ApprovedAt")
-		}
-
-		// attempt to approve entry with ready status
-		approvedEntry, err = agent.ApproveEntryByID(ctx, entryWithReadyStatus.ID.String())
 		if err != nil {
 			t.Fatal(err)
 		}

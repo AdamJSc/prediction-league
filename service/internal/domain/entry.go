@@ -17,8 +17,6 @@ const (
 	EntryStatusPending = "pending"
 	// EntryStatusPaid represents an Entry whose status is PAID
 	EntryStatusPaid = "paid"
-	// EntryStatusReady represents an Entry whose status is READY
-	EntryStatusReady = "ready"
 
 	// EntryPaymentMethodPayPal represents an Entry that has been paid via PAYPAL
 	EntryPaymentMethodPayPal = "paypal"
@@ -526,7 +524,7 @@ func (e *EntryAgent) ApproveEntryByID(ctx context.Context, id string) (Entry, er
 
 	// check Entry status
 	switch entry.Status {
-	case EntryStatusPaid, EntryStatusReady:
+	case EntryStatusPaid:
 		// all good
 	default:
 		return Entry{}, ConflictError{fmt.Errorf(
@@ -813,7 +811,7 @@ func isValidEmail(email string) bool {
 
 func isValidEntryStatus(status string) bool {
 	switch status {
-	case EntryStatusPending, EntryStatusPaid, EntryStatusReady:
+	case EntryStatusPending, EntryStatusPaid:
 		return true
 	}
 
