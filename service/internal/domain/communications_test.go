@@ -289,11 +289,6 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		expectedRankingStrings, err := domain.TeamRankingsAsStrings(scoredEntryPrediction.Rankings, standings.Rankings, tc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
 		expectedSubject := fmt.Sprintf(domain.EmailSubjectRoundComplete, standings.RoundNumber)
 
 		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_round_complete", domain.RoundCompleteEmailData{
@@ -304,9 +299,9 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 				URL:          rlm.Origin,
 				SupportEmail: rlm.Contact.EmailProper,
 			},
-			RoundNumber:       standings.RoundNumber,
-			RankingsAsStrings: expectedRankingStrings,
-			LeaderBoardURL:    fmt.Sprintf("%s/leaderboard", rlm.Origin),
+			RoundNumber:    standings.RoundNumber,
+			LeaderBoardURL: fmt.Sprintf("%s/leaderboard", rlm.Origin),
+			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
 		})
 
 		emlQ := domain.NewInMemEmailQueue()
@@ -364,11 +359,6 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		expectedRankingStrings, err := domain.TeamRankingsAsStrings(scoredEntryPrediction.Rankings, standings.Rankings, tc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
 		expectedSubject := fmt.Sprintf(domain.EmailSubjectRoundComplete, standings.RoundNumber)
 
 		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_final_round_complete", domain.RoundCompleteEmailData{
@@ -379,9 +369,9 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 				URL:          rlm.Origin,
 				SupportEmail: rlm.Contact.EmailProper,
 			},
-			RoundNumber:       standings.RoundNumber,
-			RankingsAsStrings: expectedRankingStrings,
-			LeaderBoardURL:    fmt.Sprintf("%s/leaderboard", rlm.Origin),
+			RoundNumber:    standings.RoundNumber,
+			LeaderBoardURL: fmt.Sprintf("%s/leaderboard", rlm.Origin),
+			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
 		})
 
 		emlQ := domain.NewInMemEmailQueue()
@@ -537,26 +527,6 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		}
 
 		err = agent.IssueRoundCompleteEmail(ctx, invalidScoredEntryPrediction, false)
-		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
-			expectedTypeOfGot(t, domain.NotFoundError{}, err)
-		}
-	})
-
-	t.Run("issue round complete email with a scored entry prediction whose rankings are empty must fail", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
-
-		sep := scoredEntryPrediction
-		sep.Rankings = nil
-
-		emlQ := domain.NewInMemEmailQueue()
-
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		err = agent.IssueRoundCompleteEmail(ctx, sep, false)
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}

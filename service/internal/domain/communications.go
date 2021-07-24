@@ -93,16 +93,11 @@ func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep S
 		return NotFoundError{fmt.Errorf("cannot get season with id '%s': %w", entry.SeasonID, err)}
 	}
 
-	rankingsAsStrings, err := TeamRankingsAsStrings(sep.Rankings, standings.Rankings, c.tc)
-	if err != nil {
-		return err
-	}
-
 	d := RoundCompleteEmailData{
-		MessagePayload:    newMessagePayload(realm, entry.EntrantName, season.Name),
-		RoundNumber:       standings.RoundNumber,
-		RankingsAsStrings: rankingsAsStrings,
-		LeaderBoardURL:    fmt.Sprintf("%s/leaderboard", realm.Origin),
+		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
+		RoundNumber:    standings.RoundNumber,
+		LeaderBoardURL: fmt.Sprintf("%s/leaderboard", realm.Origin),
+		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
 	}
 
 	templateName := "email_txt_round_complete"
@@ -302,9 +297,9 @@ type NewEntryEmailData struct {
 // RoundCompleteEmailData defines the fields relating to the content of a round complete email
 type RoundCompleteEmailData struct {
 	MessagePayload
-	RoundNumber       int
-	RankingsAsStrings []string
-	LeaderBoardURL    string
+	RoundNumber    int
+	LeaderBoardURL string
+	PredictionsURL string
 }
 
 // MagicLoginEmail defines the fields relating to the content of a magic login email

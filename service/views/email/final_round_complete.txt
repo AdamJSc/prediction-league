@@ -7,11 +7,7 @@ The final round is now complete!
 
 Here's how you did in round {{.RoundNumber}}:
 
-{{range $rankingString := .RankingsAsStrings}}
-    {{- $rankingString}}
-{{end}}
-
-To find out where you finished in the leaderboard, go to:
+Check out the leaderboard to see how you did:
 {{.LeaderBoardURL}}
 
 Thank you for taking part in Prediction League - see you next season! 🧙🔮

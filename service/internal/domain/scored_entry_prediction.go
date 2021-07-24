@@ -2,12 +2,10 @@ package domain
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"strconv"
-	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // ScoredEntryPrediction provides a data type for an EntryPrediction that has been scored against a Standings
@@ -143,143 +141,4 @@ func NewScoredEntryPredictionAgent(er EntryRepository, epr EntryPredictionReposi
 		sr:   sr,
 		sepr: sepr,
 	}, nil
-}
-
-// TeamRankingsAsStrings returns the provided rankings as a slice of strings formatted with padding
-func TeamRankingsAsStrings(sepRankings []RankingWithScore, standingsRankings []RankingWithMeta, tc TeamCollection) ([]string, error) {
-	if len(sepRankings) == 0 {
-		return nil, NotFoundError{errors.New("provided scored entry predictions are empty")}
-	}
-
-	if len(standingsRankings) == 0 {
-		return nil, NotFoundError{errors.New("provided standings rankings are empty")}
-	}
-
-	// set the maximum length that our ranking ints are allowed to be when converted to strings
-	const totalScoreLabel = "TOTAL SCORE"
-	const maxPredictionPosLength = 4 // 9999
-	const maxRankingScoreLength = 8  // 99999999
-	const maxStandingsPosLength = 4  // 9999
-
-	var (
-		maxNameValueLength      = len(totalScoreLabel)
-		sequentialPredictionPos []string
-		sequentialTeamNames     []string
-		sequentialRankingScores []string
-		sequentialStandingsPos  []string
-	)
-
-	var getStandingsPosByTeamID = func(teamID string) (int, error) {
-		for _, r := range standingsRankings {
-			if r.ID == teamID {
-				return r.Position, nil
-			}
-		}
-
-		return 0, fmt.Errorf("no standings rankings entry found for team ID: %s", teamID)
-	}
-
-	totalScoreStr := strconv.Itoa(RankingWithScoreCollection(sepRankings).GetTotal())
-	if len(totalScoreStr) > maxRankingScoreLength {
-		return nil, fmt.Errorf("total score character length cannot exceed %d: actual length %d", maxRankingScoreLength, len(totalScoreStr))
-	}
-
-	for _, rws := range sepRankings {
-		standingsPosVal, err := getStandingsPosByTeamID(rws.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		predictionPosStr := strconv.Itoa(rws.Position)
-		scoreStr := strconv.Itoa(rws.Score)
-		standingsPosStr := strconv.Itoa(standingsPosVal)
-
-		if len(predictionPosStr) > maxPredictionPosLength {
-			return nil, fmt.Errorf("prediction position character length cannot exceed %d: actual length %d", maxPredictionPosLength, len(predictionPosStr))
-		}
-		if len(scoreStr) > maxRankingScoreLength {
-			return nil, fmt.Errorf("ranking score character length cannot exceed %d: actual length %d", maxRankingScoreLength, len(scoreStr))
-		}
-		if len(standingsPosStr) > maxStandingsPosLength {
-			return nil, fmt.Errorf("standingsRankings position character length cannot exceed %d: actual length %d", maxStandingsPosLength, len(standingsPosStr))
-		}
-		// retrieve the team so we get its name
-		team, err := tc.GetByID(rws.ID)
-		if err != nil {
-			return nil, NotFoundError{err}
-		}
-
-		teamName := team.ShortName
-		if len(teamName) > maxNameValueLength {
-			maxNameValueLength = len(teamName)
-		}
-
-		// store values as strings
-		sequentialPredictionPos = append(sequentialPredictionPos, predictionPosStr)
-		sequentialTeamNames = append(sequentialTeamNames, teamName)
-		sequentialRankingScores = append(sequentialRankingScores, scoreStr)
-		sequentialStandingsPos = append(sequentialStandingsPos, standingsPosStr)
-	}
-
-	var fullStrings []string
-
-	for i := 0; i < len(sepRankings); i++ {
-		predictionPosStr := sequentialPredictionPos[i]
-		teamNameStr := sequentialTeamNames[i]
-		scoreStr := sequentialRankingScores[i]
-		standingsPosStr := sequentialStandingsPos[i]
-
-		// padding on left
-		paddedPredictionPos := fmt.Sprintf("%s%s", strings.Repeat(" ", maxPredictionPosLength-len(predictionPosStr)), predictionPosStr)
-		// padding on right
-		paddedTeamName := fmt.Sprintf("%s%s", teamNameStr, strings.Repeat(" ", maxNameValueLength-len(teamNameStr)))
-		// padding on left
-		paddedScore := fmt.Sprintf("%s%s", strings.Repeat(" ", maxRankingScoreLength-len(scoreStr)), scoreStr)
-		// padding on left
-		paddedStandingsPos := fmt.Sprintf("%s%s", strings.Repeat(" ", maxStandingsPosLength-len(standingsPosStr)), standingsPosStr)
-
-		fullString := fmt.Sprintf("%s  %s    %s    %s", paddedPredictionPos, paddedTeamName, paddedScore, paddedStandingsPos)
-		fullStrings = append(fullStrings, fullString)
-	}
-
-	// generate a header "row" with 'pts' and 'pos' given as "column" headers
-	strPtsHeadingLabel := "pts"
-	strPosHeadingLabel := "pos"
-	// padding on left
-	paddedPtsHeading := fmt.Sprintf("%s%s", strings.Repeat(" ", maxRankingScoreLength-len(strPtsHeadingLabel)), strPtsHeadingLabel)
-	// padding on left
-	paddedPosHeading := fmt.Sprintf("%s%s", strings.Repeat(" ", maxStandingsPosLength-len(strPosHeadingLabel)), strPosHeadingLabel)
-	header := fmt.Sprintf(
-		"%s  %s    %s    %s",
-		strings.Repeat(" ", maxPredictionPosLength),
-		strings.Repeat(" ", maxNameValueLength),
-		paddedPtsHeading,
-		paddedPosHeading,
-	)
-
-	// generate a divider "row" - i.e. a sequence of '-' characters for the full length of the other full strings
-	divider := fmt.Sprintf(
-		"%s--%s----%s----%s",
-		strings.Repeat("-", maxPredictionPosLength),
-		strings.Repeat("-", maxNameValueLength),
-		strings.Repeat("-", maxRankingScoreLength),
-		strings.Repeat("-", maxStandingsPosLength),
-	)
-
-	// generate a total score "row" where total score is aligned with pts column
-	// padding on right
-	paddedTotalScoreLabel := fmt.Sprintf("%s%s", totalScoreLabel, strings.Repeat(" ", maxNameValueLength-len(totalScoreLabel)))
-	// padding on left
-	paddedTotalScore := fmt.Sprintf("%s%s", strings.Repeat(" ", maxRankingScoreLength-len(totalScoreStr)), totalScoreStr)
-	totalScoreRow := fmt.Sprintf(
-		"%s  %s    %s    %s",
-		strings.Repeat(" ", maxPredictionPosLength),
-		paddedTotalScoreLabel,
-		paddedTotalScore,
-		strings.Repeat(" ", maxStandingsPosLength),
-	)
-
-	fullStrings = append([]string{header, divider}, append(fullStrings, divider, totalScoreRow)...)
-
-	return fullStrings, nil
 }

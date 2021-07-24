@@ -1,20 +1,15 @@
 {{define "email_txt_round_complete"}}Round {{.RoundNumber}} complete
 ==================
 
-// TODO - feat: amend copy
-
 Hey {{.Name}},
 
 A new round has begun!
 
-Here's how you did in round {{.RoundNumber}}:
-
-{{range $rankingString := .RankingsAsStrings}}
-    {{- $rankingString}}
-{{end}}
-
-To find out where you are in the leaderboard, go to:
+Check out the leaderboard to see how you're doing:
 {{.LeaderBoardURL}}
+
+And don't forget to tweak your prediction for the new round:
+{{.PredictionsURL}}
 
 In the meantime, Happy Predicting! 🧙🔮
 {{- template "email_txt_footer" .}}
