@@ -28,7 +28,7 @@ type updateEntryPaymentDetailsRequest struct {
 }
 
 type createEntryPredictionRequest struct {
-	EntryShortCode string   `json:"entry_short_code"` // TODO - ShortCode: deprecate
+	PredictionToken string   `json:"entry_pred_token"`
 	RankingIDs     []string `json:"ranking_ids"`
 }
 

@@ -160,6 +160,7 @@ func frontendPredictionHandler(c *container) func(w http.ResponseWriter, r *http
 			c.seasons,
 			c.teams,
 			c.clock,
+			c.logger,
 		)
 
 		writeResponse(data)
@@ -229,10 +230,10 @@ func frontendGenerateMagicLoginHandler(c *container) func(w http.ResponseWriter,
 			return
 		}
 
-		// TODO - feat: delete any other magic login tokens that are in-flight for this user
+		// TODO - feat: delete any magic login tokens that are in-flight for this user
 
 		// generate magic login token
-		token, err := c.tokenAgent.GenerateToken(ctx, domain.TokenTypeMagicLogin, entry.ID.String())
+		mTkn, err := c.tokenAgent.GenerateToken(ctx, domain.TokenTypeMagicLogin, entry.ID.String())
 		if err != nil {
 			c.logger.Errorf("cannot generate magic login token for entry id '%s': %s", entry.ID.String(), err.Error())
 			writeResponse(view.GenerateMagicLoginPageData{Err: genericErr})
@@ -240,7 +241,7 @@ func frontendGenerateMagicLoginHandler(c *container) func(w http.ResponseWriter,
 		}
 
 		// issue email with magic login link
-		if err := c.commsAgent.IssueMagicLoginEmail(nil, entry, token.ID); err != nil {
+		if err := c.commsAgent.IssueMagicLoginEmail(nil, entry, mTkn.ID); err != nil {
 			c.logger.Errorf("cannot issue magic login email for entry id '%s': %s", entry.ID.String(), err.Error())
 			writeResponse(view.GenerateMagicLoginPageData{Err: genericErr})
 			return
@@ -323,12 +324,12 @@ func frontendRedeemMagicLoginHandler(c *container) func(w http.ResponseWriter, r
 
 		// we've made it this far!
 		// generate a new auth token for our entry, and set it as a cookie
-		aTkn, err := c.tokenAgent.GenerateToken(ctx, domain.TokenTypeAuth, entry.ID.String())
+		authTkn, err := c.tokenAgent.GenerateToken(ctx, domain.TokenTypeAuth, entry.ID.String())
 		if err != nil {
 			responseFromError(err).writeTo(w)
 			return
 		}
-		setAuthCookieValue(aTkn.ID, w, r)
+		setAuthCookieValue(authTkn.ID, w, r)
 
 		// delete magic token
 		// TODO - feat: replace with token redeem

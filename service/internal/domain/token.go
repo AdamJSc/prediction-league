@@ -8,15 +8,17 @@ import (
 
 const (
 	TokenTypeAuth = iota
-	TokenTypeMagicLogin
 	TokenTypeEntryRegistration
+	TokenTypeMagicLogin
+	TokenTypePrediction
 	TokenLength = 32 // TODO - feat: extend token length to 64 (increase id field to VARCHAR 64)
 )
 
 var TokenValidityDuration = map[int]time.Duration{
 	TokenTypeAuth:              time.Minute * 60,
-	TokenTypeMagicLogin:        time.Minute * 10,
 	TokenTypeEntryRegistration: time.Minute * 10,
+	TokenTypeMagicLogin:        time.Minute * 10,
+	TokenTypePrediction:        time.Minute * 10,
 }
 
 // TODO - feat: update to support RedeemedAt

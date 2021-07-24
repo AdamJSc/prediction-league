@@ -34,8 +34,8 @@ type PredictionPageData struct {
 		LastUpdated time.Time
 	}
 	Entry struct {
-		ID        string
-		ShortCode string // TODO - ShortCode: migrate auth to use session token
+		ID              string
+		PredictionToken string
 	}
 }
 

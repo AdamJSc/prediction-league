@@ -129,7 +129,6 @@ func updateEntryPaymentDetailsHandler(c *container) func(w http.ResponseWriter, 
 		// retrieve registration token
 		tkn, err := c.tokenAgent.RetrieveTokenByID(ctx, input.RegistrationToken)
 		if err != nil {
-			c.logger.Errorf("cannot retrieve token '%s': %s", input.RegistrationToken, err.Error())
 			responseFromError(domain.BadRequestError{Err: errors.New("invalid token")}).writeTo(w)
 			return
 		}
@@ -156,7 +155,6 @@ func updateEntryPaymentDetailsHandler(c *container) func(w http.ResponseWriter, 
 		// delete token
 		// TODO - feat: replace with token redeem
 		if err := c.tokenAgent.DeleteToken(ctx, *tkn); err != nil {
-			// log error and continue
 			responseFromError(err).writeTo(w)
 			return
 		}
@@ -219,12 +217,28 @@ func createEntryPredictionHandler(c *container) func(w http.ResponseWriter, r *h
 			return
 		}
 
-		// set guard attempt for next agent method
-		// TODO - ShortCode: migrate auth to use session token
-		domain.GuardFromContext(ctx).SetAttempt(input.EntryShortCode)
+		// retrieve registration token
+		tkn, err := c.tokenAgent.RetrieveTokenByID(ctx, input.PredictionToken)
+		if err != nil {
+			responseFromError(domain.BadRequestError{Err: errors.New("invalid token")}).writeTo(w)
+			return
+		}
+
+		// check token validity
+		if !c.tokenAgent.IsTokenValid(tkn, domain.TokenTypePrediction, entryID) {
+			responseFromError(domain.BadRequestError{Err: errors.New("invalid token")}).writeTo(w)
+			return
+		}
 
 		// create entry prediction for entry
 		if _, err := c.entryAgent.AddEntryPredictionToEntry(ctx, newEP, entry); err != nil {
+			responseFromError(err).writeTo(w)
+			return
+		}
+
+		// delete token
+		// TODO - feat: replace with token redeem
+		if err := c.tokenAgent.DeleteToken(ctx, *tkn); err != nil {
 			responseFromError(err).writeTo(w)
 			return
 		}

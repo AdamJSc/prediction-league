@@ -355,12 +355,6 @@ func (e *EntryAgent) UpdateEntry(ctx context.Context, entry Entry) (Entry, error
 
 // AddEntryPredictionToEntry adds the provided EntryPrediction to the provided Entry
 func (e *EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPrediction EntryPrediction, entry Entry) (Entry, error) {
-	// check short code is ok
-	// TODO - ShortCode: migrate auth to use session token
-	if !GuardFromContext(ctx).AttemptMatches(entry.ShortCode) {
-		return Entry{}, UnauthorizedError{errors.New("invalid short code")}
-	}
-
 	// ensure that entry realm matches current realm
 	if RealmFromContext(ctx).Name != entry.RealmName {
 		return Entry{}, ConflictError{errors.New("invalid realm")}
