@@ -401,7 +401,7 @@ func TestRetrieveLatestStandingsWorker_IssueEmails(t *testing.T) {
 		}
 
 		if len(mErr.Errs) != wantCount {
-			t.Fatalf("want %d errors, got %d", wantCount, mErr.Errs)
+			t.Fatalf("want %d errors, got %+v", wantCount, mErr.Errs)
 		}
 	})
 }

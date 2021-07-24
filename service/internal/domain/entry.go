@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"regexp"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -16,8 +17,6 @@ const (
 	EntryStatusPending = "pending"
 	// EntryStatusPaid represents an Entry whose status is PAID
 	EntryStatusPaid = "paid"
-	// EntryStatusReady represents an Entry whose status is READY
-	EntryStatusReady = "ready"
 
 	// EntryPaymentMethodPayPal represents an Entry that has been paid via PAYPAL
 	EntryPaymentMethodPayPal = "paypal"
@@ -33,7 +32,6 @@ const (
 // Entry defines a user's entry into the prediction league
 type Entry struct {
 	ID               uuid.UUID `db:"id"`
-	ShortCode        string    `db:"short_code"`
 	SeasonID         string    `db:"season_id"`
 	RealmName        string    `db:"realm_name"`
 	EntrantName      string    `db:"entrant_name"`
@@ -74,7 +72,6 @@ type EntryRepository interface {
 	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]Entry, error)
 	SelectBySeasonIDAndApproved(ctx context.Context, seasonID string, approved bool) ([]Entry, error)
 	ExistsByID(ctx context.Context, id string) error
-	GenerateUniqueShortCode(ctx context.Context) (string, error)
 }
 
 // EntryPredictionRepository defines the interface for transacting with our EntryPredictions data source
@@ -128,12 +125,6 @@ func (e *EntryAgent) CreateEntry(ctx context.Context, entry Entry, s *Season) (E
 	entry.ApprovedAt = nil
 	entry.CreatedAt = time.Time{}
 	entry.UpdatedAt = nil
-
-	// generate a unique lookup ref
-	entry.ShortCode, err = e.er.GenerateUniqueShortCode(ctx)
-	if err != nil {
-		return Entry{}, domainErrorFromRepositoryError(err)
-	}
 
 	// sanitise entry
 	if err := sanitiseEntry(&entry); err != nil {
@@ -354,11 +345,6 @@ func (e *EntryAgent) UpdateEntry(ctx context.Context, entry Entry) (Entry, error
 
 // AddEntryPredictionToEntry adds the provided EntryPrediction to the provided Entry
 func (e *EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPrediction EntryPrediction, entry Entry) (Entry, error) {
-	// check short code is ok
-	if !GuardFromContext(ctx).AttemptMatches(entry.ShortCode) {
-		return Entry{}, UnauthorizedError{errors.New("invalid short code")}
-	}
-
 	// ensure that entry realm matches current realm
 	if RealmFromContext(ctx).Name != entry.RealmName {
 		return Entry{}, ConflictError{errors.New("invalid realm")}
@@ -485,13 +471,6 @@ func (e *EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, pay
 		return Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
-	// ensure that Guard value matches Entry ID
-	if !GuardFromContext(ctx).AttemptMatches(entry.ShortCode) {
-		return Entry{}, ValidationError{
-			Reasons: []string{"Invalid Entry ID"},
-		}
-	}
-
 	// check Entry status
 	if entry.Status != EntryStatusPending {
 		return Entry{}, ConflictError{errors.New("payment details can only be added if entry status is pending")}
@@ -509,8 +488,8 @@ func (e *EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, pay
 	return entry, nil
 }
 
-// ApproveEntryByShortCode provides a shortcut to approving an entry by its short code
-func (e *EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode string) (Entry, error) {
+// ApproveEntryByID provides a shortcut to approving an Entry by its ID
+func (e *EntryAgent) ApproveEntryByID(ctx context.Context, id string) (Entry, error) {
 	// ensure basic auth has been provided and matches admin credentials
 	if !IsBasicAuthSuccessful(ctx) {
 		return Entry{}, UnauthorizedError{}
@@ -518,7 +497,7 @@ func (e *EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode stri
 
 	// retrieve entry
 	entries, err := e.er.Select(ctx, map[string]interface{}{
-		"short_code": shortCode,
+		"id": id,
 	}, false)
 	if err != nil {
 		return Entry{}, domainErrorFromRepositoryError(err)
@@ -537,7 +516,7 @@ func (e *EntryAgent) ApproveEntryByShortCode(ctx context.Context, shortCode stri
 
 	// check Entry status
 	switch entry.Status {
-	case EntryStatusPaid, EntryStatusReady:
+	case EntryStatusPaid:
 		// all good
 	default:
 		return Entry{}, ConflictError{fmt.Errorf(
@@ -673,19 +652,8 @@ func (e *EntryAgent) CheckRankingLimit(ctx context.Context, limit int, newEP Ent
 	return nil
 }
 
-func (e *EntryAgent) GenerateUniqueShortCode(ctx context.Context) (string, error) {
-	return e.er.GenerateUniqueShortCode(ctx)
-}
-
 func (e *EntryAgent) SeedEntries(ctx context.Context, entries []Entry) error {
 	for _, entry := range entries {
-		shortCode, err := e.GenerateUniqueShortCode(ctx)
-		if err != nil {
-			return fmt.Errorf("cannot generate short code: %w", err)
-		}
-
-		entry.ShortCode = shortCode
-
 		if err := e.er.Insert(ctx, &entry); err != nil {
 			switch err.(type) {
 			case DuplicateDBRecordError:
@@ -738,7 +706,6 @@ func sanitiseEntry(entry *Entry) error {
 	regexNicknameFindResult := strings.Join(regexNickname.FindAllString(entry.EntrantNickname, -1), "")
 
 	// sanitise
-	entry.ShortCode = strings.Trim(entry.ShortCode, " ")
 	entry.SeasonID = strings.Trim(entry.SeasonID, " ")
 	entry.RealmName = strings.Trim(entry.RealmName, " ")
 	entry.EntrantName = strings.Trim(entry.EntrantName, " ")
@@ -753,7 +720,6 @@ func sanitiseEntry(entry *Entry) error {
 	// validate
 	for k, v := range map[string]string{
 		"ID":         entry.ID.String(),
-		"Short Code": entry.ShortCode,
 		"Season ID":  entry.SeasonID,
 		"Realm Name": entry.RealmName,
 		"Name":       entry.EntrantName,
@@ -823,7 +789,7 @@ func isValidEmail(email string) bool {
 
 func isValidEntryStatus(status string) bool {
 	switch status {
-	case EntryStatusPending, EntryStatusPaid, EntryStatusReady:
+	case EntryStatusPending, EntryStatusPaid:
 		return true
 	}
 

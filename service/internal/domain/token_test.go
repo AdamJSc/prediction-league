@@ -3,27 +3,32 @@ package domain_test
 import (
 	"context"
 	"errors"
-	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
 	"testing"
 	"time"
+
+	gocmp "github.com/google/go-cmp/cmp"
+	"gotest.tools/assert/cmp"
 )
 
 func TestNewTokenAgent(t *testing.T) {
 	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
 		cl := &mockClock{}
+		l := &mockLogger{}
 
 		tt := []struct {
 			tr      domain.TokenRepository
 			cl      domain.Clock
+			l       domain.Logger
 			wantErr error
 		}{
-			{nil, cl, domain.ErrIsNil},
-			{tr, nil, domain.ErrIsNil},
-			{tr, cl, nil},
+			{nil, cl, l, domain.ErrIsNil},
+			{tr, nil, l, domain.ErrIsNil},
+			{tr, cl, nil, domain.ErrIsNil},
+			{tr, cl, l, nil},
 		}
 		for idx, tc := range tt {
-			agent, gotErr := domain.NewTokenAgent(tc.tr, tc.cl)
+			agent, gotErr := domain.NewTokenAgent(tc.tr, tc.cl, tc.l)
 			if !errors.Is(gotErr, tc.wantErr) {
 				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
 			}
@@ -37,7 +42,7 @@ func TestNewTokenAgent(t *testing.T) {
 func TestTokenAgent_GenerateToken(t *testing.T) {
 	defer truncate(t)
 
-	agent, err := domain.NewTokenAgent(tr, &mockClock{t: dt})
+	agent, err := domain.NewTokenAgent(tr, &mockClock{t: dt}, &mockLogger{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +87,7 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		expectedType := domain.TokenTypeShortCodeResetToken
+		expectedType := domain.TokenTypeMagicLogin
 		expectedValue := "Hello World"
 
 		token, err := agent.GenerateToken(ctx, expectedType, expectedValue)
@@ -130,7 +135,7 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 	defer truncate(t)
 
-	agent, err := domain.NewTokenAgent(tr, &mockClock{})
+	agent, err := domain.NewTokenAgent(tr, &mockClock{}, &mockLogger{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,7 +185,7 @@ func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 func TestTokenAgent_DeleteToken(t *testing.T) {
 	defer truncate(t)
 
-	agent, err := domain.NewTokenAgent(tr, &mockClock{})
+	agent, err := domain.NewTokenAgent(tr, &mockClock{}, &mockLogger{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -209,7 +214,7 @@ func TestTokenAgent_DeleteToken(t *testing.T) {
 func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 	defer truncate(t)
 
-	agent, err := domain.NewTokenAgent(tr, &mockClock{})
+	agent, err := domain.NewTokenAgent(tr, &mockClock{}, &mockLogger{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -268,6 +273,84 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+}
+
+func TestTokenAgent_IsTokenValid(t *testing.T) {
+	tkn := &domain.Token{
+		ID:        "tkn-id",
+		Type:      domain.TokenTypeAuth,
+		Value:     "abcdef",
+		ExpiresAt: dt,
+	}
+
+	tt := []struct {
+		name       string
+		typ        int
+		val        string
+		now        time.Time
+		wantRes    bool
+		wantLogMsg string
+	}{
+		{
+			name:    "token with expiry that matches now must be valid",
+			typ:     domain.TokenTypeAuth,
+			val:     "abcdef",
+			now:     dt,
+			wantRes: true,
+		},
+		{
+			name:    "token with expiry that occurs after now must be valid",
+			typ:     domain.TokenTypeAuth,
+			val:     "abcdef",
+			now:     dt.Add(-time.Nanosecond),
+			wantRes: true,
+		},
+		{
+			name:       "token with alt type must not be valid",
+			typ:        domain.TokenTypeEntryRegistration,
+			val:        "abcdef",
+			now:        dt,
+			wantRes:    false,
+			wantLogMsg: "token id 'tkn-id': token type 0 is not 1",
+		},
+		{
+			name:       "token with alt value must not be valid",
+			typ:        domain.TokenTypeAuth,
+			val:        "ghijkl",
+			now:        dt,
+			wantRes:    false,
+			wantLogMsg: "token id 'tkn-id': token value 'abcdef' is not 'ghijkl'",
+		},
+		{
+			name:       "token that has expired must not be valid",
+			typ:        domain.TokenTypeAuth,
+			val:        "abcdef",
+			now:        dt.Add(time.Second),
+			wantRes:    false,
+			wantLogMsg: "token id 'tkn-id': expired",
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			l := newMockLogger()
+			cl := &mockClock{t: tc.now}
+
+			ta, err := domain.NewTokenAgent(tr, cl, l)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if gotRes := ta.IsTokenValid(tkn, tc.typ, tc.val); gotRes != tc.wantRes {
+				t.Fatalf("want result %t, got %t", tc.wantRes, gotRes)
+			}
+
+			gotLogMsg := l.buf.String()
+			if diff := gocmp.Diff(tc.wantLogMsg, gotLogMsg); diff != "" {
+				t.Fatalf("want log msg '%s', got '%s', diff: %s", tc.wantLogMsg, gotLogMsg, diff)
+			}
+		})
+	}
 }
 
 func generateTestToken() *domain.Token {

@@ -141,23 +141,11 @@ func newPage(r *http.Request, c *container, title, activePage, bannerTitle strin
 	}
 }
 
-// retrieveEntryByEmailOrNickname retrieves an entry from the provided input, whether this pertains to an email address or nickname
-func retrieveEntryByEmailOrNickname(ctx context.Context, emailOrNickname, seasonID, realmName string, entryAgent *domain.EntryAgent) (*domain.Entry, error) {
-	// see if we can retrieve by email
-	entry, err := entryAgent.RetrieveEntryByEntrantEmail(ctx, emailOrNickname, seasonID, realmName)
+// retrieveEntryByEmailAddr retrieves an entry from the provided input
+func retrieveEntryByEmailAddr(ctx context.Context, email, seasonID, realmName string, entryAgent *domain.EntryAgent) (*domain.Entry, error) {
+	entry, err := entryAgent.RetrieveEntryByEntrantEmail(ctx, email, seasonID, realmName)
 	if err != nil {
-		switch err.(type) {
-		case domain.NotFoundError:
-			// see if we can retrieve by nickname
-			entry, err := entryAgent.RetrieveEntryByEntrantNickname(ctx, emailOrNickname, seasonID, realmName)
-			if err != nil {
-				return nil, err
-			}
-
-			return &entry, nil
-		default:
-			return nil, err
-		}
+		return nil, err
 	}
 
 	return &entry, nil

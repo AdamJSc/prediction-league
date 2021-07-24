@@ -86,7 +86,6 @@ func newRouter(cnt *container) *mux.Router {
 
 	// api endpoints
 	api := rtr.PathPrefix("/api").Subrouter()
-	api.HandleFunc("/prediction/login", predictionLoginHandler(cnt)).Methods(http.MethodPost)
 
 	api.HandleFunc("/season/{season_id}", retrieveSeasonHandler(cnt)).Methods(http.MethodGet)
 	api.HandleFunc("/season/{season_id}/entry", createEntryHandler(cnt)).Methods(http.MethodPost)
@@ -96,7 +95,7 @@ func newRouter(cnt *container) *mux.Router {
 	api.HandleFunc("/entry/{entry_id}/prediction", retrieveLatestEntryPredictionHandler(cnt)).Methods(http.MethodGet)
 	api.HandleFunc("/entry/{entry_id}/scored/{round_number:[0-9]+}", retrieveLatestScoredEntryPrediction(cnt)).Methods(http.MethodGet)
 	api.HandleFunc("/entry/{entry_id}/payment", updateEntryPaymentDetailsHandler(cnt)).Methods(http.MethodPatch)
-	api.HandleFunc("/entry/{entry_short_code}/approve", approveEntryByShortCodeHandler(cnt)).Methods(http.MethodPatch)
+	api.HandleFunc("/entry/{entry_id}/approve", approveEntryByIDHandler(cnt)).Methods(http.MethodPatch)
 
 	// serve static assets
 	assets := http.Dir("./resources/dist")
@@ -109,8 +108,9 @@ func newRouter(cnt *container) *mux.Router {
 	rtr.HandleFunc("/join", frontendJoinHandler(cnt)).Methods(http.MethodGet)
 	rtr.HandleFunc("/prediction", frontendPredictionHandler(cnt)).Methods(http.MethodGet)
 
-	rtr.HandleFunc("/reset", frontendShortCodeResetBeginHandler(cnt)).Methods(http.MethodPost)
-	rtr.HandleFunc("/reset/{reset_token}", frontendShortCodeResetCompleteHandler(cnt)).Methods(http.MethodGet)
+	rtr.HandleFunc("/login", frontendGenerateMagicLoginHandler(cnt)).Methods(http.MethodPost)
+	rtr.HandleFunc("/login/failed", frontendMagicLoginFailedHandler(cnt)).Methods(http.MethodGet)
+	rtr.HandleFunc("/login/{magic_token_id}", frontendRedeemMagicLoginHandler(cnt)).Methods(http.MethodGet)
 
 	return rtr
 }

@@ -66,10 +66,10 @@ func internalError(msg interface{}) *response {
 }
 
 type createEntryResponse struct {
-	ID           string `json:"id"`
-	Nickname     string `json:"nickname"`
-	ShortCode    string `json:"short_code"`
-	NeedsPayment bool   `json:"needs_payment"`
+	ID                string `json:"id"`
+	Nickname          string `json:"nickname"`
+	RegistrationToken string `json:"reg_token"`
+	NeedsPayment      bool   `json:"needs_payment"`
 }
 
 type retrieveSeasonResponse struct {

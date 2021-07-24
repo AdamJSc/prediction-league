@@ -20,7 +20,7 @@
 							"    if (pm.response.code == 201) {",
 							"        var jsonData = pm.response.json();",
 							"        pm.environment.set(\"entry_id\", jsonData.data.entry.id);",
-							"        pm.environment.set(\"entry_short_code\", jsonData.data.entry.short_code);",
+							"        pm.environment.set(\"entry_reg_token\", jsonData.data.entry.reg_token);",
 							"    }",
 							"});"
 						],
@@ -82,7 +82,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\"payment_method\":\"paypal\",\"payment_amount\":\"1.23\",\"payment_ref\":\"paypal_id_1234\",\"merchant_name\":\"hello world\",\"short_code\":\"{{entry_short_code}}\"}"
+					"raw": "{\"payment_method\":\"paypal\",\"payment_amount\":\"1.23\",\"payment_ref\":\"paypal_id_1234\",\"merchant_name\":\"hello world\",\"reg_token\":\"{{entry_reg_token}}\"}"
 				},
 				"url": {
 					"raw": "{{base_url}}/api/entry/{{entry_id}}/payment",
@@ -137,14 +137,14 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "{{base_url}}/api/entry/{{entry_short_code}}/approve",
+					"raw": "{{base_url}}/api/entry/{{entry_id}}/approve",
 					"host": [
 						"{{base_url}}"
 					],
 					"path": [
 						"api",
 						"entry",
-						"{{entry_short_code}}",
+						"{{entry_id}}",
 						"approve"
 					]
 				}

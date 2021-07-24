@@ -1,0 +1,8 @@
+{{define "magic-login-failed"}}
+    {{template "header" .}}
+        <div class="alert alert-danger">
+            Oh no! That's not a valid link :'(<br /><br />
+            <a href="/prediction">Generate a new magic link</a>
+        </div>
+    {{template "footer" .}}
+{{end}}

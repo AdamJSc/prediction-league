@@ -1,0 +1,14 @@
+{{define "email_txt_magic_login"}}Login
+============================
+
+Hey {{.Name}}!
+
+Use the following magic link to login:
+
+{{.LoginURL}}
+
+This link will automatically expire after 10 minutes.
+
+In the meantime, Happy Predicting! 🧙🔮
+{{- template "email_txt_footer" .}}
+{{end}}

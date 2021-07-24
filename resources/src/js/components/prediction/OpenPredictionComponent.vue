@@ -180,7 +180,7 @@
                     method: 'post',
                     url: url,
                     data: {
-                        entry_short_code: vm.entry.shortCode,
+                        entry_pred_token: vm.entry.predToken,
                         ranking_ids: vm.teamsIDSequence,
                     }
                 })

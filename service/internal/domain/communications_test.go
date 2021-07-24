@@ -5,12 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"prediction-league/service/internal/domain"
+	"testing"
+
 	gocmp "github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"gotest.tools/assert/cmp"
-	"prediction-league/service/internal/domain"
-	"testing"
-	"time"
 )
 
 func TestNewCommunicationsAgent(t *testing.T) {
@@ -109,7 +109,6 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 			},
 			PaymentDetails: payment,
 			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
-			ShortCode:      entry.ShortCode,
 		})
 
 		if email.From.Name != rlm.Contact.Name {
@@ -290,11 +289,6 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		expectedRankingStrings, err := domain.TeamRankingsAsStrings(scoredEntryPrediction.Rankings, standings.Rankings, tc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
 		expectedSubject := fmt.Sprintf(domain.EmailSubjectRoundComplete, standings.RoundNumber)
 
 		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_round_complete", domain.RoundCompleteEmailData{
@@ -305,9 +299,9 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 				URL:          rlm.Origin,
 				SupportEmail: rlm.Contact.EmailProper,
 			},
-			RoundNumber:       standings.RoundNumber,
-			RankingsAsStrings: expectedRankingStrings,
-			LeaderBoardURL:    fmt.Sprintf("%s/leaderboard", rlm.Origin),
+			RoundNumber:    standings.RoundNumber,
+			LeaderBoardURL: fmt.Sprintf("%s/leaderboard", rlm.Origin),
+			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
 		})
 
 		emlQ := domain.NewInMemEmailQueue()
@@ -365,11 +359,6 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		expectedRankingStrings, err := domain.TeamRankingsAsStrings(scoredEntryPrediction.Rankings, standings.Rankings, tc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
 		expectedSubject := fmt.Sprintf(domain.EmailSubjectRoundComplete, standings.RoundNumber)
 
 		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_final_round_complete", domain.RoundCompleteEmailData{
@@ -380,9 +369,9 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 				URL:          rlm.Origin,
 				SupportEmail: rlm.Contact.EmailProper,
 			},
-			RoundNumber:       standings.RoundNumber,
-			RankingsAsStrings: expectedRankingStrings,
-			LeaderBoardURL:    fmt.Sprintf("%s/leaderboard", rlm.Origin),
+			RoundNumber:    standings.RoundNumber,
+			LeaderBoardURL: fmt.Sprintf("%s/leaderboard", rlm.Origin),
+			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
 		})
 
 		emlQ := domain.NewInMemEmailQueue()
@@ -542,32 +531,12 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
 	})
-
-	t.Run("issue round complete email with a scored entry prediction whose rankings are empty must fail", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
-
-		sep := scoredEntryPrediction
-		sep.Rankings = nil
-
-		emlQ := domain.NewInMemEmailQueue()
-
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		err = agent.IssueRoundCompleteEmail(ctx, sep, false)
-		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
-			expectedTypeOfGot(t, domain.NotFoundError{}, err)
-		}
-	})
 }
 
-func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
+func TestCommunicationsAgent_IssueMagicLoginEmail(t *testing.T) {
 	defer truncate(t)
 
-	t.Run("issue short code reset begin email with a valid entry must succeed", func(t *testing.T) {
+	t.Run("issue magic login email with a valid entry must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
@@ -578,7 +547,7 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 			"harry.redknapp@football.net",
 		)
 
-		resetToken := "RESET12345"
+		tokenId := "MAGIC12345"
 
 		emlQ := domain.NewInMemEmailQueue()
 
@@ -587,7 +556,7 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := agent.IssueShortCodeResetBeginEmail(ctx, &entry, resetToken); err != nil {
+		if err := agent.IssueMagicLoginEmail(ctx, &entry, tokenId); err != nil {
 			t.Fatal(err)
 		}
 
@@ -606,9 +575,9 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 
 		email := emls[0]
 
-		expectedSubject := domain.EmailSubjectShortCodeResetBegin
+		expectedSubject := domain.EmailSubjectMagicLogin
 
-		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_short_code_reset_begin", domain.ShortCodeResetBeginEmail{
+		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_magic_login", domain.MagicLoginEmail{
 			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
@@ -616,7 +585,7 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 				URL:          rlm.Origin,
 				SupportEmail: rlm.Contact.EmailProper,
 			},
-			ResetURL: fmt.Sprintf("%s/reset/%s", rlm.Origin, resetToken),
+			LoginURL: fmt.Sprintf("%s/login/%s", rlm.Origin, tokenId),
 		})
 
 		if email.From.Name != rlm.Contact.Name {
@@ -645,7 +614,7 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 		}
 	})
 
-	t.Run("issue short code reset begin email with no entry must fail", func(t *testing.T) {
+	t.Run("issue magic login email with no entry must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
@@ -656,7 +625,7 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = agent.IssueShortCodeResetBeginEmail(ctx, nil, "dat_string")
+		err = agent.IssueMagicLoginEmail(ctx, nil, "dat_string")
 		if !cmp.ErrorType(err, domain.InternalError{})().Success() {
 			expectedTypeOfGot(t, domain.InternalError{}, err)
 		}
@@ -682,13 +651,13 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = agent.IssueShortCodeResetBeginEmail(ctx, &entry, "dat_string")
+		err = agent.IssueMagicLoginEmail(ctx, &entry, "dat_string")
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
 	})
 
-	t.Run("issue short code reset begin email with an entry whose season does not exist must fail", func(t *testing.T) {
+	t.Run("issue magic login email with an entry whose season does not exist must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
@@ -708,845 +677,9 @@ func TestCommunicationsAgent_IssueShortCodeResetBeginEmail(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = agent.IssueShortCodeResetBeginEmail(ctx, &entry, "dat_string")
+		err = agent.IssueMagicLoginEmail(ctx, &entry, "dat_string")
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
-		}
-	})
-}
-
-func TestCommunicationsAgent_IssueShortCodeResetCompleteEmail(t *testing.T) {
-	defer truncate(t)
-
-	t.Run("issue short code reset complete email with a valid entry must succeed", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
-
-		entry := generateTestEntry(
-			t,
-			"Harry Redknapp",
-			"Mr Harry R",
-			"harry.redknapp@football.net",
-		)
-
-		emlQ := domain.NewInMemEmailQueue()
-
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if err := agent.IssueShortCodeResetCompleteEmail(ctx, &entry); err != nil {
-			t.Fatal(err)
-		}
-
-		if err := emlQ.Close(); err != nil {
-			t.Fatal(err)
-		}
-
-		emls := make([]domain.Email, 0)
-		for eml := range emlQ.Read() {
-			emls = append(emls, eml)
-		}
-
-		if len(emls) != 1 {
-			t.Fatalf("want 1 email, got %d", len(emls))
-		}
-
-		email := emls[0]
-
-		expectedSubject := domain.EmailSubjectShortCodeResetComplete
-
-		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_short_code_reset_complete", domain.ShortCodeResetCompleteEmail{
-			MessagePayload: domain.MessagePayload{
-				Name:         entry.EntrantName,
-				SeasonName:   testSeason.Name,
-				SignOff:      rlm.Contact.Name,
-				URL:          rlm.Origin,
-				SupportEmail: rlm.Contact.EmailProper,
-			},
-			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
-			ShortCode:      entry.ShortCode,
-		})
-
-		if email.From.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.From.Name)
-		}
-		if email.From.Address != rlm.Contact.EmailDoNotReply {
-			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
-		}
-		if email.To.Name != entry.EntrantName {
-			expectedGot(t, entry.EntrantName, email.To.Name)
-		}
-		if email.To.Address != entry.EntrantEmail {
-			expectedGot(t, entry.EntrantEmail, email.To.Address)
-		}
-		if email.ReplyTo.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
-		}
-		if email.ReplyTo.Address != rlm.Contact.EmailProper {
-			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
-		}
-		if email.Subject != expectedSubject {
-			expectedGot(t, expectedSubject, email.Subject)
-		}
-		if email.PlainText != expectedPlainText {
-			t.Fatal(gocmp.Diff(expectedPlainText, email.PlainText))
-		}
-	})
-
-	t.Run("issue short code reset complete email with no entry must fail", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
-
-		emlQ := domain.NewInMemEmailQueue()
-
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		err = agent.IssueShortCodeResetCompleteEmail(ctx, nil)
-		if !cmp.ErrorType(err, domain.InternalError{})().Success() {
-			expectedTypeOfGot(t, domain.InternalError{}, err)
-		}
-	})
-
-	t.Run("issue short code reset complete email with an entry whose realm does not exist must fail", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
-
-		entry := generateTestEntry(
-			t,
-			"Harry Redknapp",
-			"Mr Harry R",
-			"harry.redknapp@football.net",
-		)
-
-		entry.RealmName = "not_a_valid_realm"
-
-		emlQ := domain.NewInMemEmailQueue()
-
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		err = agent.IssueShortCodeResetCompleteEmail(ctx, &entry)
-		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
-			expectedTypeOfGot(t, domain.NotFoundError{}, err)
-		}
-	})
-
-	t.Run("issue short code reset complete email with an entry whose season does not exist must fail", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
-
-		entry := generateTestEntry(
-			t,
-			"Harry Redknapp",
-			"Mr Harry R",
-			"harry.redknapp@football.net",
-		)
-
-		entry.SeasonID = "not_a_valid_season"
-
-		emlQ := domain.NewInMemEmailQueue()
-
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		err = agent.IssueShortCodeResetCompleteEmail(ctx, &entry)
-		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
-			expectedTypeOfGot(t, domain.NotFoundError{}, err)
-		}
-	})
-}
-
-func TestCommunicationsAgent_IssuePredictionWindowOpenEmail(t *testing.T) {
-	defer truncate(t)
-
-	loc, err := time.LoadLocation("Europe/London")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Run("issue prediction window open email with a valid entry and sequenced timeframe that is not last must succeed", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
-
-		entry := generateTestEntry(
-			t,
-			"Harry Redknapp",
-			"Mr Harry R",
-			"harry.redknapp@football.net",
-		)
-
-		window := domain.SequencedTimeFrame{
-			Count: 1,
-			Total: 2,
-			Current: &domain.TimeFrame{
-				From:  time.Date(2018, 5, 26, 14, 0, 0, 0, loc),
-				Until: time.Date(2018, 5, 26, 15, 0, 0, 0, loc),
-			},
-		}
-
-		emlQ := domain.NewInMemEmailQueue()
-
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if err = agent.IssuePredictionWindowOpenEmail(ctx, &entry, window); err != nil {
-			t.Fatal(err)
-		}
-
-		if err := emlQ.Close(); err != nil {
-			t.Fatal(err)
-		}
-
-		emls := make([]domain.Email, 0)
-		for eml := range emlQ.Read() {
-			emls = append(emls, eml)
-		}
-
-		if len(emls) != 1 {
-			t.Fatalf("want 1 email, got %d", len(emls))
-		}
-
-		email := emls[0]
-
-		expectedSubject := domain.EmailSubjectPredictionWindowOpen
-
-		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_prediction_window_open", domain.PredictionWindowEmail{
-			MessagePayload: domain.MessagePayload{
-				Name:         entry.EntrantName,
-				SeasonName:   testSeason.Name,
-				SignOff:      rlm.Contact.Name,
-				URL:          rlm.Origin,
-				SupportEmail: rlm.Contact.EmailProper,
-			},
-			Window: domain.WindowData{
-				Current:            1,
-				Total:              2,
-				IsLast:             false,
-				CurrentClosingDate: "Sat 26 May",
-				CurrentClosingTime: "3:00pm",
-			},
-			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
-		})
-
-		if email.From.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.From.Name)
-		}
-		if email.From.Address != rlm.Contact.EmailDoNotReply {
-			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
-		}
-		if email.To.Name != entry.EntrantName {
-			expectedGot(t, entry.EntrantName, email.To.Name)
-		}
-		if email.To.Address != entry.EntrantEmail {
-			expectedGot(t, entry.EntrantEmail, email.To.Address)
-		}
-		if email.ReplyTo.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
-		}
-		if email.ReplyTo.Address != rlm.Contact.EmailProper {
-			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
-		}
-		if email.Subject != expectedSubject {
-			expectedGot(t, expectedSubject, email.Subject)
-		}
-		if email.PlainText != expectedPlainText {
-			t.Fatal(gocmp.Diff(expectedPlainText, email.PlainText))
-		}
-	})
-
-	t.Run("issue prediction window open email with a valid entry and sequenced timeframe that is last must succeed", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
-
-		entry := generateTestEntry(
-			t,
-			"Harry Redknapp",
-			"Mr Harry R",
-			"harry.redknapp@football.net",
-		)
-
-		window := domain.SequencedTimeFrame{
-			Count: 2,
-			Total: 2,
-			Current: &domain.TimeFrame{
-				From:  time.Date(2018, 5, 26, 14, 0, 0, 0, loc),
-				Until: time.Date(2018, 5, 26, 15, 0, 0, 0, loc),
-			},
-		}
-
-		emlQ := domain.NewInMemEmailQueue()
-
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if err := agent.IssuePredictionWindowOpenEmail(ctx, &entry, window); err != nil {
-			t.Fatal(err)
-		}
-
-		if err := emlQ.Close(); err != nil {
-			t.Fatal(err)
-		}
-
-		emls := make([]domain.Email, 0)
-		for eml := range emlQ.Read() {
-			emls = append(emls, eml)
-		}
-
-		if len(emls) != 1 {
-			t.Fatalf("want 1 email, got %d", len(emls))
-		}
-
-		email := emls[0]
-
-		expectedSubject := domain.EmailSubjectPredictionWindowOpenFinal
-
-		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_prediction_window_open", domain.PredictionWindowEmail{
-			MessagePayload: domain.MessagePayload{
-				Name:         entry.EntrantName,
-				SeasonName:   testSeason.Name,
-				SignOff:      rlm.Contact.Name,
-				URL:          rlm.Origin,
-				SupportEmail: rlm.Contact.EmailProper,
-			},
-			Window: domain.WindowData{
-				Current:            2,
-				Total:              2,
-				IsLast:             true,
-				CurrentClosingDate: "Sat 26 May",
-				CurrentClosingTime: "3:00pm",
-			},
-			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
-		})
-
-		if email.From.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.From.Name)
-		}
-		if email.From.Address != rlm.Contact.EmailDoNotReply {
-			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
-		}
-		if email.To.Name != entry.EntrantName {
-			expectedGot(t, entry.EntrantName, email.To.Name)
-		}
-		if email.To.Address != entry.EntrantEmail {
-			expectedGot(t, entry.EntrantEmail, email.To.Address)
-		}
-		if email.ReplyTo.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
-		}
-		if email.ReplyTo.Address != rlm.Contact.EmailProper {
-			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
-		}
-		if email.Subject != expectedSubject {
-			expectedGot(t, expectedSubject, email.Subject)
-		}
-		if email.PlainText != expectedPlainText {
-			t.Fatal(gocmp.Diff(expectedPlainText, email.PlainText))
-		}
-	})
-
-	t.Run("issue prediction window open email with no entry must fail", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
-
-		emlQ := domain.NewInMemEmailQueue()
-
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		err = agent.IssuePredictionWindowOpenEmail(ctx, nil, domain.SequencedTimeFrame{})
-		if !cmp.ErrorType(err, domain.InternalError{})().Success() {
-			expectedTypeOfGot(t, domain.InternalError{}, err)
-		}
-	})
-
-	t.Run("issue prediction window open email with an entry whose realm does not exist must fail", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
-
-		entry := generateTestEntry(
-			t,
-			"Harry Redknapp",
-			"Mr Harry R",
-			"harry.redknapp@football.net",
-		)
-
-		entry.RealmName = "not_a_valid_realm"
-
-		emlQ := domain.NewInMemEmailQueue()
-
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		err = agent.IssuePredictionWindowOpenEmail(ctx, &entry, domain.SequencedTimeFrame{})
-		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
-			expectedTypeOfGot(t, domain.NotFoundError{}, err)
-		}
-	})
-
-	t.Run("issue prediction window open email with an entry whose season does not exist must fail", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
-
-		entry := generateTestEntry(
-			t,
-			"Harry Redknapp",
-			"Mr Harry R",
-			"harry.redknapp@football.net",
-		)
-
-		entry.SeasonID = "not_a_valid_season"
-
-		emlQ := domain.NewInMemEmailQueue()
-
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		err = agent.IssuePredictionWindowOpenEmail(ctx, &entry, domain.SequencedTimeFrame{})
-		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
-			expectedTypeOfGot(t, domain.NotFoundError{}, err)
-		}
-	})
-
-	t.Run("issue prediction window open email with an entry whose season does not exist must fail", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
-
-		entry := generateTestEntry(
-			t,
-			"Harry Redknapp",
-			"Mr Harry R",
-			"harry.redknapp@football.net",
-		)
-
-		window := domain.SequencedTimeFrame{
-			Count:   1,
-			Total:   2,
-			Current: nil, // nil should fail test
-			Next: &domain.TimeFrame{
-				From:  time.Date(2018, 5, 26, 14, 0, 0, 0, loc),
-				Until: time.Date(2018, 5, 26, 15, 0, 0, 0, loc),
-			},
-		}
-
-		expectedErrMsg := domain.ErrCurrentTimeFrameIsMissing.Error()
-
-		emlQ := domain.NewInMemEmailQueue()
-
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		err = agent.IssuePredictionWindowOpenEmail(ctx, &entry, window)
-		if err == nil || err.Error() != expectedErrMsg {
-			expectedGot(t, expectedErrMsg, err)
-		}
-	})
-}
-
-func TestCommunicationsAgent_IssuePredictionWindowClosingEmail(t *testing.T) {
-	defer truncate(t)
-
-	loc, err := time.LoadLocation("Europe/London")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Run("issue prediction window closing email with a valid entry and sequenced timeframe that is not last must succeed", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
-
-		entry := generateTestEntry(
-			t,
-			"Harry Redknapp",
-			"Mr Harry R",
-			"harry.redknapp@football.net",
-		)
-
-		window := domain.SequencedTimeFrame{
-			Count: 1,
-			Total: 2,
-			Current: &domain.TimeFrame{
-				From:  time.Date(2018, 5, 26, 14, 0, 0, 0, loc),
-				Until: time.Date(2018, 5, 26, 15, 0, 0, 0, loc),
-			},
-			Next: &domain.TimeFrame{
-				From:  time.Date(2018, 5, 29, 16, 0, 0, 0, loc),
-				Until: time.Date(2018, 5, 29, 17, 0, 0, 0, loc),
-			},
-		}
-
-		emlQ := domain.NewInMemEmailQueue()
-
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if err = agent.IssuePredictionWindowClosingEmail(ctx, &entry, window); err != nil {
-			t.Fatal(err)
-		}
-
-		if err := emlQ.Close(); err != nil {
-			t.Fatal(err)
-		}
-
-		emls := make([]domain.Email, 0)
-		for eml := range emlQ.Read() {
-			emls = append(emls, eml)
-		}
-
-		if len(emls) != 1 {
-			t.Fatalf("want 1 email, got %d", len(emls))
-		}
-
-		email := emls[0]
-
-		expectedSubject := domain.EmailSubjectPredictionWindowClosing
-
-		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_prediction_window_closing", domain.PredictionWindowEmail{
-			MessagePayload: domain.MessagePayload{
-				Name:         entry.EntrantName,
-				SeasonName:   testSeason.Name,
-				SignOff:      rlm.Contact.Name,
-				URL:          rlm.Origin,
-				SupportEmail: rlm.Contact.EmailProper,
-			},
-			Window: domain.WindowData{
-				Current:            1,
-				Total:              2,
-				IsLast:             false,
-				CurrentClosingDate: "Sat 26 May",
-				CurrentClosingTime: "3:00pm",
-				NextOpeningDate:    "Tue 29 May",
-				NextOpeningTime:    "4:00pm",
-			},
-			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
-		})
-
-		if email.From.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.From.Name)
-		}
-		if email.From.Address != rlm.Contact.EmailDoNotReply {
-			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
-		}
-		if email.To.Name != entry.EntrantName {
-			expectedGot(t, entry.EntrantName, email.To.Name)
-		}
-		if email.To.Address != entry.EntrantEmail {
-			expectedGot(t, entry.EntrantEmail, email.To.Address)
-		}
-		if email.ReplyTo.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
-		}
-		if email.ReplyTo.Address != rlm.Contact.EmailProper {
-			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
-		}
-		if email.Subject != expectedSubject {
-			expectedGot(t, expectedSubject, email.Subject)
-		}
-		if email.PlainText != expectedPlainText {
-			t.Fatal(gocmp.Diff(expectedPlainText, email.PlainText))
-		}
-	})
-
-	t.Run("issue prediction window closing email with a valid entry and sequenced timeframe that is last must succeed", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
-
-		entry := generateTestEntry(
-			t,
-			"Harry Redknapp",
-			"Mr Harry R",
-			"harry.redknapp@football.net",
-		)
-
-		window := domain.SequencedTimeFrame{
-			Count: 2,
-			Total: 2,
-			Current: &domain.TimeFrame{
-				From:  time.Date(2018, 5, 26, 14, 0, 0, 0, loc),
-				Until: time.Date(2018, 5, 26, 15, 0, 0, 0, loc),
-			},
-		}
-
-		emlQ := domain.NewInMemEmailQueue()
-
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if err := agent.IssuePredictionWindowClosingEmail(ctx, &entry, window); err != nil {
-			t.Fatal(err)
-		}
-
-		if err := emlQ.Close(); err != nil {
-			t.Fatal(err)
-		}
-
-		emls := make([]domain.Email, 0)
-		for eml := range emlQ.Read() {
-			emls = append(emls, eml)
-		}
-
-		if len(emls) != 1 {
-			t.Fatalf("want 1 email, got %d", len(emls))
-		}
-
-		email := emls[0]
-
-		expectedSubject := domain.EmailSubjectPredictionWindowClosingFinal
-
-		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_prediction_window_closing", domain.PredictionWindowEmail{
-			MessagePayload: domain.MessagePayload{
-				Name:         entry.EntrantName,
-				SeasonName:   testSeason.Name,
-				SignOff:      rlm.Contact.Name,
-				URL:          rlm.Origin,
-				SupportEmail: rlm.Contact.EmailProper,
-			},
-			Window: domain.WindowData{
-				Current:            2,
-				Total:              2,
-				IsLast:             true,
-				CurrentClosingDate: "Sat 26 May",
-				CurrentClosingTime: "3:00pm",
-			},
-			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
-		})
-
-		if email.From.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.From.Name)
-		}
-		if email.From.Address != rlm.Contact.EmailDoNotReply {
-			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
-		}
-		if email.To.Name != entry.EntrantName {
-			expectedGot(t, entry.EntrantName, email.To.Name)
-		}
-		if email.To.Address != entry.EntrantEmail {
-			expectedGot(t, entry.EntrantEmail, email.To.Address)
-		}
-		if email.ReplyTo.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
-		}
-		if email.ReplyTo.Address != rlm.Contact.EmailProper {
-			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
-		}
-		if email.Subject != expectedSubject {
-			expectedGot(t, expectedSubject, email.Subject)
-		}
-		if email.PlainText != expectedPlainText {
-			t.Fatal(gocmp.Diff(expectedPlainText, email.PlainText))
-		}
-	})
-
-	t.Run("issue prediction window closing email with no entry must fail", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
-
-		emlQ := domain.NewInMemEmailQueue()
-
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		err = agent.IssuePredictionWindowClosingEmail(ctx, nil, domain.SequencedTimeFrame{})
-		if !cmp.ErrorType(err, domain.InternalError{})().Success() {
-			expectedTypeOfGot(t, domain.InternalError{}, err)
-		}
-	})
-
-	t.Run("issue prediction window closing email with an entry whose realm does not exist must fail", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
-
-		entry := generateTestEntry(
-			t,
-			"Harry Redknapp",
-			"Mr Harry R",
-			"harry.redknapp@football.net",
-		)
-
-		entry.RealmName = "not_a_valid_realm"
-
-		emlQ := domain.NewInMemEmailQueue()
-
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		err = agent.IssuePredictionWindowClosingEmail(ctx, &entry, domain.SequencedTimeFrame{})
-		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
-			expectedTypeOfGot(t, domain.NotFoundError{}, err)
-		}
-	})
-
-	t.Run("issue prediction window closing email with an entry whose season does not exist must fail", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
-
-		entry := generateTestEntry(
-			t,
-			"Harry Redknapp",
-			"Mr Harry R",
-			"harry.redknapp@football.net",
-		)
-
-		entry.SeasonID = "not_a_valid_season"
-
-		emlQ := domain.NewInMemEmailQueue()
-
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		err = agent.IssuePredictionWindowClosingEmail(ctx, &entry, domain.SequencedTimeFrame{})
-		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
-			expectedTypeOfGot(t, domain.NotFoundError{}, err)
-		}
-	})
-
-	t.Run("issue prediction window closing email with an entry whose season does not exist must fail", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
-
-		entry := generateTestEntry(
-			t,
-			"Harry Redknapp",
-			"Mr Harry R",
-			"harry.redknapp@football.net",
-		)
-
-		window := domain.SequencedTimeFrame{
-			Count:   1,
-			Total:   2,
-			Current: nil, // nil should fail test
-			Next: &domain.TimeFrame{
-				From:  time.Date(2018, 5, 26, 14, 0, 0, 0, loc),
-				Until: time.Date(2018, 5, 26, 15, 0, 0, 0, loc),
-			},
-		}
-
-		expectedErrMsg := domain.ErrCurrentTimeFrameIsMissing.Error()
-
-		emlQ := domain.NewInMemEmailQueue()
-
-		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		err = agent.IssuePredictionWindowClosingEmail(ctx, &entry, window)
-		if err == nil || err.Error() != expectedErrMsg {
-			expectedGot(t, expectedErrMsg, err)
-		}
-	})
-}
-
-func TestGenerateWindowDataFromSequencedTimeFrame(t *testing.T) {
-	t.Run("generating window data from sequenced timeframe without a current timeframe must return error", func(t *testing.T) {
-		sequenced := domain.SequencedTimeFrame{} // Current is nil
-
-		if _, err := domain.GenerateWindowDataFromSequencedTimeFrame(sequenced); err != domain.ErrCurrentTimeFrameIsMissing {
-			expectedGot(t, domain.ErrCurrentTimeFrameIsMissing, err)
-		}
-	})
-
-	t.Run("generating window data from sequenced timeframe without next timeframe must succeed", func(t *testing.T) {
-		loc, err := time.LoadLocation("Europe/London")
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		sequenced := domain.SequencedTimeFrame{
-			Current: &domain.TimeFrame{
-				From:  time.Date(2018, 5, 26, 14, 0, 0, 0, loc),
-				Until: time.Date(2018, 5, 26, 15, 0, 0, 0, loc),
-			},
-			Count: 123,
-			Total: 456,
-		}
-
-		expected := domain.WindowData{
-			Current:            123,
-			Total:              456,
-			IsLast:             false,
-			CurrentClosingDate: "Sat 26 May",
-			CurrentClosingTime: "3:00pm",
-		}
-
-		actual, err := domain.GenerateWindowDataFromSequencedTimeFrame(sequenced)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		diff := gocmp.Diff(expected, *actual)
-		if diff != "" {
-			expectedGot(t, "empty diff", diff)
-		}
-	})
-
-	t.Run("generating window data from sequenced timeframe with next timeframe must succeed", func(t *testing.T) {
-		loc, err := time.LoadLocation("Europe/London")
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		sequenced := domain.SequencedTimeFrame{
-			Current: &domain.TimeFrame{
-				From:  time.Date(2018, 5, 26, 14, 0, 0, 0, loc),
-				Until: time.Date(2018, 5, 26, 15, 0, 0, 0, loc),
-			},
-			Next: &domain.TimeFrame{
-				From:  time.Date(2018, 5, 29, 16, 0, 0, 0, loc),
-				Until: time.Date(2018, 5, 29, 17, 0, 0, 0, loc),
-			},
-			Count: 456,
-			Total: 456,
-		}
-
-		expected := domain.WindowData{
-			Current:            456,
-			Total:              456,
-			IsLast:             true,
-			CurrentClosingDate: "Sat 26 May",
-			CurrentClosingTime: "3:00pm",
-			NextOpeningDate:    "Tue 29 May",
-			NextOpeningTime:    "4:00pm",
-		}
-
-		actual, err := domain.GenerateWindowDataFromSequencedTimeFrame(sequenced)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		diff := gocmp.Diff(expected, *actual)
-		if diff != "" {
-			expectedGot(t, "empty diff", diff)
 		}
 	})
 }

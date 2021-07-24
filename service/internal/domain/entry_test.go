@@ -81,7 +81,6 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 
 		// these values should be overridden
 		ID:            entryID,
-		ShortCode:     "entry_short_code",
 		SeasonID:      "entry_season_id",
 		RealmName:     "entry_realm_name",
 		Status:        "entry_status",
@@ -123,9 +122,6 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 
 		if createdEntry.ID.String() == "" {
 			expectedNonEmpty(t, "Entry.ID")
-		}
-		if createdEntry.ShortCode == "" {
-			expectedNonEmpty(t, "Entry.ShortCode")
 		}
 		if expectedSeasonID != createdEntry.SeasonID {
 			expectedGot(t, expectedSeasonID, createdEntry.SeasonID)
@@ -309,7 +305,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		teamIDs := domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)
@@ -336,26 +332,6 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		}
 	})
 
-	t.Run("add an entry prediction to an existing entry with invalid guard attempt must fail", func(t *testing.T) {
-		// predictions are accepted
-		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
-
-		agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: ts})
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		ctx, cancel := testContextWithGuardAttempt(t, "not_the_same_as_entry.ShortCode")
-		defer cancel()
-
-		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
-
-		_, err = agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
-		if !cmp.ErrorType(err, domain.UnauthorizedError{})().Success() {
-			expectedTypeOfGot(t, domain.UnauthorizedError{}, err)
-		}
-	})
-
 	t.Run("add an entry prediction to an existing entry with invalid realm name must fail", func(t *testing.T) {
 		// predictions are accepted
 		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
@@ -365,7 +341,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		domain.RealmFromContext(ctx).Name = "NOT_TEST_REALM"
@@ -387,7 +363,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
@@ -415,7 +391,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
@@ -438,7 +414,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
@@ -458,7 +434,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		rankings := domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)
@@ -488,7 +464,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		rankings := domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)
@@ -526,7 +502,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		rankings := domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)
@@ -587,9 +563,6 @@ func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
 		// check values
 		if entry.ID != retrievedEntry.ID {
 			expectedGot(t, entry.ID, retrievedEntry.ID)
-		}
-		if entry.ShortCode != retrievedEntry.ShortCode {
-			expectedGot(t, entry.ShortCode, retrievedEntry.ShortCode)
 		}
 		if entry.SeasonID != retrievedEntry.SeasonID {
 			expectedGot(t, entry.SeasonID, retrievedEntry.SeasonID)
@@ -678,9 +651,6 @@ func TestEntryAgent_RetrieveEntryByEntrantEmail(t *testing.T) {
 		// check values
 		if entry.ID != retrievedEntry.ID {
 			expectedGot(t, entry.ID, retrievedEntry.ID)
-		}
-		if entry.ShortCode != retrievedEntry.ShortCode {
-			expectedGot(t, entry.ShortCode, retrievedEntry.ShortCode)
 		}
 		if entry.SeasonID != retrievedEntry.SeasonID {
 			expectedGot(t, entry.SeasonID, retrievedEntry.SeasonID)
@@ -779,9 +749,6 @@ func TestEntryAgent_RetrieveEntryByEntrantNickname(t *testing.T) {
 		// check values
 		if entry.ID != retrievedEntry.ID {
 			expectedGot(t, entry.ID, retrievedEntry.ID)
-		}
-		if entry.ShortCode != retrievedEntry.ShortCode {
-			expectedGot(t, entry.ShortCode, retrievedEntry.ShortCode)
 		}
 		if entry.SeasonID != retrievedEntry.SeasonID {
 			expectedGot(t, entry.SeasonID, retrievedEntry.SeasonID)
@@ -969,13 +936,12 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 
 		changedEntry := domain.Entry{
 			ID:              entry.ID,
-			ShortCode:       "changed_entry_short_code",
 			SeasonID:        "67890",
 			RealmName:       entry.RealmName,
 			EntrantName:     "Jamie Redknapp",
 			EntrantNickname: "MrJamieR",
 			EntrantEmail:    "jamie.redknapp@football.net",
-			Status:          domain.EntryStatusReady,
+			Status:          domain.EntryStatusPaid,
 			PaymentRef:      &changedEntryPaymentRef,
 			CreatedAt:       entry.CreatedAt,
 		}
@@ -998,9 +964,6 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 		}
 
 		// check values that should have changed
-		if changedEntry.ShortCode != updatedEntry.ShortCode {
-			expectedGot(t, changedEntry.ShortCode, updatedEntry.ShortCode)
-		}
 		if changedEntry.SeasonID != updatedEntry.SeasonID {
 			expectedGot(t, changedEntry.SeasonID, updatedEntry.SeasonID)
 		}
@@ -1155,10 +1118,10 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 
 	paymentRef := "ABCD1234"
 
-	t.Run("update payment details for an existent entry with valid credentials must succeed", func(t *testing.T) {
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
-		defer cancel()
+	ctx, cancel := testContextDefault(t)
+	defer cancel()
 
+	t.Run("update payment details for an existent entry with valid credentials must succeed", func(t *testing.T) {
 		entryWithPaymentDetails, err := agent.UpdateEntryPaymentDetails(
 			ctx,
 			entry.ID.String(),
@@ -1180,9 +1143,6 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update invalid payment method for an existent entry must fail", func(t *testing.T) {
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ID.String())
-		defer cancel()
-
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
 			entry.ID.String(),
@@ -1196,9 +1156,6 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update entry with payment method 'other' when this is not accepted must fail", func(t *testing.T) {
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ID.String())
-		defer cancel()
-
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
 			entry.ID.String(),
@@ -1212,9 +1169,6 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update missing payment ref for an existent entry must fail", func(t *testing.T) {
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ID.String())
-		defer cancel()
-
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
 			entry.ID.String(),
@@ -1228,9 +1182,6 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update payment details for a non-existent entry must fail", func(t *testing.T) {
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ID.String())
-		defer cancel()
-
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
 			"not_an_existing_entry_id",
@@ -1244,9 +1195,6 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update payment details for an existing entry with an invalid realm must fail", func(t *testing.T) {
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ID.String())
-		defer cancel()
-
 		domain.RealmFromContext(ctx).Name = "DIFFERENT_REALM"
 
 		_, err := agent.UpdateEntryPaymentDetails(
@@ -1261,26 +1209,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 		}
 	})
 
-	t.Run("update payment details for an existing entry with an invalid lookup ref must fail", func(t *testing.T) {
-		ctx, cancel := testContextWithGuardAttempt(t, "not_the_correct_entry_short_code")
-		defer cancel()
-
-		_, err := agent.UpdateEntryPaymentDetails(
-			ctx,
-			entry.ID.String(),
-			domain.EntryPaymentMethodPayPal,
-			paymentRef,
-			true,
-		)
-		if !cmp.ErrorType(err, domain.ValidationError{})().Success() {
-			expectedTypeOfGot(t, domain.ValidationError{}, err)
-		}
-	})
-
 	t.Run("update payment details for an existing entry with an invalid status must fail", func(t *testing.T) {
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
-		defer cancel()
-
 		entryWithInvalidStatus := generateTestEntry(t,
 			"Jamie Redknapp",
 			"MrJamieR",
@@ -1303,7 +1232,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 }
 
-func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
+func TestEntryAgent_ApproveEntryByID(t *testing.T) {
 	defer truncate(t)
 
 	entry := insertEntry(t, generateTestEntry(t,
@@ -1320,38 +1249,18 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 	entryWithPaidStatus.Status = domain.EntryStatusPaid
 	entryWithPaidStatus = insertEntry(t, entryWithPaidStatus)
 
-	entryWithReadyStatus := generateTestEntry(t,
-		"Frank Lampard",
-		"FrankieLamps",
-		"frank.lampard@football.net",
-	)
-	entryWithReadyStatus.Status = domain.EntryStatusReady
-	entryWithReadyStatus = insertEntry(t, entryWithReadyStatus)
-
 	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: dt})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	t.Run("approve existent entry short code with valid credentials must succeed", func(t *testing.T) {
+	t.Run("approve existent entry id with valid credentials must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		ctx = domain.SetBasicAuthSuccessfulOnContext(ctx)
 		defer cancel()
 
 		// attempt to approve entry with paid status
-		approvedEntry, err := agent.ApproveEntryByShortCode(ctx, entryWithPaidStatus.ShortCode)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !approvedEntry.IsApproved() {
-			expectedGot(t, "approved entry true", "approved entry false")
-		}
-		if approvedEntry.ApprovedAt == nil {
-			expectedNonEmpty(t, "Entry.ApprovedAt")
-		}
-
-		// attempt to approve entry with ready status
-		approvedEntry, err = agent.ApproveEntryByShortCode(ctx, entryWithReadyStatus.ShortCode)
+		approvedEntry, err := agent.ApproveEntryByID(ctx, entryWithPaidStatus.ID.String())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1368,7 +1277,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		// basic auth success on context defaults to false so this should fail naturally
 		defer cancel()
 
-		_, err := agent.ApproveEntryByShortCode(ctx, entry.ShortCode)
+		_, err := agent.ApproveEntryByID(ctx, entry.ID.String())
 		if !cmp.ErrorType(err, domain.UnauthorizedError{})().Success() {
 			expectedTypeOfGot(t, domain.UnauthorizedError{}, err)
 		}
@@ -1379,7 +1288,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		ctx = domain.SetBasicAuthSuccessfulOnContext(ctx)
 		defer cancel()
 
-		_, err := agent.ApproveEntryByShortCode(ctx, "non_existent_short_code")
+		_, err := agent.ApproveEntryByID(ctx, "non_existent_id")
 		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
@@ -1391,7 +1300,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		defer cancel()
 
 		domain.RealmFromContext(ctx).Name = "DIFFERENT_REALM"
-		_, err := agent.ApproveEntryByShortCode(ctx, entry.ShortCode)
+		_, err := agent.ApproveEntryByID(ctx, entry.ID.String())
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
@@ -1403,7 +1312,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		defer cancel()
 
 		// initial entry object should still have default "pending" status so just attempt to approve this
-		_, err := agent.ApproveEntryByShortCode(ctx, entry.ShortCode)
+		_, err := agent.ApproveEntryByID(ctx, entry.ID.String())
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}
@@ -1415,7 +1324,7 @@ func TestEntryAgent_ApproveEntryByShortCode(t *testing.T) {
 		defer cancel()
 
 		// just try to approve the same entry again
-		_, err := agent.ApproveEntryByShortCode(ctx, entryWithPaidStatus.ShortCode)
+		_, err := agent.ApproveEntryByID(ctx, entryWithPaidStatus.ID.String())
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)
 		}

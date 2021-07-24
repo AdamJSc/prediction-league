@@ -20,15 +20,15 @@ func (r createEntryRequest) ToEntryModel() domain.Entry {
 }
 
 type updateEntryPaymentDetailsRequest struct {
-	PaymentMethod string `json:"payment_method"`
-	PaymentRef    string `json:"payment_ref"`
-	PaymentAmount string `json:"payment_amount"`
-	MerchantName  string `json:"merchant_name"`
-	ShortCode     string `json:"short_code"`
+	PaymentMethod     string `json:"payment_method"`
+	PaymentRef        string `json:"payment_ref"`
+	PaymentAmount     string `json:"payment_amount"`
+	MerchantName      string `json:"merchant_name"`
+	RegistrationToken string `json:"reg_token"`
 }
 
 type createEntryPredictionRequest struct {
-	EntryShortCode string   `json:"entry_short_code"`
+	PredictionToken string   `json:"entry_pred_token"`
 	RankingIDs     []string `json:"ranking_ids"`
 }
 
@@ -36,11 +36,6 @@ func (r createEntryPredictionRequest) ToEntryPredictionModel() domain.EntryPredi
 	return domain.NewEntryPrediction(r.RankingIDs)
 }
 
-type predictionLoginRequest struct {
-	EmailNickname string `json:"email_nickname"`
-	ShortCode     string `json:"short_code"`
-}
-
-type shortCodeResetRequest struct {
-	EmailNickname string
+type generateMagicLoginRequest struct {
+	EmailAddr string
 }

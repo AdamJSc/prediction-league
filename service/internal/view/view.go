@@ -34,8 +34,8 @@ type PredictionPageData struct {
 		LastUpdated time.Time
 	}
 	Entry struct {
-		ID        string
-		ShortCode string
+		ID              string
+		PredictionToken string
 	}
 }
 
@@ -73,12 +73,7 @@ type FAQItem struct {
 	Answer   template.HTML
 }
 
-type ShortCodeResetBeginPageData struct {
-	Err           error
-	EmailNickname string
-}
-
-type ShortCodeResetCompletePageData struct {
+type GenerateMagicLoginPageData struct {
 	Err       error
-	ShortCode string
+	EmailAddr string
 }

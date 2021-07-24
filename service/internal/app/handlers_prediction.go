@@ -4,87 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"prediction-league/service/internal/domain"
 	"prediction-league/service/internal/view"
+	"time"
 )
 
-func predictionLoginHandler(c *container) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var input predictionLoginRequest
-
-		// read request body
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
-		}
-		defer closeBody(r)
-
-		// parse request body
-		if err := json.Unmarshal(body, &input); err != nil {
-			responseFromError(domain.BadRequestError{Err: err}).writeTo(w)
-			return
-		}
-
-		// get context from request
-		ctx, cancel, err := contextFromRequest(r, c)
-		if err != nil {
-			responseFromError(err).writeTo(w)
-			return
-		}
-		defer cancel()
-
-		// get realm from context
-		realm := domain.RealmFromContext(ctx)
-
-		// retrieve entry based on input
-		entry, err := retrieveEntryByEmailOrNickname(ctx, input.EmailNickname, realm.SeasonID, realm.Name, c.entryAgent)
-		if err != nil {
-			switch err.(type) {
-			case domain.NotFoundError:
-				// credentials are invalid so convert to an unauthorized error
-				unauthorizedError().writeTo(w)
-				return
-			}
-			responseFromError(err).writeTo(w)
-			return
-		}
-
-		// does realm name match our entry?
-		if domain.RealmFromContext(ctx).Name != entry.RealmName {
-			unauthorizedError().writeTo(w)
-			return
-		}
-
-		// does short code match our entry?
-		if entry.ShortCode != input.ShortCode {
-			unauthorizedError().writeTo(w)
-			return
-		}
-
-		// generate a new auth token for our entry, and set it as a cookie
-		token, err := c.tokenAgent.GenerateToken(ctx, domain.TokenTypeAuth, entry.ID.String())
-		if err != nil {
-			responseFromError(err).writeTo(w)
-			return
-		}
-		setAuthCookieValue(token.ID, w, r)
-
-		okResponse(nil).writeTo(w)
-	}
-}
-
-func getPredictionPageData(ctx context.Context, authToken string, entryAgent *domain.EntryAgent, tokenAgent *domain.TokenAgent, sc domain.SeasonCollection, tc domain.TeamCollection, cl domain.Clock) view.PredictionPageData {
+func getPredictionPageData(ctx context.Context, authTknID string, entryAgent *domain.EntryAgent, tokenAgent *domain.TokenAgent, sc domain.SeasonCollection, tc domain.TeamCollection, cl domain.Clock, l domain.Logger) view.PredictionPageData {
 	var data view.PredictionPageData
 
 	// retrieve season and determine its current state
 	seasonID := domain.RealmFromContext(ctx).SeasonID
 	season, err := sc.GetByID(seasonID)
 	if err != nil {
-		data.Err = fmt.Errorf("oops! can't get season: %w", err)
+		l.Errorf("prediction page: can't get season: %s", err.Error())
+		data.Err = genericErr
 		return data
 	}
 
@@ -99,47 +32,13 @@ func getPredictionPageData(ctx context.Context, authToken string, entryAgent *do
 	// default teams IDs should reflect those of the current season
 	teamIDs := season.TeamIDs
 
-	if authToken != "" {
-		// retrieve the entry ID that the auth token pertains to
-		token, err := tokenAgent.RetrieveTokenByID(ctx, authToken)
-		if err != nil {
-			switch {
-			case errors.As(err, &domain.NotFoundError{}):
-				data.Err = errors.New("oops! invalid auth token")
-			default:
-				data.Err = err
-			}
-			return data
-		}
-
-		// check that entry id is valid
-		entry, err := entryAgent.RetrieveEntryByID(ctx, token.Value)
+	if authTknID != "" {
+		// enrich based on auth token
+		teamIDs, err = enrichAuthPredictionPageData(ctx, authTknID, teamIDs, &data, ts, entryAgent, tokenAgent, l)
 		if err != nil {
 			data.Err = err
 			return data
 		}
-
-		// we have our entry, let's capture what we need for our view
-		data.Entry.ID = entry.ID.String()
-		data.Entry.ShortCode = entry.ShortCode
-
-		// if entry has an associated entry prediction
-		// then override the default season team IDs with the most recent prediction
-		entryPrediction, err := entryAgent.RetrieveEntryPredictionByTimestamp(ctx, entry, ts)
-		if err == nil {
-			// we have an entry prediction, let's capture what we need for our view
-			data.Teams.LastUpdated = entryPrediction.CreatedAt
-			teamIDs = entryPrediction.Rankings.GetIDs()
-		}
-
-		// retrieve prediction ranking limit
-		lim, err := entryAgent.GetPredictionRankingLimit(ctx, entry)
-		if err != nil {
-			data.Err = fmt.Errorf("oops! can't get ranking limit: %w", err)
-			return data
-		}
-
-		data.Predictions.Limit = lim
 	}
 
 	// filter all teams to just the IDs that we need
@@ -160,4 +59,63 @@ func getPredictionPageData(ctx context.Context, authToken string, entryAgent *do
 	data.Teams.Raw = string(teamsPayload)
 
 	return data
+}
+
+func enrichAuthPredictionPageData(ctx context.Context, authTknID string, teamIDs []string, data *view.PredictionPageData, ts time.Time, ea *domain.EntryAgent, ta *domain.TokenAgent, l domain.Logger) ([]string, error) {
+	// retrieve the entry ID that the auth token pertains to
+	authTkn, err := ta.RetrieveTokenByID(ctx, authTknID)
+	if err != nil {
+		if errors.As(err, &domain.NotFoundError{}) {
+			l.Errorf("prediction page: auth token not found '%s'", authTknID)
+			return nil, genericErr
+		}
+		l.Errorf("prediction page: error retrieving auth token '%s': %s", authTknID, err)
+		return nil, genericErr
+	}
+
+	// check that entry id is valid
+	entry, err := ea.RetrieveEntryByID(ctx, authTkn.Value)
+	if err != nil {
+		l.Errorf("prediction page: cannot retrieve entry id '%s' from auth token '%s': %s", authTkn.Value, authTkn.ID, err.Error())
+		return nil, genericErr
+	}
+
+	// we have our entry, let's capture what we need for our view
+	data.Entry.ID = entry.ID.String()
+
+	// if entry has an associated entry prediction
+	// then override the default season team IDs with the most recent prediction
+	entryPrediction, err := ea.RetrieveEntryPredictionByTimestamp(ctx, entry, ts)
+	if err == nil {
+		// we have an entry prediction, let's capture what we need for our view
+		data.Teams.LastUpdated = entryPrediction.CreatedAt
+		teamIDs = entryPrediction.Rankings.GetIDs()
+	}
+
+	// retrieve prediction ranking limit
+	lim, err := ea.GetPredictionRankingLimit(ctx, entry)
+	if err != nil {
+		l.Errorf("prediction page: cannot get ranking limit: %s", err.Error())
+		return nil, genericErr
+	}
+
+	data.Predictions.Limit = lim
+
+	if lim == 0 {
+		// no predictions are allowed to be changed
+		// exit early before generating prediction token
+		return teamIDs, nil
+	}
+
+	// TODO - feat: delete any prediction tokens that are in-flight for this user
+
+	predTkn, err := ta.GenerateToken(ctx, domain.TokenTypePrediction, entry.ID.String())
+	if err != nil {
+		l.Errorf("prediction page: cannot generate prediction token: %s", err.Error())
+		return nil, genericErr
+	}
+
+	data.Entry.PredictionToken = predTkn.ID
+
+	return teamIDs, nil
 }
