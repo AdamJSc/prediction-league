@@ -1,0 +1,3 @@
+ALTER TABLE `entry`
+ADD COLUMN `short_code` VARCHAR(255) NOT NULL
+AFTER `id`;

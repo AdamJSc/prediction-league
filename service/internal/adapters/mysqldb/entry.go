@@ -10,12 +10,8 @@ import (
 	"golang.org/x/net/context"
 )
 
-// shortCodeLength represents the number of characters that a short code will contain
-const shortCodeLength = 6
-
 // entryDBFields defines the fields used regularly in Entry-related transactions
 var entryDBFields = []string{
-	"short_code",
 	"season_id",
 	"realm_name",
 	"entrant_name",
@@ -35,7 +31,7 @@ type EntryRepo struct {
 // Insert inserts a new Entry into the database
 func (e *EntryRepo) Insert(ctx context.Context, entry *domain.Entry) error {
 	stmt := `INSERT INTO entry (id, ` + getDBFieldsStringFromFields(entryDBFields) + `, created_at)
-					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := time.Now().Truncate(time.Second)
 
@@ -43,7 +39,6 @@ func (e *EntryRepo) Insert(ctx context.Context, entry *domain.Entry) error {
 		ctx,
 		stmt,
 		entry.ID,
-		entry.ShortCode,
 		entry.SeasonID,
 		entry.RealmName,
 		entry.EntrantName,
@@ -76,7 +71,6 @@ func (e *EntryRepo) Update(ctx context.Context, entry *domain.Entry) error {
 	rows, err := e.db.QueryContext(
 		ctx,
 		stmt,
-		entry.ShortCode,
 		entry.SeasonID,
 		entry.RealmName,
 		entry.EntrantName,
@@ -117,7 +111,6 @@ func (e *EntryRepo) Select(ctx context.Context, criteria map[string]interface{},
 
 		if err := rows.Scan(
 			&entry.ID,
-			&entry.ShortCode,
 			&entry.SeasonID,
 			&entry.RealmName,
 			&entry.EntrantName,
