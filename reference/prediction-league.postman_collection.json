@@ -137,14 +137,14 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "{{base_url}}/api/entry/{{entry_short_code}}/approve",
+					"raw": "{{base_url}}/api/entry/{{entry_id}}/approve",
 					"host": [
 						"{{base_url}}"
 					],
 					"path": [
 						"api",
 						"entry",
-						"{{entry_short_code}}",
+						"{{entry_id}}",
 						"approve"
 					]
 				}
