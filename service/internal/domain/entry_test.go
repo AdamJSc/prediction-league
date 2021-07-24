@@ -309,7 +309,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		teamIDs := domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)
@@ -336,26 +336,6 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		}
 	})
 
-	t.Run("add an entry prediction to an existing entry with invalid guard attempt must fail", func(t *testing.T) {
-		// predictions are accepted
-		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
-
-		agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: ts})
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		ctx, cancel := testContextWithGuardAttempt(t, "not_the_same_as_entry.ShortCode")
-		defer cancel()
-
-		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
-
-		_, err = agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
-		if !cmp.ErrorType(err, domain.UnauthorizedError{})().Success() {
-			expectedTypeOfGot(t, domain.UnauthorizedError{}, err)
-		}
-	})
-
 	t.Run("add an entry prediction to an existing entry with invalid realm name must fail", func(t *testing.T) {
 		// predictions are accepted
 		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
@@ -365,7 +345,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		domain.RealmFromContext(ctx).Name = "NOT_TEST_REALM"
@@ -387,7 +367,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
@@ -415,7 +395,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
@@ -438,7 +418,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
@@ -458,7 +438,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		rankings := domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)
@@ -488,7 +468,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		rankings := domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)
@@ -526,7 +506,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ctx, cancel := testContextWithGuardAttempt(t, entry.ShortCode)
+		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
 		rankings := domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)
