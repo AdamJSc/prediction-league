@@ -109,7 +109,6 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 			},
 			PaymentDetails: payment,
 			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
-			ShortCode:      entry.ShortCode,
 		})
 
 		if email.From.Name != rlm.Contact.Name {

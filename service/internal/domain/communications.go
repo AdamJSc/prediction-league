@@ -53,7 +53,6 @@ func (c *CommunicationsAgent) IssueNewEntryEmail(ctx context.Context, entry *Ent
 		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
 		PaymentDetails: *paymentDetails,
 		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
-		ShortCode:      entry.ShortCode,
 	}
 	var emailContent bytes.Buffer
 	if err := c.tpl.ExecuteTemplate(&emailContent, "email_txt_new_entry", d); err != nil {
@@ -298,7 +297,6 @@ type NewEntryEmailData struct {
 	MessagePayload
 	PaymentDetails PaymentDetails
 	PredictionsURL string
-	ShortCode      string
 }
 
 // RoundCompleteEmailData defines the fields relating to the content of a round complete email
