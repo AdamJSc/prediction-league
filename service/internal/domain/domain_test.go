@@ -280,15 +280,7 @@ func updateStandings(t *testing.T, standings domain.Standings) domain.Standings 
 func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail string) domain.Entry {
 	t.Helper()
 
-	ctx, cancel := testContextDefault(t)
-	defer cancel()
-
 	id, err := uuid.NewRandom()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	shortCode, err := er.GenerateUniqueShortCode(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -298,7 +290,6 @@ func generateTestEntry(t *testing.T, entrantName, entrantNickname, entrantEmail 
 
 	return domain.Entry{
 		ID:               id,
-		ShortCode:        shortCode,
 		SeasonID:         testSeason.ID,
 		RealmName:        testRealmName,
 		EntrantName:      entrantName,

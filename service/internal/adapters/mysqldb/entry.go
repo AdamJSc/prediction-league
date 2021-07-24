@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"math/rand"
 	"prediction-league/service/internal/domain"
 	"time"
 
@@ -178,37 +177,6 @@ func (e *EntryRepo) ExistsByID(ctx context.Context, id string) error {
 	}
 
 	return nil
-}
-
-// GenerateUniqueShortCode generates a string that does not already exist as a Lookup Ref
-func (e *EntryRepo) GenerateUniqueShortCode(ctx context.Context) (string, error) {
-	shortCode := generateRandomAlphaNumericString(shortCodeLength)
-
-	_, err := e.Select(ctx, map[string]interface{}{
-		"short_code": shortCode,
-	}, false)
-	switch err.(type) {
-	case nil:
-		// the short code already exists, so we need to generate a new one
-		return e.GenerateUniqueShortCode(ctx)
-	case domain.MissingDBRecordError:
-		// the lookup ref we have generated is unique, we can return it
-		return shortCode, nil
-	}
-	return "", err
-}
-
-// generateRandomAlphaNumericString returns a randomised string of given length
-func generateRandomAlphaNumericString(length int) string {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	charset := "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[r.Intn(len(charset))]
-	}
-
-	return string(b)
 }
 
 // NewEntryRepo instantiates a new EntryRepo with the provided DB agent

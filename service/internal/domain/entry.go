@@ -73,7 +73,6 @@ type EntryRepository interface {
 	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]Entry, error)
 	SelectBySeasonIDAndApproved(ctx context.Context, seasonID string, approved bool) ([]Entry, error)
 	ExistsByID(ctx context.Context, id string) error
-	GenerateUniqueShortCode(ctx context.Context) (string, error) // TODO - ShortCode: deprecate
 }
 
 // EntryPredictionRepository defines the interface for transacting with our EntryPredictions data source
@@ -127,12 +126,6 @@ func (e *EntryAgent) CreateEntry(ctx context.Context, entry Entry, s *Season) (E
 	entry.ApprovedAt = nil
 	entry.CreatedAt = time.Time{}
 	entry.UpdatedAt = nil
-
-	// generate a unique lookup ref
-	entry.ShortCode, err = e.er.GenerateUniqueShortCode(ctx)
-	if err != nil {
-		return Entry{}, domainErrorFromRepositoryError(err)
-	}
 
 	// sanitise entry
 	if err := sanitiseEntry(&entry); err != nil {
@@ -660,20 +653,8 @@ func (e *EntryAgent) CheckRankingLimit(ctx context.Context, limit int, newEP Ent
 	return nil
 }
 
-func (e *EntryAgent) GenerateUniqueShortCode(ctx context.Context) (string, error) {
-	// TODO - ShortCode: deprecate
-	return e.er.GenerateUniqueShortCode(ctx)
-}
-
 func (e *EntryAgent) SeedEntries(ctx context.Context, entries []Entry) error {
 	for _, entry := range entries {
-		shortCode, err := e.GenerateUniqueShortCode(ctx)
-		if err != nil {
-			return fmt.Errorf("cannot generate short code: %w", err)
-		}
-
-		entry.ShortCode = shortCode
-
 		if err := e.er.Insert(ctx, &entry); err != nil {
 			switch err.(type) {
 			case DuplicateDBRecordError:
