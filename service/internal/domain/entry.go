@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"regexp"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -484,14 +485,6 @@ func (e *EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, pay
 	// ensure that Entry realm matches current realm
 	if RealmFromContext(ctx).Name != entry.RealmName {
 		return Entry{}, ConflictError{errors.New("invalid realm")}
-	}
-
-	// ensure that Guard value matches Entry ID
-	// TODO - ShortCode: migrate auth to use session token
-	if !GuardFromContext(ctx).AttemptMatches(entry.ShortCode) {
-		return Entry{}, ValidationError{
-			Reasons: []string{"Invalid Entry ID"},
-		}
 	}
 
 	// check Entry status

@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -65,13 +66,20 @@ func createEntryHandler(c *container) func(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
+		regToken, err := c.tokenAgent.GenerateToken(ctx, domain.TokenTypeEntryRegistration, createdEntry.ID.String())
+		if err != nil {
+			c.logger.Errorf("cannot generate entry reg token for entry '%s': %s", createdEntry.ID.String(), err.Error())
+			responseFromError(err).writeTo(w)
+			return
+		}
+
 		createdResponse(&data{
 			Type: "entry",
 			Content: createEntryResponse{
-				ID:           createdEntry.ID.String(),
-				Nickname:     createdEntry.EntrantNickname,
-				ShortCode:    createdEntry.ShortCode,
-				NeedsPayment: c.config.PayPalClientID != "",
+				ID:                createdEntry.ID.String(),
+				Nickname:          createdEntry.EntrantNickname,
+				RegistrationToken: regToken.ID,
+				NeedsPayment:      c.config.PayPalClientID != "",
 			},
 		}).writeTo(w)
 	}
@@ -116,10 +124,21 @@ func updateEntryPaymentDetailsHandler(c *container) func(w http.ResponseWriter, 
 			MerchantName: input.MerchantName,
 		}
 
-		// TODO - ShortCode: migrate auth to use session token
-		domain.GuardFromContext(ctx).SetAttempt(input.ShortCode)
-
 		isPayPalConfigMissing := c.config.PayPalClientID == ""
+
+		// retrieve registration token
+		tkn, err := c.tokenAgent.RetrieveTokenByID(ctx, input.RegistrationToken)
+		if err != nil {
+			c.logger.Errorf("cannot retrieve token '%s': %s", input.RegistrationToken, err.Error())
+			responseFromError(domain.BadRequestError{Err: errors.New("invalid token")}).writeTo(w)
+			return
+		}
+
+		// check token validity
+		if !c.tokenAgent.IsTokenValid(tkn, domain.TokenTypeEntryRegistration, entryID) {
+			responseFromError(domain.BadRequestError{Err: errors.New("invalid token")}).writeTo(w)
+			return
+		}
 
 		// update payment details for entry
 		entry, err := c.entryAgent.UpdateEntryPaymentDetails(ctx, entryID, input.PaymentMethod, input.PaymentRef, isPayPalConfigMissing)
@@ -130,6 +149,14 @@ func updateEntryPaymentDetailsHandler(c *container) func(w http.ResponseWriter, 
 
 		// issue new entry email
 		if err := c.commsAgent.IssueNewEntryEmail(ctx, &entry, &paymentDetails); err != nil {
+			responseFromError(err).writeTo(w)
+			return
+		}
+
+		// delete token
+		// TODO - feat: replace with token redeem
+		if err := c.tokenAgent.DeleteToken(ctx, *tkn); err != nil {
+			// log error and continue
 			responseFromError(err).writeTo(w)
 			return
 		}

@@ -143,7 +143,7 @@
                         vm.$emit('update-entry-data', {
                             id: response.data.data.entry.id,
                             email: vm.formData.entrant_email,
-                            shortCode: response.data.data.entry.short_code,
+                            regToken: response.data.data.entry.reg_token,
                             needsPayment: response.data.data.entry.needs_payment
                         })
                         vm.$el.querySelector('#registration-entry-form').reset()

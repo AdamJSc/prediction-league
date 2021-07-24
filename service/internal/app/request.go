@@ -20,11 +20,11 @@ func (r createEntryRequest) ToEntryModel() domain.Entry {
 }
 
 type updateEntryPaymentDetailsRequest struct {
-	PaymentMethod string `json:"payment_method"`
-	PaymentRef    string `json:"payment_ref"`
-	PaymentAmount string `json:"payment_amount"`
-	MerchantName  string `json:"merchant_name"`
-	ShortCode     string `json:"short_code"` // TODO - ShortCode: deprecate
+	PaymentMethod     string `json:"payment_method"`
+	PaymentRef        string `json:"payment_ref"`
+	PaymentAmount     string `json:"payment_amount"`
+	MerchantName      string `json:"merchant_name"`
+	RegistrationToken string `json:"reg_token"`
 }
 
 type createEntryPredictionRequest struct {

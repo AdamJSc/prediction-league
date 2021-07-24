@@ -13,18 +13,21 @@ import (
 func TestNewTokenAgent(t *testing.T) {
 	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
 		cl := &mockClock{}
+		l := &mockLogger{}
 
 		tt := []struct {
 			tr      domain.TokenRepository
 			cl      domain.Clock
+			l       domain.Logger
 			wantErr error
 		}{
-			{nil, cl, domain.ErrIsNil},
-			{tr, nil, domain.ErrIsNil},
-			{tr, cl, nil},
+			{nil, cl, l, domain.ErrIsNil},
+			{tr, nil, l, domain.ErrIsNil},
+			{tr, cl, nil, domain.ErrIsNil},
+			{tr, cl, l, nil},
 		}
 		for idx, tc := range tt {
-			agent, gotErr := domain.NewTokenAgent(tc.tr, tc.cl)
+			agent, gotErr := domain.NewTokenAgent(tc.tr, tc.cl, nil)
 			if !errors.Is(gotErr, tc.wantErr) {
 				t.Fatalf("tc #%d: want error %s (%T), got %s (%T)", idx, tc.wantErr, tc.wantErr, gotErr, gotErr)
 			}
@@ -38,7 +41,7 @@ func TestNewTokenAgent(t *testing.T) {
 func TestTokenAgent_GenerateToken(t *testing.T) {
 	defer truncate(t)
 
-	agent, err := domain.NewTokenAgent(tr, &mockClock{t: dt})
+	agent, err := domain.NewTokenAgent(tr, &mockClock{t: dt}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +134,7 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 	defer truncate(t)
 
-	agent, err := domain.NewTokenAgent(tr, &mockClock{})
+	agent, err := domain.NewTokenAgent(tr, &mockClock{}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,7 +184,7 @@ func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 func TestTokenAgent_DeleteToken(t *testing.T) {
 	defer truncate(t)
 
-	agent, err := domain.NewTokenAgent(tr, &mockClock{})
+	agent, err := domain.NewTokenAgent(tr, &mockClock{}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -210,7 +213,7 @@ func TestTokenAgent_DeleteToken(t *testing.T) {
 func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 	defer truncate(t)
 
-	agent, err := domain.NewTokenAgent(tr, &mockClock{})
+	agent, err := domain.NewTokenAgent(tr, &mockClock{}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -270,6 +273,8 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 		}
 	})
 }
+
+// TODO - ShortCode: tests for IsTokenValid
 
 func generateTestToken() *domain.Token {
 	// arbitrary timestamp that isn't the current moment

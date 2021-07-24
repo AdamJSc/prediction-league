@@ -78,7 +78,7 @@
                 entryData: {
                     id: "",
                     email: "",
-                    shortCode: "",
+                    regToken: "",
                     needsPayment: true
                 },
                 paymentData: {

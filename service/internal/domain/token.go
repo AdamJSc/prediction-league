@@ -9,12 +9,14 @@ import (
 const (
 	TokenTypeAuth = iota
 	TokenTypeMagicLogin
+	TokenTypeEntryRegistration
 	TokenLength = 32 // TODO - feat: extend token length to 64 (increase id field to VARCHAR 64)
 )
 
 var TokenValidityDuration = map[int]time.Duration{
-	TokenTypeAuth:       time.Minute * 60,
-	TokenTypeMagicLogin: time.Minute * 10,
+	TokenTypeAuth:              time.Minute * 60,
+	TokenTypeMagicLogin:        time.Minute * 10,
+	TokenTypeEntryRegistration: time.Minute * 10,
 }
 
 // TODO - feat: update to support RedeemedAt
@@ -40,6 +42,7 @@ type TokenRepository interface {
 type TokenAgent struct {
 	tr TokenRepository
 	cl Clock
+	l  Logger
 }
 
 // GenerateToken generates a new unique token
@@ -118,13 +121,32 @@ func (t *TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp tim
 	return nil
 }
 
+// IsTokenValid determines whether the provided Token is valid
+func (t *TokenAgent) IsTokenValid(tkn *Token, typ int, val string) bool {
+	now := t.cl.Now()
+	switch {
+	case tkn.Type != typ:
+		t.l.Errorf("token id '%s': token type %d is not %d", tkn.ID, tkn.Type, typ)
+		return false
+	case tkn.Value != val:
+		t.l.Errorf("token id '%s': token value '%s' is not '%s'", tkn.ID, tkn.Value, val)
+		return false
+	case now.After(tkn.ExpiresAt):
+		t.l.Errorf("token id '%s': token expiry %s is not %s", tkn.ID, tkn.ExpiresAt.Format(time.RFC3339), now.Format(time.RFC3339))
+		return false
+	}
+	return true
+}
+
 // NewTokenAgent returns a new TokenAgent using the provided repository
-func NewTokenAgent(tr TokenRepository, cl Clock) (*TokenAgent, error) {
+func NewTokenAgent(tr TokenRepository, cl Clock, l Logger) (*TokenAgent, error) {
 	switch {
 	case tr == nil:
 		return nil, fmt.Errorf("token repository: %w", ErrIsNil)
 	case cl == nil:
 		return nil, fmt.Errorf("clock: %w", ErrIsNil)
+	case l == nil:
+		return nil, fmt.Errorf("logger: %w", ErrIsNil)
 	}
-	return &TokenAgent{tr, cl}, nil
+	return &TokenAgent{tr, cl, l}, nil
 }

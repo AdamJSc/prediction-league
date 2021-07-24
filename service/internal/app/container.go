@@ -140,7 +140,7 @@ func NewContainer(cfg *Config, l domain.Logger, cl domain.Clock) (*container, fu
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot instantiate scored entry prediction agent: %w", err)
 	}
-	ta, err := domain.NewTokenAgent(tr, cl)
+	ta, err := domain.NewTokenAgent(tr, cl, l)
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot instantiate token agent: %w", err)
 	}

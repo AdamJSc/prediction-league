@@ -185,7 +185,7 @@
                         payment_ref: paymentReference,
                         payment_amount: vm.entryFeeData.label,
                         merchant_name: merchantName,
-                        short_code: vm.entryData.shortCode
+                        reg_token: vm.entryData.regToken
                     }
                 })
                     .then(function (response) {
