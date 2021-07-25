@@ -230,9 +230,14 @@ func frontendGenerateMagicLoginHandler(c *container) func(w http.ResponseWriter,
 			return
 		}
 
-		// TODO - feat: delete any magic login tokens that are in-flight for this user
+		// purge unused prediction tokens for this user
+		if _, err := c.tokenAgent.DeleteInFlightTokens(ctx, domain.TokenTypeMagicLogin, entry.ID.String()); err != nil {
+			c.logger.Errorf("cannot purge in-flight magic login tokens: %s", err.Error())
+			writeResponse(view.GenerateMagicLoginPageData{Err: genericErr})
+			return
+		}
 
-		// generate magic login token
+		// generate new magic login token
 		mTkn, err := c.tokenAgent.GenerateToken(ctx, domain.TokenTypeMagicLogin, entry.ID.String())
 		if err != nil {
 			c.logger.Errorf("cannot generate magic login token for entry id '%s': %s", entry.ID.String(), err.Error())
