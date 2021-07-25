@@ -140,7 +140,7 @@ func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	token := generateTestToken()
+	token := generateTestToken("token_id")
 	if err := tr.Insert(context.Background(), token); err != nil {
 		t.Fatal(err)
 	}
@@ -182,6 +182,71 @@ func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 	})
 }
 
+func TestTokenAgent_RedeemToken(t *testing.T) {
+	defer truncate(t)
+
+	ctx := context.Background()
+
+	var getTokenByID = func(id string) domain.Token {
+		res, err := tr.Select(ctx, map[string]interface{}{
+			"id": id,
+		}, false)
+		if err != nil {
+			t.Fatalf("cannot get token by id: %s", err.Error())
+		}
+
+		if len(res) != 1 {
+			t.Fatalf("got more than 1 token by id: num of results %d", len(res))
+		}
+
+		return res[0]
+	}
+
+	agent, err := domain.NewTokenAgent(tr, &mockClock{t: dt}, &mockLogger{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("redeem an existing token that has not been redeemed must succeed", func(t *testing.T) {
+		token := generateTestToken("tkn-1")
+		if err := tr.Insert(ctx, token); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := agent.RedeemToken(context.Background(), *token); err != nil {
+			t.Fatal(err)
+		}
+
+		// token must be redeemed
+		wantTkn := *token
+		wantTkn.RedeemedAt = &dt
+		gotTkn := getTokenByID(token.ID)
+
+		if diff := gocmp.Diff(wantTkn, gotTkn); diff != "" {
+			t.Fatalf("want token %+v, got %+v, diff: %s", wantTkn, gotTkn, diff)
+		}
+	})
+
+	t.Run("redeem an existing token that has already been redeemed must fail", func(t *testing.T) {
+		token := generateTestToken("tkn-2")
+		token.RedeemedAt = &dt
+		if err := tr.Insert(ctx, token); err != nil {
+			t.Fatal(err)
+		}
+
+		if gotErr := agent.RedeemToken(context.Background(), *token); !errors.As(gotErr, &domain.ConflictError{}) {
+			t.Fatalf("want conflict error, got %s (%T)", gotErr, gotErr)
+		}
+	})
+
+	t.Run("redeem a non-existent token must fail", func(t *testing.T) {
+		token := generateTestToken("non-existent-id")
+		if gotErr := agent.RedeemToken(context.Background(), *token); !errors.As(gotErr, &domain.NotFoundError{}) {
+			t.Fatalf("want not found error, got %s (%T)", gotErr, gotErr)
+		}
+	})
+}
+
 func TestTokenAgent_DeleteToken(t *testing.T) {
 	defer truncate(t)
 
@@ -190,7 +255,7 @@ func TestTokenAgent_DeleteToken(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	token := generateTestToken()
+	token := generateTestToken("token_id")
 	if err := tr.Insert(context.Background(), token); err != nil {
 		t.Fatal(err)
 	}
@@ -222,17 +287,17 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 	now := time.Now().Truncate(time.Second)
 
 	// token 1 represents a token that expires 1 second in the past
-	token1 := generateTestToken()
+	token1 := generateTestToken("token_id")
 	token1.ID = "test_token_1"
 	token1.ExpiresAt = now.Add(-time.Second)
 
 	// token 2 represents a token that expires now
-	token2 := generateTestToken()
+	token2 := generateTestToken("token_id")
 	token2.ID = "test_token_2"
 	token2.ExpiresAt = now
 
 	// token 3 represents a token that expires 1 second in the future
-	token3 := generateTestToken()
+	token3 := generateTestToken("token_id")
 	token3.ID = "test_token_3"
 	token3.ExpiresAt = now.Add(time.Second)
 
@@ -353,12 +418,12 @@ func TestTokenAgent_IsTokenValid(t *testing.T) {
 	}
 }
 
-func generateTestToken() *domain.Token {
+func generateTestToken(id string) *domain.Token {
 	// arbitrary timestamp that isn't the current moment
 	ts := time.Now().Truncate(time.Second).Add(-24 * time.Hour)
 
 	return &domain.Token{
-		ID:        "token_id",
+		ID:        id,
 		Type:      123,
 		Value:     "Hello World",
 		IssuedAt:  ts,

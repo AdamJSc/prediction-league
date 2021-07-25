@@ -83,6 +83,32 @@ func (t *TokenRepo) Select(ctx context.Context, criteria map[string]interface{},
 	return tokens, nil
 }
 
+// Update updates an existing Token in the database
+func (t *TokenRepo) Update(ctx context.Context, token *domain.Token) error {
+	stmt := `UPDATE token
+			SET ` + getDBFieldsWithEqualsPlaceholdersStringFromFields(tokenDBFields) + `
+			WHERE id = ?`
+
+	res, err := t.db.Exec(
+		stmt,
+		token.Type,
+		token.Value,
+		token.IssuedAt,
+		token.RedeemedAt,
+		token.ExpiresAt,
+		token.ID,
+	)
+	if err != nil {
+		return wrapDBError(err)
+	}
+
+	if cnt, _ := res.RowsAffected(); cnt == 0 {
+		return domain.MissingDBRecordError{Err: errors.New("token does not exist")}
+	}
+
+	return nil
+}
+
 // ExistsByID determines whether a Token with the provided ID exists in the database
 func (t *TokenRepo) ExistsByID(ctx context.Context, id string) error {
 	stmt := `SELECT COUNT(*) FROM token WHERE id = ?`

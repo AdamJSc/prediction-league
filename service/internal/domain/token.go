@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -35,6 +36,7 @@ type Token struct {
 type TokenRepository interface {
 	Insert(ctx context.Context, token *Token) error
 	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]Token, error)
+	Update(ctx context.Context, token *Token) error
 	ExistsByID(ctx context.Context, id string) error
 	DeleteByID(ctx context.Context, id string) error
 	GenerateUniqueTokenID(ctx context.Context) (string, error)
@@ -90,6 +92,23 @@ func (t *TokenAgent) RetrieveTokenByID(ctx context.Context, id string) (*Token, 
 	}
 
 	return &tokens[0], nil
+}
+
+// RedeemToken sets a RedeemedAt value on the provided Token and updates it
+func (t *TokenAgent) RedeemToken(ctx context.Context, token Token) error {
+	if token.RedeemedAt != nil {
+		return ConflictError{errors.New("token has already been redeemed")}
+	}
+
+	redeemed := t.cl.Now()
+	token.RedeemedAt = &redeemed
+
+	err := t.tr.Update(ctx, &token)
+	if err != nil {
+		return domainErrorFromRepositoryError(err)
+	}
+
+	return nil
 }
 
 // DeleteToken removes the provided token
