@@ -34,7 +34,6 @@ func ConnectAndMigrate(mysqlURL, migURL string, l domain.Logger) (*sql.DB, error
 		return nil, fmt.Errorf("cannot open migration instance: %w", err)
 	}
 
-	// TODO - feat: add backup of previous schema to migration 6
 	if err := mig.Up(); err != nil {
 		switch err {
 		case migrate.ErrNoChange:

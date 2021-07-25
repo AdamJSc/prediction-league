@@ -331,11 +331,10 @@ func frontendRedeemMagicLoginHandler(c *container) func(w http.ResponseWriter, r
 		}
 		setAuthCookieValue(authTkn.ID, w, r)
 
-		// delete magic token
-		// TODO - feat: replace with token redeem
-		if err := c.tokenAgent.DeleteToken(ctx, *mTkn); err != nil {
+		// redeem magic token
+		if err := c.tokenAgent.RedeemToken(ctx, *mTkn); err != nil {
 			// log error and continue
-			c.logger.Errorf("cannot delete magic token id '%s': %s", mTkn.ID, err.Error())
+			c.logger.Errorf("cannot redeem magic token id '%s': %s", mTkn.ID, err.Error())
 		}
 
 		// all ok!

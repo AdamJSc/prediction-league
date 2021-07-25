@@ -127,14 +127,14 @@ func updateEntryPaymentDetailsHandler(c *container) func(w http.ResponseWriter, 
 		isPayPalConfigMissing := c.config.PayPalClientID == ""
 
 		// retrieve registration token
-		tkn, err := c.tokenAgent.RetrieveTokenByID(ctx, input.RegistrationToken)
+		regTkn, err := c.tokenAgent.RetrieveTokenByID(ctx, input.RegistrationToken)
 		if err != nil {
 			responseFromError(domain.BadRequestError{Err: errors.New("invalid token")}).writeTo(w)
 			return
 		}
 
 		// check token validity
-		if !c.tokenAgent.IsTokenValid(tkn, domain.TokenTypeEntryRegistration, entryID) {
+		if !c.tokenAgent.IsTokenValid(regTkn, domain.TokenTypeEntryRegistration, entryID) {
 			responseFromError(domain.BadRequestError{Err: errors.New("invalid token")}).writeTo(w)
 			return
 		}
@@ -152,9 +152,8 @@ func updateEntryPaymentDetailsHandler(c *container) func(w http.ResponseWriter, 
 			return
 		}
 
-		// delete token
-		// TODO - feat: replace with token redeem
-		if err := c.tokenAgent.DeleteToken(ctx, *tkn); err != nil {
+		// redeem registration token
+		if err := c.tokenAgent.RedeemToken(ctx, *regTkn); err != nil {
 			responseFromError(err).writeTo(w)
 			return
 		}
@@ -217,15 +216,15 @@ func createEntryPredictionHandler(c *container) func(w http.ResponseWriter, r *h
 			return
 		}
 
-		// retrieve registration token
-		tkn, err := c.tokenAgent.RetrieveTokenByID(ctx, input.PredictionToken)
+		// retrieve prediction token
+		predTkn, err := c.tokenAgent.RetrieveTokenByID(ctx, input.PredictionToken)
 		if err != nil {
 			responseFromError(domain.BadRequestError{Err: errors.New("invalid token")}).writeTo(w)
 			return
 		}
 
 		// check token validity
-		if !c.tokenAgent.IsTokenValid(tkn, domain.TokenTypePrediction, entryID) {
+		if !c.tokenAgent.IsTokenValid(predTkn, domain.TokenTypePrediction, entryID) {
 			responseFromError(domain.BadRequestError{Err: errors.New("invalid token")}).writeTo(w)
 			return
 		}
@@ -236,9 +235,8 @@ func createEntryPredictionHandler(c *container) func(w http.ResponseWriter, r *h
 			return
 		}
 
-		// delete token
-		// TODO - feat: replace with token redeem
-		if err := c.tokenAgent.DeleteToken(ctx, *tkn); err != nil {
+		// redeem prediction token
+		if err := c.tokenAgent.RedeemToken(ctx, *predTkn); err != nil {
 			responseFromError(err).writeTo(w)
 			return
 		}
