@@ -47,77 +47,67 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Run("generate an auth token must succeed", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
+	tt := []struct {
+		name string
+		typ  int
+	}{
+		{
+			name: "generate an auth token must succeed",
+			typ:  domain.TokenTypeAuth,
+		},
+		{
+			name: "generate an entry registration token must succeed",
+			typ:  domain.TokenTypeEntryRegistration,
+		},
+		{
+			name: "generate a magic login token must succeed",
+			typ:  domain.TokenTypeMagicLogin,
+		},
+		{
+			name: "generate a prediction token must succeed",
+			typ:  domain.TokenTypePrediction,
+		},
+	}
 
-		expectedType := domain.TokenTypeAuth
-		expectedValue := "Hello World"
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := testContextDefault(t)
+			defer cancel()
 
-		token, err := agent.GenerateToken(ctx, expectedType, expectedValue)
-		if err != nil {
-			t.Fatal(err)
-		}
+			typ := tc.typ
+			val := "Hello World"
 
-		if len(token.ID) != domain.TokenLength {
-			expectedGot(t, domain.TokenLength, len(token.ID))
-		}
-		if token.Type != expectedType {
-			expectedGot(t, expectedType, token.Type)
-		}
-		if token.Value != expectedValue {
-			expectedGot(t, expectedValue, token.Value)
-		}
-		if !token.IssuedAt.Equal(dt) {
-			expectedGot(t, dt, token.IssuedAt)
-		}
-		expectedExpires := dt.Add(domain.TokenValidityDuration[expectedType])
-		if !token.ExpiresAt.Equal(expectedExpires) {
-			expectedGot(t, expectedExpires, token.ExpiresAt)
-		}
+			token, err := agent.GenerateToken(ctx, typ, val)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		// inserting same token a second time must fail
-		err = tr.Insert(ctx, token)
-		if !cmp.ErrorType(err, domain.DuplicateDBRecordError{})().Success() {
-			expectedTypeOfGot(t, domain.DuplicateDBRecordError{}, err)
-		}
-	})
+			if len(token.ID) != domain.TokenLength {
+				t.Fatalf("want token length %d, got %d", domain.TokenLength, len(token.ID))
+			}
+			if token.Type != typ {
+				t.Fatalf("want token type %d, got %d", typ, token.Type)
+			}
+			if token.Value != val {
+				t.Fatalf("want token value %s, got %s", val, token.Value)
+			}
+			if !token.IssuedAt.Equal(dt) {
+				t.Fatalf("want token issued at %+v, got %+v", dt, token.IssuedAt)
+			}
+			if token.RedeemedAt != nil {
+				t.Fatalf("want nil token redeemed at, got %+v", token.RedeemedAt)
+			}
+			wantExp := dt.Add(domain.TokenValidityDuration[typ])
+			if !token.ExpiresAt.Equal(wantExp) {
+				t.Fatalf("want token expires at %+v, got %+v", wantExp, token.ExpiresAt)
+			}
 
-	t.Run("generate a short code reset token must succeed", func(t *testing.T) {
-		ctx, cancel := testContextDefault(t)
-		defer cancel()
-
-		expectedType := domain.TokenTypeMagicLogin
-		expectedValue := "Hello World"
-
-		token, err := agent.GenerateToken(ctx, expectedType, expectedValue)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if len(token.ID) != domain.TokenLength {
-			expectedGot(t, domain.TokenLength, len(token.ID))
-		}
-		if token.Type != expectedType {
-			expectedGot(t, expectedType, token.Type)
-		}
-		if token.Value != expectedValue {
-			expectedGot(t, expectedValue, token.Value)
-		}
-		if !token.IssuedAt.Equal(dt) {
-			expectedGot(t, dt, token.IssuedAt)
-		}
-		expectedExpires := dt.Add(domain.TokenValidityDuration[expectedType])
-		if !token.ExpiresAt.Equal(expectedExpires) {
-			expectedGot(t, expectedExpires, token.ExpiresAt)
-		}
-
-		// inserting same token a second time must fail
-		err = tr.Insert(ctx, token)
-		if !cmp.ErrorType(err, domain.DuplicateDBRecordError{})().Success() {
-			expectedTypeOfGot(t, domain.DuplicateDBRecordError{}, err)
-		}
-	})
+			// inserting same token a second time must fail
+			if gotErr := tr.Insert(ctx, token); !errors.As(gotErr, &domain.DuplicateDBRecordError{}) {
+				t.Fatalf("want DuplicateDBRecordError, got %s (%T)", gotErr, gotErr)
+			}
+		})
+	}
 
 	t.Run("generate a token of a non-existent token type must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -125,9 +115,90 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 
 		nonExistentTokenType := 123456
 
-		_, err := agent.GenerateToken(ctx, nonExistentTokenType, "Hello World")
-		if !cmp.ErrorType(err, domain.NotFoundError{})().Success() {
-			expectedTypeOfGot(t, domain.NotFoundError{}, err)
+		if _, gotErr := agent.GenerateToken(ctx, nonExistentTokenType, "Hello World"); !errors.As(gotErr, &domain.NotFoundError{}) {
+			t.Fatalf("want NotFoundError, got %s (%T)", gotErr, gotErr)
+		}
+	})
+}
+
+func TestTokenAgent_GenerateExtendedToken(t *testing.T) {
+	defer truncate(t)
+
+	agent, err := domain.NewTokenAgent(tr, &mockClock{t: dt}, &mockLogger{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tt := []struct {
+		name string
+		typ  int
+	}{
+		{
+			name: "generate an auth token must succeed",
+			typ:  domain.TokenTypeAuth,
+		},
+		{
+			name: "generate an entry registration token must succeed",
+			typ:  domain.TokenTypeEntryRegistration,
+		},
+		{
+			name: "generate a magic login token must succeed",
+			typ:  domain.TokenTypeMagicLogin,
+		},
+		{
+			name: "generate a prediction token must succeed",
+			typ:  domain.TokenTypePrediction,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := testContextDefault(t)
+			defer cancel()
+
+			typ := tc.typ
+			val := "Hello World"
+
+			token, err := agent.GenerateExtendedToken(ctx, typ, val)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if len(token.ID) != domain.TokenLength {
+				t.Fatalf("want token length %d, got %d", domain.TokenLength, len(token.ID))
+			}
+			if token.Type != typ {
+				t.Fatalf("want token type %d, got %d", typ, token.Type)
+			}
+			if token.Value != val {
+				t.Fatalf("want token value %s, got %s", val, token.Value)
+			}
+			if !token.IssuedAt.Equal(dt) {
+				t.Fatalf("want token issued at %+v, got %+v", dt, token.IssuedAt)
+			}
+			if token.RedeemedAt != nil {
+				t.Fatalf("want nil token redeemed at, got %+v", token.RedeemedAt)
+			}
+			wantExp := dt.Add(6 * time.Hour)
+			if !token.ExpiresAt.Equal(wantExp) {
+				t.Fatalf("want token expires at %+v, got %+v", wantExp, token.ExpiresAt)
+			}
+
+			// inserting same token a second time must fail
+			if gotErr := tr.Insert(ctx, token); !errors.As(gotErr, &domain.DuplicateDBRecordError{}) {
+				t.Fatalf("want DuplicateDBRecordError, got %s (%T)", gotErr, gotErr)
+			}
+		})
+	}
+
+	t.Run("generate a token of a non-existent token type must fail", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		nonExistentTokenType := 123456
+
+		if _, gotErr := agent.GenerateExtendedToken(ctx, nonExistentTokenType, "Hello World"); !errors.As(gotErr, &domain.NotFoundError{}) {
+			t.Fatalf("want NotFoundError, got %s (%T)", gotErr, gotErr)
 		}
 	})
 }

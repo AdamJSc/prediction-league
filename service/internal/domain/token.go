@@ -22,6 +22,8 @@ var TokenValidityDuration = map[int]time.Duration{
 	TokenTypePrediction:        time.Minute * 10,
 }
 
+var extendedTokenDur = 6 * time.Hour
+
 // Token defines a token model
 type Token struct {
 	ID         string     `db:"id"`
@@ -49,16 +51,32 @@ type TokenAgent struct {
 	l  Logger
 }
 
-// GenerateToken generates a new unique token
+// GenerateToken generates a new unique token for the provided type and value
 func (t *TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (*Token, error) {
-	id, err := t.tr.GenerateUniqueTokenID(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	tokenDur, ok := TokenValidityDuration[typ]
 	if !ok {
 		return nil, NotFoundError{fmt.Errorf("token type %d has no validity duration", typ)}
+	}
+
+	expires := t.cl.Now().Add(tokenDur)
+	return t.createToken(ctx, typ, value, expires)
+}
+
+// GenerateExtendedToken generates a token with an extended expiry
+func (t *TokenAgent) GenerateExtendedToken(ctx context.Context, typ int, value string) (*Token, error) {
+	if _, ok := TokenValidityDuration[typ]; !ok {
+		return nil, NotFoundError{fmt.Errorf("token type %d is not valid", typ)}
+	}
+
+	expires := t.cl.Now().Add(extendedTokenDur)
+	return t.createToken(ctx, typ, value, expires)
+}
+
+// createToken creates a new unique token
+func (t *TokenAgent) createToken(ctx context.Context, typ int, value string, expires time.Time) (*Token, error) {
+	id, err := t.tr.GenerateUniqueTokenID(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	now := t.cl.Now()
@@ -68,7 +86,7 @@ func (t *TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (
 		Type:      typ,
 		Value:     value,
 		IssuedAt:  now,
-		ExpiresAt: now.Add(tokenDur),
+		ExpiresAt: expires,
 	}
 
 	if err := t.tr.Insert(ctx, &token); err != nil {
