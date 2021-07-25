@@ -109,6 +109,25 @@ func (t *TokenRepo) Update(ctx context.Context, token *domain.Token) error {
 	return nil
 }
 
+// Delete deletes Tokens from our database based on the provided criteria
+func (t *TokenRepo) Delete(ctx context.Context, criteria map[string]interface{}, matchAny bool) (int64, error) {
+	whereStmt, params := dbWhereStmt(criteria, matchAny)
+
+	stmt := `DELETE FROM token ` + whereStmt
+
+	res, err := t.db.Exec(stmt, params...)
+	if err != nil {
+		return 0, wrapDBError(err)
+	}
+
+	cnt, err := res.RowsAffected()
+	if err != nil {
+		return 0, wrapDBError(err)
+	}
+
+	return cnt, nil
+}
+
 // ExistsByID determines whether a Token with the provided ID exists in the database
 func (t *TokenRepo) ExistsByID(ctx context.Context, id string) error {
 	stmt := `SELECT COUNT(*) FROM token WHERE id = ?`
@@ -125,19 +144,6 @@ func (t *TokenRepo) ExistsByID(ctx context.Context, id string) error {
 	}
 
 	return nil
-}
-
-// DeleteByID removes the Token with the provided ID from the database
-func (t *TokenRepo) DeleteByID(ctx context.Context, id string) error {
-	stmt := `DELETE FROM token WHERE id = ?`
-
-	rows, err := t.db.QueryContext(ctx, stmt, id)
-	if err != nil {
-		return wrapDBError(err)
-	}
-	defer rows.Close()
-
-	return rows.Err()
 }
 
 // GenerateUniqueTokenID returns a string representing a unique token ID

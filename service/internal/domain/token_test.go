@@ -255,23 +255,38 @@ func TestTokenAgent_DeleteToken(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	token := generateTestToken("token_id")
-	if err := tr.Insert(context.Background(), token); err != nil {
-		t.Fatal(err)
-	}
-
 	t.Run("delete an existing token must succeed", func(t *testing.T) {
+		tkn := generateTestToken("tkn-1")
+		if err := tr.Insert(context.Background(), tkn); err != nil {
+			t.Fatal(err)
+		}
+
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		if err := agent.DeleteToken(ctx, *token); err != nil {
+		if err := agent.DeleteToken(ctx, *tkn); err != nil {
 			t.Fatal(err)
 		}
 
 		// token must have been deleted
-		err := tr.ExistsByID(ctx, token.ID)
-		if !cmp.ErrorType(err, domain.MissingDBRecordError{})().Success() {
-			expectedTypeOfGot(t, domain.MissingDBRecordError{}, err)
+		if gotErr := tr.ExistsByID(ctx, tkn.ID); !errors.As(gotErr, &domain.MissingDBRecordError{}) {
+			t.Fatalf("want MissingDBRecordError, got %s (%T)", gotErr, gotErr)
+		}
+	})
+
+	t.Run("delete a non-existent token must succeed", func(t *testing.T) {
+		tkn := generateTestToken("tkn-2")
+		if err := tr.Insert(context.Background(), tkn); err != nil {
+			t.Fatal(err)
+		}
+
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		altTkn := domain.Token{ID: "non-existent-token"}
+
+		if gotErr := agent.DeleteToken(ctx, altTkn); !errors.As(gotErr, &domain.NotFoundError{}) {
+			t.Fatalf("want NotFoundError, got %s (%T)", gotErr, gotErr)
 		}
 	})
 }

@@ -37,8 +37,8 @@ type TokenRepository interface {
 	Insert(ctx context.Context, token *Token) error
 	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]Token, error)
 	Update(ctx context.Context, token *Token) error
+	Delete(ctx context.Context, criteria map[string]interface{}, matchAny bool) (int64, error)
 	ExistsByID(ctx context.Context, id string) error
-	DeleteByID(ctx context.Context, id string) error
 	GenerateUniqueTokenID(ctx context.Context) (string, error)
 }
 
@@ -113,9 +113,19 @@ func (t *TokenAgent) RedeemToken(ctx context.Context, token Token) error {
 
 // DeleteToken removes the provided token
 func (t *TokenAgent) DeleteToken(ctx context.Context, token Token) error {
-	err := t.tr.DeleteByID(ctx, token.ID)
+	cnt, err := t.tr.Delete(ctx, map[string]interface{}{
+		"id": token.ID,
+	}, false)
 	if err != nil {
 		return domainErrorFromRepositoryError(err)
+	}
+
+	if cnt == 0 {
+		return NotFoundError{errors.New("token not found")}
+	}
+
+	if cnt > 1 {
+		return InternalError{fmt.Errorf("deleted %d tokens by id '%s'", cnt, token.ID)}
 	}
 
 	return nil
@@ -123,7 +133,7 @@ func (t *TokenAgent) DeleteToken(ctx context.Context, token Token) error {
 
 // DeleteTokensExpiredAfter removes tokens that have expired since the provide timestamp
 func (t *TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp time.Time) error {
-	tokens, err := t.tr.Select(ctx, map[string]interface{}{
+	tkns, err := t.tr.Select(ctx, map[string]interface{}{
 		"expires_at": DBQueryCondition{
 			Operator: "<=",
 			Operand:  timestamp,
@@ -133,8 +143,8 @@ func (t *TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp tim
 		return domainErrorFromRepositoryError(err)
 	}
 
-	for _, token := range tokens {
-		if err := t.tr.DeleteByID(ctx, token.ID); err != nil {
+	for _, tkn := range tkns {
+		if err := t.DeleteToken(ctx, tkn); err != nil {
 			return domainErrorFromRepositoryError(err)
 		}
 	}
