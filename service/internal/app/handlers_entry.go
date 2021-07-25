@@ -356,8 +356,8 @@ func generateExtendedMagicLoginTokenHandler(c *container) func(w http.ResponseWr
 			return
 		}
 
-		origin := domain.RealmFromContext(ctx).Origin
-		url := fmt.Sprintf("%s/login/%s", origin, predTkn.ID)
+		realm := domain.RealmFromContext(ctx)
+		url := domain.GetMagicLoginURL(realm, predTkn)
 
 		// success!
 		okResponse(&data{

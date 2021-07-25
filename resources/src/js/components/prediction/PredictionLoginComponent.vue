@@ -8,7 +8,7 @@
                         <ul><li v-for="msg in errorMessages">{{msg}}</li></ul>
                     </div>
                 </transition>
-                <form class="form-primary" method="POST" action="/login">
+                <form class="form-primary" method="POST" v-bind:action="loginPageUrl">
                   <div class="tagline">Enter your email to login</div>
 
                   <div class="form-label-group">
@@ -30,6 +30,11 @@
 
     export default {
         name: 'PredictionLogin',
+        props: {
+            loginPageUrl: {
+                type: String,
+            }
+        },
         data: function() {
             return {
                 errorMessages: [],

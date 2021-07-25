@@ -259,8 +259,9 @@ func frontendGenerateMagicLoginHandler(c *container) func(w http.ResponseWriter,
 
 func frontendRedeemMagicLoginHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		redirFail := "/login/failed"
-		redirOk := "/prediction"
+		realm := domain.RealmFromContext(r.Context())
+		redirFail := domain.GetLoginURL(realm) + "/failed"
+		redirOk := domain.GetPredictionURL(realm)
 
 		var writeRedirect = func(loc string) {
 			w.Header().Set("Location", loc)

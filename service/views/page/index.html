@@ -4,7 +4,7 @@
         <div class="intro-cta col">
             <h2>Think you know where they'll finish?</h2>
             <p>Predict the league table and score the fewest points to win!</p>
-            <a class="btn btn-primary btn-lg" href="/join" role="button">Enter Now</a>
+            <a class="btn btn-primary btn-lg" href="{{.JoinPageURL}}" role="button">Enter Now</a>
         </div>
     </div>
     <div class="how-it-works page-section row">
@@ -21,7 +21,7 @@
                     <div class="label">Enter</div>
                 </div>
                 <div class="stage-description">
-                    <p>Sign up via the <a href="/join">Join</a> page.</p>
+                    <p>Sign up via the <a href="{{.JoinPageURL}}">Join</a> page.</p>
                 </div>
             </div>
         </div>
@@ -36,7 +36,7 @@
                 </div>
                 <div class="stage-description">
                     <p>Tell us where you think each team will appear in the league table.</p>
-                    <p>You'll be able to <a href="/prediction">make changes</a> at certain points throughout the season.</p>
+                    <p>You'll be able to <a href="{{.PredictionPageURL}}">make changes</a> at certain points throughout the season.</p>
                 </div>
             </div>
         </div>
@@ -51,7 +51,7 @@
                 </div>
                 <div class="stage-description">
                     <p>Accrue points for each Game Week, which add up throughout the season.</p>
-                    <p>Check the <a href="/leaderboard">Leaderboard</a> each week to see how you're doing.
+                    <p>Check the <a href="{{.LeaderBoardPageURL}}">Leaderboard</a> each week to see how you're doing.
                         Fewest points at the end of the season wins!</p>
                 </div>
             </div>
@@ -62,10 +62,10 @@
             <h3>Already signed up?</h3>
         </div>
         <div class="cta left-side col-md-6">
-            <p><a class="btn btn-primary btn-lg" href="/leaderboard" role="button">See how I'm doing</a></p>
+            <p><a class="btn btn-primary btn-lg" href="{{.LeaderBoardPageURL}}" role="button">See how I'm doing</a></p>
         </div>
         <div class="cta right-side col-md-6">
-            <p><a class="btn btn-primary btn-lg" href="/prediction" role="button">Change my prediction</a></p>
+            <p><a class="btn btn-primary btn-lg" href="{{.PredictionPageURL}}" role="button">Change my prediction</a></p>
         </div>
     </div>
     <div class="cta-group page-section row">
@@ -74,7 +74,7 @@
             <div class="icon">
                 <i class="fa fa-question-circle-o" aria-hidden="true"></i>
             </div>
-            <p>Visit our <a href="/faq">FAQs</a> page</p>
+            <p>Visit our <a href="{{.FAQPageURL}}">FAQs</a> page</p>
         </div>
         <div class="cta col-lg-6">
             <h3>Still need help?</h3>
