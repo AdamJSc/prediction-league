@@ -11,7 +11,7 @@ const (
 	TokenTypeEntryRegistration
 	TokenTypeMagicLogin
 	TokenTypePrediction
-	TokenLength = 32 // TODO - feat: extend token length to 64 (increase id field to VARCHAR 64)
+	TokenLength = 32
 )
 
 var TokenValidityDuration = map[int]time.Duration{
@@ -21,14 +21,14 @@ var TokenValidityDuration = map[int]time.Duration{
 	TokenTypePrediction:        time.Minute * 10,
 }
 
-// TODO - feat: update to support RedeemedAt
 // Token defines a token model
 type Token struct {
-	ID        string    `db:"id"`
-	Type      int       `db:"type"`
-	Value     string    `db:"value"`
-	IssuedAt  time.Time `db:"issued_at"`
-	ExpiresAt time.Time `db:"expires_at"`
+	ID         string     `db:"id"`
+	Type       int        `db:"type"`
+	Value      string     `db:"value"`
+	IssuedAt   time.Time  `db:"issued_at"`
+	RedeemedAt *time.Time `db:"redeemed_at"`
+	ExpiresAt  time.Time  `db:"expires_at"`
 }
 
 // TokenRepository defines the interface for transacting with our Token data source

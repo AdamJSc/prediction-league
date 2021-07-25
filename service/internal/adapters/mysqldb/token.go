@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
 	"prediction-league/service/internal/domain"
+
+	"golang.org/x/net/context"
 )
 
 // tokenDBFields defines the fields used regularly in Token-related transactions
@@ -13,6 +14,7 @@ var tokenDBFields = []string{
 	"type",
 	"value",
 	"issued_at",
+	"redeemed_at",
 	"expires_at",
 }
 
@@ -24,7 +26,7 @@ type TokenRepo struct {
 // Insert inserts a new Token into the database
 func (t *TokenRepo) Insert(ctx context.Context, token *domain.Token) error {
 	stmt := `INSERT INTO token (id, ` + getDBFieldsStringFromFields(tokenDBFields) + `)
-					VALUES (?, ?, ?, ?, ?)`
+					VALUES (?, ?, ?, ?, ?, ?)`
 
 	rows, err := t.db.QueryContext(
 		ctx,
@@ -33,6 +35,7 @@ func (t *TokenRepo) Insert(ctx context.Context, token *domain.Token) error {
 		token.Type,
 		token.Value,
 		token.IssuedAt,
+		token.RedeemedAt,
 		token.ExpiresAt,
 	)
 	if err != nil {
@@ -64,6 +67,7 @@ func (t *TokenRepo) Select(ctx context.Context, criteria map[string]interface{},
 			&token.Type,
 			&token.Value,
 			&token.IssuedAt,
+			&token.RedeemedAt,
 			&token.ExpiresAt,
 		); err != nil {
 			return nil, wrapDBError(err)
