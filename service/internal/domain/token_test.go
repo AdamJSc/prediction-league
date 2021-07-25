@@ -302,18 +302,15 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 	now := time.Now().Truncate(time.Second)
 
 	// token 1 represents a token that expires 1 second in the past
-	token1 := generateTestToken("token_id")
-	token1.ID = "test_token_1"
+	token1 := generateTestToken("tkn-1")
 	token1.ExpiresAt = now.Add(-time.Second)
 
 	// token 2 represents a token that expires now
-	token2 := generateTestToken("token_id")
-	token2.ID = "test_token_2"
+	token2 := generateTestToken("tkn-2")
 	token2.ExpiresAt = now
 
 	// token 3 represents a token that expires 1 second in the future
-	token3 := generateTestToken("token_id")
-	token3.ID = "test_token_3"
+	token3 := generateTestToken("tkn-3")
 	token3.ExpiresAt = now.Add(time.Second)
 
 	var tokens = []*domain.Token{
@@ -332,23 +329,27 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		if err := agent.DeleteTokensExpiredAfter(ctx, now); err != nil {
+		gotCnt, err := agent.DeleteTokensExpiredAfter(ctx, now)
+		if err != nil {
 			t.Fatal(err)
 		}
 
+		wantCnt := int64(2)
+		if gotCnt != wantCnt {
+			t.Fatalf("want %d deleted tokens, got %d", wantCnt, gotCnt)
+		}
+
 		// token 1 must have been deleted
-		err := tr.ExistsByID(ctx, token1.ID)
-		if !cmp.ErrorType(err, domain.MissingDBRecordError{})().Success() {
-			expectedTypeOfGot(t, domain.MissingDBRecordError{}, err)
+		if err := tr.ExistsByID(ctx, token1.ID); !errors.As(err, &domain.MissingDBRecordError{}) {
+			t.Fatalf("want token %s to have been deleted, but got err %s (%T)", token1.ID, err, err)
 		}
 
 		// token 2 must have been deleted
-		err = tr.ExistsByID(ctx, token2.ID)
-		if !cmp.ErrorType(err, domain.MissingDBRecordError{})().Success() {
-			expectedTypeOfGot(t, domain.MissingDBRecordError{}, err)
+		if err := tr.ExistsByID(ctx, token2.ID); !errors.As(err, &domain.MissingDBRecordError{}) {
+			t.Fatalf("want token %s to have been deleted, but got err %s (%T)", token2.ID, err, err)
 		}
 
-		// token 3 must have been deleted
+		// token 3 must not have been deleted
 		if err := tr.ExistsByID(ctx, token3.ID); err != nil {
 			t.Fatal(err)
 		}

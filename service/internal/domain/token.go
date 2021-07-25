@@ -132,24 +132,18 @@ func (t *TokenAgent) DeleteToken(ctx context.Context, token Token) error {
 }
 
 // DeleteTokensExpiredAfter removes tokens that have expired since the provide timestamp
-func (t *TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp time.Time) error {
-	tkns, err := t.tr.Select(ctx, map[string]interface{}{
+func (t *TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp time.Time) (int64, error) {
+	cnt, err := t.tr.Delete(ctx, map[string]interface{}{
 		"expires_at": DBQueryCondition{
 			Operator: "<=",
 			Operand:  timestamp,
 		},
 	}, false)
 	if err != nil {
-		return domainErrorFromRepositoryError(err)
+		return 0, domainErrorFromRepositoryError(err)
 	}
 
-	for _, tkn := range tkns {
-		if err := t.DeleteToken(ctx, tkn); err != nil {
-			return domainErrorFromRepositoryError(err)
-		}
-	}
-
-	return nil
+	return cnt, nil
 }
 
 // IsTokenValid determines whether the provided Token is valid
