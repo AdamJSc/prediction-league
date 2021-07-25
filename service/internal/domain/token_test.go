@@ -356,6 +356,98 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 	})
 }
 
+func TestTokenAgent_DeleteInFlightTokens(t *testing.T) {
+	defer truncate(t)
+
+	agent, err := domain.NewTokenAgent(tr, &mockClock{}, &mockLogger{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	now := time.Now().Truncate(time.Second)
+	redeemed := dt
+
+	// tkn1 represents our target token
+	tkn1 := &domain.Token{
+		ID:        "tkn-1",
+		Type:      1,
+		Value:     "abcdef",
+		IssuedAt:  now,
+		ExpiresAt: now,
+	}
+
+	// tkn2 represents a token that has been redeemed
+	tkn2 := &domain.Token{
+		ID:         "tkn-2",
+		Type:       1,
+		Value:      "abcdef",
+		IssuedAt:   now,
+		RedeemedAt: &redeemed,
+		ExpiresAt:  now,
+	}
+
+	// tkn3 represents a token with an alt value
+	tkn3 := &domain.Token{
+		ID:        "tkn-3",
+		Type:      1,
+		Value:     "nnnnnnnnnnnn",
+		IssuedAt:  now,
+		ExpiresAt: now,
+	}
+
+	// tkn4 represents a token with an alt type
+	tkn4 := &domain.Token{
+		ID:        "tkn-4",
+		Type:      1234,
+		Value:     "abcdef",
+		IssuedAt:  now,
+		ExpiresAt: now,
+	}
+
+	var tokens = []*domain.Token{tkn1, tkn2, tkn3, tkn4}
+
+	for _, token := range tokens {
+		if err := tr.Insert(context.Background(), token); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	t.Run("delete in flight tokens must produce the expected results", func(t *testing.T) {
+		ctx, cancel := testContextDefault(t)
+		defer cancel()
+
+		gotCnt, err := agent.DeleteInFlightTokens(ctx, 1, "abcdef")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		wantCnt := int64(1)
+		if gotCnt != wantCnt {
+			t.Fatalf("want %d deleted tokens, got %d", wantCnt, gotCnt)
+		}
+
+		// token 1 must have been deleted
+		if err := tr.ExistsByID(ctx, tkn1.ID); !errors.As(err, &domain.MissingDBRecordError{}) {
+			t.Fatalf("want token %s to have been deleted, but got err %s (%T)", tkn1.ID, err, err)
+		}
+
+		// token 2 must not have been deleted
+		if err := tr.ExistsByID(ctx, tkn2.ID); err != nil {
+			t.Fatal(err)
+		}
+
+		// token 3 must not have been deleted
+		if err := tr.ExistsByID(ctx, tkn3.ID); err != nil {
+			t.Fatal(err)
+		}
+
+		// token 4 must not have been deleted
+		if err := tr.ExistsByID(ctx, tkn4.ID); err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
 func TestTokenAgent_IsTokenValid(t *testing.T) {
 	tkn := &domain.Token{
 		ID:        "tkn-id",

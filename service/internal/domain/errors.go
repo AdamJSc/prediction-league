@@ -70,6 +70,10 @@ func (e InternalError) Unwrap() error {
 
 // domainErrorFromRepositoryError returns the appropriate domain-level error from a repository-specific error
 func domainErrorFromRepositoryError(err error) error {
+	if err == nil {
+		return nil
+	}
+
 	switch err.(type) {
 	case DuplicateDBRecordError:
 		return ConflictError{err}

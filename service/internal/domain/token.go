@@ -146,6 +146,20 @@ func (t *TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp tim
 	return cnt, nil
 }
 
+// DeleteInFlightTokens removes tokens that meet the provided criteria and have not yet been redeemed
+func (t *TokenAgent) DeleteInFlightTokens(ctx context.Context, typ int, val string) (int64, error) {
+	cnt, err := t.tr.Delete(ctx, map[string]interface{}{
+		"type":        typ,
+		"value":       val,
+		"redeemed_at": DBQueryCondition{"IS NULL", nil},
+	}, false)
+	if err != nil {
+		return 0, domainErrorFromRepositoryError(err)
+	}
+
+	return cnt, nil
+}
+
 // IsTokenValid determines whether the provided Token is valid
 func (t *TokenAgent) IsTokenValid(tkn *Token, typ int, val string) bool {
 	now := t.cl.Now()
