@@ -154,6 +154,7 @@ func TestTokenAgent_GenerateExtendedToken(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx, cancel := testContextDefault(t)
+			ctx = domain.SetBasicAuthSuccessfulOnContext(ctx)
 			defer cancel()
 
 			typ := tc.typ
@@ -193,6 +194,7 @@ func TestTokenAgent_GenerateExtendedToken(t *testing.T) {
 
 	t.Run("generate a token of a non-existent token type must fail", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
+		ctx = domain.SetBasicAuthSuccessfulOnContext(ctx)
 		defer cancel()
 
 		nonExistentTokenType := 123456

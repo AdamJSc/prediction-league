@@ -53,21 +53,30 @@ type TokenAgent struct {
 
 // GenerateToken generates a new unique token for the provided type and value
 func (t *TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (*Token, error) {
+	// ensure token type is valid
 	tokenDur, ok := TokenValidityDuration[typ]
 	if !ok {
 		return nil, NotFoundError{fmt.Errorf("token type %d has no validity duration", typ)}
 	}
 
+	// create new token
 	expires := t.cl.Now().Add(tokenDur)
 	return t.createToken(ctx, typ, value, expires)
 }
 
 // GenerateExtendedToken generates a token with an extended expiry
 func (t *TokenAgent) GenerateExtendedToken(ctx context.Context, typ int, value string) (*Token, error) {
+	// ensure basic auth has been provided and matches admin credentials
+	if !IsBasicAuthSuccessful(ctx) {
+		return nil, UnauthorizedError{}
+	}
+
+	// ensure token type is valid
 	if _, ok := TokenValidityDuration[typ]; !ok {
 		return nil, NotFoundError{fmt.Errorf("token type %d is not valid", typ)}
 	}
 
+	// create new token
 	expires := t.cl.Now().Add(extendedTokenDur)
 	return t.createToken(ctx, typ, value, expires)
 }

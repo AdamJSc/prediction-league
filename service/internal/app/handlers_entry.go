@@ -321,6 +321,58 @@ func approveEntryByIDHandler(c *container) func(w http.ResponseWriter, r *http.R
 	}
 }
 
+func generateExtendedMagicLoginTokenHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// parse entry id from route
+		var entryID string
+		if err := getRouteParam(r, "entry_id", &entryID); err != nil {
+			responseFromError(err).writeTo(w)
+			return
+		}
+
+		ctx, cancel, err := contextFromRequest(r, c)
+		if err != nil {
+			responseFromError(err).writeTo(w)
+			return
+		}
+		defer cancel()
+
+		// get entry
+		if _, err := c.entryAgent.RetrieveEntryByID(ctx, entryID); err != nil {
+			responseFromError(err).writeTo(w)
+			return
+		}
+
+		// purge existing login tokens for this user
+		if _, err := c.tokenAgent.DeleteInFlightTokens(ctx, domain.TokenTypeMagicLogin, entryID); err != nil {
+			responseFromError(err).writeTo(w)
+			return
+		}
+
+		// generate extended login token
+		predTkn, err := c.tokenAgent.GenerateExtendedToken(ctx, domain.TokenTypeMagicLogin, entryID)
+		if err != nil {
+			responseFromError(err).writeTo(w)
+			return
+		}
+
+		origin := domain.RealmFromContext(ctx).Origin
+		url := fmt.Sprintf("%s/login/%s", origin, predTkn.ID)
+
+		// success!
+		okResponse(&data{
+			Type: "prediction_token",
+			Content: struct {
+				Token string `json:"token"`
+				URL   string `json:"login_url"`
+			}{
+				Token: predTkn.ID,
+				URL:   url,
+			},
+		}).writeTo(w)
+	}
+}
+
 func retrieveLatestScoredEntryPrediction(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// parse entry ID from route
