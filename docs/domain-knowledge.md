@@ -37,11 +37,11 @@ e.g. `localhost` or `my.sub.domain.com`. See the file itself for an example.
 
 * Each Realm config object should comprise the following values:
     * `origin`: Base URL to use for links inside transactional emails that are sent to [Entries](#entry) belonging to Realm
-    (e.g. `http://localhost:3000`)
+    (e.g. `http://localhost:3000` or `http://example.com`)
     * `contact.name`: Name to sign off transactional emails with (e.g .`Harry R and the PL Team`)
-    * `contact.email_proper`: Formatted support email address (e.g. `wont_you_please_please_help_me@localhost`)
-    * `contact.email_sanitised`: Sanitised support email address for display purposes (e.g. `wont_you_please_please_help_me (at) localhost`)
-    * `contact.email_do_not_reply`: Sender's email address on transactional emails (e.g. `do_not_reply@localhost`)
+    * `contact.email_proper`: Formatted support email address (e.g. `wont_you_please_please_help_me@example.com`)
+    * `contact.email_sanitised`: Sanitised support email address for display purposes (e.g. `wont_you_please_please_help_me (at) example.com`)
+    * `contact.email_do_not_reply`: Sender's email address on transactional emails (e.g. `do_not_reply@example.com`)
     * `sender_domain`: Outgoing sender domain validated via DNS with Mailgun.
     * `pin`: Arbitrary string value required when creating a new [Entry](#entry) to prevent unwanted sign-ups (e.g. `MYPIN1234`)
     * `season_id`: ID of current [Season](#season) that Realm pertains to, must be an existing key within the supplied `SeasonCollection` (e.g. `201920_1`)
@@ -55,7 +55,7 @@ by accessing `GetByName(realm_name)` on the `RealmCollection` which originates i
 to each domain entity that requires it, such as handlers, agents, workers etc.
 
 * The default Realm Name when running locally is `localhost`, so please ensure that you are issuing API requests to the
- base URI `http://localhost` instead of any other variant such as `http://127.0.0.1` etc.
+ base URI `http://localhost` instead of any other alias such as `http://127.0.0.1` etc.
 
 ### Season
 
@@ -71,7 +71,7 @@ Again, this is passed as a dependency to each domain entity that requires it, su
 
 ### Team
 
-* A `Team` represents a team that are competing within a [Season](#season).
+* A `Team` represents a team that competes within a [Season](#season).
 
 * Each [Season](#season) defines a slice of Teams that...
     * ...are presented to the User when setting their [Prediction](#entryprediction), and...
@@ -91,9 +91,9 @@ Again, this is passed as a dependency to each domain entity that requires it, su
 * Each Entry belongs to a single combination of [Realm](#realm) and [Season](#season).
 
 * Entries are only considered active if they have been "approved" by an Admin (see [Payments](../README.md#payments)).
+Prior to this, they are not included within the [LeaderBoard](#leaderboard).
 
-* Each Entry comprises an auto-generated `ShortCode` which must be provided as a means of authentication
-when "logging in" to make changes to a [Prediction](#entryprediction)
+* To login and make a [Prediction](#entryprediction), the user must generate a magic login link (see [Token](#token)).
 
 ### EntryPrediction
 
@@ -186,20 +186,28 @@ by total score (lowest first), then by minimum score (lowest first), then by cur
 ### Token
 
 * A `Token` comprises an ID (an arbitrary string of 32 alphanumeric characters) as well as a Value
-(a string that represents some other existing entity).
+(a string that represents some other existing entity, usually an [Entry](#entry)).
 
 * Each Token has an `IssuedAt` timestamp, representing the time at which it was issued.
 
-* Each Token also has an `ExpiresAt` timestamp, representing the point at which it can no longer be considered valid.
+* Each Token also has a `RedeemedAt` timestamp, representing the time at which the token was consumed and rendered used.
+This is `NULL`/`nil` for any instances that have been created but not yet been redeemed.
 
-* Tokens have one of two types:
-    * `Auth` Tokens are used to identify a session cookie. They have a duration of 20 minutes before expiring and their
+* Each Token also has an `ExpiresAt` timestamp, representing the point at which it can no longer be considered active.
+
+* Tokens have one of four types:
+    * `Auth` Tokens are used to identify a session cookie. They have a duration of 60 minutes before expiring and their
     Value represents the [Entry](#entry) ID associated with the session.
-    * `ShortCode Reset` Tokens are used to denote an in-progress ShortCode reset "magic link" workflow. They have a
-    duration of 10 minutes before expiring and their Value represents the [Entry](#entry) ID associated with ShortCode reset.
+    * `Entry Registration` Tokens are generated as single-use in order to facilitate the payment step that follows creating
+    an Entry. They have a duration of 10 minutes before expiring and their Value represents the associated [Entry](#entry) ID.
+    * `Magic Login` Tokens are used as part of a magic login link. They have a duration of 10 minutes before expiring
+    and their Value represents the [Entry](#entry) ID associated with requested magic login.
+    * `Prediction` Tokens are generated as single-use in order to facilitate the creation of a new Entry Prediction.
+    They have a duration of 10 minutes before expiring and their Value represents the associated [Entry](#entry) ID.
 
-* At the moment, Tokens are in no way flagged as "consumed". There is no clean-up process for Tokens that have expired, and 
-ShortCode Reset Tokens are simply removed after having been used. This should ideally be reviewed at some point in the future.
+* At the moment, there is no clean-up process for Tokens that have expired without being redeemed/consumed. A bulk-delete
+ agent method has been implemented although is not yet invoked as part of a cron job etc. This should ideally be reviewed
+ at some point in the future.
 
 ### Email
 
@@ -295,6 +303,8 @@ email itself via Mailgun, in an attempt to leverage decoupling/concurrency.
 Due to time constraints, there is currently no retry/cool-off mechanism or dead-letter handling for failed emails.
 However, this should be revisited in the future.
 
+Also consider replacing the in-memory queue with a hosted instance of RabbitMQ/PubSub etc.
+
 ### Adding a new Season
 
 To add a new [Season](#season), define an additional `Season` struct within the map provided by the function `domain.GetSeasonsColection()`.
@@ -334,4 +344,4 @@ The handler will pass this context to the main agent method that it invokes (e.g
 The agent method can then invoke `domain.GuardFromContext(ctx).AttemptMatchesTarget(ctx.Realm.PIN)` which returns
 a `boolean` to determine whether or not the incoming request should be authorised.
 
-This permissions-based mechanism can most likely be simplified and should be revisited in the future.
+This permissions-based mechanism can most likely be simplified and should be revisited in the future (replace with routing middleware etc.)

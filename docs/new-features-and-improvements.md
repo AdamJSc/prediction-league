@@ -42,7 +42,9 @@ total with an increasing cool-off period of several seconds occurring between ea
 * Any emails that fail on all 3 attempts should be sent to a "dead letter" queue, which persists external to the
 existing in-memory queue/channel so that appropriate subsequent action can be taken.
 
-## Short Codes
+## ✅ Short Codes
+
+### Removed in v2.1.0
 
 * A Short Code is a 6-character alphanumeric string that is affiliated with an [Entry](domain-knowledge.md#entry).
 
@@ -98,7 +100,7 @@ password mechanism.
 * For tokens that are left to expire without being "consumed" (i.e. an authenticated session), consider implementing a
 cron job that cleans up all tokens whose `expires_at` timestamp has already elapsed.
 
-* For tokens that are "consumed" (i.e. a Short Code reset magic link), consider implementing a `consumed_at` timestamp
+* (✅ implemented as `RedeemedAt` in v2.1.0) For tokens that are "consumed" (i.e. a Short Code reset magic link), consider implementing a `consumed_at` timestamp
 rather than removing them altogether.
 
 ## Payment
