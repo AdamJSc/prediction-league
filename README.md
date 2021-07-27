@@ -20,7 +20,7 @@ This project is a digital representation of the game, which implements a Fronten
 payment workflows, management of predictions and scoring of points (which are now accrued on a cumulative basis throughout
 the season instead of just at the end).
 
-It's written in [Golang](https://golang.org/), using Go [templates](https://golang.org/pkg/text/template/) for HTML.
+It's written in [Go](https://golang.org/), using [templates](https://golang.org/pkg/text/template/) for HTML.
 
 [Vuejs](https://vuejs.org/) and [Bootstrap](https://getbootstrap.com/) are used on the Frontend.
 [Sass](https://sass-lang.com/) is used for pre-processing CSS and [npm](https://npmjs.com/) + [Webpack](https://webpack.js.org/)
@@ -41,7 +41,7 @@ The following environment variables must be set in order to configure the usage 
 You can do this by creating a new `.env` file in the project root, or overriding the contents of `infra/app.env`
 and `infra/app.docker.env` as required.
 
-Leaving these blank will result in the default behaviour as described.
+Leaving the following values blank will result in the default behaviour as described.
 
 * `PAYPAL_CLIENT_ID`
     * Client ID as required by PayPal's [Basic Checkout Integration](https://developer.paypal.com/docs/checkout/integrate/)
@@ -50,7 +50,7 @@ Leaving these blank will result in the default behaviour as described.
 
 * `MAILGUN_API_KEY`
     * API Key required by [Mailgun](https://www.mailgun.com/) integration for transactional emails.
-    * If left blank, dumps content of email to the log without sending.
+    * If left blank, dumps content of email to the terminal without sending.
 
 * `FOOTBALLDATA_API_TOKEN`
     * API Key required by [football-data.org](https://www.football-data.org/) integration for consumption of real-world
@@ -124,10 +124,11 @@ some of the stop/restart/kill workflows too.
 Users can sign-up to create an [Entry](docs/domain-knowledge.md#entry) and make their first [Prediction](docs/domain-knowledge.md#entryprediction)
 before the [Season](docs/domain-knowledge.md#season) begins.
 
-They can make subsequent changes to their [Prediction](docs/domain-knowledge.md#entryprediction) (i.e. create a new one) during
-pre-defined windows throughout the [Season](docs/domain-knowledge.md#season).
+They can make subsequent changes to their [Prediction](docs/domain-knowledge.md#entryprediction) throughout the
+[Season](docs/domain-knowledge.md#season) - swapping the positions of a maximum two [Teams](docs/domain-knowledge.md#team)
+per [Game Week](#game-weeks).
 
-These timeframes are configured independently for each [Season](docs/domain-knowledge.md#season).
+Timeframes are configured independently for each [Season](docs/domain-knowledge.md#season).
 
 For example, no more [Entries](docs/domain-knowledge.md#entry) can be made once the [Season's](docs/domain-knowledge.md#season) `EntriesAccepted`
 timeframe has elapsed.
@@ -146,7 +147,8 @@ For convenience and user peace-of-mind, payment is made via PayPal using their [
 Given that the payment flow exists entirely on the Frontend, each [Entry](docs/domain-knowledge.md#entry) must be "approved" by an
 Admin in order that payment can be verified manually.
 
-This is a single API endpoint whose Basic Auth credentials can be configured via the `.env` variable named `ADMIN_BASIC_AUTH`.
+This is a single API endpoint that is protected by Basic Auth. These Basic Auth credentials can be configured via the
+`.env` variable named `ADMIN_BASIC_AUTH`.
 
 Payment can be skipped when running locally for debugging purposes, by leaving the `.env` variable named `PAYPAL_CLIENT_ID`
 with an empty value.
@@ -156,8 +158,8 @@ with an empty value.
 For every [Game Week](#game-weeks), each [Prediction](docs/domain-knowledge.md#entryprediction) receives a score, which produces
 a [Scored Prediction](docs/domain-knowledge.md#scoredentryprediction) for that Game Week.
 
-[Scored Predictions](docs/domain-knowledge.md#scoredentryprediction) receive 1 "penalty point" for each position that the
-Prediction has incorrectly placed a [Team](docs/domain-knowledge.md#team).
+[Scored Predictions](docs/domain-knowledge.md#scoredentryprediction) receive 1 "penalty point" for each position that a
+[Team](docs/domain-knowledge.md#team) has been placed incorrectly within the corresponding Prediction.
 
 For example, if Team A are in 3rd place but are predicted to finish 1st, `2` penalty points will be received.
 

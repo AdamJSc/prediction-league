@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -11,7 +12,7 @@ const (
 	TokenTypeEntryRegistration
 	TokenTypeMagicLogin
 	TokenTypePrediction
-	TokenLength = 32 // TODO - feat: extend token length to 64 (increase id field to VARCHAR 64)
+	TokenLength = 32
 )
 
 var TokenValidityDuration = map[int]time.Duration{
@@ -21,22 +22,25 @@ var TokenValidityDuration = map[int]time.Duration{
 	TokenTypePrediction:        time.Minute * 10,
 }
 
-// TODO - feat: update to support RedeemedAt
+var extendedTokenDur = 6 * time.Hour
+
 // Token defines a token model
 type Token struct {
-	ID        string    `db:"id"`
-	Type      int       `db:"type"`
-	Value     string    `db:"value"`
-	IssuedAt  time.Time `db:"issued_at"`
-	ExpiresAt time.Time `db:"expires_at"`
+	ID         string     `db:"id"`
+	Type       int        `db:"type"`
+	Value      string     `db:"value"`
+	IssuedAt   time.Time  `db:"issued_at"`
+	RedeemedAt *time.Time `db:"redeemed_at"`
+	ExpiresAt  time.Time  `db:"expires_at"`
 }
 
 // TokenRepository defines the interface for transacting with our Token data source
 type TokenRepository interface {
 	Insert(ctx context.Context, token *Token) error
 	Select(ctx context.Context, criteria map[string]interface{}, matchAny bool) ([]Token, error)
+	Update(ctx context.Context, token *Token) error
+	Delete(ctx context.Context, criteria map[string]interface{}, matchAny bool) (int64, error)
 	ExistsByID(ctx context.Context, id string) error
-	DeleteByID(ctx context.Context, id string) error
 	GenerateUniqueTokenID(ctx context.Context) (string, error)
 }
 
@@ -47,16 +51,41 @@ type TokenAgent struct {
 	l  Logger
 }
 
-// GenerateToken generates a new unique token
+// GenerateToken generates a new unique token for the provided type and value
 func (t *TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (*Token, error) {
-	id, err := t.tr.GenerateUniqueTokenID(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+	// ensure token type is valid
 	tokenDur, ok := TokenValidityDuration[typ]
 	if !ok {
 		return nil, NotFoundError{fmt.Errorf("token type %d has no validity duration", typ)}
+	}
+
+	// create new token
+	expires := t.cl.Now().Add(tokenDur)
+	return t.createToken(ctx, typ, value, expires)
+}
+
+// GenerateExtendedToken generates a token with an extended expiry
+func (t *TokenAgent) GenerateExtendedToken(ctx context.Context, typ int, value string) (*Token, error) {
+	// ensure basic auth has been provided and matches admin credentials
+	if !IsBasicAuthSuccessful(ctx) {
+		return nil, UnauthorizedError{}
+	}
+
+	// ensure token type is valid
+	if _, ok := TokenValidityDuration[typ]; !ok {
+		return nil, NotFoundError{fmt.Errorf("token type %d is not valid", typ)}
+	}
+
+	// create new token
+	expires := t.cl.Now().Add(extendedTokenDur)
+	return t.createToken(ctx, typ, value, expires)
+}
+
+// createToken creates a new unique token
+func (t *TokenAgent) createToken(ctx context.Context, typ int, value string, expires time.Time) (*Token, error) {
+	id, err := t.tr.GenerateUniqueTokenID(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	now := t.cl.Now()
@@ -66,7 +95,7 @@ func (t *TokenAgent) GenerateToken(ctx context.Context, typ int, value string) (
 		Type:      typ,
 		Value:     value,
 		IssuedAt:  now,
-		ExpiresAt: now.Add(tokenDur),
+		ExpiresAt: expires,
 	}
 
 	if err := t.tr.Insert(ctx, &token); err != nil {
@@ -92,9 +121,16 @@ func (t *TokenAgent) RetrieveTokenByID(ctx context.Context, id string) (*Token, 
 	return &tokens[0], nil
 }
 
-// DeleteToken removes the provided token
-func (t *TokenAgent) DeleteToken(ctx context.Context, token Token) error {
-	err := t.tr.DeleteByID(ctx, token.ID)
+// RedeemToken sets a RedeemedAt value on the provided Token and updates it
+func (t *TokenAgent) RedeemToken(ctx context.Context, token Token) error {
+	if token.RedeemedAt != nil {
+		return ConflictError{errors.New("token has already been redeemed")}
+	}
+
+	redeemed := t.cl.Now()
+	token.RedeemedAt = &redeemed
+
+	err := t.tr.Update(ctx, &token)
 	if err != nil {
 		return domainErrorFromRepositoryError(err)
 	}
@@ -102,25 +138,53 @@ func (t *TokenAgent) DeleteToken(ctx context.Context, token Token) error {
 	return nil
 }
 
+// DeleteToken removes the provided token
+func (t *TokenAgent) DeleteToken(ctx context.Context, token Token) error {
+	cnt, err := t.tr.Delete(ctx, map[string]interface{}{
+		"id": token.ID,
+	}, false)
+	if err != nil {
+		return domainErrorFromRepositoryError(err)
+	}
+
+	if cnt == 0 {
+		return NotFoundError{errors.New("token not found")}
+	}
+
+	if cnt > 1 {
+		return InternalError{fmt.Errorf("deleted %d tokens by id '%s'", cnt, token.ID)}
+	}
+
+	return nil
+}
+
 // DeleteTokensExpiredAfter removes tokens that have expired since the provide timestamp
-func (t *TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp time.Time) error {
-	tokens, err := t.tr.Select(ctx, map[string]interface{}{
+func (t *TokenAgent) DeleteTokensExpiredAfter(ctx context.Context, timestamp time.Time) (int64, error) {
+	cnt, err := t.tr.Delete(ctx, map[string]interface{}{
 		"expires_at": DBQueryCondition{
 			Operator: "<=",
 			Operand:  timestamp,
 		},
 	}, false)
 	if err != nil {
-		return domainErrorFromRepositoryError(err)
+		return 0, domainErrorFromRepositoryError(err)
 	}
 
-	for _, token := range tokens {
-		if err := t.tr.DeleteByID(ctx, token.ID); err != nil {
-			return domainErrorFromRepositoryError(err)
-		}
+	return cnt, nil
+}
+
+// DeleteInFlightTokens removes tokens that meet the provided criteria and have not yet been redeemed
+func (t *TokenAgent) DeleteInFlightTokens(ctx context.Context, typ int, val string) (int64, error) {
+	cnt, err := t.tr.Delete(ctx, map[string]interface{}{
+		"type":        typ,
+		"value":       val,
+		"redeemed_at": DBQueryCondition{"IS NULL", nil},
+	}, false)
+	if err != nil {
+		return 0, domainErrorFromRepositoryError(err)
 	}
 
-	return nil
+	return cnt, nil
 }
 
 // IsTokenValid determines whether the provided Token is valid

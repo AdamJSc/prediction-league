@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Added
 - Additional token use-cases
+- Ability to redeem a token
+- Ability to purge non-redeemed tokens by user/type
+- Ability for admin to generate an extended magic login link
 
 ## Removed
 - Deprecate Entry Short Code

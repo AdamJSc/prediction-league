@@ -107,8 +107,13 @@ func enrichAuthPredictionPageData(ctx context.Context, authTknID string, teamIDs
 		return teamIDs, nil
 	}
 
-	// TODO - feat: delete any prediction tokens that are in-flight for this user
+	// purge unused prediction tokens for this user
+	if _, err := ta.DeleteInFlightTokens(ctx, domain.TokenTypePrediction, entry.ID.String()); err != nil {
+		l.Errorf("prediction page: cannot purge in-flight prediction tokens: %s", err.Error())
+		return nil, genericErr
+	}
 
+	// generate new prediction token
 	predTkn, err := ta.GenerateToken(ctx, domain.TokenTypePrediction, entry.ID.String())
 	if err != nil {
 		l.Errorf("prediction page: cannot generate prediction token: %s", err.Error())

@@ -52,7 +52,7 @@ func (c *CommunicationsAgent) IssueNewEntryEmail(ctx context.Context, entry *Ent
 	d := NewEntryEmailData{
 		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
 		PaymentDetails: *paymentDetails,
-		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
+		PredictionsURL: GetPredictionURL(&realm),
 	}
 	var emailContent bytes.Buffer
 	if err := c.tpl.ExecuteTemplate(&emailContent, "email_txt_new_entry", d); err != nil {
@@ -96,8 +96,8 @@ func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep S
 	d := RoundCompleteEmailData{
 		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
 		RoundNumber:    standings.RoundNumber,
-		LeaderBoardURL: fmt.Sprintf("%s/leaderboard", realm.Origin),
-		PredictionsURL: fmt.Sprintf("%s/prediction", realm.Origin),
+		LeaderBoardURL: GetLeaderBoardURL(&realm),
+		PredictionsURL: GetPredictionURL(&realm),
 	}
 
 	templateName := "email_txt_round_complete"
@@ -140,7 +140,7 @@ func (c *CommunicationsAgent) IssueMagicLoginEmail(ctx context.Context, entry *E
 
 	d := MagicLoginEmail{
 		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
-		LoginURL:       fmt.Sprintf("%s/login/%s", realm.Origin, tokenId),
+		LoginURL:       GetMagicLoginURL(&realm, &Token{ID: tokenId}),
 	}
 	var emailContent bytes.Buffer
 	if err := c.tpl.ExecuteTemplate(&emailContent, "email_txt_magic_login", d); err != nil {
@@ -266,7 +266,7 @@ func newMessagePayload(realm Realm, name string, seasonName string) MessagePaylo
 		Name:         name,
 		SignOff:      realm.Contact.Name,
 		SeasonName:   seasonName,
-		URL:          realm.Origin,
+		URL:          GetHomeURL(&realm),
 		SupportEmail: realm.Contact.EmailProper,
 	}
 }

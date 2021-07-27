@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
 	"prediction-league/service/internal/domain"
+
+	"golang.org/x/net/context"
 )
 
 // tokenDBFields defines the fields used regularly in Token-related transactions
@@ -13,6 +14,7 @@ var tokenDBFields = []string{
 	"type",
 	"value",
 	"issued_at",
+	"redeemed_at",
 	"expires_at",
 }
 
@@ -24,7 +26,7 @@ type TokenRepo struct {
 // Insert inserts a new Token into the database
 func (t *TokenRepo) Insert(ctx context.Context, token *domain.Token) error {
 	stmt := `INSERT INTO token (id, ` + getDBFieldsStringFromFields(tokenDBFields) + `)
-					VALUES (?, ?, ?, ?, ?)`
+					VALUES (?, ?, ?, ?, ?, ?)`
 
 	rows, err := t.db.QueryContext(
 		ctx,
@@ -33,6 +35,7 @@ func (t *TokenRepo) Insert(ctx context.Context, token *domain.Token) error {
 		token.Type,
 		token.Value,
 		token.IssuedAt,
+		token.RedeemedAt,
 		token.ExpiresAt,
 	)
 	if err != nil {
@@ -64,6 +67,7 @@ func (t *TokenRepo) Select(ctx context.Context, criteria map[string]interface{},
 			&token.Type,
 			&token.Value,
 			&token.IssuedAt,
+			&token.RedeemedAt,
 			&token.ExpiresAt,
 		); err != nil {
 			return nil, wrapDBError(err)
@@ -77,6 +81,51 @@ func (t *TokenRepo) Select(ctx context.Context, criteria map[string]interface{},
 	}
 
 	return tokens, nil
+}
+
+// Update updates an existing Token in the database
+func (t *TokenRepo) Update(ctx context.Context, token *domain.Token) error {
+	stmt := `UPDATE token
+			SET ` + getDBFieldsWithEqualsPlaceholdersStringFromFields(tokenDBFields) + `
+			WHERE id = ?`
+
+	res, err := t.db.Exec(
+		stmt,
+		token.Type,
+		token.Value,
+		token.IssuedAt,
+		token.RedeemedAt,
+		token.ExpiresAt,
+		token.ID,
+	)
+	if err != nil {
+		return wrapDBError(err)
+	}
+
+	if cnt, _ := res.RowsAffected(); cnt == 0 {
+		return domain.MissingDBRecordError{Err: errors.New("token does not exist")}
+	}
+
+	return nil
+}
+
+// Delete deletes Tokens from our database based on the provided criteria
+func (t *TokenRepo) Delete(ctx context.Context, criteria map[string]interface{}, matchAny bool) (int64, error) {
+	whereStmt, params := dbWhereStmt(criteria, matchAny)
+
+	stmt := `DELETE FROM token ` + whereStmt
+
+	res, err := t.db.Exec(stmt, params...)
+	if err != nil {
+		return 0, wrapDBError(err)
+	}
+
+	cnt, err := res.RowsAffected()
+	if err != nil {
+		return 0, wrapDBError(err)
+	}
+
+	return cnt, nil
 }
 
 // ExistsByID determines whether a Token with the provided ID exists in the database
@@ -95,19 +144,6 @@ func (t *TokenRepo) ExistsByID(ctx context.Context, id string) error {
 	}
 
 	return nil
-}
-
-// DeleteByID removes the Token with the provided ID from the database
-func (t *TokenRepo) DeleteByID(ctx context.Context, id string) error {
-	stmt := `DELETE FROM token WHERE id = ?`
-
-	rows, err := t.db.QueryContext(ctx, stmt, id)
-	if err != nil {
-		return wrapDBError(err)
-	}
-	defer rows.Close()
-
-	return rows.Err()
 }
 
 // GenerateUniqueTokenID returns a string representing a unique token ID

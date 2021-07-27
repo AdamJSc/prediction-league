@@ -230,9 +230,14 @@ func frontendGenerateMagicLoginHandler(c *container) func(w http.ResponseWriter,
 			return
 		}
 
-		// TODO - feat: delete any magic login tokens that are in-flight for this user
+		// purge unused prediction tokens for this user
+		if _, err := c.tokenAgent.DeleteInFlightTokens(ctx, domain.TokenTypeMagicLogin, entry.ID.String()); err != nil {
+			c.logger.Errorf("cannot purge in-flight magic login tokens: %s", err.Error())
+			writeResponse(view.GenerateMagicLoginPageData{Err: genericErr})
+			return
+		}
 
-		// generate magic login token
+		// generate new magic login token
 		mTkn, err := c.tokenAgent.GenerateToken(ctx, domain.TokenTypeMagicLogin, entry.ID.String())
 		if err != nil {
 			c.logger.Errorf("cannot generate magic login token for entry id '%s': %s", entry.ID.String(), err.Error())
@@ -254,8 +259,9 @@ func frontendGenerateMagicLoginHandler(c *container) func(w http.ResponseWriter,
 
 func frontendRedeemMagicLoginHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		redirFail := "/login/failed"
-		redirOk := "/prediction"
+		realm := domain.RealmFromContext(r.Context())
+		redirFail := domain.GetLoginURL(realm) + "/failed"
+		redirOk := domain.GetPredictionURL(realm)
 
 		var writeRedirect = func(loc string) {
 			w.Header().Set("Location", loc)
@@ -331,11 +337,10 @@ func frontendRedeemMagicLoginHandler(c *container) func(w http.ResponseWriter, r
 		}
 		setAuthCookieValue(authTkn.ID, w, r)
 
-		// delete magic token
-		// TODO - feat: replace with token redeem
-		if err := c.tokenAgent.DeleteToken(ctx, *mTkn); err != nil {
+		// redeem magic token
+		if err := c.tokenAgent.RedeemToken(ctx, *mTkn); err != nil {
 			// log error and continue
-			c.logger.Errorf("cannot delete magic token id '%s': %s", mTkn.ID, err.Error())
+			c.logger.Errorf("cannot redeem magic token id '%s': %s", mTkn.ID, err.Error())
 		}
 
 		// all ok!

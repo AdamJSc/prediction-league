@@ -95,7 +95,10 @@ func newRouter(cnt *container) *mux.Router {
 	api.HandleFunc("/entry/{entry_id}/prediction", retrieveLatestEntryPredictionHandler(cnt)).Methods(http.MethodGet)
 	api.HandleFunc("/entry/{entry_id}/scored/{round_number:[0-9]+}", retrieveLatestScoredEntryPrediction(cnt)).Methods(http.MethodGet)
 	api.HandleFunc("/entry/{entry_id}/payment", updateEntryPaymentDetailsHandler(cnt)).Methods(http.MethodPatch)
+
+	// requires basic auth
 	api.HandleFunc("/entry/{entry_id}/approve", approveEntryByIDHandler(cnt)).Methods(http.MethodPatch)
+	api.HandleFunc("/entry/{entry_id}/generate-login", generateExtendedMagicLoginTokenHandler(cnt)).Methods(http.MethodPost)
 
 	// serve static assets
 	assets := http.Dir("./resources/dist")
