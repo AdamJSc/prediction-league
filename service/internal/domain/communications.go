@@ -8,9 +8,10 @@ import (
 )
 
 const (
-	EmailSubjectNewEntry      = "You're In!"
-	EmailSubjectRoundComplete = "End of Round %d"
-	EmailSubjectMagicLogin    = "Your login link"
+	EmailSubjectNewEntry           = "You're In!"
+	EmailSubjectRoundComplete      = "Round %d predictions open!"
+	EmailSubjectFinalRoundComplete = "Thanks for playing!"
+	EmailSubjectMagicLogin         = "Your login link"
 )
 
 // CommunicationsAgent defines the behaviours for issuing communications
@@ -101,8 +102,11 @@ func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep S
 	}
 
 	templateName := "email_txt_round_complete"
+	nextRound := standings.RoundNumber + 1
+	subject := fmt.Sprintf(EmailSubjectRoundComplete, nextRound)
 	if isFinalRound {
 		templateName = "email_txt_final_round_complete"
+		subject = EmailSubjectFinalRoundComplete
 	}
 
 	var emailContent bytes.Buffer
@@ -114,7 +118,7 @@ func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep S
 		Name:    entry.EntrantName,
 		Address: entry.EntrantEmail,
 	}
-	email := newEmail(realm, recipient, fmt.Sprintf(EmailSubjectRoundComplete, standings.RoundNumber), emailContent.String())
+	email := newEmail(realm, recipient, subject, emailContent.String())
 	if err := c.emlQ.Send(ctx, email); err != nil {
 		return fmt.Errorf("cannot send email to queue: %w", err)
 	}

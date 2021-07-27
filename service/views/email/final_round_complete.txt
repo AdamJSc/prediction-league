@@ -3,11 +3,9 @@
 
 Hey {{.Name}},
 
-The final round is now complete!
+All {{.RoundNumber}} rounds are now complete!
 
-Here's how you did in round {{.RoundNumber}}:
-
-Check out the leaderboard to see how you did:
+Check out the leaderboard to see where you've finished the season:
 {{.LeaderBoardURL}}
 
 Thank you for taking part in Prediction League - see you next season! 🧙🔮

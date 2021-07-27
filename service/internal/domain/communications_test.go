@@ -289,7 +289,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		expectedSubject := fmt.Sprintf(domain.EmailSubjectRoundComplete, standings.RoundNumber)
+		expectedSubject := fmt.Sprintf(domain.EmailSubjectRoundComplete, standings.RoundNumber+1)
 
 		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_round_complete", domain.RoundCompleteEmailData{
 			MessagePayload: domain.MessagePayload{
@@ -359,7 +359,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		expectedSubject := fmt.Sprintf(domain.EmailSubjectRoundComplete, standings.RoundNumber)
+		expectedSubject := domain.EmailSubjectFinalRoundComplete
 
 		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_final_round_complete", domain.RoundCompleteEmailData{
 			MessagePayload: domain.MessagePayload{
