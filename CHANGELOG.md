@@ -8,32 +8,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.1.1] - 2021-07-28
 
+### Added
+- Config for 2021/22 Premier League season
+
 ### Changed
 - Minor web copy and design tweaks
 - Tweaks to copy for communications
 
-### Added
-- Config for 2021/22 Premier League season
-
 ## [2.1.0] - 2021-07-27
 
-## Changed
-- Replace sequence of Season prediction windows, with a single window/timeframe.
-- Implement ranking limit: permit a maximum of two teams to be swapped per Round/Game Week.
-- Replace email/short code login with magic link
-
-## Added
+### Added
 - Additional token use-cases
 - Ability to redeem a token
 - Ability to purge non-redeemed tokens by user/type
 - Ability for admin to generate an extended magic login link
 
-## Removed
+### Changed
+- Replace sequence of Season prediction windows, with a single window/timeframe.
+- Implement ranking limit: permit a maximum of two teams to be swapped per Round/Game Week.
+- Replace email/short code login with magic link
+
+### Removed
 - Deprecate Entry Short Code
 
 ## [2.0.0] - 2021-06-09
 
-## Changed
+### Changed
 - Reorganise significant elements of project architecture.
 - Consolidate fragmented packages into `domain` and `adapters` layers.
 - Compose service structs using explicit dependencies rather than single all-encapsulating injector.
@@ -58,11 +58,11 @@ Perform this filter explicitly, by iterating over response payload and checking 
 
 ## [1.1.3] - 2021-03-27
 
-### Fixed
-- Docker image build copies additional source files not included in binary
-
 ### Added
 - Database startup error detail
+
+### Fixed
+- Docker image build copies additional source files not included in binary
 
 ## [1.1.2] - 2021-03-27
 
