@@ -2,9 +2,10 @@ package domain
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"time"
+
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -358,6 +359,48 @@ func GetSeasonCollection() (SeasonCollection, error) {
 
 	// define seasons using location
 	sc := SeasonCollection{
+
+		// Premier League 2021/22
+		"202122_1": {
+			ID:       "202122_1",
+			ClientID: SeasonIdentifier{SeasonID: "PL"},
+			Name:     "Premier League 2021/22",
+			Live: TimeFrame{
+				From:  time.Date(2021, 8, 13, 20, 0, 0, 0, loc),   // opening day kick-off
+				Until: time.Date(2022, 5, 22, 23, 59, 59, 0, loc), // end of final day (regular season)
+			},
+			EntriesAccepted: TimeFrame{
+				From:  time.Date(2021, 7, 30, 12, 0, 0, 0, loc), // competition opens
+				Until: time.Date(2021, 8, 13, 20, 0, 0, 0, loc), // opening day kick-off
+			},
+			PredictionsAccepted: TimeFrame{
+				From:  time.Date(2021, 7, 30, 12, 0, 0, 0, loc),   // competition opens
+				Until: time.Date(2022, 5, 22, 23, 59, 59, 0, loc), // midnight on final day (regular season)
+			},
+			TeamIDs: []string{
+				"AFC",
+				"AVFC",
+				"BFC3",
+				"BHAFC",
+				"BFC",
+				"CFC",
+				"CPFC",
+				"EFC",
+				"LUFC",
+				"LCFC",
+				"LFC",
+				"MCFC",
+				"MUFC",
+				"NUFC",
+				"NCFC",
+				"SFC",
+				"THFC",
+				"WFC",
+				"WHUFC",
+				"WWFC",
+			},
+			MaxRounds: 38,
+		},
 
 		// Premier League 2020/21
 		"202021_1": {

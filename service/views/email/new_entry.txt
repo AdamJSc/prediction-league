@@ -12,7 +12,7 @@ Your PayPal reference is {{.PaymentDetails.Reference}}
 To submit your first prediction, go to:
 {{.PredictionsURL}}
 
-Let us know using the details below if you have any issues.
+Let us know if you get stuck - we're here to help 🙂
 
 In the meantime, Happy Predicting! 🧙🔮
 {{- template "email_txt_footer" .}}

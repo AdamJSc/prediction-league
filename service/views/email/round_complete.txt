@@ -5,11 +5,11 @@ Hey {{.Name}},
 
 A new round has begun!
 
-Check out the leaderboard to see how you're doing:
-{{.LeaderBoardURL}}
-
-And don't forget to tweak your prediction for the new round:
+Tweak your prediction for the next round:
 {{.PredictionsURL}}
+
+And don't forget to check out the leaderboard to see how you're doing:
+{{.LeaderBoardURL}}
 
 In the meantime, Happy Predicting! 🧙🔮
 {{- template "email_txt_footer" .}}

@@ -3,11 +3,11 @@
 
 Hey {{.Name}}!
 
-Use the following magic link to login:
+Here's your magic login link:
 
 {{.LoginURL}}
 
-This link will automatically expire after 10 minutes.
+This will automatically expire after 10 minutes.
 
 In the meantime, Happy Predicting! 🧙🔮
 {{- template "email_txt_footer" .}}

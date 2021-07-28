@@ -2,8 +2,13 @@
     {{template "header" .}}
     <div class="page-section row">
         <div class="intro-cta col">
-            <h2>Think you know where they'll finish?</h2>
-            <p>Predict the league table and score the fewest points to win!</p>
+            <div class="icon">
+                <i class="fas fa-hat-wizard" aria-hidden="true"></i>
+                <i class="far fa-futbol" aria-hidden="true"></i>
+                <i class="fas fa-trophy" aria-hidden="true"></i>
+            </div>
+            <h2>Put your prediction skills to the test</h2>
+            <p>Predict the league table and receive the fewest "penalty points" to win!</p>
             <a class="btn btn-primary btn-lg" href="{{.JoinPageURL}}" role="button">Enter Now</a>
         </div>
     </div>
@@ -11,48 +16,56 @@
         <div class="heading col-md-12">
             <h2>How it works</h2>
         </div>
-        <div class="col-lg-4">
-            <div class="stage accented-component">
+        <div class="stage col-lg-6">
+            <div class="accented-component">
                 <div class="icon">
                     <i class="fa fa-laptop" aria-hidden="true"></i>
                 </div>
                 <div class="stage-title">
-                    <div class="num">1</div>
-                    <div class="label">Enter</div>
+                    <div class="label">1: Enter</div>
                 </div>
                 <div class="stage-description">
                     <p>Sign up via the <a href="{{.JoinPageURL}}">Join</a> page.</p>
                 </div>
             </div>
         </div>
-        <div class="col-lg-4">
-            <div class="stage accented-component">
+        <div class="stage col-lg-6">
+            <div class="accented-component">
                 <div class="icon">
-                    <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+                    <i class="fas fa-edit" aria-hidden="true"></i>
                 </div>
                 <div class="stage-title">
-                    <div class="num">2</div>
-                    <div class="label">Predict</div>
+                    <div class="label">2: Predict</div>
                 </div>
                 <div class="stage-description">
-                    <p>Tell us where you think each team will appear in the league table.</p>
-                    <p>You'll be able to <a href="{{.PredictionPageURL}}">make changes</a> at certain points throughout the season.</p>
+                    <p>Submit your prediction and <a href="{{.PredictionPageURL}}">swap up to 2 teams</a> each Game Week.</p>
                 </div>
             </div>
         </div>
-        <div class="col-lg-4">
-            <div class="stage accented-component">
+        <div class="stage col-lg-6">
+            <div class="accented-component">
                 <div class="icon">
-                    <i class="fa fa-table" aria-hidden="true"></i>
+                    <i class="fas fa-calculator" aria-hidden="true"></i>
                 </div>
                 <div class="stage-title">
-                    <div class="num">3</div>
-                    <div class="label">Score Points</div>
+                    <div class="label">3: Score</div>
                 </div>
                 <div class="stage-description">
-                    <p>Accrue points for each Game Week, which add up throughout the season.</p>
-                    <p>Check the <a href="{{.LeaderBoardPageURL}}">Leaderboard</a> each week to see how you're doing.
-                        Fewest points at the end of the season wins!</p>
+                    <p>Receive "penalty points" each Game Week and see how you're doing on the
+                        <a href="{{.LeaderBoardPageURL}}">Leaderboard</a>.</p>
+                </div>
+            </div>
+        </div>
+        <div class="stage col-lg-6">
+            <div class="accented-component">
+                <div class="icon">
+                    <i class="fas fa-crown" aria-hidden="true"></i>
+                </div>
+                <div class="stage-title">
+                    <div class="label">4: Win</div>
+                </div>
+                <div class="stage-description">
+                    <p>Fewest points at the end of the season wins!</p>
                 </div>
             </div>
         </div>
@@ -72,7 +85,7 @@
         <div class="cta col-lg-6">
             <h3>Got questions?</h3>
             <div class="icon">
-                <i class="fa fa-question-circle-o" aria-hidden="true"></i>
+                <i class="fas fa-question-circle" aria-hidden="true"></i>
             </div>
             <p>Visit our <a href="{{.FAQPageURL}}">FAQs</a> page</p>
         </div>

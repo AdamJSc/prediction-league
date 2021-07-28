@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.1] - 2021-07-28
+
+### Changed
+- Minor web copy and design tweaks
+- Tweaks to copy for communications
+
+### Added
+- Config for 2021/22 Premier League season
+
 ## [2.1.0] - 2021-07-27
 
 ## Changed
