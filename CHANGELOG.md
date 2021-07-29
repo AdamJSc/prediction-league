@@ -6,33 +6,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.2] 2021-07-29
+
+### Added
+- Release links to Changelog
+
+### Changed
+- Release script to include restarting of existing containers
+- Home page copy
+
+### Fixed
+- FAQ accordion allows multiple expanded panels
+- GitHub icon in page footer
+
 ## [2.1.1] - 2021-07-28
+
+### Added
+- Config for 2021/22 Premier League season
 
 ### Changed
 - Minor web copy and design tweaks
 - Tweaks to copy for communications
 
-### Added
-- Config for 2021/22 Premier League season
-
 ## [2.1.0] - 2021-07-27
 
-## Changed
-- Replace sequence of Season prediction windows, with a single window/timeframe.
-- Implement ranking limit: permit a maximum of two teams to be swapped per Round/Game Week.
-- Replace email/short code login with magic link
-
-## Added
+### Added
 - Additional token use-cases
 - Ability to redeem a token
 - Ability to purge non-redeemed tokens by user/type
 - Ability for admin to generate an extended magic login link
 
-## Removed
+### Changed
+- Replace sequence of Season prediction windows, with a single window/timeframe.
+- Implement ranking limit: permit a maximum of two teams to be swapped per Round/Game Week.
+- Replace email/short code login with magic link
+
+### Removed
 - Deprecate Entry Short Code
 
 ## [2.0.0] - 2021-06-09
-## Changed
+
+### Changed
 - Reorganise significant elements of project architecture.
 - Consolidate fragmented packages into `domain` and `adapters` layers.
 - Compose service structs using explicit dependencies rather than single all-encapsulating injector.
@@ -50,18 +64,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update docs.
 
 ## [1.1.4] - 2021-05-23
+
 ### Fixed
 - Accommodate deprecation of `standingsType` query param when retrieving Standings from upstream Football Data API.
 Perform this filter explicitly, by iterating over response payload and checking `type` value of all Standings objects.  
 
 ## [1.1.3] - 2021-03-27
-### Fixed
-- Docker image build copies additional source files not included in binary
 
 ### Added
 - Database startup error detail
 
+### Fixed
+- Docker image build copies additional source files not included in binary
+
 ## [1.1.2] - 2021-03-27
+
 ### Changed
 - Docker builder pattern to reduce the Docker image size
 
@@ -72,6 +89,7 @@ Perform this filter explicitly, by iterating over response payload and checking 
 - Bump elliptic from 6.5.3 to 6.5.4
 
 ## [1.1.1] - 2020-10-20
+
 ### Fixed
 - Bug where the most recently created Scored Entry Prediction was not necessarily being retrieved for each specified
 combination of Entry/Round Number (Game Week) when building the Leaderboard, due to spurious behaviour of MySQL's
@@ -80,12 +98,14 @@ Group/Order By functions.
 produced when descending by Scored Entry Prediction's `created_at` field is guaranteed to be retained by the parent query. 
 
 ## [1.1.0] - 2020-10-04
+
 ### Added
 - Transactional emails representing the opening and closing of a Season's Prediction Window.
 - Cron jobs that check for recently opened, or forthcoming closing, Prediction Windows within a 24-hour period, and issue
 email comms to all Entrants of the respective active Season.
 
 ## [1.0.3] - 2020-09-27
+
 ### Security
 - Bump elliptic from 6.5.2 to 6.5.3
 - Bump lodash from 4.17.15 to 4.17.20
@@ -95,15 +115,33 @@ email comms to all Entrants of the respective active Season.
 - Bump node-sass-chokidar from 1.4.0 to 1.5.0
 
 ## [1.0.2] - 2020-09-27
+
 ### Fixed
 - When retrieving latest standings and checking for a completed season, fixed check so that this is made on the
 Standings object that has just been received from data client.
 - Add nil check when retrieving Realm from context.
 
 ## [1.0.1] - 2020-08-31
+
 ### Changed
 - Duration of session token for updating a Prediction from 20 minutes to 60 minutes.
 
 ## [1.0.0] - 2020-08-29
+
 ### Added
 - This project to the Open Source "dimension"...
+
+[Unreleased]: https://github.com/AdamJSc/prediction-league/compare/v2.1.2...HEAD
+[2.1.2]: https://github.com/AdamJSc/prediction-league/compare/v2.1.1...v2.1.2
+[2.1.1]: https://github.com/AdamJSc/prediction-league/compare/v2.1.0...v2.1.1
+[2.1.0]: https://github.com/AdamJSc/prediction-league/compare/v2.0.0...v2.1.0
+[2.0.0]: https://github.com/AdamJSc/prediction-league/compare/v1.1.4...v2.0.0
+[1.1.4]: https://github.com/AdamJSc/prediction-league/compare/v1.1.3...v1.1.4
+[1.1.3]: https://github.com/AdamJSc/prediction-league/compare/v1.1.2...v1.1.3
+[1.1.2]: https://github.com/AdamJSc/prediction-league/compare/v1.1.1...v1.1.2
+[1.1.1]: https://github.com/AdamJSc/prediction-league/compare/v1.1.0...v1.1.1
+[1.1.0]: https://github.com/AdamJSc/prediction-league/compare/v1.0.3...v1.1.0
+[1.0.3]: https://github.com/AdamJSc/prediction-league/compare/v1.0.2...v1.0.3
+[1.0.2]: https://github.com/AdamJSc/prediction-league/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/AdamJSc/prediction-league/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/AdamJSc/prediction-league/releases/tag/v1.0.0
