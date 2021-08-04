@@ -56,7 +56,7 @@
                     </div>
 
                     <div class="form-label-group">
-                        <input v-model="formData.pin" type="password" id="inputPIN" class="form-control" placeholder="Password" required>
+                        <input v-model="formData.pin" type="password" id="inputPIN" class="form-control" placeholder="PIN" required>
                         <label for="inputPIN">PIN</label>
                     </div>
                 </div>
