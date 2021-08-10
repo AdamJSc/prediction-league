@@ -6,12 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.1.3] 2021-08-04
+## [2.1.4] - 2021-08-10
+
+### Added
+- Open Graph meta tags
+
+## [2.1.3] - 2021-08-04
 
 ### Changed
 - Minor copy changes
 
-## [2.1.2] 2021-07-29
+## [2.1.2] - 2021-07-29
 
 ### Added
 - Release links to Changelog
@@ -136,7 +141,8 @@ Standings object that has just been received from data client.
 ### Added
 - This project to the Open Source "dimension"...
 
-[Unreleased]: https://github.com/AdamJSc/prediction-league/compare/v2.1.3...HEAD
+[Unreleased]: https://github.com/AdamJSc/prediction-league/compare/v2.1.4...HEAD
+[2.1.4]: https://github.com/AdamJSc/prediction-league/compare/v2.1.3...v2.1.4
 [2.1.3]: https://github.com/AdamJSc/prediction-league/compare/v2.1.2...v2.1.3
 [2.1.2]: https://github.com/AdamJSc/prediction-league/compare/v2.1.1...v2.1.2
 [2.1.1]: https://github.com/AdamJSc/prediction-league/compare/v2.1.0...v2.1.1
