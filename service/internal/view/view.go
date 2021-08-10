@@ -14,6 +14,9 @@ type Base struct {
 	SupportEmailPlainText string
 	SupportEmailFormatted string
 	RealmName             string
+	RealmImage            string
+	RealmOrigin           string
+	SeasonName            string
 	HomePageURL           string
 	LeaderBoardPageURL    string
 	JoinPageURL           string

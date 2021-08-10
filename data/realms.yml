@@ -1,6 +1,7 @@
 realms:
     localhost:
       origin: http://localhost:3000
+      image: http://localhost:3000/assets/img/og.png
       sender_domain: localhost
       contact:
         name: Harry R and the PL Team

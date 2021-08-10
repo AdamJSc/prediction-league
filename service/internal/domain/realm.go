@@ -14,6 +14,7 @@ type Realm struct {
 	SeasonID      string        `yaml:"season_id"`
 	EntryFee      RealmEntryFee `yaml:"entry_fee"`
 	AnalyticsCode string        `yaml:"analytics_code"`
+	Image         string        `yaml:"image"`
 }
 
 // RealmContact represents the contact details of a realm
