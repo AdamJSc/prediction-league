@@ -21,7 +21,8 @@ const (
 type Season struct {
 	ID                  string             // representation of season's start/end year along with instance number, e.g. 202021_1
 	ClientID            ResourceIdentifier // identifier within the football data source
-	Name                string             // season name, e.g. Premier League 2020/21
+	Name                string             // season name, e.g. Premier League 2021/22
+	ShortName           string             // short name, e.g. Prem 21/22
 	Live                TimeFrame          // timeframe for which the season is live (real-world standings will be consumed during this timeframe)
 	EntriesAccepted     TimeFrame          // timeframe within which new entries will be accepted
 	PredictionsAccepted TimeFrame          // timeframe within which changes to entry predictions will be accepted

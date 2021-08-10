@@ -125,6 +125,7 @@ func newPage(r *http.Request, c *container, title, activePage, bannerTitle strin
 	defer cancel()
 
 	realm := domain.RealmFromContext(ctx)
+	s, _ := c.seasons.GetByID(realm.SeasonID)
 
 	return &view.Base{
 		Title:                 title,
@@ -134,6 +135,9 @@ func newPage(r *http.Request, c *container, title, activePage, bannerTitle strin
 		SupportEmailPlainText: realm.Contact.EmailSanitised,
 		SupportEmailFormatted: realm.Contact.EmailProper,
 		RealmName:             realm.Name,
+		RealmImage:            realm.Image,
+		RealmOrigin:           realm.Origin,
+		SeasonName:            s.ShortName,
 		HomePageURL:           domain.GetHomeURL(realm),
 		LeaderBoardPageURL:    domain.GetLeaderBoardURL(realm),
 		JoinPageURL:           domain.GetJoinURL(realm),

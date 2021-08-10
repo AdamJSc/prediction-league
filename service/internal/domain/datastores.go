@@ -362,9 +362,10 @@ func GetSeasonCollection() (SeasonCollection, error) {
 
 		// Premier League 2021/22
 		"202122_1": {
-			ID:       "202122_1",
-			ClientID: SeasonIdentifier{SeasonID: "PL"},
-			Name:     "Premier League 2021/22",
+			ID:        "202122_1",
+			ClientID:  SeasonIdentifier{SeasonID: "PL"},
+			Name:      "Premier League 2021/22",
+			ShortName: "Prem 21/22",
 			Live: TimeFrame{
 				From:  time.Date(2021, 8, 13, 20, 0, 0, 0, loc),   // opening day kick-off
 				Until: time.Date(2022, 5, 22, 23, 59, 59, 0, loc), // end of final day (regular season)
@@ -404,9 +405,10 @@ func GetSeasonCollection() (SeasonCollection, error) {
 
 		// Premier League 2020/21
 		"202021_1": {
-			ID:       "202021_1",
-			ClientID: SeasonIdentifier{SeasonID: "PL"},
-			Name:     "Premier League 2020/21",
+			ID:        "202021_1",
+			ClientID:  SeasonIdentifier{SeasonID: "PL"},
+			Name:      "Premier League 2020/21",
+			ShortName: "Prem 20/21",
 			Live: TimeFrame{
 				From:  time.Date(2020, 9, 12, 15, 0, 0, 0, loc),   // opening day kick-off
 				Until: time.Date(2021, 5, 23, 23, 59, 59, 0, loc), // end of final day (regular season)
@@ -446,9 +448,10 @@ func GetSeasonCollection() (SeasonCollection, error) {
 
 		// Championship 2020/21
 		"202021_2": {
-			ID:       "202021_2",
-			ClientID: SeasonIdentifier{SeasonID: "ELC"},
-			Name:     "Championship 2020/21",
+			ID:        "202021_2",
+			ClientID:  SeasonIdentifier{SeasonID: "ELC"},
+			Name:      "Championship 2020/21",
+			ShortName: "Champ 20/21",
 			Live: TimeFrame{
 				From:  time.Date(2020, 9, 12, 15, 0, 0, 0, loc),  // opening day kick-off
 				Until: time.Date(2021, 5, 9, 23, 59, 59, 0, loc), // end of final day (regular season)
