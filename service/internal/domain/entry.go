@@ -362,7 +362,8 @@ func (e *EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPredict
 	}
 
 	// check if season is currently accepting predictions
-	if season.GetState(e.cl.Now()).PredictionsStatus != SeasonStateActive {
+	state := season.GetState(e.cl.Now())
+	if state.PredictionsStatus != SeasonStateActive {
 		return Entry{}, ConflictError{errors.New("season is not currently accepting predictions")}
 	}
 
