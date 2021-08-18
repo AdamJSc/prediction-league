@@ -361,9 +361,10 @@ func (e *EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPredict
 		return Entry{}, NotFoundError{err}
 	}
 
-	// check if season is currently accepting entries
-	if season.GetState(e.cl.Now()).EntriesStatus != SeasonStateActive {
-		return Entry{}, ConflictError{errors.New("season is not currently accepting entries")}
+	// check if season is currently accepting predictions
+	state := season.GetState(e.cl.Now())
+	if state.PredictionsStatus != SeasonStateActive {
+		return Entry{}, ConflictError{errors.New("season is not currently accepting predictions")}
 	}
 
 	var invalidRankingIDs, missingRankingIDs, duplicateRankingIDs []string

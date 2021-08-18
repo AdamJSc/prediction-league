@@ -290,17 +290,47 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 	defer truncate(t)
 
-	entry := insertEntry(t, generateTestEntry(t,
+	tz, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tsEntrFrom := time.Date(2018, 5, 26, 14, 0, 0, 0, tz)
+	tsEntrUntil := tsEntrFrom.Add(time.Hour)
+
+	tsPredFrom := time.Date(2020, 10, 24, 2, 19, 0, 0, tz)
+	tsPredUntil := tsPredFrom.Add(time.Hour)
+
+	season := domain.Season{
+		ID: "season_id",
+		EntriesAccepted: domain.TimeFrame{
+			tsEntrFrom,
+			tsEntrUntil,
+		},
+		PredictionsAccepted: domain.TimeFrame{
+			tsPredFrom,
+			tsPredUntil,
+		},
+		TeamIDs: []string{"hello", "world", "bonjour", "monde"},
+	}
+
+	seasonColl := domain.SeasonCollection{season.ID: season}
+
+	entry := generateTestEntry(t,
 		"Harry Redknapp",
 		"MrHarryR",
 		"harry.redknapp@football.net",
-	))
+	)
+
+	entry.SeasonID = season.ID
+
+	entry = insertEntry(t, entry)
 
 	t.Run("add an entry prediction to an existing entry with valid guard value must succeed", func(t *testing.T) {
 		// predictions are accepted
-		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
+		ts := season.PredictionsAccepted.From.Add(time.Nanosecond)
 
-		agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: ts})
+		agent, err := domain.NewEntryAgent(er, epr, sr, seasonColl, &mockClock{t: ts})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -308,7 +338,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		teamIDs := domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)
+		teamIDs := domain.NewRankingCollectionFromIDs(season.TeamIDs)
 
 		// reverse order of team IDs to ensure this is still an acceptable set of rankings when adding an entry prediction
 		var rankings domain.RankingCollection
@@ -334,9 +364,9 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 
 	t.Run("add an entry prediction to an existing entry with invalid realm name must fail", func(t *testing.T) {
 		// predictions are accepted
-		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
+		ts := season.PredictionsAccepted.From.Add(time.Nanosecond)
 
-		agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: ts})
+		agent, err := domain.NewEntryAgent(er, epr, sr, seasonColl, &mockClock{t: ts})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -356,9 +386,9 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 
 	t.Run("add an entry prediction to a non-existing entry must fail", func(t *testing.T) {
 		// predictions are accepted
-		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
+		ts := season.PredictionsAccepted.From.Add(time.Nanosecond)
 
-		agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: ts})
+		agent, err := domain.NewEntryAgent(er, epr, sr, seasonColl, &mockClock{t: ts})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -366,7 +396,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
+		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(season.TeamIDs)}
 
 		nonExistentEntryID, err := uuid.NewRandom()
 		if err != nil {
@@ -384,9 +414,9 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 
 	t.Run("add an entry prediction to an entry with an invalid season must fail", func(t *testing.T) {
 		// predictions are accepted
-		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
+		ts := season.PredictionsAccepted.From.Add(time.Nanosecond)
 
-		agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: ts})
+		agent, err := domain.NewEntryAgent(er, epr, sr, seasonColl, &mockClock{t: ts})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -394,7 +424,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
+		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(season.TeamIDs)}
 
 		entryWithInvalidSeason := entry
 		entryWithInvalidSeason.SeasonID = "not_a_valid_season"
@@ -405,11 +435,11 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		}
 	})
 
-	t.Run("add an entry prediction to an entry whose season is not currently accepting entries must fail", func(t *testing.T) {
+	t.Run("add an entry prediction to an entry whose season is not currently accepting predictions must fail", func(t *testing.T) {
 		// predictions are NOT accepted
-		ts := testSeason.PredictionsAccepted.From.Add(-time.Nanosecond)
+		ts := season.PredictionsAccepted.From.Add(-time.Nanosecond)
 
-		agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: ts})
+		agent, err := domain.NewEntryAgent(er, epr, sr, seasonColl, &mockClock{t: ts})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -417,7 +447,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
+		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(season.TeamIDs)}
 
 		_, err = agent.AddEntryPredictionToEntry(ctx, entryPrediction, entry)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
@@ -427,9 +457,9 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 
 	t.Run("add an entry prediction with rankings that include an invalid team ID must fail", func(t *testing.T) {
 		// predictions are accepted
-		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
+		ts := season.PredictionsAccepted.From.Add(time.Nanosecond)
 
-		agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: ts})
+		agent, err := domain.NewEntryAgent(er, epr, sr, seasonColl, &mockClock{t: ts})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -437,7 +467,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		rankings := domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)
+		rankings := domain.NewRankingCollectionFromIDs(season.TeamIDs)
 		rankings = append(rankings, domain.Ranking{ID: "not_a_valid_team_id"})
 		expectedMessage := "Invalid Team ID: not_a_valid_team_id"
 
@@ -457,9 +487,9 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 
 	t.Run("add an entry prediction with rankings that include a missing team ID must fail", func(t *testing.T) {
 		// predictions are accepted
-		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
+		ts := season.PredictionsAccepted.From.Add(time.Nanosecond)
 
-		agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: ts})
+		agent, err := domain.NewEntryAgent(er, epr, sr, seasonColl, &mockClock{t: ts})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -467,7 +497,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		rankings := domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)
+		rankings := domain.NewRankingCollectionFromIDs(season.TeamIDs)
 		if len(rankings) < 1 {
 			t.Fatalf("expected rankings length of at least 1, got %d", len(rankings))
 		}
@@ -495,9 +525,9 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 
 	t.Run("add an entry prediction with rankings that include a duplicate team ID must fail", func(t *testing.T) {
 		// predictions are accepted
-		ts := testSeason.PredictionsAccepted.From.Add(time.Nanosecond)
+		ts := season.PredictionsAccepted.From.Add(time.Nanosecond)
 
-		agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: ts})
+		agent, err := domain.NewEntryAgent(er, epr, sr, seasonColl, &mockClock{t: ts})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -505,7 +535,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		rankings := domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)
+		rankings := domain.NewRankingCollectionFromIDs(season.TeamIDs)
 		if len(rankings) < 2 {
 			t.Fatalf("expected rankings length of at least 2, got %d", len(rankings))
 		}
