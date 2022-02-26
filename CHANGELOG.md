@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- Verbosity flag on test run commands
+
 ## [2.1.5] - 2021-08-18
 
 ### Fixed

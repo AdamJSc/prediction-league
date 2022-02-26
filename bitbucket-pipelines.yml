@@ -22,7 +22,7 @@ pipelines:
             # run go tests
             - export MYSQL_URL="test-db-user:test-db-pwd@tcp(localhost:3306)/test-db-name?parseTime=true"
             - go mod vendor
-            - go test -v ./...
+            - go test ./...
       - step:
           name: Run Node build
           image: node:13.10
