@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Typo in email address of seeded user
+
 ### Removed
 - Verbosity flag on test run commands
 
