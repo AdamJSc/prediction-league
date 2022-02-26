@@ -19,6 +19,7 @@ type LeaderBoardRanking struct {
 	RankingWithScore
 	MinScore   int `json:"min_score"`
 	TotalScore int `json:"total_score"`
+	Movement   int `json:"movement"`
 }
 
 // LeaderBoardAgent defines the behaviours for handling LeaderBoards
@@ -71,6 +72,8 @@ func (l *LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context
 
 	standings := retrievedStandings[0]
 	realmName := RealmFromContext(ctx).Name
+
+	// TODO - retrieve previous round's rankings and determine movement based on current rankings
 
 	lbRankings, err := l.sepr.SelectEntryCumulativeScoresByRealm(ctx, realmName, seasonID, roundNumber)
 	if err != nil {
