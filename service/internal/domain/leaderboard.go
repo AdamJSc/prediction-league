@@ -106,7 +106,7 @@ func (l *LeaderBoardAgent) emptyLeaderBoardOrError(ctx context.Context, err erro
 	}
 }
 
-// populateRankingsWithMovement returns the provided base rankings populated with movement tallies relative to the provided comparison rankings
+// populateRankingsWithMovement returns the current rankings enriched with movement tallies that are relative to the previous rankings
 func populateRankingsWithMovement(currentRankings, previousRankings []LeaderBoardRanking) []LeaderBoardRanking {
 	currentRankingsWithMovement := make([]LeaderBoardRanking, 0)
 
