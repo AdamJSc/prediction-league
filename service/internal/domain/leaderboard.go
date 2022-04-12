@@ -44,25 +44,7 @@ func (l *LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context
 		"round_number": roundNumber,
 	}, false)
 	if err != nil {
-		switch err.(type) {
-		case MissingDBRecordError:
-			// we don't have a standings record for the provided round number
-			// if the current round number is 1, it means the game hasn't started yet
-			// so let's return an empty leaderboard - otherwise we return a standard 404
-			if roundNumber != 1 {
-				return nil, domainErrorFromRepositoryError(err)
-			}
-			entries, err := l.er.SelectBySeasonIDAndApproved(ctx, seasonID, true)
-			if err != nil {
-				return nil, domainErrorFromRepositoryError(err)
-			}
-			lb, err := l.generateEmptyLeaderBoard(ctx, roundNumber, entries)
-			if err != nil {
-				return nil, fmt.Errorf("cannot generate empty leaderboard: %w", err)
-			}
-			return lb, nil
-		}
-		return nil, domainErrorFromRepositoryError(err)
+		return l.emptyLeaderBoardOrError(ctx, err, seasonID, roundNumber)
 	}
 
 	if len(retrievedStandings) != 1 {
@@ -73,29 +55,15 @@ func (l *LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context
 	standings := retrievedStandings[0]
 	realmName := RealmFromContext(ctx).Name
 
-	// TODO - retrieve previous round's rankings and determine movement based on current rankings
-
-	lbRankings, err := l.sepr.SelectEntryCumulativeScoresByRealm(ctx, realmName, seasonID, roundNumber)
+	rankingsThisRound, err := l.sepr.SelectEntryCumulativeScoresByRealm(ctx, realmName, seasonID, roundNumber)
 	if err != nil {
-		switch err.(type) {
-		case MissingDBRecordError:
-			// this should never happen, because we should only have a standings record (established above) if we also
-			// have some affiliated scored entry predictions
-			// however, as a safety net let's check again for the first round and return an empty leaderboard if we have one
-			if roundNumber != 1 {
-				return nil, domainErrorFromRepositoryError(err)
-			}
-			entries, err := l.er.SelectBySeasonIDAndApproved(ctx, seasonID, true)
-			if err != nil {
-				return nil, domainErrorFromRepositoryError(err)
-			}
-			lb, err := l.generateEmptyLeaderBoard(ctx, roundNumber, entries)
-			if err != nil {
-				return nil, fmt.Errorf("cannot generate empty leaderboard: %w", err)
-			}
-			return lb, nil
+		return l.emptyLeaderBoardOrError(ctx, err, seasonID, roundNumber)
+	}
+
+	if roundNumber > 1 {
+		if rankingsPreviousRound, err := l.sepr.SelectEntryCumulativeScoresByRealm(ctx, realmName, seasonID, roundNumber-1); err == nil {
+			rankingsThisRound = populateRankingsWithMovement(rankingsThisRound, rankingsPreviousRound)
 		}
-		return nil, domainErrorFromRepositoryError(err)
 	}
 
 	lastUpdated := standings.CreatedAt
@@ -105,12 +73,57 @@ func (l *LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context
 
 	return &LeaderBoard{
 		RoundNumber: roundNumber,
-		Rankings:    lbRankings,
+		Rankings:    rankingsThisRound,
 		LastUpdated: &lastUpdated,
 	}, nil
 }
 
-// generateEmptyLeaderBoard returns a leaderboard that comprises all of the provided entries scored with a 0
+// emptyLeaderBoardOrError returns an empty leaderboard if the provided error represents a missing database entry
+func (l *LeaderBoardAgent) emptyLeaderBoardOrError(ctx context.Context, err error, seasonID string, roundNumber int) (*LeaderBoard, error) {
+	switch err.(type) {
+
+	case MissingDBRecordError:
+		// if the current round number is 1, it means the game hasn't started yet
+		// so let's return an empty leaderboard - otherwise we return a standard 404
+		if roundNumber != 1 {
+			return nil, domainErrorFromRepositoryError(err)
+		}
+
+		entries, selectErr := l.er.SelectBySeasonIDAndApproved(ctx, seasonID, true)
+		if selectErr != nil {
+			return nil, domainErrorFromRepositoryError(selectErr)
+		}
+
+		lb, lbErr := l.generateEmptyLeaderBoard(ctx, roundNumber, entries)
+		if lbErr != nil {
+			return nil, fmt.Errorf("cannot generate empty leaderboard: %w", lbErr)
+		}
+
+		return lb, nil
+
+	default:
+		return nil, domainErrorFromRepositoryError(err)
+	}
+}
+
+// populateRankingsWithMovement returns the provided base rankings populated with movement tallies relative to the provided comparison rankings
+func populateRankingsWithMovement(currentRankings, previousRankings []LeaderBoardRanking) []LeaderBoardRanking {
+	currentRankingsWithMovement := make([]LeaderBoardRanking, 0)
+
+	for _, current := range currentRankings {
+		for _, previous := range previousRankings {
+			if previous.ID == current.ID {
+				current.Movement = previous.Position - current.Position
+			}
+		}
+
+		currentRankingsWithMovement = append(currentRankingsWithMovement, current)
+	}
+
+	return currentRankingsWithMovement
+}
+
+// generateEmptyLeaderBoard returns a leaderboard that comprises all the provided entries scored with a 0
 func (l *LeaderBoardAgent) generateEmptyLeaderBoard(ctx context.Context, roundNumber int, entries []Entry) (*LeaderBoard, error) {
 	lb := LeaderBoard{
 		RoundNumber: roundNumber,
