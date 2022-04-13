@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- LeaderBoard response includes movement tallies (the number of positions that each entry has moved up or down
+- Render visual indication of leaderboard movement (the number of positions that each entry has moved up or down
 based on the previous game week's rankings).
 
 ### Fixed
