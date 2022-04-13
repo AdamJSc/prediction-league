@@ -39,7 +39,7 @@
             <table class="leaderboard-render rankings clickable">
                 <thead>
                 <tr>
-                    <td colspan="3"></td>
+                    <td colspan="4"></td>
                     <td class="text-right text-highlight">
                         Pts
                     </td>
@@ -56,6 +56,7 @@
                     <td class="position">
                         {{ranking.position}}
                     </td>
+                    <td class="movement" v-html="getMovementMarkup(ranking.movement)"></td>
                     <td class="popout text-highlight">
                         <i class="fa fa-external-link" aria-hidden="true"></i>
                     </td>
@@ -177,6 +178,15 @@
                 this.focusedEntry.nickname = entryNickname
                 this.focusedEntry.score = score
                 $('#scoredEntryPredictionModal').modal('show')
+            },
+            getMovementMarkup: function(movement) {
+                if (movement > 0) {
+                    return '<span class="movement-up"><i class="fas fa-caret-up"/></span>'
+                }
+                if (movement < 0) {
+                    return '<span class="movement-down"><i class="fas fa-caret-down"/></span>'
+                }
+                return '<span class="movement-none"><i class="fas fa-minus"></i></span>'
             }
         },
         computed: {

@@ -405,6 +405,25 @@ h1, h2, h3, h4 {
   .popout {
     text-align: right;
   }
+
+  .movement {
+    text-align: center;
+  }
+
+  .movement-up {
+    color: #01ce40;
+    font-size: 1.4rem;
+  }
+
+  .movement-down {
+    color: #ff2121;
+    font-size: 1.4rem;
+  }
+
+  .movement-none {
+    color: #838383;
+    font-size: 0.7rem;
+  }
 }
 
 .last-updated {
