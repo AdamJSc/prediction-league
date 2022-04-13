@@ -145,33 +145,39 @@
                 this.roundNumber++
                 this.refreshLeaderboard()
             },
+            retrieveLeaderboard: function(roundNumber) {
+                let url = `/api/season/${this.seasonId}/leaderboard/${roundNumber}`
+                return axios.request({
+                    method: 'get',
+                    url: url
+                })
+            },
+            handleRetrieveLeaderboardResponse: function(retrieveLeaderboardPromise) {
+                let component = this
+                retrieveLeaderboardPromise.then(function(response) {
+                    let unix = Date.parse(response.data.data.leaderboard.last_updated)
+                    component.lastUpdated = component.parseUnixDate(unix)
+                    component.rankings = response.data.data.leaderboard.rankings
+                    component.working = false
+                }).catch(function(error) {
+                    console.log(error)
+                    component.errorMessages = ['Something went wrong :(<br />Please try again later']
+                    component.working = false
+                })
+            },
             refreshLeaderboard: function() {
-                const vm = this
-                vm.working = true
-                vm.resetErrorMessages()
-                vm.lastUpdated = null
-                vm.rankings = []
+                // TODO - preload 3 rounds' worth of leaderboards at any one time (rankings manifest by round number)
+                let component = this
+                component.working = true
+                component.resetErrorMessages()
+                component.lastUpdated = null
+                component.rankings = []
 
-                const retrieveLeaderboard = function() {
-                    let url = `/api/season/${vm.seasonId}/leaderboard/${vm.roundNumber}`
-                    axios.request({
-                        method: 'get',
-                        url: url
-                    })
-                        .then(function (response) {
-                            let unix = Date.parse(response.data.data.leaderboard.last_updated)
-                            vm.lastUpdated = vm.parseUnixDate(unix)
-                            vm.rankings = response.data.data.leaderboard.rankings
-                            vm.working = false
-                        })
-                        .catch(function (error) {
-                            console.log(error)
-                            vm.errorMessages = ['Something went wrong :(<br />Please try again later']
-                            vm.working = false
-                        })
-                }
-
-                setTimeout(retrieveLeaderboard, 500)
+                setTimeout(function() {
+                    component.handleRetrieveLeaderboardResponse(
+                        component.retrieveLeaderboard(component.roundNumber)
+                    )
+                }, 500)
             },
             showScoredEntryPrediction: function(entryID, entryNickname, score) {
                 this.focusedEntry.id = entryID
