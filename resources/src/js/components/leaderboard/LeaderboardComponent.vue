@@ -85,14 +85,8 @@
     export default {
         name: 'LeaderBoard',
         props: {
-            seasonId: {
-                type: String
-            },
             initialRoundNumber: {
                 type: Number
-            },
-            unix: {
-                type: String
             },
             rawEntries: {
                 type: String
@@ -103,91 +97,42 @@
             rawTeams: {
                 type: String
             },
+            seasonId: {
+                type: String
+            },
+            unix: {
+                type: String
+            }
         },
         data: function() {
-            let lastUpdated = null
-            if (this.unix !== "0") {
-                lastUpdated = this.parseUnixDate(this.unix + '000')
-            }
-
             let entries = this.rawEntries === "" ? [] : JSON.parse(this.rawEntries)
-            let parsedRankings = this.rawRankings === "" ? [] : JSON.parse(this.rawRankings)
             let teams = this.rawTeams === "" ? [] : JSON.parse(this.rawTeams)
-            let initialRoundNumber = this.initialRoundNumber
-
-            let leaderboards = {}
-            leaderboards[initialRoundNumber] = {
-                rankings: parsedRankings,
-                lastUpdated: lastUpdated
-            }
 
             return {
-                working: false,
-                errorMessages: [],
-                maxRoundNumber: initialRoundNumber,
-                roundNumber: initialRoundNumber,
-                focusedRoundNumber: initialRoundNumber,
                 entries,
-                leaderboards,
-                teams,
+                errorMessages: [],
                 focusedEntry: {
                     id: "",
                     nickname: "",
                     score: 0
                 },
+                focusedRoundNumber: this.initialRoundNumber,
+                leaderboards: this.populateInitialLeaderboard(),
+                maxRoundNumber: this.initialRoundNumber,
+                roundNumber: this.initialRoundNumber,
+                teams,
+                working: false,
             }
         },
         methods: {
-            resetErrorMessages: function() {
-                this.errorMessages = []
-            },
-            parseUnixDate: function(timestamp) {
-                return new Date(parseFloat(timestamp))
-            },
-            prevRound: function() {
-                this.roundNumber--
-                this.focusRound(this.roundNumber)
-            },
-            nextRound: function() {
-                this.roundNumber++
-                this.focusRound(this.roundNumber)
-            },
             focusRound: function(roundNumber) {
-              let component = this
-              if (typeof component.leaderboards[roundNumber] != "undefined") {
-                  component.focusedRoundNumber = roundNumber
-                  return
-              }
-              component.working = true
-              component.resetErrorMessages()
-              component.retrieveLeaderboard(roundNumber, true)
-            },
-            retrieveLeaderboard: function(roundNumber, setFocus) {
                 let component = this
-                axios.request({
-                    method: 'get',
-                    url: `/api/season/${this.seasonId}/leaderboard/${roundNumber}`
-                }).then(function(response) {
-                    let data = response.data.data
-                    let rankings = data.leaderboard.rankings
-                    let lastUpdatedUnix = Date.parse(data.leaderboard.last_updated)
-                    let lastUpdated = component.parseUnixDate(lastUpdatedUnix)
-                    component.leaderboards[roundNumber] = {rankings, lastUpdated}
-                    if (setFocus === true) {
-                        component.focusedRoundNumber = roundNumber
-                    }
-                    component.working = false
-                }).catch(function(error) {
-                    console.log(error)
-                    component.errorMessages = ['Something went wrong :(<br />Please try again later']
-                    component.working = false
-                })
-            },
-            showScoredEntryPrediction: function(entryID, entryNickname, score) {
-                this.focusedEntry.id = entryID
-                this.focusedEntry.nickname = entryNickname
-                this.focusedEntry.score = score
-                $('#scoredEntryPredictionModal').modal('show')
+                if (typeof component.leaderboards[roundNumber] != "undefined") {
+                    component.focusedRoundNumber = roundNumber
+                    return
+                }
+                component.resetErrorMessages()
+                component.retrieveLeaderboard(roundNumber, true)
             },
             getMovementMarkup: function(movement) {
                 if (movement > 0) {
@@ -197,6 +142,73 @@
                     return '<span class="movement-down"><i class="fas fa-caret-down"/></span>'
                 }
                 return '<span class="movement-none"><i class="fas fa-minus"></i></span>'
+            },
+            nextRound: function() {
+                this.roundNumber++
+                this.focusRound(this.roundNumber)
+            },
+            populateInitialLeaderboard: function() {
+                let parsedRankings = this.rawRankings === "" ? [] : JSON.parse(this.rawRankings)
+                let lastUpdatedUnix = null
+                if (this.unix !== "0") {
+                    lastUpdatedUnix = this.unix + '000'
+                }
+
+                return this.populateLeaderboardByRound(
+                    {},
+                    this.initialRoundNumber,
+                    parsedRankings,
+                    lastUpdatedUnix
+                )
+            },
+            populateLeaderboardByRound: function(leaderboards, roundNumber, rankings, lastUpdatedUnix) {
+                let lastUpdated = lastUpdatedUnix != null ? new Date(parseFloat(lastUpdatedUnix)) : null
+                leaderboards[roundNumber] = {rankings, lastUpdated}
+                return leaderboards
+            },
+            prevRound: function() {
+                this.roundNumber--
+                this.focusRound(this.roundNumber)
+            },
+            resetErrorMessages: function() {
+                this.errorMessages = []
+            },
+            retrieveLeaderboard: function(roundNumber, setFocus) {
+                let component = this
+                if (setFocus === true) {
+                    component.working = true
+                }
+                axios.request({
+                    method: 'get',
+                    url: `/api/season/${this.seasonId}/leaderboard/${roundNumber}`
+                }).then(function(response) {
+                    let data = response.data.data
+                    let rankings = data.leaderboard.rankings
+                    let lastUpdatedUnix = Date.parse(data.leaderboard.last_updated)
+                    component.setLeaderboard(roundNumber, rankings, lastUpdatedUnix)
+                    if (setFocus === true) {
+                        component.focusedRoundNumber = roundNumber
+                    }
+                }).catch(function(error) {
+                    console.log(error)
+                    component.errorMessages = ['Something went wrong :(<br />Please try again later']
+                }).finally(function() {
+                    component.working = false
+                })
+            },
+            setLeaderboard: function(roundNumber, rankings, lastUpdatedUnix) {
+                this.leaderboards = this.populateLeaderboardByRound(
+                    this.leaderboards,
+                    roundNumber,
+                    rankings,
+                    lastUpdatedUnix
+                )
+            },
+            showScoredEntryPrediction: function(entryID, entryNickname, score) {
+                this.focusedEntry.id = entryID
+                this.focusedEntry.nickname = entryNickname
+                this.focusedEntry.score = score
+                $('#scoredEntryPredictionModal').modal('show')
             }
         },
         computed: {
