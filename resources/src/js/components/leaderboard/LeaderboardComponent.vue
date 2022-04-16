@@ -31,11 +31,11 @@
                 <p v-for="msg in errorMessages" v-html="msg"></p>
             </div>
         </transition>
-        <div v-if="focusedRankings.length > 0" class="leaderboard-render-wrapper">
+        <div v-if="focusedLeaderboard.rankings.length > 0" class="leaderboard-render-wrapper">
             <div v-if="working" class="loader-container">
                 <img alt="loader" src="/assets/img/loader-light-bg.svg" />
             </div>
-            <div v-if="!working && lastUpdated" class="last-updated text-center">Last updated on {{lastUpdatedVerbose}}</div>
+            <div v-if="!working && focusedLeaderboard.lastUpdated" class="last-updated text-center">Last updated on {{lastUpdatedVerbose}}</div>
             <table class="leaderboard-render rankings clickable">
                 <thead>
                 <tr>
@@ -52,7 +52,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr v-for="ranking in focusedRankings" v-on:click="showScoredEntryPrediction(ranking.id, entries[ranking.id], ranking.score)" class="leaderboard-row rankings-row">
+                <tr v-for="ranking in focusedLeaderboard.rankings" v-on:click="showScoredEntryPrediction(ranking.id, entries[ranking.id], ranking.score)" class="leaderboard-row rankings-row">
                     <td class="position">
                         {{ranking.position}}
                     </td>
@@ -115,19 +115,21 @@
             let teams = this.rawTeams === "" ? [] : JSON.parse(this.rawTeams)
             let initialRoundNumber = this.initialRoundNumber
 
-            let rankings = {}
-            rankings[initialRoundNumber] = parsedRankings
+            let leaderboards = {}
+            leaderboards[initialRoundNumber] = {
+                rankings: parsedRankings,
+                lastUpdated: lastUpdated
+            }
 
             return {
                 working: false,
                 errorMessages: [],
-                lastUpdated: lastUpdated,
                 maxRoundNumber: initialRoundNumber,
                 roundNumber: initialRoundNumber,
                 focusedRoundNumber: initialRoundNumber,
-                entries: entries,
-                rankings: rankings,
-                teams: teams,
+                entries,
+                leaderboards,
+                teams,
                 focusedEntry: {
                     id: "",
                     nickname: "",
@@ -152,37 +154,33 @@
             },
             focusRound: function(roundNumber) {
               let component = this
-              if (typeof component.rankings[roundNumber] != "undefined") {
+              if (typeof component.leaderboards[roundNumber] != "undefined") {
                   component.focusedRoundNumber = roundNumber
                   return
               }
               component.working = true
               component.resetErrorMessages()
-              component.retrieveLeaderboard(
-                  roundNumber,
-                  function() {
-                      component.focusedRoundNumber = roundNumber
-                  }
-              )
+              component.retrieveLeaderboard(roundNumber, true)
             },
-            retrieveLeaderboard: function(roundNumber, callback) {
+            retrieveLeaderboard: function(roundNumber, setFocus) {
                 let component = this
                 axios.request({
                     method: 'get',
                     url: `/api/season/${this.seasonId}/leaderboard/${roundNumber}`
                 }).then(function(response) {
-                    let unix = Date.parse(response.data.data.leaderboard.last_updated)
-                    component.lastUpdated = component.parseUnixDate(unix)
-                    component.rankings[roundNumber] = response.data.data.leaderboard.rankings
+                    let data = response.data.data
+                    let rankings = data.leaderboard.rankings
+                    let lastUpdatedUnix = Date.parse(data.leaderboard.last_updated)
+                    let lastUpdated = component.parseUnixDate(lastUpdatedUnix)
+                    component.leaderboards[roundNumber] = {rankings, lastUpdated}
+                    if (setFocus === true) {
+                        component.focusedRoundNumber = roundNumber
+                    }
                     component.working = false
                 }).catch(function(error) {
                     console.log(error)
                     component.errorMessages = ['Something went wrong :(<br />Please try again later']
                     component.working = false
-                }).finally(function() {
-                    if (typeof callback != "undefined") {
-                        callback()
-                    }
                 })
             },
             showScoredEntryPrediction: function(entryID, entryNickname, score) {
@@ -202,16 +200,15 @@
             }
         },
         computed: {
-            focusedRankings: function() {
-              // TODO - include leaderboard last updated date so that this changes as focused round changes
-              return this.rankings[this.focusedRoundNumber]
+            focusedLeaderboard: function() {
+                return this.leaderboards[this.focusedRoundNumber]
             },
             lastUpdatedVerbose: function() {
                 const helpers = require('../../helpers.js')
-                if (this.lastUpdated === null) {
+                if (this.focusedLeaderboard.lastUpdated === null) {
                     return ""
                 }
-                return helpers.formatVerboseDate(this.lastUpdated)
+                return helpers.formatVerboseDate(this.focusedLeaderboard.lastUpdated)
             },
         }
     }
