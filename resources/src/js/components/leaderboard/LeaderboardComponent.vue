@@ -31,11 +31,11 @@
                 <p v-for="msg in errorMessages" v-html="msg"></p>
             </div>
         </transition>
-        <div v-if="working" class="loader-container">
-            <img alt="loader" src="/assets/img/loader-light-bg.svg" />
-        </div>
-        <div v-if="!working && selectedRankings.length > 0" class="leaderboard-render-wrapper">
-            <div v-if="lastUpdated" class="last-updated text-center">Last updated on {{lastUpdatedVerbose}}</div>
+        <div v-if="focusedRankings.length > 0" class="leaderboard-render-wrapper">
+            <div v-if="working" class="loader-container">
+                <img alt="loader" src="/assets/img/loader-light-bg.svg" />
+            </div>
+            <div v-if="!working && lastUpdated" class="last-updated text-center">Last updated on {{lastUpdatedVerbose}}</div>
             <table class="leaderboard-render rankings clickable">
                 <thead>
                 <tr>
@@ -52,7 +52,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr v-for="ranking in selectedRankings" v-on:click="showScoredEntryPrediction(ranking.id, entries[ranking.id], ranking.score)" class="leaderboard-row rankings-row">
+                <tr v-for="ranking in focusedRankings" v-on:click="showScoredEntryPrediction(ranking.id, entries[ranking.id], ranking.score)" class="leaderboard-row rankings-row">
                     <td class="position">
                         {{ranking.position}}
                     </td>
@@ -124,6 +124,7 @@
                 lastUpdated: lastUpdated,
                 maxRoundNumber: initialRoundNumber,
                 roundNumber: initialRoundNumber,
+                focusedRoundNumber: initialRoundNumber,
                 entries: entries,
                 rankings: rankings,
                 teams: teams,
@@ -143,44 +144,46 @@
             },
             prevRound: function() {
                 this.roundNumber--
-                this.refreshLeaderboard()
+                this.focusRound(this.roundNumber)
             },
             nextRound: function() {
                 this.roundNumber++
-                this.refreshLeaderboard()
+                this.focusRound(this.roundNumber)
             },
-            retrieveLeaderboard: function(roundNumber) {
-                let url = `/api/season/${this.seasonId}/leaderboard/${roundNumber}`
-                return axios.request({
-                    method: 'get',
-                    url: url
-                })
+            focusRound: function(roundNumber) {
+              let component = this
+              if (typeof component.rankings[roundNumber] != "undefined") {
+                  component.focusedRoundNumber = roundNumber
+                  return
+              }
+              component.working = true
+              component.resetErrorMessages()
+              component.retrieveLeaderboard(
+                  roundNumber,
+                  function() {
+                      component.focusedRoundNumber = roundNumber
+                  }
+              )
             },
-            handleRetrieveLeaderboardResponse: function(retrieveLeaderboardPromise) {
+            retrieveLeaderboard: function(roundNumber, callback) {
                 let component = this
-                retrieveLeaderboardPromise.then(function(response) {
+                axios.request({
+                    method: 'get',
+                    url: `/api/season/${this.seasonId}/leaderboard/${roundNumber}`
+                }).then(function(response) {
                     let unix = Date.parse(response.data.data.leaderboard.last_updated)
                     component.lastUpdated = component.parseUnixDate(unix)
-                    component.rankings[component.roundNumber] = response.data.data.leaderboard.rankings
+                    component.rankings[roundNumber] = response.data.data.leaderboard.rankings
                     component.working = false
                 }).catch(function(error) {
                     console.log(error)
                     component.errorMessages = ['Something went wrong :(<br />Please try again later']
                     component.working = false
+                }).finally(function() {
+                    if (typeof callback != "undefined") {
+                        callback()
+                    }
                 })
-            },
-            refreshLeaderboard: function() {
-                // TODO - preload 3 rounds' worth of leaderboards at any one time (rankings manifest by round number)
-                let component = this
-                component.working = true
-                component.resetErrorMessages()
-                component.lastUpdated = null
-
-                setTimeout(function() {
-                    component.handleRetrieveLeaderboardResponse(
-                        component.retrieveLeaderboard(component.roundNumber)
-                    )
-                }, 500)
             },
             showScoredEntryPrediction: function(entryID, entryNickname, score) {
                 this.focusedEntry.id = entryID
@@ -199,8 +202,9 @@
             }
         },
         computed: {
-            selectedRankings: function() {
-              return this.rankings[this.roundNumber]
+            focusedRankings: function() {
+              // TODO - include leaderboard last updated date so that this changes as focused round changes
+              return this.rankings[this.focusedRoundNumber]
             },
             lastUpdatedVerbose: function() {
                 const helpers = require('../../helpers.js')
