@@ -34,7 +34,7 @@
         <div v-if="working" class="loader-container">
             <img alt="loader" src="/assets/img/loader-light-bg.svg" />
         </div>
-        <div v-if="!working && rankings.length > 0" class="leaderboard-render-wrapper">
+        <div v-if="!working && selectedRankings.length > 0" class="leaderboard-render-wrapper">
             <div v-if="lastUpdated" class="last-updated text-center">Last updated on {{lastUpdatedVerbose}}</div>
             <table class="leaderboard-render rankings clickable">
                 <thead>
@@ -52,7 +52,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr v-for="ranking in rankings" v-on:click="showScoredEntryPrediction(ranking.id, entries[ranking.id], ranking.score)" class="leaderboard-row rankings-row">
+                <tr v-for="ranking in selectedRankings" v-on:click="showScoredEntryPrediction(ranking.id, entries[ranking.id], ranking.score)" class="leaderboard-row rankings-row">
                     <td class="position">
                         {{ranking.position}}
                     </td>
@@ -111,15 +111,19 @@
             }
 
             let entries = this.rawEntries === "" ? [] : JSON.parse(this.rawEntries)
-            let rankings = this.rawRankings === "" ? [] : JSON.parse(this.rawRankings)
+            let parsedRankings = this.rawRankings === "" ? [] : JSON.parse(this.rawRankings)
             let teams = this.rawTeams === "" ? [] : JSON.parse(this.rawTeams)
+            let initialRoundNumber = this.initialRoundNumber
+
+            let rankings = {}
+            rankings[initialRoundNumber] = parsedRankings
 
             return {
                 working: false,
                 errorMessages: [],
                 lastUpdated: lastUpdated,
-                maxRoundNumber: this.initialRoundNumber,
-                roundNumber: this.initialRoundNumber,
+                maxRoundNumber: initialRoundNumber,
+                roundNumber: initialRoundNumber,
                 entries: entries,
                 rankings: rankings,
                 teams: teams,
@@ -157,7 +161,7 @@
                 retrieveLeaderboardPromise.then(function(response) {
                     let unix = Date.parse(response.data.data.leaderboard.last_updated)
                     component.lastUpdated = component.parseUnixDate(unix)
-                    component.rankings = response.data.data.leaderboard.rankings
+                    component.rankings[component.roundNumber] = response.data.data.leaderboard.rankings
                     component.working = false
                 }).catch(function(error) {
                     console.log(error)
@@ -171,7 +175,6 @@
                 component.working = true
                 component.resetErrorMessages()
                 component.lastUpdated = null
-                component.rankings = []
 
                 setTimeout(function() {
                     component.handleRetrieveLeaderboardResponse(
@@ -196,6 +199,9 @@
             }
         },
         computed: {
+            selectedRankings: function() {
+              return this.rankings[this.roundNumber]
+            },
             lastUpdatedVerbose: function() {
                 const helpers = require('../../helpers.js')
                 if (this.lastUpdated === null) {
