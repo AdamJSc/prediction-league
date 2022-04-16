@@ -81,6 +81,7 @@
 
 <script>
     const axios = require('axios').default
+    const leaderboardPreloadBuffer = 2
 
     export default {
         name: 'LeaderBoard',
@@ -127,12 +128,10 @@
         methods: {
             focusRound: function(roundNumber) {
                 let component = this
-                if (typeof component.leaderboards[roundNumber] != "undefined") {
-                    component.focusedRoundNumber = roundNumber
-                    return
-                }
                 component.resetErrorMessages()
-                component.retrieveLeaderboard(roundNumber, true)
+                let lower = roundNumber - leaderboardPreloadBuffer
+                let upper = roundNumber + leaderboardPreloadBuffer
+                component.retrieveLeaderboards(lower, upper, roundNumber)
             },
             getMovementMarkup: function(movement) {
                 if (movement > 0) {
@@ -175,7 +174,13 @@
             },
             retrieveLeaderboard: function(roundNumber, setFocus) {
                 let component = this
-                if (setFocus === true) {
+                if (typeof component.leaderboards[roundNumber] != "undefined") {
+                    if (setFocus) {
+                        component.focusedRoundNumber = roundNumber
+                    }
+                    return
+                }
+                if (setFocus) {
                     component.working = true
                 }
                 axios.request({
@@ -191,10 +196,21 @@
                     }
                 }).catch(function(error) {
                     console.log(error)
-                    component.errorMessages = ['Something went wrong :(<br />Please try again later']
+                    if (setFocus) {
+                        component.errorMessages = ['Something went wrong :(<br />Please try again later']
+                    }
                 }).finally(function() {
                     component.working = false
                 })
+            },
+            retrieveLeaderboards: function(lower, upper, focus) {
+                for (let roundNumber = lower; roundNumber <= upper; roundNumber++) {
+                    if (roundNumber < 1 || roundNumber > this.maxRoundNumber) {
+                        continue
+                    }
+                    let setFocus = (roundNumber === focus)
+                    this.retrieveLeaderboard(roundNumber, setFocus)
+                }
             },
             setLeaderboard: function(roundNumber, rankings, lastUpdatedUnix) {
                 this.leaderboards = this.populateLeaderboardByRound(
@@ -222,6 +238,11 @@
                 }
                 return helpers.formatVerboseDate(this.focusedLeaderboard.lastUpdated)
             },
+        },
+        mounted() {
+            // preload initial number of "buffer" leaderboards
+            let lower = this.maxRoundNumber-leaderboardPreloadBuffer
+            this.retrieveLeaderboards(lower, this.maxRoundNumber)
         }
     }
 </script>
