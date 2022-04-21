@@ -14,6 +14,7 @@ based on the previous game week's rankings).
 - Preload/buffer retrieval of leaderboards to improve load times for user.
 
 ### Fixed
+- Extend duration of Edit Prediction token from 10 to 60 minutes, to prevent common timeout issues
 - Typo in email address of seeded user
 
 ### Removed
