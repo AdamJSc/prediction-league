@@ -10,7 +10,18 @@
                         </button>
                     </div>
                     <div class="modal-body">
-                        <scored-entry-prediction v-bind:entry-id="focusedEntry.id" v-bind:round-number="roundNumber" v-bind:teams="teams"></scored-entry-prediction>
+                        <round-navigation
+                            :max-round-number="maxRoundNumber"
+                            :round-number="roundNumber"
+                            :working="working"
+                            v-on:decrement-round="prevRound"
+                            v-on:increment-round="nextRound"
+                        ></round-navigation>
+                        <scored-entry-prediction
+                            v-bind:entry-id="focusedEntry.id"
+                            v-bind:round-number="roundNumber"
+                            v-bind:teams="teams"
+                        ></scored-entry-prediction>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -18,13 +29,13 @@
                 </div>
             </div>
         </div>
-        <table class="round">
-            <tr>
-                <td class="round-navigation text-left"><i v-on:click="prevRound" v-if="!working && (roundNumber > 1)" class="round-navigation fa fa-chevron-left" aria-hidden="true"></i></td>
-                <td class="text-center">Round {{roundNumber}}</td>
-                <td class="round-navigation text-right"><i v-on:click="nextRound" v-if="!working && (roundNumber < maxRoundNumber)" class="fa fa-chevron-right" aria-hidden="true"></i></td>
-            </tr>
-        </table>
+        <round-navigation
+            :max-round-number="maxRoundNumber"
+            :round-number="roundNumber"
+            :working="working"
+            v-on:decrement-round="prevRound"
+            v-on:increment-round="nextRound"
+        ></round-navigation>
         <transition name="fade">
             <div v-if="errorMessages.length > 0" class="error-messages alert alert-block alert-danger">
                 <button type="button" class="close" v-on:click="resetErrorMessages">&times;</button>

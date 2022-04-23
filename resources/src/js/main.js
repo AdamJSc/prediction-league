@@ -1,5 +1,6 @@
 // load components
 Vue.component("leaderboard", require("./components/leaderboard/LeaderboardComponent.vue").default)
+Vue.component("round-navigation", require("./components/leaderboard/RoundNavigationComponent.vue").default)
 Vue.component("scored-entry-prediction", require("./components/leaderboard/ScoredEntryPredictionComponent.vue").default)
 
 Vue.component("registration-workflow", require("./components/registration/RegistrationWorkflowComponent.vue").default)
