@@ -126,13 +126,6 @@
             }
         },
         methods: {
-            focusRound: function(roundNumber) {
-                let component = this
-                component.resetErrorMessages()
-                let lower = roundNumber - leaderboardPreloadBuffer
-                let upper = roundNumber + leaderboardPreloadBuffer
-                component.retrieveLeaderboards(lower, upper, roundNumber)
-            },
             getMovementMarkup: function(movement) {
                 if (movement > 0) {
                     return '<span class="movement-up"><i class="fas fa-caret-up"/></span>'
@@ -144,7 +137,6 @@
             },
             nextRound: function() {
                 this.roundNumber++
-                this.focusRound(this.roundNumber)
             },
             populateInitialLeaderboard: function() {
                 let parsedRankings = this.rawRankings === "" ? [] : JSON.parse(this.rawRankings)
@@ -167,7 +159,6 @@
             },
             prevRound: function() {
                 this.roundNumber--
-                this.focusRound(this.roundNumber)
             },
             resetErrorMessages: function() {
                 this.errorMessages = []
@@ -237,6 +228,15 @@
                     return ""
                 }
                 return helpers.formatVerboseDate(this.focusedLeaderboard.lastUpdated)
+            },
+        },
+        watch: {
+            roundNumber: function(newRoundNumber) {
+                this.resetErrorMessages()
+                let lower = newRoundNumber - leaderboardPreloadBuffer
+                let upper = newRoundNumber + leaderboardPreloadBuffer
+                this.retrieveLeaderboards(lower, upper, newRoundNumber)
+                // TODO - retrieve scored entry predictions based on new round number
             },
         },
         mounted() {
