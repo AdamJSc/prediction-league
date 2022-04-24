@@ -4,22 +4,22 @@
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">{{focusedEntry.nickname}} / Score: {{focusedEntry.score}} / Round: {{roundNumber}}</h5>
+                        <h5 class="modal-title">{{focusedEntryNickname}} / Score: {{focusedEntryLeaderboardScore}}</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
                     <div class="modal-body">
                         <round-navigation
+                            :is-working="leaderboardsWorking"
                             :max-round-number="maxRoundNumber"
-                            :round-number="roundNumber"
-                            :working="working"
+                            :round-number="baseRoundNumber"
                             v-on:decrement-round="prevRound"
                             v-on:increment-round="nextRound"
                         ></round-navigation>
                         <scored-entry-prediction
-                            v-bind:entry-id="focusedEntry.id"
-                            v-bind:round-number="roundNumber"
+                            v-bind:entry-id="focusedEntryId"
+                            v-bind:round-number="focusedRoundNumber"
                             v-bind:teams="teams"
                         ></scored-entry-prediction>
                     </div>
@@ -30,23 +30,23 @@
             </div>
         </div>
         <round-navigation
+            :is-working="leaderboardsWorking"
             :max-round-number="maxRoundNumber"
-            :round-number="roundNumber"
-            :working="working"
+            :round-number="baseRoundNumber"
             v-on:decrement-round="prevRound"
             v-on:increment-round="nextRound"
         ></round-navigation>
         <transition name="fade">
-            <div v-if="errorMessages.length > 0" class="error-messages alert alert-block alert-danger">
-                <button type="button" class="close" v-on:click="resetErrorMessages">&times;</button>
-                <p v-for="msg in errorMessages" v-html="msg"></p>
+            <div v-if="leaderboardsErrorMessages.length > 0" class="error-messages alert alert-block alert-danger">
+                <button type="button" class="close" v-on:click="resetLeaderboardsErrorMessages">&times;</button>
+                <p v-for="msg in leaderboardsErrorMessages" v-html="msg"></p>
             </div>
         </transition>
         <div v-if="focusedLeaderboard.rankings.length > 0" class="leaderboard-render-wrapper">
-            <div v-if="working" class="loader-container">
+            <div v-if="leaderboardsWorking" class="loader-container">
                 <img alt="loader" src="/assets/img/loader-light-bg.svg" />
             </div>
-            <div v-if="!working && focusedLeaderboard.lastUpdated" class="last-updated text-center">Last updated on {{lastUpdatedVerbose}}</div>
+            <div v-if="!leaderboardsWorking && focusedLeaderboard.lastUpdated" class="last-updated text-center">Last updated on {{lastUpdatedVerbose}}</div>
             <table class="leaderboard-render rankings clickable">
                 <thead>
                 <tr>
@@ -63,7 +63,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr v-for="ranking in focusedLeaderboard.rankings" v-on:click="showScoredEntryPrediction(ranking.id, entries[ranking.id], ranking.score)" class="leaderboard-row rankings-row">
+                <tr v-for="ranking in focusedLeaderboard.rankings" v-on:click="showScoredEntryPrediction(ranking.id, ranking.score)" class="leaderboard-row rankings-row">
                     <td class="position">
                         {{ranking.position}}
                     </td>
@@ -121,22 +121,21 @@
             let teams = this.rawTeams === "" ? [] : JSON.parse(this.rawTeams)
 
             return {
-                entries,
-                errorMessages: [],
-                focusedEntry: {
-                    id: "",
-                    nickname: "",
-                    score: 0
-                },
-                focusedRoundNumber: this.initialRoundNumber,
-                leaderboards: this.populateInitialLeaderboard(),
-                maxRoundNumber: this.initialRoundNumber,
-                roundNumber: this.initialRoundNumber,
-                teams,
-                working: false,
+                baseRoundNumber: this.initialRoundNumber, // round number that is inc/decremented by navigation controls
+                entries, // map of entry id to entry nickname
+                focusedEntryId: "", // entry id to display scored entry for
+                focusedRoundNumber: this.initialRoundNumber, // round number to display leaderboard (and focused entry's scored entry) for
+                leaderboards: this.populateInitialLeaderboard(), // map of leaderboards indexed by round number
+                leaderboardsErrorMessages: [], // error messages relating to retrieval of leaderboard
+                leaderboardsWorking: false, // denotes whether leaderboards are in the process of being retrieved
+                maxRoundNumber: this.initialRoundNumber, // maximum available round number
+                teams, // array of team objects with the schema id, name, short_name, crest_url
             }
         },
         methods: {
+            getFocusedLeaderboard: function() {
+                return this.leaderboards[this.focusedRoundNumber]
+            },
             getMovementMarkup: function(movement) {
                 if (movement > 0) {
                     return '<span class="movement-up"><i class="fas fa-caret-up"/></span>'
@@ -147,7 +146,7 @@
                 return '<span class="movement-none"><i class="fas fa-minus"></i></span>'
             },
             nextRound: function() {
-                this.roundNumber++
+                this.baseRoundNumber++
             },
             populateInitialLeaderboard: function() {
                 let parsedRankings = this.rawRankings === "" ? [] : JSON.parse(this.rawRankings)
@@ -169,10 +168,10 @@
                 return leaderboards
             },
             prevRound: function() {
-                this.roundNumber--
+                this.baseRoundNumber--
             },
-            resetErrorMessages: function() {
-                this.errorMessages = []
+            resetLeaderboardsErrorMessages: function() {
+                this.leaderboardsErrorMessages = []
             },
             retrieveLeaderboard: function(roundNumber, setFocus) {
                 let component = this
@@ -183,7 +182,7 @@
                     return
                 }
                 if (setFocus) {
-                    component.working = true
+                    component.leaderboardsWorking = true
                 }
                 axios.request({
                     method: 'get',
@@ -199,10 +198,10 @@
                 }).catch(function(error) {
                     console.log(error)
                     if (setFocus) {
-                        component.errorMessages = ['Something went wrong :(<br />Please try again later']
+                        component.leaderboardsErrorMessages = ['Something went wrong :(<br />Please try again later']
                     }
                 }).finally(function() {
-                    component.working = false
+                    component.leaderboardsWorking = false
                 })
             },
             retrieveLeaderboards: function(lower, upper, focus) {
@@ -222,16 +221,27 @@
                     lastUpdatedUnix
                 )
             },
-            showScoredEntryPrediction: function(entryID, entryNickname, score) {
-                this.focusedEntry.id = entryID
-                this.focusedEntry.nickname = entryNickname
-                this.focusedEntry.score = score
+            showScoredEntryPrediction: function(entryID, score) {
+                this.focusedEntryId = entryID
                 $('#scoredEntryPredictionModal').modal('show')
             }
         },
         computed: {
+            focusedEntryNickname: function() {
+                return this.entries[this.focusedEntryId]
+            },
+            focusedEntryLeaderboardScore: function() {
+                let rankings = this.getFocusedLeaderboard().rankings
+                for (let idx in rankings) {
+                    let ranking = rankings[idx]
+                    if (ranking.id === this.focusedEntryId) {
+                        return ranking.score
+                    }
+                }
+                return 0
+            },
             focusedLeaderboard: function() {
-                return this.leaderboards[this.focusedRoundNumber]
+                return this.getFocusedLeaderboard()
             },
             lastUpdatedVerbose: function() {
                 const helpers = require('../../helpers.js')
@@ -242,8 +252,8 @@
             },
         },
         watch: {
-            roundNumber: function(newRoundNumber) {
-                this.resetErrorMessages()
+            baseRoundNumber: function(newRoundNumber) {
+                this.resetLeaderboardsErrorMessages()
                 let lower = newRoundNumber - leaderboardPreloadBuffer
                 let upper = newRoundNumber + leaderboardPreloadBuffer
                 this.retrieveLeaderboards(lower, upper, newRoundNumber)
