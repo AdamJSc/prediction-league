@@ -72,7 +72,7 @@
       initialLastUpdatedUnix: { // last updated timestamp of leaderboard relating to initial round number
         type: String
       },
-      initialRankings: { // array of rankings objects that pertain to initial round number
+      initialRankings: { // array of rankings objects that pertain to initial round number, with the schema id, position, score, min_score, total_score, movement
         type: Array
       },
       roundNumber: { // round number that is inc/decremented by navigation controls
@@ -95,14 +95,17 @@
             this.initialRankings,
             this.initialLastUpdatedUnix
         ),
-        roundNumber: {},
         maxRoundNumber: this.roundNumber, // maximum available round number
+        showRoundNumber: this.roundNumber, // the round number to display
       }
     },
     methods: {
       applyLeaderboardRankings: function(leaderboards, roundNumber, rankings, lastUpdatedUnix) {
         leaderboards[roundNumber] = {rankings, lastUpdatedUnix}
         return leaderboards
+      },
+      getLeaderboardForRound: function(roundNumber) {
+        return this.leaderboardExists(roundNumber) ? this.leaderboards[roundNumber] : null
       },
       getMovementMarkup: function(movement) {
         if (movement > 0) {
@@ -120,18 +123,25 @@
         this.errorMessages = []
       },
       retrieveLeaderboard: function(roundNumber, isForeground) {
+        const component = this
+
+        const showIfForeground = function() {
+          if (isForeground) {
+            component.showRoundNumber = roundNumber
+          }
+        }
+
         if (roundNumber < 1 || roundNumber > this.maxRoundNumber) {
           return
         }
         if (this.leaderboardExists(roundNumber)) {
+          showIfForeground()
           return
         }
 
         if (isForeground) {
-          this.working = true
+          component.isWorking = true
         }
-
-        const component = this
 
         axios.request({
           method: 'get',
@@ -141,13 +151,14 @@
           let rankings = data.leaderboard.rankings
           let lastUpdatedUnix = Date.parse(data.leaderboard.last_updated)
           component.setLeaderboardRankings(roundNumber, rankings, lastUpdatedUnix)
+          showIfForeground()
         }).catch(function(error) {
-          console.log(error)
           if (isForeground) {
+            console.log(error)
             component.errorMessages = ['Something went wrong :(<br />Please try again later']
           }
         }).finally(function() {
-          component.working = false
+          component.isWorking = false
         })
       },
       retrieveLeaderboards: function(lower, upper, foreground) {
@@ -162,14 +173,15 @@
     },
     computed: {
       leaderboardForRound: function() {
-        return this.leaderboardExists(this.roundNumber) ? this.leaderboards[this.roundNumber] : null
+        return this.getLeaderboardForRound(this.showRoundNumber)
       },
       lastUpdatedVerbose: function() {
         const helpers = require('../../helpers.js')
-        if (this.leaderboardForRound.lastUpdated === null) {
+        let leaderboard = this.getLeaderboardForRound(this.showRoundNumber)
+        if (leaderboard.lastUpdated === null) {
           return ""
         }
-        return helpers.formatVerboseDate(this.leaderboardForRound.lastUpdated)
+        return helpers.formatVerboseDate(leaderboard.lastUpdated)
       },
     },
     watch: {
@@ -182,7 +194,7 @@
     },
     mounted() {
       // preload initial number of "buffer" leaderboards
-      let lower = this.maxRoundNumber-preloadBuffer
+      let lower = this.maxRoundNumber - preloadBuffer
       this.retrieveLeaderboards(lower, this.maxRoundNumber)
     }
   }
