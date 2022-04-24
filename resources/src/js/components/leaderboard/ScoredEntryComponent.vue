@@ -1,5 +1,5 @@
 <template>
-  <div class="scored-entry-prediction-container">
+  <div class="scored-entry-container">
     <transition name="fade">
       <div v-if="errorMessages.length > 0" class="error-messages alert alert-block alert-danger">
         <button type="button" class="close" v-on:click="resetErrorMessages">&times;</button>

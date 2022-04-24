@@ -11,13 +11,14 @@
                 <div class="text-center">
                     <p><i class="fa fa-info-circle" aria-hidden="true"></i> Select a name to view their score breakdown for each round</p>
                 </div>
-                <leaderboard
-                        season-id="{{.Season.ID}}"
+                <leaderboard-page
+                        initial-last-updated-unix="{{timestamp_as_unix .LastUpdated}}"
                         initial-round-number="{{.RoundNumber}}"
-                        unix="{{timestamp_as_unix .LastUpdated}}"
                         raw-entries="{{.Entries.RawEntries}}"
                         raw-rankings="{{.Entries.RawRankings}}"
-                        raw-teams="{{.Season.RawTeams}}"></leaderboard>
+                        raw-teams="{{.Season.RawTeams}}"
+                        season-id="{{.Season.ID}}"
+                ></leaderboard-page>
             {{else}}
                 <div class="highlight-container">
                     Season starts soon... ⚽ 🔮 🏆️
