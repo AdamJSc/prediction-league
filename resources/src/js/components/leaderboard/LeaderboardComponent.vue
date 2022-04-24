@@ -11,11 +11,11 @@
         <p v-for="msg in errorMessages" v-html="msg"></p>
       </div>
     </transition>
-    <div v-if="leaderboardForRound.rankings.length > 0" class="leaderboard-render-wrapper">
+    <div v-if="leaderboardToShow.rankings.length > 0" class="leaderboard-render-wrapper">
       <div v-if="isWorking" class="loader-container">
         <img alt="loader" src="/assets/img/loader-light-bg.svg" />
       </div>
-      <div v-if="!isWorking && leaderboardForRound.lastUpdated" class="last-updated text-center">Last updated on {{lastUpdatedVerbose}}</div>
+      <div v-if="!isWorking && leaderboardToShow.lastUpdated" class="last-updated text-center">Last updated on {{lastUpdatedVerbose}}</div>
       <table class="leaderboard-render rankings clickable">
         <thead>
         <tr>
@@ -32,7 +32,7 @@
         </tr>
         </thead>
         <tbody>
-        <tr v-for="ranking in leaderboardForRound.rankings" v-on:click="$emit('entry-change', ranking.id)" class="leaderboard-row rankings-row">
+        <tr v-for="ranking in leaderboardToShow.rankings" v-on:click="$emit('entry-change', ranking.id)" class="leaderboard-row rankings-row">
           <td class="position">
             {{ranking.position}}
           </td>
@@ -104,8 +104,8 @@
         leaderboards[roundNumber] = {rankings, lastUpdatedUnix}
         return leaderboards
       },
-      getLeaderboardForRound: function(roundNumber) {
-        return this.leaderboardExists(roundNumber) ? this.leaderboards[roundNumber] : null
+      getLeaderboardToShow: function(roundNumber) {
+        return this.leaderboardExists(roundNumber) ? this.leaderboards[roundNumber] : []
       },
       getMovementMarkup: function(movement) {
         if (movement > 0) {
@@ -161,9 +161,9 @@
           component.isWorking = false
         })
       },
-      retrieveLeaderboards: function(lower, upper, foreground) {
-        for (let roundNumber = lower; roundNumber <= upper; roundNumber++) {
-          let isForeground = (roundNumber === foreground)
+      retrieveLeaderboards: function(lowerRound, upperRound, foregroundRound) {
+        for (let roundNumber = lowerRound; roundNumber <= upperRound; roundNumber++) {
+          let isForeground = (roundNumber === foregroundRound)
           this.retrieveLeaderboard(roundNumber, isForeground)
         }
       },
@@ -172,12 +172,12 @@
       },
     },
     computed: {
-      leaderboardForRound: function() {
-        return this.getLeaderboardForRound(this.showRoundNumber)
+      leaderboardToShow: function() {
+        return this.getLeaderboardToShow(this.showRoundNumber)
       },
       lastUpdatedVerbose: function() {
         const helpers = require('../../helpers.js')
-        let leaderboard = this.getLeaderboardForRound(this.showRoundNumber)
+        let leaderboard = this.getLeaderboardToShow(this.showRoundNumber)
         if (leaderboard.lastUpdated === null) {
           return ""
         }
@@ -195,7 +195,7 @@
     mounted() {
       // preload initial number of "buffer" leaderboards
       let lower = this.maxRoundNumber - preloadBuffer
-      this.retrieveLeaderboards(lower, this.maxRoundNumber)
+      this.retrieveLeaderboards(lower, this.maxRoundNumber, this.roundNumber)
     }
   }
 </script>

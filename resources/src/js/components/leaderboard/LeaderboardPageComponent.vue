@@ -1,29 +1,22 @@
 <template>
   <div class="leaderboard-container">
-    <div id="scoredEntryPredictionModal" class="modal fade" tabindex="-1" role="dialog">
+    <div id="scoredEntryModal" class="modal fade" tabindex="-1" role="dialog">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <!--<h5 class="modal-title">{{focusedEntryNickname}} / Score: {{focusedEntryLeaderboardScore}}</h5>-->
+            <h5 class="modal-title">{{entryNickname}}</h5>
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
           <div class="modal-body">
-            <!--
-            <round-navigation
-                :is-working="leaderboardsWorking"
-                :max-round-number="maxRoundNumber"
-                :round-number="baseRoundNumber"
-                v-on:decrement-round="prevRound"
-                v-on:increment-round="nextRound"
-            ></round-navigation>
             <scored-entry
-                :entry-id="focusedEntryId"
-                :round-number="focusedRoundNumber"
+                :entry-id="entryId"
+                :round-number="roundNumber"
                 :teams="teams"
+                v-on:decrement-round="previousRound"
+                v-on:increment-round="nextRound"
             ></scored-entry>
-            -->
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -40,6 +33,7 @@
         v-bind:teams="teams"
         v-on:decrement-round="previousRound"
         v-on:increment-round="nextRound"
+        v-on:entry-change="changeEntry"
     ></leaderboard>
   </div>
 </template>
@@ -74,19 +68,35 @@
 
       return {
         entries, // map of entry id to entry nickname
+        entryId: '', // entry id to retrieve scored entries for
         initialRankings, // rankings belonging to leaderboard of initial round number
-        roundNumber: this.initialRoundNumber, // round number that is inc/decremented by navigation controls
         maxRoundNumber: this.initialRoundNumber, // maximum available round number
+        roundNumber: this.initialRoundNumber, // round number that is inc/decremented by navigation controls
         teams, // array of team objects with the schema id, name, short_name, crest_url
       }
     },
     methods: {
+      changeEntry: function(newEntryId) {
+        this.entryId = newEntryId
+        $('#scoredEntryModal').modal('show')
+      },
       nextRound: function() {
         this.roundNumber++
       },
       previousRound: function() {
         this.roundNumber--
       },
+    },
+    computed: {
+      entryNickname: function() {
+        if (this.entryId == '') {
+          return ''
+        }
+        if (typeof this.entries[this.entryId] == 'undefined') {
+          return ''
+        }
+        return this.entries[this.entryId]
+      }
     }
   }
 </script>
