@@ -36,7 +36,7 @@
   const axios = require('axios').default
 
   export default {
-    name: 'ScoredEntryPrediction',
+    name: 'ScoredEntry',
     props: {
       entryId: {
         type: String

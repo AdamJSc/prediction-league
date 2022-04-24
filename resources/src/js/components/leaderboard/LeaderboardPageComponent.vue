@@ -18,11 +18,11 @@
                 v-on:decrement-round="prevRound"
                 v-on:increment-round="nextRound"
             ></round-navigation>
-            <scored-entry-prediction
+            <scored-entry
                 :entry-id="focusedEntryId"
                 :round-number="focusedRoundNumber"
                 :teams="teams"
-            ></scored-entry-prediction>
+            ></scored-entry>
             -->
           </div>
           <div class="modal-footer">
