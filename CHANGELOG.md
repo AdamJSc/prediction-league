@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Render visual indication of leaderboard movement (the number of positions that each entry has moved up or down
 based on the previous game week's rankings).
+- Pop-out from Leaderboard which shows an individual user's scored prediction for a single game week now enables navigation 
+through user's previous game week results within the same view. 
 
 ### Changed
 - Preload/buffer retrieval of leaderboards to improve load times for user.
