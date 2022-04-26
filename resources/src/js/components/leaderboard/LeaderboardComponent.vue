@@ -29,19 +29,19 @@
         </tr>
         </thead>
         <tbody>
-        <tr v-for="ranking in leaderboardToShow.rankings" v-on:click="$emit('entry-change', ranking.id)" class="leaderboard-row rankings-row">
+        <tr v-for="entry in leaderboardToShow.rankings" v-on:click="$emit('entry-change', entry.id)" class="leaderboard-row rankings-row">
           <td class="position">
-            {{ranking.position}}
+            {{entry.position}}
           </td>
-          <td class="movement" v-html="getMovementMarkup(ranking.movement)"></td>
+          <td class="movement" v-html="getMovementMarkup(entry.movement)"></td>
           <td class="name text-highlight">
-            {{entries[ranking.id]}} <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            {{entries[entry.id]}} <i class="fa-solid fa-arrow-up-right-from-square"></i>
           </td>
           <td class="text-right text-lolight">
-            {{ranking.score}}
+            {{entry.score}}
           </td>
           <td class="text-right text-highlight">
-            {{ranking.total_score}}
+            {{entry.total_score}}
           </td>
         </tr>
         </tbody>
@@ -164,9 +164,6 @@
       },
     },
     computed: {
-      leaderboardToShow: function() {
-        return this.getLeaderboardToShow(this.showRoundNumber)
-      },
       lastUpdatedVerbose: function() {
         const helpers = require('../../helpers.js')
         let leaderboard = this.getLeaderboardToShow(this.showRoundNumber)
@@ -175,6 +172,9 @@
         }
         return helpers.formatVerboseDate(leaderboard.lastUpdated)
       },
+      leaderboardToShow: function() {
+        return this.getLeaderboardToShow(this.showRoundNumber)
+      }
     },
     watch: {
       roundNumber: function(newRoundNumber) {

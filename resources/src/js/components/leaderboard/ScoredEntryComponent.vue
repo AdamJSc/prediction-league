@@ -1,5 +1,8 @@
 <template>
   <div class="scored-entry-container">
+    <div class="text-center">
+      <h3>{{scoredEntryToShow.entryNickname}}</h3>
+    </div>
     <round-navigation
         :is-working="isWorking"
         :max-round-number="maxRoundNumber"
@@ -15,6 +18,12 @@
       <img alt="loader" src="/assets/img/loader-light-bg.svg" />
     </div>
     <div v-if="!isWorking && errorMessages.length == 0">
+      <div class="scores-container text-center">
+        <div class="round-score-container">
+          <div class="subheading">Score</div>
+          <div class="score">{{scoredEntryToShow.roundScore}}</div>
+        </div>
+      </div>
       <table class="rankings full-width">
         <thead>
         <tr>
@@ -45,6 +54,9 @@
     name: 'ScoredEntry',
     props: {
       entryId: { // entry id to retrieve scored entries on behalf of
+        type: String
+      },
+      entryNickname: { // nickname of the provided entry id
         type: String
       },
       roundNumber: { // round number that is inc/decremented by navigation controls
@@ -109,6 +121,7 @@
         }).then(function(response) {
           // get array of rankings objects that pertain to initial round number, with the schema id, position, score, min_score, total_score, movement
           let rankings = response.data.data.scored.rankings
+          let roundScore = response.data.data.scored.round_score
           for (let i in rankings) {
             if (component.getTeamByID(rankings[i].id) === null) {
               if (isForeground) {
@@ -118,7 +131,7 @@
               return
             }
           }
-          component.setScoredEntry(entryId, roundNumber, rankings)
+          component.setScoredEntry(entryId, roundNumber, component.entryNickname, rankings, roundScore)
           showIfForeground()
         }).catch(function(error) {
           if (isForeground) {
@@ -144,11 +157,11 @@
         }
         return true
       },
-      setScoredEntry: function(entryId, roundNumber, rankings) {
+      setScoredEntry: function(entryId, roundNumber, entryNickname, rankings, roundScore) {
         if (typeof this.scoredEntries[entryId] == 'undefined') {
           this.scoredEntries[entryId] = {}
         }
-        this.scoredEntries[entryId][roundNumber] = {rankings}
+        this.scoredEntries[entryId][roundNumber] = {entryNickname, rankings, roundScore}
       }
     },
     computed: {

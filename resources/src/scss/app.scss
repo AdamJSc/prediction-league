@@ -454,6 +454,30 @@ table.round-navigation-container {
   margin: 2rem auto;
 }
 
+.scored-entry-container {
+  table.round-navigation-container {
+    margin: 1rem auto;
+  }
+
+  .scores-container {
+    .round-score-container {
+      background: $secondary-dark;
+      color: $primary-light;
+      display: inline-block;
+      line-height: 0.8;
+      padding: 0.5rem;
+
+      .subheading {
+        padding-bottom: 0.3rem;
+      }
+
+      .score {
+        font-size: 2rem;
+      }
+    }
+  }
+}
+
 .loader-container {
   width: 90px;
   margin: 0 auto;

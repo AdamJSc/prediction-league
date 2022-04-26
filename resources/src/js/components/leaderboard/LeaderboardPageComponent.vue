@@ -4,7 +4,6 @@
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">{{entryNickname}}</h5>
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
               <span aria-hidden="true">&times;</span>
             </button>
@@ -12,6 +11,7 @@
           <div class="modal-body">
             <scored-entry
                 :entry-id="entryId"
+                :entry-nickname="entryNickname"
                 :round-number="roundNumber"
                 :teams="teams"
                 v-on:decrement-round="previousRound"
