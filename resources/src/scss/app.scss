@@ -402,8 +402,23 @@ h1, h2, h3, h4 {
 }
 
 .leaderboard-render {
-  .popout {
-    text-align: right;
+  .movement {
+    text-align: center;
+  }
+
+  .movement-up {
+    color: #01ce40;
+    font-size: 1.4rem;
+  }
+
+  .movement-down {
+    color: #ff2121;
+    font-size: 1.4rem;
+  }
+
+  .movement-none {
+    color: #838383;
+    font-size: 0.7rem;
   }
 }
 
@@ -432,11 +447,35 @@ table.rankings, table.round, table.teams-reorder-admin {
   }
 }
 
-table.round {
+table.round-navigation-container {
   color: $secondary-dark;
   font-family: $heading-font-family;
   font-size: 2rem;
   margin: 2rem auto;
+}
+
+.scored-entry-container {
+  table.round-navigation-container {
+    margin: 1rem auto;
+  }
+
+  .scores-container {
+    .round-score-container {
+      background: $secondary-dark;
+      color: $primary-light;
+      display: inline-block;
+      line-height: 0.8;
+      padding: 0.5rem;
+
+      .subheading {
+        padding-bottom: 0.3rem;
+      }
+
+      .score {
+        font-size: 2rem;
+      }
+    }
+  }
 }
 
 .loader-container {

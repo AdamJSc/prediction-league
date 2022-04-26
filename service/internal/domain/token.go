@@ -16,10 +16,10 @@ const (
 )
 
 var TokenValidityDuration = map[int]time.Duration{
-	TokenTypeAuth:              time.Minute * 60,
-	TokenTypeEntryRegistration: time.Minute * 10,
-	TokenTypeMagicLogin:        time.Minute * 10,
-	TokenTypePrediction:        time.Minute * 10,
+	TokenTypeAuth:              time.Minute * 60, // duration for which user's auth token remains valid
+	TokenTypeEntryRegistration: time.Minute * 10, // duration for which user's registration form submission token remains valid
+	TokenTypeMagicLogin:        time.Minute * 10, // duration for which magic login link sent to a user by email remains valid
+	TokenTypePrediction:        time.Minute * 60, // duration for which user's edit prediction form submission token remains valid
 }
 
 var extendedTokenDur = 6 * time.Hour

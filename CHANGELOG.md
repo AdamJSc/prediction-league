@@ -6,6 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2022-04-26
+
+### Added
+- Render visual indication of leaderboard movement (the number of positions that each entry has moved up or down
+based on the previous game week's rankings).
+- Pop-out from Leaderboard which shows an individual user's scored prediction for a single game week now enables navigation 
+through user's previous game week results within the same view. 
+
+### Changed
+- Preload/buffer retrieval of leaderboards to improve load times for user.
+- Aesthetic improvements to leaderboard and scored entry views
+
+### Fixed
+- Extend duration of Edit Prediction token from 10 to 60 minutes, to prevent common timeout issues
+- Typo in email address of seeded user
+
+### Removed
+- Verbosity flag on test run commands
+
 ## [2.1.5] - 2021-08-18
 
 ### Fixed
@@ -147,6 +166,7 @@ Standings object that has just been received from data client.
 - This project to the Open Source "dimension"...
 
 [Unreleased]: https://github.com/AdamJSc/prediction-league/compare/v2.1.5...HEAD
+[2.2.0]: https://github.com/AdamJSc/prediction-league/compare/v2.1.5...v2.2.0
 [2.1.5]: https://github.com/AdamJSc/prediction-league/compare/v2.1.4...v2.1.5
 [2.1.4]: https://github.com/AdamJSc/prediction-league/compare/v2.1.3...v2.1.4
 [2.1.3]: https://github.com/AdamJSc/prediction-league/compare/v2.1.2...v2.1.3

@@ -350,7 +350,7 @@ func generateSeedEntries() ([]domain.Entry, error) {
 		{
 			EntrantName:     "Trev H",
 			EntrantNickname: "TrevH",
-			EntrantEmail:    "seede11@example.net",
+			EntrantEmail:    "seeded11@example.net",
 			EntryPredictions: []domain.EntryPrediction{
 				domain.NewEntryPrediction([]string{
 					"MCFC",
