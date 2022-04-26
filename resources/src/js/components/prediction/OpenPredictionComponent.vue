@@ -23,7 +23,7 @@
                     <td colspan="3">
                         <div class="call-to-action-wrapper">
                             <div v-if="lastUpdated" class="text-center">
-                                Last updated on {{lastUpdatedVerbose}}
+                                Updated {{lastUpdatedVerbose}}
                             </div>
                             <div class="submit-wrapper">
                                 <transition name="fade">

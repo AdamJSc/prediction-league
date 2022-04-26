@@ -1,33 +1,21 @@
 const helpers = () => {
     this.formatVerboseDate = (dateToFormat) => {
-        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-
         if (typeof dateToFormat === 'undefined') {
             return ""
         }
 
+        const pad = function(num) {
+            return num < 10 ? '0'+num : num
+        }
+
         let year = dateToFormat.getFullYear()
-        let month = dateToFormat.getMonth()
+        let month = dateToFormat.getMonth()+1
         let date = dateToFormat.getDate()
         let hour = dateToFormat.getHours()
         let min = dateToFormat.getMinutes()
-        let weekday = dateToFormat.getDay()
-        let ampm = 'am'
+        let secs = dateToFormat.getSeconds()
 
-        if(hour >= 12) {
-            ampm = 'pm'
-            hour = hour - 12
-        }
-        if (hour === 0) {
-            hour = 12
-        }
-
-        if (min < 10) {
-            min = '0' + min
-        }
-
-        return `${days[weekday]} ${date} ${months[month]} ${year} at ${hour}:${min}${ampm}`
+        return `${pad(date)}/${pad(month)}/${year} ${pad(hour)}:${pad(min)}:${pad(secs)}`
     }
 
     this.formatVerboseDuration = (start, target) => {

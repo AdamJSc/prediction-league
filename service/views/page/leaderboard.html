@@ -8,9 +8,6 @@
                     <p>{{.Err}}</p>
                 </div>
             {{else if .Entries.RawRankings}}
-                <div class="text-center">
-                    <p><i class="fa fa-info-circle" aria-hidden="true"></i> Select a name to view their score breakdown for each round</p>
-                </div>
                 <leaderboard-page
                         initial-last-updated-unix="{{timestamp_as_unix .LastUpdated}}"
                         initial-round-number="{{.RoundNumber}}"

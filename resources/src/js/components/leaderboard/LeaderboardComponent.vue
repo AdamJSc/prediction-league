@@ -15,19 +15,16 @@
       <div v-if="isWorking" class="loader-container">
         <img alt="loader" src="/assets/img/loader-light-bg.svg" />
       </div>
-      <div v-if="!isWorking && leaderboardToShow.lastUpdated" class="last-updated text-center">Last updated on {{lastUpdatedVerbose}}</div>
+      <div v-if="!isWorking && leaderboardToShow.lastUpdated" class="last-updated text-center">Updated {{lastUpdatedVerbose}}</div>
       <table class="leaderboard-render rankings clickable">
         <thead>
         <tr>
-          <td colspan="4"></td>
+          <td colspan="3"></td>
+          <td class="text-right text-lolight">
+            Score
+          </td>
           <td class="text-right text-highlight">
-            Pts
-          </td>
-          <td class="text-right text-lolight">
-            Rnd
-          </td>
-          <td class="text-right text-lolight">
-            Min
+            Total
           </td>
         </tr>
         </thead>
@@ -37,20 +34,14 @@
             {{ranking.position}}
           </td>
           <td class="movement" v-html="getMovementMarkup(ranking.movement)"></td>
-          <td class="popout text-highlight">
-            <i class="fa fa-external-link" aria-hidden="true"></i>
-          </td>
           <td class="name text-highlight">
-            {{entries[ranking.id]}}
-          </td>
-          <td class="text-right text-highlight">
-            {{ranking.total_score}}
+            {{entries[ranking.id]}} <i class="fa-solid fa-arrow-up-right-from-square"></i>
           </td>
           <td class="text-right text-lolight">
             {{ranking.score}}
           </td>
-          <td class="text-right text-lolight">
-            {{ranking.min_score}}
+          <td class="text-right text-highlight">
+            {{ranking.total_score}}
           </td>
         </tr>
         </tbody>
@@ -93,7 +84,7 @@
             {},
             this.roundNumber,
             this.initialRankings,
-            this.initialLastUpdatedUnix
+            parseInt(this.initialLastUpdatedUnix + '000')
         ),
         maxRoundNumber: this.roundNumber, // maximum available round number
         showRoundNumber: this.roundNumber, // the round number to display
@@ -101,7 +92,8 @@
     },
     methods: {
       applyLeaderboardRankings: function(leaderboards, roundNumber, rankings, lastUpdatedUnix) {
-        leaderboards[roundNumber] = {rankings, lastUpdatedUnix}
+        let lastUpdated = new Date(lastUpdatedUnix)
+        leaderboards[roundNumber] = {rankings, lastUpdated}
         return leaderboards
       },
       getLeaderboardToShow: function(roundNumber) {
