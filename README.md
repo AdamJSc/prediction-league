@@ -1,6 +1,6 @@
 # Prediction League ⚽️‍ 🔮 🧙‍
 
-**v2.1.5**
+**v2.2.0**
 
 ## About
 
