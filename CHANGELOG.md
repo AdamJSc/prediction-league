@@ -14,6 +14,7 @@ through user's previous game week results within the same view.
 
 ### Changed
 - Preload/buffer retrieval of leaderboards to improve load times for user.
+- Aesthetic improvements to leaderboard view
 
 ### Fixed
 - Extend duration of Edit Prediction token from 10 to 60 minutes, to prevent common timeout issues
