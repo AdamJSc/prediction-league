@@ -6,7 +6,7 @@ app.install:
 
 app.run:
 	npm run watch \
-	| go run -ldflags "-X 'main.runningVersion=v0.0.1' -X 'main.versionTimestamp=2018-05-26 14:00:00'" service/cmd/api/main.go
+	| go run -ldflags "-X 'main.buildVersion=v0.0.1' -X 'main.buildTimestamp=2018-05-26 14:00:00'" service/cmd/api/main.go
 
 test.run:
 	docker-compose up -d db_test

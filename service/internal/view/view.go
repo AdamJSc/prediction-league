@@ -23,8 +23,8 @@ type Base struct {
 	FAQPageURL            string
 	PredictionPageURL     string
 	LoginPageURL          string
-	RunningVersion        string
-	VersionTimestamp      string
+	BuildVersion          string
+	BuildTimestamp        string
 	AnalyticsCode         string
 	Data                  interface{}
 }

@@ -144,8 +144,8 @@ func newPage(r *http.Request, c *container, title, activePage, bannerTitle strin
 		FAQPageURL:            domain.GetFAQURL(realm),
 		PredictionPageURL:     domain.GetPredictionURL(realm),
 		LoginPageURL:          domain.GetLoginURL(realm),
-		RunningVersion:        c.config.RunningVersion,
-		VersionTimestamp:      c.config.VersionTimestamp,
+		BuildVersion:          c.config.BuildVersion,
+		BuildTimestamp:        c.config.BuildTimestamp,
 		AnalyticsCode:         realm.AnalyticsCode,
 		Data:                  data,
 	}

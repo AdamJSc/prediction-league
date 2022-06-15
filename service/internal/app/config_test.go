@@ -100,12 +100,12 @@ func TestNewLoadEnvConfigOption(t *testing.T) {
 	})
 }
 
-func TestNewRunningVersionConfigOption(t *testing.T) {
+func TestNewBuildVersionConfigOption(t *testing.T) {
 	t.Run("must set config value successfully", func(t *testing.T) {
-		opt := app.NewRunningVersionConfigOption("v1.2.3")
+		opt := app.NewBuildVersionConfigOption("v1.2.3")
 
 		wantConfig := &app.Config{
-			RunningVersion: "v1.2.3",
+			BuildVersion: "v1.2.3",
 		}
 
 		gotConfig := &app.Config{}
@@ -119,12 +119,12 @@ func TestNewRunningVersionConfigOption(t *testing.T) {
 	})
 }
 
-func TestNewVersionTimestampConfigOption(t *testing.T) {
+func TestNewBuildTimestampConfigOption(t *testing.T) {
 	t.Run("must set config value successfully", func(t *testing.T) {
-		opt := app.NewVersionTimestampConfigOption("1970-01-01T00:00:00Z")
+		opt := app.NewBuildTimestampConfigOption("1970-01-01T00:00:00Z")
 
 		wantConfig := &app.Config{
-			VersionTimestamp: "1970-01-01T00:00:00Z",
+			BuildTimestamp: "1970-01-01T00:00:00Z",
 		}
 
 		gotConfig := &app.Config{}

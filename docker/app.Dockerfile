@@ -6,10 +6,10 @@ WORKDIR /build
 
 COPY . .
 
-ARG RUNNING_VERSION=v0.0.0
-ARG VERSION_TIMESTAMP=1970-01-01T00:00:00Z
+ARG BUILD_VERSION=v0.0.0
+ARG BUILD_TIMESTAMP=1970-01-01T00:00:00Z
 
-RUN go build -ldflags "-X 'main.runningVersion=${RUNNING_VERSION}' -X 'main.versionTimestamp=${VERSION_TIMESTAMP}'" -mod=mod -o /prediction-league ./service/cmd/api
+RUN go build -ldflags "-X 'main.buildVersion=${BUILD_VERSION}' -X 'main.buildTimestamp=${BUILD_TIMESTAMP}'" -mod=mod -o /prediction-league ./service/cmd/api
 
 FROM alpine
 

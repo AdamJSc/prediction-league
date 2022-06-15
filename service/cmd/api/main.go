@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-var runningVersion, versionTimestamp string
+var buildVersion, buildTimestamp string
 
 func main() {
 	// base logger
@@ -24,10 +24,10 @@ func main() {
 	// parse config
 	config, err := app.NewConfigFromOptions(
 		app.NewLoadEnvConfigOption(l, ".env", "infra/app.env"),
-		app.NewRunningVersionConfigOption(runningVersion),
-		app.NewVersionTimestampConfigOption(versionTimestamp))
+		app.NewBuildVersionConfigOption(buildVersion),
+		app.NewBuildTimestampConfigOption(buildTimestamp))
 	if err != nil {
-		l.Errorf("cannot parse config from env: %s", err.Error())
+		l.Errorf("cannot parse config: %s", err.Error())
 		os.Exit(1)
 	}
 

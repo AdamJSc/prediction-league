@@ -18,8 +18,8 @@ type Config struct {
 	FootballDataAPIToken string `envconfig:"FOOTBALLDATA_API_TOKEN" required:"true"`
 	PayPalClientID       string `envconfig:"PAYPAL_CLIENT_ID" required:"true"`
 	MailgunAPIKey        string `envconfig:"MAILGUN_API_KEY" required:"true"`
-	RunningVersion       string
-	VersionTimestamp     string
+	BuildVersion         string
+	BuildTimestamp       string
 }
 
 // ConfigOption defines a type of function for modifying a Config object
@@ -57,18 +57,18 @@ func NewLoadEnvConfigOption(logger domain.Logger, paths ...string) ConfigOption 
 	}
 }
 
-// NewRunningVersionConfigOption sets the provided running version value on the Config object
-func NewRunningVersionConfigOption(runningVersion string) ConfigOption {
+// NewBuildVersionConfigOption sets the provided build version value on the Config object
+func NewBuildVersionConfigOption(buildVersion string) ConfigOption {
 	return func(config *Config) error {
-		config.RunningVersion = runningVersion
+		config.BuildVersion = buildVersion
 		return nil
 	}
 }
 
-// NewVersionTimestampConfigOption sets the provided version timestamp value on the Config object
-func NewVersionTimestampConfigOption(versionTimestamp string) ConfigOption {
+// NewBuildTimestampConfigOption sets the provided build timestamp value on the Config object
+func NewBuildTimestampConfigOption(buildTimestamp string) ConfigOption {
 	return func(config *Config) error {
-		config.VersionTimestamp = versionTimestamp
+		config.BuildTimestamp = buildTimestamp
 		return nil
 	}
 }
