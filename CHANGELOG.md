@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.1] - 2022-06-15
+
+### Changed
+
+- Update colour scheme and branding
+- Amend config to take running version and timestamp from build flags instead of env vars
+- Update CI build
+
 ## [2.2.0] - 2022-04-26
 
 ### Added
@@ -165,7 +173,8 @@ Standings object that has just been received from data client.
 ### Added
 - This project to the Open Source "dimension"...
 
-[Unreleased]: https://github.com/AdamJSc/prediction-league/compare/v2.1.5...HEAD
+[Unreleased]: https://github.com/AdamJSc/prediction-league/compare/v2.2.1...HEAD
+[2.2.1]: https://github.com/AdamJSc/prediction-league/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/AdamJSc/prediction-league/compare/v2.1.5...v2.2.0
 [2.1.5]: https://github.com/AdamJSc/prediction-league/compare/v2.1.4...v2.1.5
 [2.1.4]: https://github.com/AdamJSc/prediction-league/compare/v2.1.3...v2.1.4
