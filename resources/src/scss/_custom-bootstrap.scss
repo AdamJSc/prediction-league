@@ -12,15 +12,22 @@
   transition: all 0.2s;
 }
 
+a {
+  &.btn-primary, &.nav-link {
+    text-decoration: none;
+  }
+}
+
 .btn-primary {
   min-width: 150px;
-  color: $primary-light;
-  background-color: $secondary-dark;
-  border-color: $secondary-dark;
+  color: $text-light;
+  background-color: $primary-dark;
+  border-color: $primary-dark;
 
-  &:focus, &:hover:enabled, &:active {
-    background-color: $secondary-dark-tint-dark;
-    border-color: $secondary-dark-tint-dark;
+  &:focus, &:hover, &:hover:enabled, &:active {
+    background-color: $primary-light;
+    border-color: $primary-light;
+    color: $primary-dark;
   }
 
   &:focus {
@@ -28,9 +35,9 @@
   }
 
   &:disabled, &.disabled {
-    color: $primary-light;
-    background-color: $secondary-dark-tint-dark;
-    border-color: $secondary-dark-tint-dark;
+    color: $text-light;
+    background-color: $primary-dark-tint-light;
+    border-color: $primary-dark-tint-light;
 
     &:hover {
       cursor: default;
@@ -40,9 +47,9 @@
   &:not(:disabled) {
     &:not(.disabled) {
       &:active, &.active {
-        color: $primary-light;
-        background-color: $secondary-dark-tint-dark;
-        border-color: $secondary-dark-tint-dark;
+        color: $text-light;
+        background-color: $primary-dark-tint-light;
+        border-color: $primary-dark-tint-light;
       }
     }
   }
@@ -58,15 +65,27 @@
   }
 }
 
+.alert-danger {
+  color: $primary-dark;
+  background-color: $primary-light;
+  border-color: $primary-light;
+
+  .close {
+    color: $primary-dark;
+    opacity: 1;
+    text-shadow: none;
+  }
+}
+
 .form-control {
   border-width: 2px;
 
   &:focus {
-    color: $primary-dark-tint-light;
-    background-color: $primary-light;
-    border-color: $primary-dark-tint-light;
+    color: $text-dark-tint-light;
+    background-color: $text-light;
+    border-color: $text-dark-tint-light;
     outline: 0;
-    border-color: $secondary-dark;
+    border-color: $primary-dark;
     box-shadow: none;
   }
 }
@@ -78,21 +97,21 @@
 }
 
 .navbar-light {
-  background: $secondary-dark;
+  background: $primary-dark;
 
   .navbar-brand {
-    color: $primary-light;
+    color: $text-light;
     font-family: $heading-font-family;
     font-size: 1.5rem;
 
     &:hover {
-      color: $primary-light;
+      color: $text-light;
     }
   }
 
   .navbar-toggler {
-    color: $primary-light;
-    border-color: $primary-light;
+    color: $text-light;
+    border-color: $text-light;
     outline: 0;
   }
 
@@ -101,14 +120,14 @@
 
     .navbar-nav {
       .nav-link {
-        color: $primary-light;
+        color: $text-light;
 
         &.active {
-          color: $secondary-dark-tint-light;
+          color: $primary-light;
         }
 
         &:hover, &:focus {
-          color: $secondary-dark-tint-light;
+          color: $primary-light;
         }
       }
     }
@@ -116,11 +135,11 @@
 }
 
 .modal-header {
-  background-color: $secondary-dark;
-  color: $primary-light;
+  background-color: $primary-dark;
+  color: $text-light;
 
   .close {
-    color: $primary-light;
+    color: $text-light;
     text-shadow: none;
     opacity: 1;
   }
@@ -142,14 +161,14 @@
 
   .card-header {
     padding: 0;
-    background-color: $secondary-dark;
+    background-color: $primary-dark;
     border: 0;
 
     h2 {
       margin-bottom: 0;
       font-size: 1.4rem;
       padding: 1rem;
-      color: $primary-light;
+      color: $text-light;
 
       &:hover {
         cursor: pointer;
@@ -158,7 +177,7 @@
   }
 
   .card-body {
-    border: 2px solid $secondary-dark;
+    border: 2px solid $primary-dark;
   }
 }
 

@@ -1,18 +1,21 @@
-$primary-dark: #333;
-$primary-dark-tint-light: #666;
-$primary-dark-tint-light-2: #dedede;
-$primary-light-tint-dark: #bababa;
-$primary-light: #fff;
-$secondary-dark-tint-light: #88d9ff;
-$secondary-dark: #0093ea;
-$secondary-dark-tint-dark: #0a53b8;
+// main colours
+$primary-dark: rgb(55, 0, 60);
+$primary-dark-tint-light: rgb(99, 33, 110);
+$primary-light: rgb(0, 255, 135);
 
-$active-highlight-light: #9cff98;
-$active-highlight-dark: #00a133;
+// text colours
+$text-dark: #333;
+$text-dark-tint-light: #666;
+$text-light-tint-dark: #bababa;
+$text-light: #fff;
 
+// leaderboard selection
+$active-highlight-light: #a2f3a2;
+$active-highlight-dark: #20b659;
 $dirty-highlight-light: #ffecde;
 $dirty-highlight-dark: #d6c38b;
 
+// typeface
 $base-font-size: 16px;
 $base-font-size-lg: 18px;
 $base-font-family: Cabin, sans-serif;
