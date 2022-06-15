@@ -1,8 +1,5 @@
 #!/bin/sh
 
-# get timestamp of release
-NOW=$(date +"%Y-%m-%d %H:%M:%S")
-
 # change to project directory
 cd $1;
 
@@ -10,10 +7,10 @@ cd $1;
 echo "#!/bin/sh
 
 # bring up any new containers
-RELEASE_TAG=$2 RELEASE_TIMESTAMP=\"$NOW\" docker-compose up -d --build;
+PL_APP_TAG=$2 docker compose up -d --build pl_app;
 
 # restart existing containers
-RELEASE_TAG=$2 RELEASE_TIMESTAMP=\"$NOW\" docker-compose restart;
+PL_APP_TAG=$2 docker compose restart pl_app;
 
 if [ $? = 0 ]
 then

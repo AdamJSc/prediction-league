@@ -41,17 +41,21 @@ pipelines:
           services:
             - docker
           script:
-            - docker image build --rm --tag prediction-league-app:${BITBUCKET_TAG} -f ${PWD}/docker/app.Dockerfile .
-            - docker tag prediction-league-app:${BITBUCKET_TAG} adamjsc/prediction-league-app:${BITBUCKET_TAG}
-            - docker tag prediction-league-app:${BITBUCKET_TAG} adamjsc/prediction-league-app:latest
+            - VERSION=${BITBUCKET_TAG}
+            - BUILD_TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+            - echo "VERSION=${VERSION} BUILD_TIMESTAMP=${BUILD_TIMESTAMP}"
+            - docker image build --rm --build-arg 'RUNNING_VERSION=${VERSION}' --build-arg 'VERSION_TIMESTAMP=${BUILD_TIMESTAMP}' --tag prediction-league-app:${VERSION} -f ${PWD}/docker/app.Dockerfile .
+            - docker tag prediction-league-app:${VERSION} adamjsc/prediction-league-app:${VERSION}
+            - docker tag prediction-league-app:${VERSION} adamjsc/prediction-league-app:latest
             - echo ${DOCKER_ACCESS_TOKEN} | docker login --username adamjsc --password-stdin
-            - docker push adamjsc/prediction-league-app:${BITBUCKET_TAG}
+            - docker push adamjsc/prediction-league-app:${VERSION}
             - docker push adamjsc/prediction-league-app:latest
       - step:
           name: Deploy
           image: atlassian/default-image:2
           script:
-            - ssh ${PROD_SSH_USER}@${PROD_SSH_HOST} '/bin/sh -s' < release.sh ${PROD_HOST_DIR} ${BITBUCKET_TAG}
+            - PL_APP_TAG=${BuildTag}
+            - ssh ${PROD_SSH_USER}@${PROD_SSH_HOST} '/bin/sh -s' < release.sh ${PROD_HOST_DIR} ${PL_APP_TAG}
 
   custom:
 
@@ -72,10 +76,13 @@ pipelines:
           services:
             - docker
           script:
-            - docker image build --rm --tag prediction-league-app:${BuildTag} -f ${PWD}/docker/app.Dockerfile .
-            - docker tag prediction-league-app:${BuildTag} adamjsc/prediction-league-app:${BuildTag}
+            - VERSION=${BuildTag}
+            - BUILD_TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+            - echo "VERSION=${VERSION} BUILD_TIMESTAMP=${BUILD_TIMESTAMP}"
+            - docker image build --rm --build-arg RUNNING_VERSION=${VERSION} --build-arg VERSION_TIMESTAMP="${BUILD_TIMESTAMP}" --tag prediction-league-app:${VERSION} -f ${PWD}/docker/app.Dockerfile .
+            - docker tag prediction-league-app:${VERSION} adamjsc/prediction-league-app:${VERSION}
             - echo ${DOCKER_ACCESS_TOKEN} | docker login --username adamjsc --password-stdin
-            - docker push adamjsc/prediction-league-app:${BuildTag}
+            - docker push adamjsc/prediction-league-app:${VERSION}
 
     release-with-tag:
       - variables:
@@ -84,7 +91,8 @@ pipelines:
           name: Release with Tag
           image: atlassian/default-image:2
           script:
-            - ssh ${PROD_SSH_USER}@${PROD_SSH_HOST} '/bin/sh -s' < release.sh ${PROD_HOST_DIR} ${BuildTag}
+            - PL_APP_TAG=${BuildTag}
+            - ssh ${PROD_SSH_USER}@${PROD_SSH_HOST} '/bin/sh -s' < release.sh ${PROD_HOST_DIR} ${PL_APP_TAG}
 
 definitions:
   caches:
