@@ -25,6 +25,60 @@ type TeamRanking struct {
 	TeamID   string // team's id
 }
 
+func newMatchWeekSubmissionFromEntryPredictionAndStandings(ep EntryPrediction, s Standings) *MatchWeekSubmission {
+	return &MatchWeekSubmission{
+		ID:              ep.ID,
+		EntryID:         ep.EntryID,
+		MatchWeekNumber: uint16(s.RoundNumber),
+		TeamRankings:    newTeamRankingsFromRankingCollection(ep.Rankings),
+		CreatedAt:       ep.CreatedAt,
+		UpdatedAt:       nil,
+	}
+}
+
+func newTeamRankingsFromRankingCollection(rc RankingCollection) []TeamRanking {
+	rankings := make([]TeamRanking, 0)
+
+	for _, r := range rc {
+		rankings = append(rankings, TeamRanking{
+			Position: uint16(r.Position),
+			TeamID:   r.ID,
+		})
+	}
+
+	return rankings
+}
+
+func newTeamRankingsFromRankingsWithMeta(rwms []RankingWithMeta) []TeamRanking {
+	rankings := make([]TeamRanking, 0)
+
+	// TODO: feat - retain number of games played on TeamRankings belonging to MatchWeekStandings
+	for _, rwm := range rwms {
+		rankings = append(rankings, TeamRanking{
+			Position: uint16(rwm.Position),
+			TeamID:   rwm.ID,
+		})
+	}
+
+	return rankings
+}
+
+func newRankingsWithScoreFromTeamRankingsWithHit(rankingsWithHit []TeamRankingWithHit) []RankingWithScore {
+	rankingsWithScore := make([]RankingWithScore, 0)
+
+	for _, rwh := range rankingsWithHit {
+		rankingsWithScore = append(rankingsWithScore, RankingWithScore{
+			Ranking: Ranking{
+				ID:       rwh.SubmittedRanking.TeamID,
+				Position: int(rwh.SubmittedRanking.Position),
+			},
+			Score: int(rwh.Hit),
+		})
+	}
+
+	return rankingsWithScore
+}
+
 // duplicateStringsError defines an error that represents duplicate occurrences of a set of values
 type duplicateStringsError struct {
 	valueCountMap map[string]uint16

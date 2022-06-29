@@ -320,18 +320,35 @@ func NewTestRetrieveLatestStandingsWorker(
 
 // GenerateScoredEntryPrediction generates a scored entry prediction from the provided entry prediction and standings
 func GenerateScoredEntryPrediction(ep EntryPrediction, s Standings) (*ScoredEntryPrediction, error) {
-	standingsRankingCollection := NewRankingCollectionFromRankingWithMetas(s.Rankings)
+	// TODO: feat - deprecate unused methods
+	//standingsRankingCollection := NewRankingCollectionFromRankingWithMetas(s.Rankings)
 
-	rws, err := CalculateRankingsScores(ep.Rankings, standingsRankingCollection)
+	//rws, err := CalculateRankingsScores(ep.Rankings, standingsRankingCollection)
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	// TODO: migrate to MatchWeekSubmission entity + deprecate EntryPrediction
+	mwSubmission := newMatchWeekSubmissionFromEntryPredictionAndStandings(ep, s)
+
+	// TODO: migrate to MatchWeekStandings entity + deprecate Standings
+	mwStandings := newMatchWeekStandingsFromStandings(s)
+	mwResult, err := NewMatchWeekResult(
+		mwSubmission.ID,
+		// TODO: feat - add BasePointsModifier
+		TeamRankingsHitModifier(mwSubmission, mwStandings),
+	)
 	if err != nil {
 		return nil, err
 	}
 
+	// TODO: migrate to MatchWeekResult entity + deprecate ScoredEntryPrediction
+
 	sep := ScoredEntryPrediction{
 		EntryPredictionID: ep.ID,
 		StandingsID:       s.ID,
-		Rankings:          *rws,
-		Score:             rws.GetTotal(),
+		Rankings:          newRankingsWithScoreFromTeamRankingsWithHit(mwResult.TeamRankings),
+		Score:             int(mwResult.Score),
 	}
 
 	return &sep, nil

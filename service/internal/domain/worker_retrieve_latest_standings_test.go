@@ -490,7 +490,7 @@ func TestGenerateScoredEntryPrediction(t *testing.T) {
 			Rankings: okEntryPredictionRankings,
 		}
 
-		wantErrMsg := "mismatched baseIDs length: base 7, comparison 0"
+		wantErrMsg := "rankings count mismatch: submission 7: standings 0"
 		_, gotErr := domain.GenerateScoredEntryPrediction(entryPrediction, domain.Standings{})
 		cmpErrorMsg(t, wantErrMsg, gotErr)
 	})

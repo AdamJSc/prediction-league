@@ -18,3 +18,21 @@ type MatchWeekStandings struct {
 	CreatedAt       time.Time     // date that standings were created
 	UpdatedAt       *time.Time    // date that standings were most recently updated, if applicable
 }
+
+func newMatchWeekStandingsFromStandings(s Standings) *MatchWeekStandings {
+	var finalisedAt *time.Time
+	if s.Finalised {
+		finalisedAt = s.UpdatedAt
+	}
+
+	return &MatchWeekStandings{
+		ID:              s.ID,
+		SeasonID:        s.SeasonID,
+		MatchWeekNumber: uint16(s.RoundNumber),
+		// TODO: feat - retain number of games played on TeamRankings belonging to MatchWeekStandings
+		TeamRankings: newTeamRankingsFromRankingsWithMeta(s.Rankings),
+		FinalisedAt:  finalisedAt,
+		CreatedAt:    s.CreatedAt,
+		UpdatedAt:    s.UpdatedAt,
+	}
+}

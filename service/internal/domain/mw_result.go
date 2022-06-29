@@ -62,6 +62,8 @@ func NewMatchWeekResult(mwSubmissionID uuid.UUID, modifiers ...MatchWeekResultMo
 	return result, nil
 }
 
+// TODO: feat - implement BasePointsModifier (set initial score)
+
 func TeamRankingsHitModifier(submission *MatchWeekSubmission, standings *MatchWeekStandings) MatchWeekResultModifier {
 	return func(result *MatchWeekResult) error {
 		if submission == nil || standings == nil {
@@ -121,11 +123,11 @@ func TeamRankingsHitModifier(submission *MatchWeekSubmission, standings *MatchWe
 		}
 
 		result.TeamRankings = rankingsWithHit
-		result.Score = result.Score + totalHits // TODO: invert/negative
+		result.Score = result.Score + totalHits // TODO: feat - invert/negative
 
 		result.Modifiers = append(result.Modifiers, ModifierSummary{
 			Code:  TeamRankingsHitModifierCode,
-			Value: totalHits, // TODO: invert/negative
+			Value: totalHits, // TODO: feat - invert/negative
 		})
 
 		return nil
