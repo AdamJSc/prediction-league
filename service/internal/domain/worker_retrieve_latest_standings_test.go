@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/uuid"
 	"prediction-league/service/internal/domain"
 	"reflect"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 )
 
 func TestNewRetrieveLatestStandingsWorker(t *testing.T) {
@@ -403,6 +404,95 @@ func TestRetrieveLatestStandingsWorker_IssueEmails(t *testing.T) {
 		if len(mErr.Errs) != wantCount {
 			t.Fatalf("want %d errors, got %+v", wantCount, mErr.Errs)
 		}
+	})
+}
+
+func TestGenerateScoredEntryPrediction(t *testing.T) {
+	okEntryPredictionRankings := domain.RankingCollection{
+		{Position: 1, ID: pooleTownTeamID},
+		{Position: 2, ID: wimborneTownTeamID},
+		{Position: 3, ID: dorchesterTownTeamID},
+		{Position: 4, ID: hamworthyUnitedTeamID},
+		{Position: 5, ID: bournemouthPoppiesTeamID},
+		{Position: 6, ID: stJohnsRangersTeamID},
+		{Position: 7, ID: branksomeUnitedTeamID},
+	}
+
+	okStandingsRankings := []domain.RankingWithMeta{
+		{Ranking: domain.Ranking{Position: 1, ID: branksomeUnitedTeamID}},    // score = 6 (prediction = 7)
+		{Ranking: domain.Ranking{Position: 2, ID: stJohnsRangersTeamID}},     // score = 4 (prediction = 6)
+		{Ranking: domain.Ranking{Position: 3, ID: bournemouthPoppiesTeamID}}, // score = 2 (prediction = 5)
+		{Ranking: domain.Ranking{Position: 4, ID: hamworthyUnitedTeamID}},    // score = 0 (prediction = 4)
+		{Ranking: domain.Ranking{Position: 5, ID: wimborneTownTeamID}},       // score = 3 (prediction = 2)
+		{Ranking: domain.Ranking{Position: 6, ID: pooleTownTeamID}},          // score = 5 (prediction = 1)
+		{Ranking: domain.Ranking{Position: 7, ID: dorchesterTownTeamID}},     // score = 4 (prediction = 3)
+	}
+
+	t.Run("valid entry prediction and standings must generate the expected scored entry prediction", func(t *testing.T) {
+		entryPredictionID := mustGetUUIDFromString(t, `11111111-1111-1111-1111-111111111111`)
+		entryPrediction := domain.EntryPrediction{
+			ID:       entryPredictionID,
+			Rankings: okEntryPredictionRankings,
+		}
+
+		standingsID := mustGetUUIDFromString(t, `22222222-2222-2222-2222-222222222222`)
+		standings := domain.Standings{
+			ID:       standingsID,
+			Rankings: okStandingsRankings,
+		}
+
+		wantScoredEntryPrediction := &domain.ScoredEntryPrediction{
+			EntryPredictionID: entryPredictionID,
+			StandingsID:       standingsID,
+			Rankings: []domain.RankingWithScore{
+				{
+					Ranking: domain.Ranking{Position: 1, ID: pooleTownTeamID},
+					Score:   5,
+				},
+				{
+					Ranking: domain.Ranking{Position: 2, ID: wimborneTownTeamID},
+					Score:   3,
+				},
+				{
+					Ranking: domain.Ranking{Position: 3, ID: dorchesterTownTeamID},
+					Score:   4,
+				},
+				{
+					Ranking: domain.Ranking{Position: 4, ID: hamworthyUnitedTeamID},
+					Score:   0,
+				},
+				{
+					Ranking: domain.Ranking{Position: 5, ID: bournemouthPoppiesTeamID},
+					Score:   2,
+				},
+				{
+					Ranking: domain.Ranking{Position: 6, ID: stJohnsRangersTeamID},
+					Score:   4,
+				},
+				{
+					Ranking: domain.Ranking{Position: 7, ID: branksomeUnitedTeamID},
+					Score:   6,
+				},
+			},
+			Score: 24,
+		}
+
+		gotScoredEntryPrediction, err := domain.GenerateScoredEntryPrediction(entryPrediction, standings)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cmpDiff(t, "scored entry prediction", wantScoredEntryPrediction, gotScoredEntryPrediction)
+	})
+
+	t.Run("mismatch rankings count must produce expected error", func(t *testing.T) {
+		entryPrediction := domain.EntryPrediction{
+			Rankings: okEntryPredictionRankings,
+		}
+
+		wantErrMsg := "mismatched baseIDs length: base 7, comparison 0"
+		_, gotErr := domain.GenerateScoredEntryPrediction(entryPrediction, domain.Standings{})
+		cmpErrorMsg(t, wantErrMsg, gotErr)
 	})
 }
 
