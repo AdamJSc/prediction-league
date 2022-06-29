@@ -1,6 +1,9 @@
 package domain
 
 import (
+	"fmt"
+	"math"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -25,9 +28,16 @@ type TeamRankingWithHit struct {
 
 // ModifierSummary represents the modifiers applied to a particular mw result
 type ModifierSummary struct {
-	Code  string // arbitrary code representing the modifier
-	Value int64  // value applied to the overall score by the modifier
+	Code  ModifierCode // arbitrary code representing the modifier
+	Value int64        // value applied to the overall score by the modifier
 }
+
+// ModifierCode defines a predefined set of values to be used on a ModifierSummary
+type ModifierCode string
+
+const (
+	TeamRankingsHitModifierCode ModifierCode = "RANKINGS_HIT"
+)
 
 // MatchWeekResultModifier defines a function which modifies the provided mw result object in some way (i.e. affects the overall score)
 //
@@ -50,4 +60,81 @@ func NewMatchWeekResult(mwSubmissionID uuid.UUID, modifiers ...MatchWeekResultMo
 	}
 
 	return result, nil
+}
+
+func TeamRankingsHitModifier(submission *MatchWeekSubmission, standings *MatchWeekStandings) MatchWeekResultModifier {
+	return func(result *MatchWeekResult) error {
+		if submission == nil || standings == nil {
+			return nil
+		}
+
+		// ensure that both sets of rankings have the same number of entries
+		submissionCount := len(submission.TeamRankings)
+		standingsCount := len(standings.TeamRankings)
+		if submissionCount != standingsCount {
+			return fmt.Errorf("rankings count mismatch: submission %d: standings %d", submissionCount, standingsCount)
+		}
+
+		// check both sets of rankings for duplicates
+		if err := checkForDuplicateTeamRankings(submission.TeamRankings); err != nil {
+			return fmt.Errorf("submission team rankings: %w", err)
+		}
+		if err := checkForDuplicateTeamRankings(standings.TeamRankings); err != nil {
+			return fmt.Errorf("standings team rankings: %w", err)
+		}
+
+		// map each standings ranking by its team id (so we can access them directly while cycling through the submission rankings)
+		standRankMap := make(map[string]TeamRanking)
+		for _, standRank := range standings.TeamRankings {
+			standRankMap[standRank.TeamID] = standRank
+		}
+
+		missingTeamIDs := make([]string, 0)
+		rankingsWithHit := make([]TeamRankingWithHit, 0)
+		var totalHits int64 = 0
+
+		// populate hits for submission rankings based on standings rankings
+		for _, subRank := range submission.TeamRankings {
+			rwh := TeamRankingWithHit{
+				SubmittedRanking: subRank,
+			}
+
+			// get the standings ranking for the current submission ranking team id
+			standRank, ok := standRankMap[subRank.TeamID]
+			if !ok {
+				// log team id as missing from standings rankings, and move onto next submission ranking
+				missingTeamIDs = append(missingTeamIDs, subRank.TeamID)
+				continue
+			}
+
+			subRankHit := calculateHit(subRank, standRank)
+
+			rwh.StandingsPos = standRank.Position
+			rwh.Hit = subRankHit
+			totalHits = totalHits + subRankHit
+
+			rankingsWithHit = append(rankingsWithHit, rwh)
+		}
+
+		if len(missingTeamIDs) > 0 {
+			return fmt.Errorf("team ids missing from standings rankings: '%s'", strings.Join(missingTeamIDs, "', '"))
+		}
+
+		result.TeamRankings = rankingsWithHit
+		result.Score = result.Score + totalHits // TODO: invert/negative
+
+		result.Modifiers = append(result.Modifiers, ModifierSummary{
+			Code:  TeamRankingsHitModifierCode,
+			Value: totalHits, // TODO: invert/negative
+		})
+
+		return nil
+	}
+}
+
+// calculateHit returns the difference between the positions of the two provided team rankings as a positive integer
+func calculateHit(submissionRanking, standingsRanking TeamRanking) int64 {
+	diff := int16(submissionRanking.Position) - int16(standingsRanking.Position)
+	abs := math.Abs(float64(diff))
+	return int64(abs)
 }
