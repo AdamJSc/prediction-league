@@ -72,7 +72,7 @@ func checkForDuplicateTeamRankings(input []TeamRanking) error {
 		return fmt.Errorf("duplicate team ids found: %w", dupeTeamIDsErr)
 	}
 
-	// TODO: check for duplicate positions
+	// TODO: feat - check for duplicate positions
 
 	return nil
 }

@@ -8,15 +8,15 @@ import (
 
 const (
 	// MetaKeyPlayedGames defines the ranking with meta key that represents played games
-	MetaKeyPlayedGames = "playedGames"
+	MetaKeyPlayedGames = "playedGames" // TODO: deprecate once migrated to MatchWeekStandings over Standings
 	// MetaKeyPoints defines the ranking with meta key that represents points
-	MetaKeyPoints = "points"
+	MetaKeyPoints = "points" // TODO: feat - deprecate
 	// MetaKeyGoalsFor defines the ranking with meta key that represents goals for
-	MetaKeyGoalsFor = "goalsFor"
+	MetaKeyGoalsFor = "goalsFor" // TODO: feat - deprecate
 	// MetaKeyGoalsAgainst defines the ranking with meta key that represents goals against
-	MetaKeyGoalsAgainst = "goalsAgainst"
+	MetaKeyGoalsAgainst = "goalsAgainst" // TODO: feat - deprecate
 	// MetaKeyGoalDifference defines the ranking with meta key that represents goal difference
-	MetaKeyGoalDifference = "goalDifference"
+	MetaKeyGoalDifference = "goalDifference" // TODO: feat - deprecate
 )
 
 // Ranking defines our base ranking structure

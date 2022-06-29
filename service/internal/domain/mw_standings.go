@@ -6,6 +6,8 @@ import (
 	"github.com/google/uuid"
 )
 
+// TODO: feat - retain number of games played on TeamRankings belonging to MatchWeekStandings
+
 // MatchWeekStandings represents the league table associated with the provided season ID and match week number
 type MatchWeekStandings struct {
 	ID              uuid.UUID     // unique id
