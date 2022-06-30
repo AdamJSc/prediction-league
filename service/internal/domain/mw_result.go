@@ -84,61 +84,12 @@ func TeamRankingsHitModifier(submission *MatchWeekSubmission, standings *MatchWe
 			return nil
 		}
 
-		// TODO: feat - abstract below to getRankingsWithHits() method
-
-		// ensure that both sets of rankings have the same number of entries
-		submissionCount := len(submission.TeamRankings)
-		standingsCount := len(standings.TeamRankings)
-		if submissionCount != standingsCount {
-			return fmt.Errorf("rankings count mismatch: submission %d: standings %d", submissionCount, standingsCount)
+		rankingsWithHits, totalHits, err := getRankingsWithHits(submission, standings)
+		if err != nil {
+			return err
 		}
 
-		// check both sets of rankings for duplicates
-		if err := checkForDuplicateTeamRankings(submission.TeamRankings); err != nil {
-			return fmt.Errorf("submission team rankings: %w", err)
-		}
-		if err := checkForDuplicateTeamRankings(standings.TeamRankings); err != nil {
-			return fmt.Errorf("standings team rankings: %w", err)
-		}
-
-		// map each standings ranking by its team id (so we can access them directly while cycling through the submission rankings)
-		standRankMap := make(map[string]TeamRanking)
-		for _, standRank := range standings.TeamRankings {
-			standRankMap[standRank.TeamID] = standRank
-		}
-
-		missingTeamIDs := make([]string, 0)
-		rankingsWithHit := make([]TeamRankingWithHit, 0)
-		var totalHits int64 = 0
-
-		// populate hits for submission rankings based on standings rankings
-		for _, subRank := range submission.TeamRankings {
-			rwh := TeamRankingWithHit{
-				SubmittedRanking: subRank,
-			}
-
-			// get the standings ranking for the current submission ranking team id
-			standRank, ok := standRankMap[subRank.TeamID]
-			if !ok {
-				// log team id as missing from standings rankings, and move onto next submission ranking
-				missingTeamIDs = append(missingTeamIDs, subRank.TeamID)
-				continue
-			}
-
-			subRankHit := calculateHit(subRank, standRank)
-
-			rwh.StandingsPos = standRank.Position
-			rwh.Hit = subRankHit
-			totalHits = totalHits + subRankHit
-
-			rankingsWithHit = append(rankingsWithHit, rwh)
-		}
-
-		if len(missingTeamIDs) > 0 {
-			return fmt.Errorf("team ids missing from standings rankings: '%s'", strings.Join(missingTeamIDs, "', '"))
-		}
-
-		result.TeamRankings = rankingsWithHit
+		result.TeamRankings = rankingsWithHits
 		result.Score = result.Score - totalHits // deduct total hits from current score
 		result.Modifiers = append(result.Modifiers, ModifierSummary{
 			Code:  TeamRankingsHitModifierCode,
@@ -147,6 +98,64 @@ func TeamRankingsHitModifier(submission *MatchWeekSubmission, standings *MatchWe
 
 		return nil
 	}
+}
+
+// getRankingsWithHits returns each of the submission's team rankings enriched with a "hit" value
+// (the number of points to deduct from the overall score) based on the provided standings
+func getRankingsWithHits(submission *MatchWeekSubmission, standings *MatchWeekStandings) ([]TeamRankingWithHit, int64, error) {
+	// ensure that both sets of rankings have the same number of entries
+	submissionCount := len(submission.TeamRankings)
+	standingsCount := len(standings.TeamRankings)
+	if submissionCount != standingsCount {
+		return nil, 0, fmt.Errorf("rankings count mismatch: submission %d: standings %d", submissionCount, standingsCount)
+	}
+
+	// check both sets of rankings for duplicates
+	if err := checkForDuplicateTeamRankings(submission.TeamRankings); err != nil {
+		return nil, 0, fmt.Errorf("submission team rankings: %w", err)
+	}
+	if err := checkForDuplicateTeamRankings(standings.TeamRankings); err != nil {
+		return nil, 0, fmt.Errorf("standings team rankings: %w", err)
+	}
+
+	// map each standings ranking by its team id (so we can access them directly while cycling through the submission rankings)
+	standRankMap := make(map[string]TeamRanking)
+	for _, standRank := range standings.TeamRankings {
+		standRankMap[standRank.TeamID] = standRank
+	}
+
+	missingTeamIDs := make([]string, 0)
+	rankingsWithHits := make([]TeamRankingWithHit, 0)
+	var totalHits int64 = 0
+
+	// populate hits for submission rankings based on standings rankings
+	for _, subRank := range submission.TeamRankings {
+		rwh := TeamRankingWithHit{
+			SubmittedRanking: subRank,
+		}
+
+		// get the standings ranking for the current submission ranking team id
+		standRank, ok := standRankMap[subRank.TeamID]
+		if !ok {
+			// log team id as missing from standings rankings, and move onto next submission ranking
+			missingTeamIDs = append(missingTeamIDs, subRank.TeamID)
+			continue
+		}
+
+		subRankHit := calculateHit(subRank, standRank)
+
+		rwh.StandingsPos = standRank.Position
+		rwh.Hit = subRankHit
+		totalHits = totalHits + subRankHit
+
+		rankingsWithHits = append(rankingsWithHits, rwh)
+	}
+
+	if len(missingTeamIDs) > 0 {
+		return nil, 0, fmt.Errorf("team ids missing from standings rankings: '%s'", strings.Join(missingTeamIDs, "', '"))
+	}
+
+	return rankingsWithHits, totalHits, nil
 }
 
 // calculateHit returns the difference between the positions of the two provided team rankings as a positive integer
