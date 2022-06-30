@@ -195,9 +195,9 @@ func TestTeamRankingsHitModifier(t *testing.T) {
 					Hit:              6,
 				},
 			},
-			Score: 24,
+			Score: -24,
 			Modifiers: []domain.ModifierSummary{
-				{Code: "RANKINGS_HIT", Value: 24},
+				{Code: "RANKINGS_HIT", Value: -24},
 			},
 		}
 

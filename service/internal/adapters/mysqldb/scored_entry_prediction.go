@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
 	"prediction-league/service/internal/domain"
+
+	"golang.org/x/net/context"
 )
 
 // stmtSelectEntryWithTotalScore represents a partial nested statement for grouping entry IDs along with their
@@ -257,6 +258,7 @@ func (s *ScoredEntryPredictionRepo) SelectEntryCumulativeScoresByRealm(ctx conte
 			entry_with_min_score.min_score ASC,
 			entry_with_score_this_round.score_this_round ASC
 		`,
+		// TODO: feat - change leaderboard sort order to DESC
 		stmtSelectEntryWithTotalScore,
 		stmtSelectEntryWithScoreThisRound,
 		stmtSelectEntryWithMinScore,

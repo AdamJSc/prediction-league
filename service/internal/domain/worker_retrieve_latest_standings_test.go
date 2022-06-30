@@ -474,7 +474,7 @@ func TestGenerateScoredEntryPrediction(t *testing.T) {
 					Score:   6,
 				},
 			},
-			Score: 24,
+			Score: 76, // 100 base points, minus 24 total hits (all of the above ranking scores added together)
 		}
 
 		gotScoredEntryPrediction, err := domain.GenerateScoredEntryPrediction(entryPrediction, standings)

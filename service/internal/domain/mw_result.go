@@ -139,10 +139,10 @@ func TeamRankingsHitModifier(submission *MatchWeekSubmission, standings *MatchWe
 		}
 
 		result.TeamRankings = rankingsWithHit
-		result.Score = result.Score + totalHits // TODO: feat - invert/negative
+		result.Score = result.Score - totalHits // deduct total hits from current score
 		result.Modifiers = append(result.Modifiers, ModifierSummary{
 			Code:  TeamRankingsHitModifierCode,
-			Value: totalHits, // TODO: feat - invert/negative
+			Value: -totalHits,
 		})
 
 		return nil

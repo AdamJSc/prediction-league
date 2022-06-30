@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+// TODO: feat - update CHANGELOG
+
 ## [2.2.1] - 2022-06-15
 
 ### Changed

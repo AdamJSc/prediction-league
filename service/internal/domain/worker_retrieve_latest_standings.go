@@ -8,6 +8,10 @@ import (
 	"sync"
 )
 
+// baseScore is the number of points that each match week result begins with
+// prior to deducting any "hits" based on standings/rankings (or applying any subsequent modifiers)
+const baseScore = 100
+
 // RoundCompleteEmailIssuer defines behaviours required to issue a Round Complete email
 type RoundCompleteEmailIssuer interface {
 	IssueRoundCompleteEmail(ctx context.Context, sep ScoredEntryPrediction, isFinalRound bool) error
@@ -335,7 +339,7 @@ func GenerateScoredEntryPrediction(ep EntryPrediction, s Standings) (*ScoredEntr
 	mwStandings := newMatchWeekStandingsFromStandings(s)
 	mwResult, err := NewMatchWeekResult(
 		mwSubmission.ID,
-		// TODO: feat - add BaseScoreModifier
+		BaseScoreModifier(baseScore),
 		TeamRankingsHitModifier(mwSubmission, mwStandings),
 	)
 	if err != nil {
