@@ -36,6 +36,7 @@ type ModifierSummary struct {
 type ModifierCode string
 
 const (
+	BaseScoreModifierCode       ModifierCode = "BASE_SCORE"
 	TeamRankingsHitModifierCode ModifierCode = "RANKINGS_HIT"
 )
 
@@ -62,13 +63,28 @@ func NewMatchWeekResult(mwSubmissionID uuid.UUID, modifiers ...MatchWeekResultMo
 	return result, nil
 }
 
-// TODO: feat - implement BasePointsModifier (set initial score)
+// BaseScoreModifier overrides the match week result's score with the provided value
+func BaseScoreModifier(score int64) MatchWeekResultModifier {
+	return func(result *MatchWeekResult) error {
+		result.Score = score
+		result.Modifiers = append(result.Modifiers, ModifierSummary{
+			Code:  BaseScoreModifierCode,
+			Value: score,
+		})
 
+		return nil
+	}
+}
+
+// TeamRankingsHitModifier populates the match week result's team rankings based on the scores produced
+// by comparing the rankings of the provided submission and standings objects
 func TeamRankingsHitModifier(submission *MatchWeekSubmission, standings *MatchWeekStandings) MatchWeekResultModifier {
 	return func(result *MatchWeekResult) error {
 		if submission == nil || standings == nil {
 			return nil
 		}
+
+		// TODO: feat - abstract below to getRankingsWithHits() method
 
 		// ensure that both sets of rankings have the same number of entries
 		submissionCount := len(submission.TeamRankings)
@@ -124,7 +140,6 @@ func TeamRankingsHitModifier(submission *MatchWeekSubmission, standings *MatchWe
 
 		result.TeamRankings = rankingsWithHit
 		result.Score = result.Score + totalHits // TODO: feat - invert/negative
-
 		result.Modifiers = append(result.Modifiers, ModifierSummary{
 			Code:  TeamRankingsHitModifierCode,
 			Value: totalHits, // TODO: feat - invert/negative

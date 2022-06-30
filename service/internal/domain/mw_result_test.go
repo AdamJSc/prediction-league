@@ -102,6 +102,31 @@ func TestNewMatchWeekResult(t *testing.T) {
 	})
 }
 
+func TestBaseScoreModifier(t *testing.T) {
+	t.Run("setting base score must produce the expected match week result", func(t *testing.T) {
+		modifier := domain.BaseScoreModifier(5678)
+
+		wantMWResult := &domain.MatchWeekResult{
+			Score: 5678,
+			Modifiers: []domain.ModifierSummary{
+				{
+					Code:  "BASE_SCORE",
+					Value: 5678,
+				},
+			},
+		}
+
+		gotMWResult := &domain.MatchWeekResult{
+			Score: 1234, // should override value
+		}
+		if err := modifier(gotMWResult); err != nil {
+			t.Fatal(err)
+		}
+
+		cmpDiff(t, "match week result", wantMWResult, gotMWResult)
+	})
+}
+
 func TestTeamRankingsHitModifier(t *testing.T) {
 	okSubmissionRankings := []domain.TeamRanking{
 		{Position: 1, TeamID: pooleTownTeamID},

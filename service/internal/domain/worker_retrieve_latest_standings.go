@@ -335,7 +335,7 @@ func GenerateScoredEntryPrediction(ep EntryPrediction, s Standings) (*ScoredEntr
 	mwStandings := newMatchWeekStandingsFromStandings(s)
 	mwResult, err := NewMatchWeekResult(
 		mwSubmission.ID,
-		// TODO: feat - add BasePointsModifier
+		// TODO: feat - add BaseScoreModifier
 		TeamRankingsHitModifier(mwSubmission, mwStandings),
 	)
 	if err != nil {
