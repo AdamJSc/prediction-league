@@ -6,11 +6,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/google/uuid"
-	"github.com/joho/godotenv"
-	"github.com/kelseyhightower/envconfig"
 	"log"
 	"os"
 	"prediction-league/service/internal/adapters/logger"
@@ -20,6 +15,12 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/google/uuid"
+	"github.com/joho/godotenv"
+	"github.com/kelseyhightower/envconfig"
 )
 
 var (
@@ -323,6 +324,7 @@ func insertEntry(t *testing.T, entry domain.Entry) domain.Entry {
 
 // generateTestEntryPrediction generates a new EntryPrediction entity for use within the testsuite
 func generateTestEntryPrediction(t *testing.T, entryID uuid.UUID) domain.EntryPrediction {
+	// TODO: accept predetermined uuid
 	id, err := uuid.NewRandom()
 	if err != nil {
 		t.Fatal(err)

@@ -254,12 +254,12 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		expectedLeaderBoard := &domain.LeaderBoard{
 			RoundNumber: 2,
 			Rankings: []domain.LeaderBoardRanking{
-				// total 122, min 122, current 122
-				generateTestLeaderBoardRanking(1, 0, harryEntry.ID.String(), harryScores.min, harryScores.min, harryScores.min),
-				// total 124, min 124, current 124
+				// total 125, max 125, current 125
+				generateTestLeaderBoardRanking(1, 0, jamieEntry.ID.String(), jamieScores.max, jamieScores.max, jamieScores.max),
+				// total 124, max 124, current 124
 				generateTestLeaderBoardRanking(2, 0, frankEntry.ID.String(), frankScores.mid, frankScores.mid, frankScores.mid),
-				// total 125, min 125, current 125
-				generateTestLeaderBoardRanking(3, 0, jamieEntry.ID.String(), jamieScores.max, jamieScores.max, jamieScores.max),
+				// total 122, max 122, current 122
+				generateTestLeaderBoardRanking(3, 0, harryEntry.ID.String(), harryScores.min, harryScores.min, harryScores.min),
 			},
 			LastUpdated: &lastUpdated,
 		}
@@ -281,12 +281,12 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		expectedLeaderBoard := &domain.LeaderBoard{
 			RoundNumber: 3,
 			Rankings: []domain.LeaderBoardRanking{
-				// total 246, min 121, current 121, movement +2 on previous round
-				generateTestLeaderBoardRanking(1, 2, jamieEntry.ID.String(), jamieScores.min, jamieScores.min, jamieScores.max+jamieScores.min),
-				// total 246, min 122, current 124, movement -1 on previous round
-				generateTestLeaderBoardRanking(2, -1, harryEntry.ID.String(), harryScores.mid, harryScores.min, harryScores.min+harryScores.mid),
-				// total 249, min 124, current 125, movement -1 on previous round
-				generateTestLeaderBoardRanking(3, -1, frankEntry.ID.String(), frankScores.max, frankScores.mid, frankScores.mid+frankScores.max),
+				// total 249, max 125, current 125, movement +1 on previous round
+				generateTestLeaderBoardRanking(1, 1, frankEntry.ID.String(), frankScores.max, frankScores.max, frankScores.mid+frankScores.max),
+				// total 246, max 125, current 121, movement -1 on previous round
+				generateTestLeaderBoardRanking(2, -1, jamieEntry.ID.String(), jamieScores.min, jamieScores.max, jamieScores.max+jamieScores.min),
+				// total 246, max 124, current 124, no movement on previous round
+				generateTestLeaderBoardRanking(3, 0, harryEntry.ID.String(), harryScores.mid, harryScores.mid, harryScores.min+harryScores.mid),
 			},
 			LastUpdated: standingsRounds[3].UpdatedAt,
 		}
@@ -308,12 +308,12 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 		expectedLeaderBoard := &domain.LeaderBoard{
 			RoundNumber: 4,
 			Rankings: []domain.LeaderBoardRanking{
-				// total 368, min 119, current 119, movement +2 on previous round
-				generateTestLeaderBoardRanking(1, 2, frankEntry.ID.String(), frankScores.min, frankScores.min, frankScores.mid+frankScores.max+frankScores.min),
-				// total 369, min 121, current 123, movement -1 on previous round
-				generateTestLeaderBoardRanking(2, -1, jamieEntry.ID.String(), jamieScores.mid, jamieScores.min, jamieScores.max+jamieScores.min+jamieScores.mid),
-				// total 372, min 122, current 126, movement -1 on previous round
-				generateTestLeaderBoardRanking(3, -1, harryEntry.ID.String(), harryScores.max, harryScores.min, harryScores.min+harryScores.mid+harryScores.max),
+				// total 372, max 126, current 126, movement +2 on previous round
+				generateTestLeaderBoardRanking(1, 2, harryEntry.ID.String(), harryScores.max, harryScores.max, harryScores.min+harryScores.mid+harryScores.max),
+				// total 369, max 125, current 123, no movement on previous round
+				generateTestLeaderBoardRanking(2, 0, jamieEntry.ID.String(), jamieScores.mid, jamieScores.max, jamieScores.max+jamieScores.min+jamieScores.mid),
+				// total 368, max 125, current 119, movement -2 on previous round
+				generateTestLeaderBoardRanking(3, -2, frankEntry.ID.String(), frankScores.min, frankScores.max, frankScores.mid+frankScores.max+frankScores.min),
 			},
 			LastUpdated: standingsRounds[4].UpdatedAt,
 		}
@@ -350,7 +350,7 @@ func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T
 }
 
 // generateTestLeaderBoardRanking provides a helper function for generating a leaderboard ranking based on the provided values
-func generateTestLeaderBoardRanking(position, movement int, entryID string, score, minScore, totalScore int) domain.LeaderBoardRanking {
+func generateTestLeaderBoardRanking(position, movement int, entryID string, score, maxScore, totalScore int) domain.LeaderBoardRanking {
 	return domain.LeaderBoardRanking{
 		RankingWithScore: domain.RankingWithScore{
 			Ranking: domain.Ranking{
@@ -359,7 +359,7 @@ func generateTestLeaderBoardRanking(position, movement int, entryID string, scor
 			},
 			Score: score,
 		},
-		MinScore:   minScore,
+		MaxScore:   maxScore,
 		TotalScore: totalScore,
 		Movement:   movement,
 	}

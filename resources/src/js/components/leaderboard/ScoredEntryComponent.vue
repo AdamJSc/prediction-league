@@ -119,7 +119,7 @@
           method: 'get',
           url: `/api/entry/${entryId}/scored/${roundNumber}`
         }).then(function(response) {
-          // get array of rankings objects that pertain to initial round number, with the schema id, position, score, min_score, total_score, movement
+          // get array of rankings objects that pertain to initial round number, with the schema id, position, score, max_score, total_score, movement
           let rankings = response.data.data.scored.rankings
           let roundScore = response.data.data.scored.round_score
           for (let i in rankings) {

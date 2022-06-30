@@ -17,7 +17,7 @@ type LeaderBoard struct {
 // LeaderBoardRanking represents a single ranking on the leaderboard
 type LeaderBoardRanking struct {
 	RankingWithScore
-	MinScore   int `json:"min_score"`
+	MaxScore   int `json:"max_score"`
 	TotalScore int `json:"total_score"`
 	Movement   int `json:"movement"`
 }
