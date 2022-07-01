@@ -324,14 +324,6 @@ func NewTestRetrieveLatestStandingsWorker(
 
 // GenerateScoredEntryPrediction generates a scored entry prediction from the provided entry prediction and standings
 func GenerateScoredEntryPrediction(ep EntryPrediction, s Standings) (*ScoredEntryPrediction, error) {
-	// TODO: feat - deprecate unused methods
-	//standingsRankingCollection := NewRankingCollectionFromRankingWithMetas(s.Rankings)
-
-	//rws, err := CalculateRankingsScores(ep.Rankings, standingsRankingCollection)
-	//if err != nil {
-	//	return nil, err
-	//}
-
 	// TODO: migrate to MatchWeekSubmission entity + deprecate EntryPrediction
 	mwSubmission := newMatchWeekSubmissionFromEntryPredictionAndStandings(ep, s)
 

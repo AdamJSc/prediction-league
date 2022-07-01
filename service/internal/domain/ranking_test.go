@@ -3,12 +3,13 @@ package domain_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/go-cmp/cmp"
 	"math/rand"
 	"prediction-league/service/internal/domain"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 var rankingIDs = []string{"Pitman", "Wilson", "Hayter", "Pugh", "King"}
@@ -102,39 +103,6 @@ func TestNewRankingCollectionFromIDs(t *testing.T) {
 	})
 }
 
-func TestNewRankingCollectionFromRankingWithMetas(t *testing.T) {
-	rwms := []domain.RankingWithMeta{
-		generateRankingWithMeta("id_1", 1, 123),
-		generateRankingWithMeta("id_2", 3, 456),
-		generateRankingWithMeta("id_3", 2, 789),
-	}
-
-	rankingsFromRWM := domain.NewRankingCollectionFromRankingWithMetas(rwms)
-
-	t.Run("creating a new ranking collection from RankingWithMetas must successfully retain the expected positions", func(t *testing.T) {
-		expected := domain.RankingCollection{
-			{
-				ID:       "id_1",
-				Position: 1,
-			},
-			{
-				ID:       "id_2",
-				Position: 3,
-			},
-			{
-				ID:       "id_3",
-				Position: 2,
-			},
-		}
-
-		for i := 0; i < len(rwms); i++ {
-			if !cmp.Equal(rankingsFromRWM[i], expected[i]) {
-				t.Fatal(cmp.Diff(rankingsFromRWM[i], expected[i]))
-			}
-		}
-	})
-}
-
 func TestNewRankingWithScoreCollectionFromIDs(t *testing.T) {
 	var rankings = domain.NewRankingWithScoreCollectionFromIDs(rankingIDs)
 
@@ -186,74 +154,6 @@ func TestRankingCollection_JSON(t *testing.T) {
 			if ranking.Position != idx+1 {
 				expectedGot(t, idx+1, ranking.Position)
 			}
-		}
-	})
-}
-
-func TestCalculateRankingScores(t *testing.T) {
-	basePlanets := []string{"Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"}
-	baseRC := domain.NewRankingCollectionFromIDs(basePlanets)
-
-	t.Run("calculate ranking scores of equivalent collections must produce the expected score", func(t *testing.T) {
-		comparisonPlanets := []string{
-			"Neptune", // should score 7
-			"Uranus",  // should score 5
-			"Saturn",  // should score 3
-			"Venus",   // should score 2
-			"Jupiter", // should score 0
-			"Mars",    // should score 2
-			"Mercury", // should score 6
-			"Earth",   // should score 5
-		}
-		comparisonRC := domain.NewRankingCollectionFromIDs(comparisonPlanets)
-
-		rws, err := domain.CalculateRankingsScores(baseRC, comparisonRC)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		// 7 + 5 + 3 + 2 + 0 + 2 + 6 + 5
-		expectedScore := 30
-		actualScore := rws.GetTotal()
-
-		if expectedScore != actualScore {
-			expectedGot(t, expectedScore, actualScore)
-		}
-	})
-
-	t.Run("calculate ranking scores of non-equivalent collections must fail", func(t *testing.T) {
-		// mismatched length
-		comparisonPlanets := append(basePlanets, "extra element")
-		comparisonRCMismatchedLength := domain.NewRankingCollectionFromIDs(comparisonPlanets)
-
-		expectedErr := fmt.Errorf("mismatched baseIDs length: base %d, comparison %d", len(basePlanets), len(comparisonPlanets))
-		_, err := domain.CalculateRankingsScores(baseRC, comparisonRCMismatchedLength)
-		if expectedErr.Error() != err.Error() {
-			expectedGot(t, expectedErr.Error(), err.Error())
-		}
-
-		// comparison collection has an id that base collection does not
-		discrepantID := "Not A Planet"
-		comparisonPlanets = basePlanets[:len(basePlanets)-1]        // minus last base element
-		comparisonPlanets = append(comparisonPlanets, discrepantID) // add discrepant id to comparison
-		comparisonRCWithDiscrepantID := domain.NewRankingCollectionFromIDs(comparisonPlanets)
-
-		expectedErr = fmt.Errorf("base collection does not have id: '%s'", discrepantID)
-		_, err = domain.CalculateRankingsScores(baseRC, comparisonRCWithDiscrepantID)
-		if expectedErr.Error() != err.Error() {
-			expectedGot(t, expectedErr.Error(), err.Error())
-		}
-
-		// comparison collection has a duplicate id that base collection does not
-		duplicateID := basePlanets[0]
-		comparisonPlanets = basePlanets
-		comparisonPlanets[len(comparisonPlanets)-1] = duplicateID // replace last slice element with duplicate id
-		comparisonRCWithDuplicateID := domain.NewRankingCollectionFromIDs(comparisonPlanets)
-
-		expectedErr = fmt.Errorf("mismatched counts: id '%s' base collection count = 1, collection count = 2", duplicateID)
-		_, err = domain.CalculateRankingsScores(baseRC, comparisonRCWithDuplicateID)
-		if expectedErr.Error() != err.Error() {
-			expectedGot(t, expectedErr.Error(), err.Error())
 		}
 	})
 }
@@ -331,14 +231,4 @@ func TestGetChangedRankingIDs(t *testing.T) {
 			t.Fatalf("want ids %+v, got %+v, diff: %s", tc.wantIDs, gotIDs, diff)
 		}
 	}
-}
-
-func generateRankingWithMeta(id string, pos int, metaVal int) domain.RankingWithMeta {
-	var rwm = domain.NewRankingWithMeta()
-
-	rwm.ID = id
-	rwm.Position = pos
-	rwm.MetaData["hello"] = metaVal
-
-	return rwm
 }
