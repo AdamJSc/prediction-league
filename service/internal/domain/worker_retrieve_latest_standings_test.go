@@ -71,7 +71,7 @@ func TestRetrieveLatestStandingsWorker_ProcessExistingStandings(t *testing.T) {
 			SeasonID:    "season_id",
 			RoundNumber: 123,
 			Rankings: []domain.RankingWithMeta{
-				{MetaData: map[string]int{domain.MetaKeyPoints: 1234}},
+				{MetaData: map[string]int{domain.MetaKeyPlayedGames: 1234}},
 			},
 			CreatedAt: now,
 		}
@@ -81,7 +81,7 @@ func TestRetrieveLatestStandingsWorker_ProcessExistingStandings(t *testing.T) {
 		}
 
 		clientStnd := domain.Standings{Rankings: []domain.RankingWithMeta{
-			{MetaData: map[string]int{domain.MetaKeyPoints: 5678}},
+			{MetaData: map[string]int{domain.MetaKeyPlayedGames: 5678}},
 		}}
 
 		wantStnd := existStnd

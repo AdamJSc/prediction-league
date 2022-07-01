@@ -108,10 +108,10 @@ type tableElem struct {
 		Name string `json:"name"`
 	} `json:"team"`
 	PlayedGames    int `json:"playedGames"`
-	GoalsFor       int `json:"goalsFor"`
-	GoalsAgainst   int `json:"goalsAgainst"`
-	GoalDifference int `json:"goalDifference"`
-	Points         int `json:"points"`
+	GoalsFor       int `json:"goalsFor"`       // legacy
+	GoalsAgainst   int `json:"goalsAgainst"`   // legacy
+	GoalDifference int `json:"goalDifference"` // legacy
+	Points         int `json:"points"`         // legacy
 }
 
 // toRankingWithMeta transforms a tableElem object to a more abstracted RankingWithMeta object
@@ -126,10 +126,6 @@ func (t *tableElem) toRankingWithMeta(tc domain.TeamCollection) (domain.RankingW
 	r.ID = team.ID
 	r.Position = t.Position
 	r.MetaData[domain.MetaKeyPlayedGames] = t.PlayedGames
-	r.MetaData[domain.MetaKeyPoints] = t.Points
-	r.MetaData[domain.MetaKeyGoalsFor] = t.GoalsFor
-	r.MetaData[domain.MetaKeyGoalsAgainst] = t.GoalsAgainst
-	r.MetaData[domain.MetaKeyGoalDifference] = t.GoalDifference
 
 	return r, nil
 }
