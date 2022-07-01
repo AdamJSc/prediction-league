@@ -8,12 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Amend scoring mechanism:
-    - Players still acquire 1 point for each position they have placed each team incorrectly in the rankings.
-    - However, instead of this tally representing the player's score, each player now starts the Match Week with 100
-      points and their calculated tally is **deducted** from this (essentially taking a points "hit").
+- Amended scoring mechanism:
+    - Players still acquire 1 point for every position they have placed each team incorrectly in the rankings.
+    - However, instead of this tally representing the player's full Match Week score, each player now starts the
+      Match Week with 100 points and their calculated tally is **deducted** from this starting value
+      (essentially taking a points "hit").
     - The aim of the game is now to accrue the **MOST** points across a season, not the fewest.
-- Invert leaderboard logic to reflect new aim of the game outlined above.
+- Inverted leaderboard logic to reflect new aim of the game outlined above.
 - General tidy up (remove unused constants/symbols)
 
 // TODO: feat - update CHANGELOG
