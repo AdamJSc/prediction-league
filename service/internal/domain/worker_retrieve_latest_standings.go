@@ -350,6 +350,8 @@ func GenerateScoredEntryPrediction(ep EntryPrediction, s Standings) (*ScoredEntr
 	return &sep, nil
 }
 
+// TODO: feat - add tests for ValidateAndSortStandings()
+
 // ValidateAndSortStandings sorts and validates the provided standings
 func ValidateAndSortStandings(stnd *Standings, tc TeamCollection) error {
 	if stnd == nil {
