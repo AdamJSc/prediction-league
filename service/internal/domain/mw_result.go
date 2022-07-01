@@ -11,19 +11,19 @@ import (
 
 // MatchWeekResult represents the scored result of the associated match week submission
 type MatchWeekResult struct {
-	MatchWeekSubmissionID uuid.UUID            // id of the associated match week submission (one result per submission)
-	TeamRankings          []TeamRankingWithHit // represents the team rankings of the associated match week submission, along with actual position of each associated team and each points "hit"
-	Score                 int64                // overall score attributed to the match week result, after all modifiers have been applied
-	Modifiers             []ModifierSummary    // summary of all modifiers used to affect the score (replaying the value of these modifiers should provide us with the same overall score each time)
-	CreatedAt             time.Time            // date that result was created
-	UpdatedAt             *time.Time           // date that result was most recently updated, if applicable
+	MatchWeekSubmissionID uuid.UUID           // id of the associated match week submission (one result per submission)
+	TeamRankings          []ResultTeamRanking // represents the team rankings of the associated match week submission, along with actual standings position and points "hit" for each team
+	Score                 int64               // overall score attributed to the match week result, after all modifiers have been applied
+	Modifiers             []ModifierSummary   // summary of all modifiers used to affect the score (replaying the value of these modifiers should provide us with the same overall score each time)
+	CreatedAt             time.Time           // date that result was created
+	UpdatedAt             *time.Time          // date that result was most recently updated, if applicable
 }
 
-// TeamRankingWithHit associates a team ranking with the values calculated from an associated mw standings object
-type TeamRankingWithHit struct {
-	SubmittedRanking TeamRanking // ranking associated with the original mw submission
-	StandingsPos     uint16      // team's position within an associated mw standings object
-	Hit              int64       // resulting points "hit" (absolute difference between the ranking position and standings position)
+// ResultTeamRanking associates a team ranking with the position and "hit" value calculated from an associated mw standings object
+type ResultTeamRanking struct {
+	TeamRanking         // team id + position from the original mw submission
+	StandingsPos uint16 // team's "actual" position within the standings
+	Hit          int64  // resulting points "hit" (absolute difference between the team's submitted ranking position and standings position)
 }
 
 // ModifierSummary represents the modifiers applied to a particular mw result
@@ -84,12 +84,12 @@ func TeamRankingsHitModifier(submission *MatchWeekSubmission, standings *MatchWe
 			return nil
 		}
 
-		rankingsWithHits, totalHits, err := getRankingsWithHits(submission, standings)
+		resultRankings, totalHits, err := getResultTeamRankings(submission, standings)
 		if err != nil {
 			return err
 		}
 
-		result.TeamRankings = rankingsWithHits
+		result.TeamRankings = resultRankings
 		result.Score = result.Score - totalHits // deduct total hits from current score
 		result.Modifiers = append(result.Modifiers, ModifierSummary{
 			Code:  TeamRankingsHitModifierCode,
@@ -100,9 +100,9 @@ func TeamRankingsHitModifier(submission *MatchWeekSubmission, standings *MatchWe
 	}
 }
 
-// getRankingsWithHits returns each of the submission's team rankings enriched with a "hit" value
+// getResultTeamRankings returns each of the submission's team rankings enriched with a "hit" value
 // (the number of points to deduct from the overall score) based on the provided standings
-func getRankingsWithHits(submission *MatchWeekSubmission, standings *MatchWeekStandings) ([]TeamRankingWithHit, int64, error) {
+func getResultTeamRankings(submission *MatchWeekSubmission, standings *MatchWeekStandings) ([]ResultTeamRanking, int64, error) {
 	// ensure that both sets of rankings have the same number of entries
 	submissionCount := len(submission.TeamRankings)
 	standingsCount := len(standings.TeamRankings)
@@ -111,27 +111,29 @@ func getRankingsWithHits(submission *MatchWeekSubmission, standings *MatchWeekSt
 	}
 
 	// check both sets of rankings for duplicates
-	if err := checkForDuplicateTeamRankings(submission.TeamRankings); err != nil {
+	submissionRankings := submission.TeamRankings
+	if err := checkForDuplicateTeamRankings(submissionRankings); err != nil {
 		return nil, 0, fmt.Errorf("submission team rankings: %w", err)
 	}
-	if err := checkForDuplicateTeamRankings(standings.TeamRankings); err != nil {
+	standingsRankings := getTeamRankingsfromStandingsTeamRankings(standings.TeamRankings)
+	if err := checkForDuplicateTeamRankings(standingsRankings); err != nil {
 		return nil, 0, fmt.Errorf("standings team rankings: %w", err)
 	}
 
 	// map each standings ranking by its team id (so we can access them directly while cycling through the submission rankings)
-	standRankMap := make(map[string]TeamRanking)
+	standRankMap := make(map[string]StandingsTeamRanking)
 	for _, standRank := range standings.TeamRankings {
 		standRankMap[standRank.TeamID] = standRank
 	}
 
 	missingTeamIDs := make([]string, 0)
-	rankingsWithHits := make([]TeamRankingWithHit, 0)
+	resultRankings := make([]ResultTeamRanking, 0)
 	var totalHits int64 = 0
 
 	// populate hits for submission rankings based on standings rankings
 	for _, subRank := range submission.TeamRankings {
-		rwh := TeamRankingWithHit{
-			SubmittedRanking: subRank,
+		resultRank := ResultTeamRanking{
+			TeamRanking: subRank,
 		}
 
 		// get the standings ranking for the current submission ranking team id
@@ -144,22 +146,22 @@ func getRankingsWithHits(submission *MatchWeekSubmission, standings *MatchWeekSt
 
 		subRankHit := calculateHit(subRank, standRank)
 
-		rwh.StandingsPos = standRank.Position
-		rwh.Hit = subRankHit
+		resultRank.StandingsPos = standRank.Position
+		resultRank.Hit = subRankHit
 		totalHits = totalHits + subRankHit
 
-		rankingsWithHits = append(rankingsWithHits, rwh)
+		resultRankings = append(resultRankings, resultRank)
 	}
 
 	if len(missingTeamIDs) > 0 {
 		return nil, 0, fmt.Errorf("team ids missing from standings rankings: '%s'", strings.Join(missingTeamIDs, "', '"))
 	}
 
-	return rankingsWithHits, totalHits, nil
+	return resultRankings, totalHits, nil
 }
 
 // calculateHit returns the difference between the positions of the two provided team rankings as a positive integer
-func calculateHit(submissionRanking, standingsRanking TeamRanking) int64 {
+func calculateHit(submissionRanking TeamRanking, standingsRanking StandingsTeamRanking) int64 {
 	diff := int16(submissionRanking.Position) - int16(standingsRanking.Position)
 	abs := math.Abs(float64(diff))
 	return int64(abs)

@@ -138,14 +138,14 @@ func TestTeamRankingsHitModifier(t *testing.T) {
 		{Position: 7, TeamID: branksomeUnitedTeamID},
 	}
 
-	okStandingsRankings := []domain.TeamRanking{
-		{Position: 1, TeamID: branksomeUnitedTeamID},    // hit = 6 (submission = 7)
-		{Position: 2, TeamID: stJohnsRangersTeamID},     // hit = 4 (submission = 6)
-		{Position: 3, TeamID: bournemouthPoppiesTeamID}, // hit = 2 (submission = 5)
-		{Position: 4, TeamID: hamworthyUnitedTeamID},    // hit = 0 (submission = 4)
-		{Position: 5, TeamID: wimborneTownTeamID},       // hit = 3 (submission = 2)
-		{Position: 6, TeamID: pooleTownTeamID},          // hit = 5 (submission = 1)
-		{Position: 7, TeamID: dorchesterTownTeamID},     // hit = 4 (submission = 3)
+	okStandingsRankings := []domain.StandingsTeamRanking{
+		{TeamRanking: domain.TeamRanking{Position: 1, TeamID: branksomeUnitedTeamID}},    // hit = 6 (submission = 7)
+		{TeamRanking: domain.TeamRanking{Position: 2, TeamID: stJohnsRangersTeamID}},     // hit = 4 (submission = 6)
+		{TeamRanking: domain.TeamRanking{Position: 3, TeamID: bournemouthPoppiesTeamID}}, // hit = 2 (submission = 5)
+		{TeamRanking: domain.TeamRanking{Position: 4, TeamID: hamworthyUnitedTeamID}},    // hit = 0 (submission = 4)
+		{TeamRanking: domain.TeamRanking{Position: 5, TeamID: wimborneTownTeamID}},       // hit = 3 (submission = 2)
+		{TeamRanking: domain.TeamRanking{Position: 6, TeamID: pooleTownTeamID}},          // hit = 5 (submission = 1)
+		{TeamRanking: domain.TeamRanking{Position: 7, TeamID: dorchesterTownTeamID}},     // hit = 4 (submission = 3)
 	}
 
 	t.Run("valid submission and standings must produce the expected match week result", func(t *testing.T) {
@@ -158,41 +158,41 @@ func TestTeamRankingsHitModifier(t *testing.T) {
 		}
 
 		wantMWResult := &domain.MatchWeekResult{
-			TeamRankings: []domain.TeamRankingWithHit{
+			TeamRankings: []domain.ResultTeamRanking{
 				{
-					SubmittedRanking: domain.TeamRanking{Position: 1, TeamID: pooleTownTeamID},
-					StandingsPos:     6,
-					Hit:              5,
+					TeamRanking:  domain.TeamRanking{Position: 1, TeamID: pooleTownTeamID},
+					StandingsPos: 6,
+					Hit:          5,
 				},
 				{
-					SubmittedRanking: domain.TeamRanking{Position: 2, TeamID: wimborneTownTeamID},
-					StandingsPos:     5,
-					Hit:              3,
+					TeamRanking:  domain.TeamRanking{Position: 2, TeamID: wimborneTownTeamID},
+					StandingsPos: 5,
+					Hit:          3,
 				},
 				{
-					SubmittedRanking: domain.TeamRanking{Position: 3, TeamID: dorchesterTownTeamID},
-					StandingsPos:     7,
-					Hit:              4,
+					TeamRanking:  domain.TeamRanking{Position: 3, TeamID: dorchesterTownTeamID},
+					StandingsPos: 7,
+					Hit:          4,
 				},
 				{
-					SubmittedRanking: domain.TeamRanking{Position: 4, TeamID: hamworthyUnitedTeamID},
-					StandingsPos:     4,
-					Hit:              0,
+					TeamRanking:  domain.TeamRanking{Position: 4, TeamID: hamworthyUnitedTeamID},
+					StandingsPos: 4,
+					Hit:          0,
 				},
 				{
-					SubmittedRanking: domain.TeamRanking{Position: 5, TeamID: bournemouthPoppiesTeamID},
-					StandingsPos:     3,
-					Hit:              2,
+					TeamRanking:  domain.TeamRanking{Position: 5, TeamID: bournemouthPoppiesTeamID},
+					StandingsPos: 3,
+					Hit:          2,
 				},
 				{
-					SubmittedRanking: domain.TeamRanking{Position: 6, TeamID: stJohnsRangersTeamID},
-					StandingsPos:     2,
-					Hit:              4,
+					TeamRanking:  domain.TeamRanking{Position: 6, TeamID: stJohnsRangersTeamID},
+					StandingsPos: 2,
+					Hit:          4,
 				},
 				{
-					SubmittedRanking: domain.TeamRanking{Position: 7, TeamID: branksomeUnitedTeamID},
-					StandingsPos:     1,
-					Hit:              6,
+					TeamRanking:  domain.TeamRanking{Position: 7, TeamID: branksomeUnitedTeamID},
+					StandingsPos: 1,
+					Hit:          6,
 				},
 			},
 			Score: -24,
@@ -266,14 +266,14 @@ func TestTeamRankingsHitModifier(t *testing.T) {
 	t.Run("duplicate team ids in standings rankings must produce expected error", func(t *testing.T) {
 		modifier := domain.TeamRankingsHitModifier(
 			&domain.MatchWeekSubmission{TeamRankings: okSubmissionRankings},
-			&domain.MatchWeekStandings{TeamRankings: []domain.TeamRanking{
-				{Position: 1, TeamID: pooleTownTeamID},
-				{Position: 2, TeamID: wimborneTownTeamID},
-				{Position: 3, TeamID: hamworthyUnitedTeamID},
-				{Position: 4, TeamID: dorchesterTownTeamID},
-				{Position: 5, TeamID: pooleTownTeamID},
-				{Position: 6, TeamID: wimborneTownTeamID},
-				{Position: 7, TeamID: pooleTownTeamID},
+			&domain.MatchWeekStandings{TeamRankings: []domain.StandingsTeamRanking{
+				{TeamRanking: domain.TeamRanking{Position: 1, TeamID: pooleTownTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 2, TeamID: wimborneTownTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 3, TeamID: hamworthyUnitedTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 4, TeamID: dorchesterTownTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 5, TeamID: pooleTownTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 6, TeamID: wimborneTownTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 7, TeamID: pooleTownTeamID}},
 			}},
 		)
 
@@ -293,14 +293,14 @@ func TestTeamRankingsHitModifier(t *testing.T) {
 				{Position: 6, TeamID: stJohnsRangersTeamID},
 				{Position: 7, TeamID: "DARTFORD_TIDDLYWINKS_MASSIF"},
 			}},
-			&domain.MatchWeekStandings{TeamRankings: []domain.TeamRanking{
-				{Position: 1, TeamID: pooleTownTeamID},
-				{Position: 2, TeamID: wimborneTownTeamID},
-				{Position: 3, TeamID: dorchesterTownTeamID},
-				{Position: 4, TeamID: hamworthyUnitedTeamID},
-				{Position: 5, TeamID: bournemouthPoppiesTeamID},
-				{Position: 6, TeamID: stJohnsRangersTeamID},
-				{Position: 7, TeamID: branksomeUnitedTeamID},
+			&domain.MatchWeekStandings{TeamRankings: []domain.StandingsTeamRanking{
+				{TeamRanking: domain.TeamRanking{Position: 1, TeamID: pooleTownTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 2, TeamID: wimborneTownTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 3, TeamID: dorchesterTownTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 4, TeamID: hamworthyUnitedTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 5, TeamID: bournemouthPoppiesTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 6, TeamID: stJohnsRangersTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 7, TeamID: branksomeUnitedTeamID}},
 			}},
 		)
 

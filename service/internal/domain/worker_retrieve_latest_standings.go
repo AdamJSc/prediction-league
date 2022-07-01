@@ -351,7 +351,7 @@ func GenerateScoredEntryPrediction(ep EntryPrediction, s Standings) (*ScoredEntr
 	sep := ScoredEntryPrediction{
 		EntryPredictionID: ep.ID,
 		StandingsID:       s.ID,
-		Rankings:          newRankingsWithScoreFromTeamRankingsWithHit(mwResult.TeamRankings),
+		Rankings:          newRankingsWithScoreFromResultTeamRankings(mwResult.TeamRankings),
 		Score:             int(mwResult.Score),
 	}
 

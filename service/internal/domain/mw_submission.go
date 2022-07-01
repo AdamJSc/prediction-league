@@ -25,6 +25,7 @@ type TeamRanking struct {
 	TeamID   string // team's id
 }
 
+// newMatchWeekSubmissionFromEntryPredictionAndStandings converts legacy entities to newer domain entity
 func newMatchWeekSubmissionFromEntryPredictionAndStandings(ep EntryPrediction, s Standings) *MatchWeekSubmission {
 	return &MatchWeekSubmission{
 		ID:              ep.ID,
@@ -36,6 +37,7 @@ func newMatchWeekSubmissionFromEntryPredictionAndStandings(ep EntryPrediction, s
 	}
 }
 
+// newTeamRankingsFromRankingCollection converts legacy entity to newer domain entity
 func newTeamRankingsFromRankingCollection(rc RankingCollection) []TeamRanking {
 	rankings := make([]TeamRanking, 0)
 
@@ -49,30 +51,36 @@ func newTeamRankingsFromRankingCollection(rc RankingCollection) []TeamRanking {
 	return rankings
 }
 
-func newTeamRankingsFromRankingsWithMeta(rwms []RankingWithMeta) []TeamRanking {
-	rankings := make([]TeamRanking, 0)
+// newStandingsTeamRankingsFromRankingsWithMeta converts legacy entity to newer domain entity
+func newStandingsTeamRankingsFromRankingsWithMeta(rwms []RankingWithMeta) []StandingsTeamRanking {
+	rankings := make([]StandingsTeamRanking, 0)
 
-	// TODO: feat - retain number of games played on TeamRankings belonging to MatchWeekStandings
 	for _, rwm := range rwms {
-		rankings = append(rankings, TeamRanking{
-			Position: uint16(rwm.Position),
-			TeamID:   rwm.ID,
+		gamesPlayed := rwm.MetaData[MetaKeyPlayedGames]
+
+		rankings = append(rankings, StandingsTeamRanking{
+			TeamRanking: TeamRanking{
+				Position: uint16(rwm.Position),
+				TeamID:   rwm.ID,
+			},
+			GamesPlayed: uint16(gamesPlayed),
 		})
 	}
 
 	return rankings
 }
 
-func newRankingsWithScoreFromTeamRankingsWithHit(rankingsWithHit []TeamRankingWithHit) []RankingWithScore {
+// newRankingsWithScoreFromResultTeamRankings converts newer domain entity to legacy entity to fulfil business logic proxy
+func newRankingsWithScoreFromResultTeamRankings(resultRankings []ResultTeamRanking) []RankingWithScore {
 	rankingsWithScore := make([]RankingWithScore, 0)
 
-	for _, rwh := range rankingsWithHit {
+	for _, resultRank := range resultRankings {
 		rankingsWithScore = append(rankingsWithScore, RankingWithScore{
 			Ranking: Ranking{
-				ID:       rwh.SubmittedRanking.TeamID,
-				Position: int(rwh.SubmittedRanking.Position),
+				ID:       resultRank.TeamRanking.TeamID,
+				Position: int(resultRank.TeamRanking.Position),
 			},
-			Score: int(rwh.Hit),
+			Score: int(resultRank.Hit),
 		})
 	}
 
