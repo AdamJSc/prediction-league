@@ -22,7 +22,7 @@ import (
 
 const (
 	// numberOfMatchWeeks to generate seed data for
-	numberOfMatchWeeks uint8 = 10
+	numberOfMatchWeeks = 10
 
 	// realmName to use when generating seeded entries
 	realmName = "localhost"
@@ -123,12 +123,18 @@ func run() error {
 		return fmt.Errorf("cannot instantiate new entry prediction repo: %w", err)
 	}
 
+	standingsRepo, err := mysqldb.NewStandingsRepo(db)
+	if err != nil {
+		return fmt.Errorf("cannot instantiate new standings repo: %w", err)
+	}
+
 	// run job
 	j := &job{
 		realmName:           realmName,
 		season:              season,
 		entryRepo:           entryRepo,
 		entryPredictionRepo: entryPredictionRepo,
+		standingsRepo:       standingsRepo,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -146,35 +152,59 @@ type job struct {
 	season              domain.Season
 	entryRepo           *mysqldb.EntryRepo
 	entryPredictionRepo *mysqldb.EntryPredictionRepo
+	standingsRepo       *mysqldb.StandingsRepo
 }
 
 func (j *job) process(ctx context.Context) error {
+	numberOfPredictions := numberOfMatchWeeks
+	timestamp := baseTimestamp
+
 	// generate entries
 	entries := make([]*domain.Entry, 0)
 	for _, nickName := range entrantNicknames {
 		entries = append(entries, j.generateEntry(entryParams{
 			entrantNickname:     nickName,
-			timestamp:           baseTimestamp,
-			numberOfPredictions: numberOfMatchWeeks,
+			timestamp:           timestamp,
+			numberOfPredictions: numberOfPredictions,
 		}))
 	}
 
+	// generate standings
+	standingsSlice := make([]*domain.Standings, 0)
+	for i := 1; i <= numberOfPredictions; i++ {
+		standingsTimestamp := timestamp.Add((time.Duration(i) * weekDuration) + time.Second) // one second after each entry prediction
+		standingsSlice = append(standingsSlice, j.generateStandings(standingsParams{
+			roundNumber: i,
+			timestamp:   standingsTimestamp,
+		}))
+	}
+
+	// TODO: feat - collate generated entry predictions and standings by match week / round number
+	// TODO: feat - generate scored entry predictions for each round number
+
 	// insert entries and entry predictions
-	for _, entry := range entries {
+	for eIdx, entry := range entries {
 		// insert entry
 		if err := j.entryRepo.Insert(ctx, entry); err != nil {
-			return fmt.Errorf("cannot generate entry: %w", err)
+			return fmt.Errorf("cannot insert entry: idx %d: %w", eIdx, err)
 		}
 
-		for _, entryPrediction := range entry.EntryPredictions {
+		for epIdx, entryPrediction := range entry.EntryPredictions {
 			// insert entry prediction
 			if err := j.entryPredictionRepo.Insert(ctx, &entryPrediction); err != nil {
-				return fmt.Errorf("cannot generate entry prediction: %w", err)
+				return fmt.Errorf("cannot insert entry prediction: idx %d: %w", epIdx, err)
 			}
 		}
 	}
 
-	log.Printf("%#v", entries)
+	// insert standings
+	for sIdx, standings := range standingsSlice {
+		if err := j.standingsRepo.Insert(ctx, standings); err != nil {
+			return fmt.Errorf("cannot insert standings: idx %d: %w", sIdx, err)
+		}
+	}
+
+	// TODO: feat - insert generated scored entry predictions
 
 	return nil
 }
@@ -182,7 +212,7 @@ func (j *job) process(ctx context.Context) error {
 type entryParams struct {
 	entrantNickname     string
 	timestamp           time.Time
-	numberOfPredictions uint8
+	numberOfPredictions int
 }
 
 func (j *job) generateEntry(p entryParams) *domain.Entry {
@@ -198,7 +228,7 @@ func (j *job) generateEntry(p entryParams) *domain.Entry {
 	entryID := uuid.New()
 
 	entryPredictions := make([]domain.EntryPrediction, 0)
-	for i := uint8(1); i <= p.numberOfPredictions; i++ {
+	for i := 1; i <= p.numberOfPredictions; i++ {
 		predictionTimestamp := p.timestamp.Add(time.Duration(i) * weekDuration) // provided timestamp + one week per iteration
 		entryPredictions = append(entryPredictions, j.generateEntryPrediction(entryPredictionParams{
 			entryID:   entryID,
@@ -248,6 +278,42 @@ func (j *job) generateFullRandomRankingCollection() domain.RankingCollection {
 		collection = append(collection, domain.Ranking{
 			ID:       teamID,
 			Position: idx + 1,
+		})
+	}
+
+	return collection
+}
+
+type standingsParams struct {
+	roundNumber int
+	timestamp   time.Time
+}
+
+func (j *job) generateStandings(p standingsParams) *domain.Standings {
+	return &domain.Standings{
+		ID:          uuid.New(),
+		SeasonID:    j.season.ID,
+		RoundNumber: p.roundNumber,
+		Rankings:    j.generateFullRandomRankingsWithMeta(),
+		Finalised:   true,
+		CreatedAt:   p.timestamp,
+	}
+}
+
+func (j *job) generateFullRandomRankingsWithMeta() []domain.RankingWithMeta {
+	collection := make([]domain.RankingWithMeta, 0)
+
+	topSix := randomiseStringsOrder(topSixTeamIDs)
+	remainder := stringsDiff(j.season.TeamIDs, topSix)
+	remainder = randomiseStringsOrder(remainder)
+	concatTeamIDs := append(topSix, remainder...)
+
+	for idx, teamID := range concatTeamIDs {
+		collection = append(collection, domain.RankingWithMeta{
+			Ranking: domain.Ranking{
+				ID:       teamID,
+				Position: idx + 1,
+			},
 		})
 	}
 
