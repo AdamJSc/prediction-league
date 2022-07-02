@@ -9,10 +9,11 @@ import (
 )
 
 const (
-	// fakeSeasonID defines the ID of the fake Season for running on localhost
-	fakeSeasonID = "FakeSeason"
+	// FakeSeasonID defines the ID of the fake Season for running on localhost
+	FakeSeasonID = "FakeSeason"
+
 	// fakeSeasonKey defines the key of the real-world Season to replicate as fake season
-	fakeSeasonKey = "201920_1"
+	fakeSeasonKey = "202122_1"
 )
 
 // GetTeamCollection returns the required TeamCollection
@@ -537,8 +538,8 @@ func GetSeasonCollection() (SeasonCollection, error) {
 	}
 
 	// define fake season
-	sc[fakeSeasonID] = Season{
-		ID:       fakeSeasonID,
+	sc[FakeSeasonID] = Season{
+		ID:       FakeSeasonID,
 		ClientID: nil, // will not invoke requests to client when running in retrieve latest standings job
 		Name:     "Localhost Season",
 		Live: TimeFrame{
