@@ -3,6 +3,7 @@ package domain
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 	"time"
 
@@ -84,6 +85,7 @@ func TeamRankingsHitModifier(submission *MatchWeekSubmission, standings *MatchWe
 			return nil
 		}
 
+		// calculate "hit" values for each submission ranking
 		resultRankings, totalHits, err := getResultTeamRankings(submission, standings)
 		if err != nil {
 			return err
@@ -110,15 +112,29 @@ func getResultTeamRankings(submission *MatchWeekSubmission, standings *MatchWeek
 		return nil, 0, fmt.Errorf("rankings count mismatch: submission %d: standings %d", submissionCount, standingsCount)
 	}
 
+	// TODO: move de-duplicating of submission team rankings to entity creation
 	// check both sets of rankings for duplicates
 	submissionRankings := submission.TeamRankings
 	if err := checkForDuplicateTeamRankings(submissionRankings); err != nil {
 		return nil, 0, fmt.Errorf("submission team rankings: %w", err)
 	}
+
+	// TODO: move de-duplicating of standings team rankings to entity creation
 	standingsRankings := getTeamRankingsfromStandingsTeamRankings(standings.TeamRankings)
 	if err := checkForDuplicateTeamRankings(standingsRankings); err != nil {
 		return nil, 0, fmt.Errorf("standings team rankings: %w", err)
 	}
+
+	// TODO: move sorting of submission team rankings to entity creation
+	// ensure both sets of rankings are sorted by position ascending
+	sort.SliceStable(submission.TeamRankings, func(i, j int) bool {
+		return submission.TeamRankings[i].Position < submission.TeamRankings[j].Position
+	})
+
+	// TODO: move sorting of standings team rankings to entity creation
+	sort.SliceStable(standings.TeamRankings, func(i, j int) bool {
+		return standings.TeamRankings[i].Position < standings.TeamRankings[j].Position
+	})
 
 	// map each standings ranking by its team id (so we can access them directly while cycling through the submission rankings)
 	standRankMap := make(map[string]StandingsTeamRanking)

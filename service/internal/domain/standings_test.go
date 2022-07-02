@@ -2,12 +2,13 @@ package domain_test
 
 import (
 	"errors"
-	gocmp "github.com/google/go-cmp/cmp"
-	"github.com/google/uuid"
-	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
 	"testing"
 	"time"
+
+	gocmp "github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
+	"gotest.tools/assert/cmp"
 )
 
 func TestNewStandingsAgent(t *testing.T) {
@@ -152,7 +153,89 @@ func TestStandingsAgent_UpdateStandings(t *testing.T) {
 
 // TODO - tests for StandingsAgent.RetrieveStandingsIfNotFinalised (copy RetrieveStandingsBySeasonAndRoundNumber)
 
-// TODO - tests for ValidateAndSortStandings
+func TestValidateAndSortStandings(t *testing.T) {
+	t.Run("team collection with no missing teams and unsorted standings must produce the expected result", func(t *testing.T) {
+		standings := &domain.Standings{
+			Rankings: []domain.RankingWithMeta{
+				// positions out of sequence must be sorted by test method
+				{
+					Ranking: domain.Ranking{ID: pooleTownTeamID, Position: 3},
+				},
+				{
+					Ranking: domain.Ranking{ID: wimborneTownTeamID, Position: 1},
+				},
+				{
+					Ranking: domain.Ranking{ID: hamworthyUnitedTeamID, Position: 4},
+				},
+				{
+					Ranking: domain.Ranking{ID: dorchesterTownTeamID, Position: 2},
+				},
+			},
+		}
+
+		// all teams appear within team collection so validation must pass
+		teamCollection := domain.TeamCollection{
+			dorchesterTownTeamID:  domain.Team{},
+			pooleTownTeamID:       domain.Team{},
+			hamworthyUnitedTeamID: domain.Team{},
+			wimborneTownTeamID:    domain.Team{},
+		}
+
+		wantStandings := &domain.Standings{
+			Rankings: []domain.RankingWithMeta{
+				// sorted by position ascending
+				{
+					Ranking: domain.Ranking{ID: wimborneTownTeamID, Position: 1},
+				},
+				{
+					Ranking: domain.Ranking{ID: dorchesterTownTeamID, Position: 2},
+				},
+				{
+					Ranking: domain.Ranking{ID: pooleTownTeamID, Position: 3},
+				},
+				{
+					Ranking: domain.Ranking{ID: hamworthyUnitedTeamID, Position: 4},
+				},
+			},
+		}
+
+		if err := domain.ValidateAndSortStandings(standings, teamCollection); err != nil {
+			t.Fatal(err)
+		}
+
+		cmpDiff(t, "validated and sorted standings", wantStandings, standings)
+	})
+
+	t.Run("team collection with missing team must produce the expected error", func(t *testing.T) {
+		standings := &domain.Standings{
+			Rankings: []domain.RankingWithMeta{
+				{
+					Ranking: domain.Ranking{ID: pooleTownTeamID, Position: 3},
+				},
+				{
+					Ranking: domain.Ranking{ID: wimborneTownTeamID, Position: 1},
+				},
+				{
+					Ranking: domain.Ranking{ID: hamworthyUnitedTeamID, Position: 4},
+				},
+				{
+					Ranking: domain.Ranking{ID: dorchesterTownTeamID, Position: 2},
+				},
+			},
+		}
+
+		teamCollection := domain.TeamCollection{
+			// dorchester are missing from team collection
+			pooleTownTeamID:       domain.Team{},
+			hamworthyUnitedTeamID: domain.Team{},
+			wimborneTownTeamID:    domain.Team{},
+		}
+
+		wantErrType := domain.NotFoundError{}
+		gotErr := domain.ValidateAndSortStandings(standings, teamCollection)
+		cmpErrorType(t, wantErrType, gotErr)
+	})
+}
 
 func TestStandingsAgent_RetrieveStandingsByID(t *testing.T) {
 	defer truncate(t)

@@ -2,8 +2,11 @@ package domain_test
 
 import (
 	"errors"
+	"math/rand"
 	"prediction-league/service/internal/domain"
+	"sort"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
@@ -18,6 +21,8 @@ const (
 	stJohnsRangersTeamID     = "SJRFC"
 	wimborneTownTeamID       = "WTFC"
 )
+
+var randomiser = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func TestNewMatchWeekResult(t *testing.T) {
 	id := mustGetUUIDFromString(t, `12345678-1234-1234-1234-123456789012`)
@@ -150,11 +155,11 @@ func TestTeamRankingsHitModifier(t *testing.T) {
 
 	t.Run("valid submission and standings must produce the expected match week result", func(t *testing.T) {
 		submission := &domain.MatchWeekSubmission{
-			TeamRankings: okSubmissionRankings,
+			TeamRankings: randomiseTeamRankings(okSubmissionRankings), // test method must sort these by position ascending
 		}
 
 		standings := &domain.MatchWeekStandings{
-			TeamRankings: okStandingsRankings,
+			TeamRankings: randomiseStandingsTeamRankings(okStandingsRankings), // test method must sort these by position ascending
 		}
 
 		wantMWResult := &domain.MatchWeekResult{
@@ -327,6 +332,37 @@ func uuidFromString(input string) uuidFunc {
 
 type uuidFunc func() (uuid.UUID, error)
 
+func randomiseTeamRankings(rankings []domain.TeamRanking) []domain.TeamRanking {
+	copied := make([]domain.TeamRanking, 0)
+	for _, rank := range rankings {
+		copied = append(copied, rank)
+	}
+
+	sort.SliceStable(copied, func(i, j int) bool {
+		return shouldSwap()
+	})
+
+	return copied
+}
+
+func randomiseStandingsTeamRankings(rankings []domain.StandingsTeamRanking) []domain.StandingsTeamRanking {
+	copied := make([]domain.StandingsTeamRanking, 0)
+	for _, rank := range rankings {
+		copied = append(copied, rank)
+	}
+
+	sort.SliceStable(copied, func(i, j int) bool {
+		return shouldSwap()
+	})
+
+	return copied
+}
+
+func shouldSwap() bool {
+	randNum := randomiser.Intn(2) // either 0 or 1
+	return randNum == 1
+}
+
 func cmpDiff(t *testing.T, description string, want, got interface{}) {
 	t.Helper()
 
@@ -342,4 +378,12 @@ func cmpErrorMsg(t *testing.T, wantMsg string, got error) {
 		t.Fatalf("want error msg '%s', got nil", wantMsg)
 	}
 	cmpDiff(t, "error msg", wantMsg, got.Error())
+}
+
+func cmpErrorType(t *testing.T, want, got error) {
+	t.Helper()
+
+	if !errors.As(got, &want) {
+		t.Fatalf("want error (%T), got (%T)", want, got)
+	}
 }
