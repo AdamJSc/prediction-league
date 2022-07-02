@@ -116,6 +116,14 @@ make test.run
 N.B. Take a look at the other `make` commands in the project root `Makefile` which help to automate
 some of the stop/restart/kill workflows too.
 
+### Demo Seeder
+
+To seed a demo version of the game, carry out the following:
+
+```bash
+cp service/cmd/demoseeder/.env.example service/cmd/demoseeder/.env
+go run service/cmd/demoseeder/main.go
+```
 
 ## Key Concepts
 
