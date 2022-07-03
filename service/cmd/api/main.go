@@ -114,11 +114,6 @@ func run(config *app.Config, l domain.Logger, clock domain.Clock) error {
 		return fmt.Errorf("cannot instantiate cron handler: %w", err)
 	}
 
-	seederComponent, err := app.NewSeeder(container)
-	if err != nil {
-		return fmt.Errorf("cannot instantiate seeder: %w", err)
-	}
-
 	// setup service
 	service, err := app.NewService("prediction-league", 5, l)
 	if err != nil {
@@ -130,7 +125,6 @@ func run(config *app.Config, l domain.Logger, clock domain.Clock) error {
 		serverComponent,
 		emailQueueComponent,
 		cronComponent,
-		seederComponent,
 	)
 
 	return nil

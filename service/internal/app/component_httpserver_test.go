@@ -37,3 +37,5 @@ func TestNewHTTPServer(t *testing.T) {
 		}
 	})
 }
+
+type mockLogger struct{ domain.Logger }
