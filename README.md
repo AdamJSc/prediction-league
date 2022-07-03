@@ -125,6 +125,8 @@ cp service/cmd/demoseeder/.env.example service/cmd/demoseeder/.env
 go run service/cmd/demoseeder/main.go
 ```
 
+To cleanup the changes made by the demo seeder, execute the file `service/cmd/demoseeder/cleanup.sql` against the database.
+
 ## Key Concepts
 
 ### Entries and Predictions
