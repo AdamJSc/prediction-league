@@ -12,7 +12,7 @@ import (
 type Config struct {
 	ServicePort          string `envconfig:"SERVICE_PORT" required:"true"`
 	MySQLURL             string `envconfig:"MYSQL_URL" required:"true"`
-	MigrationsURL        string `envconfig:"MIGRATIONS_URL" required:"true"`
+	MigrationsPath       string `envconfig:"MIGRATIONS_PATH" required:"true"`
 	AdminBasicAuth       string `envconfig:"ADMIN_BASIC_AUTH" required:"true"`
 	LogLevel             string `envconfig:"LOG_LEVEL" required:"true"`
 	FootballDataAPIToken string `envconfig:"FOOTBALLDATA_API_TOKEN" required:"true"`

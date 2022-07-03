@@ -4,12 +4,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/golang-migrate/migrate/v4"
 	"prediction-league/service/internal/adapters"
 	"prediction-league/service/internal/adapters/footballdataorg"
 	"prediction-league/service/internal/adapters/mailgun"
 	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/domain"
+
+	"github.com/golang-migrate/migrate/v4"
 )
 
 // container encapsulates the app dependencies
@@ -42,7 +43,9 @@ func NewContainer(cfg *Config, l domain.Logger, cl domain.Clock) (*container, fu
 	}
 
 	// setup db connection
-	db, err := sqlConnectAndMigrate(cfg.MySQLURL, cfg.MigrationsURL, l)
+	projectRootDir := "../.."
+	migrationsURL := fmt.Sprintf("file://%s/%s", projectRootDir, cfg.MigrationsPath)
+	db, err := sqlConnectAndMigrate(cfg.MySQLURL, migrationsURL, l)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to connect and migrate database: %w", err)
 	}

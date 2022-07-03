@@ -62,8 +62,8 @@ func TestMain(m *testing.M) {
 
 	// load config
 	var config struct {
-		MySQLURL      string `envconfig:"MYSQL_URL" required:"true"`
-		MigrationsURL string `envconfig:"MIGRATIONS_URL" required:"true"`
+		MySQLURL       string `envconfig:"MYSQL_URL" required:"true"`
+		MigrationsPath string `envconfig:"MIGRATIONS_PATH" required:"true"`
 	}
 	if err := envconfig.Process("", &config); err != nil {
 		log.Fatal(err)
@@ -80,7 +80,8 @@ func TestMain(m *testing.M) {
 	}
 
 	// setup db connection
-	db, err = mysqldb.ConnectAndMigrate(config.MySQLURL, config.MigrationsURL, l)
+	migrationsURL := fmt.Sprintf("file://%s/%s", projectRootDir, config.MigrationsPath)
+	db, err = mysqldb.ConnectAndMigrate(config.MySQLURL, migrationsURL, l)
 	if err != nil {
 		switch {
 		case errors.Is(err, migrate.ErrNoChange):

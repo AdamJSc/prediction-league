@@ -69,7 +69,7 @@ func TestNewLoadEnvConfigOption(t *testing.T) {
 		wantConfig := &app.Config{
 			ServicePort:          "1234",
 			MySQLURL:             "test-db-user:test-db-pwd@tcp(localhost:3306)/test-db-name?parseTime=true",
-			MigrationsURL:        "test_migrations_url",
+			MigrationsPath:       "test_migrations_url",
 			AdminBasicAuth:       "test_admin_basic_auth",
 			LogLevel:             "test_loglevel",
 			FootballDataAPIToken: "test_football_data_api_token",
