@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Demo data seeder cmd entrypoint
+
 ### Changed
 
 - Amended scoring mechanism:
@@ -16,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - The aim of the game is now to accrue the **MOST** points across a season, not the fewest.
 - Inverted leaderboard logic to reflect new aim of the game outlined above.
 - General tidy up (remove unused constants/symbols)
+
+### Removed
+
+- Legacy data seeder component
 
 // TODO: feat - update CHANGELOG
 
