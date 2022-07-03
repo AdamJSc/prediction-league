@@ -85,6 +85,9 @@ func (m *MatchWeekSubmissionRepo) Insert(ctx context.Context, submission *domain
 
 	createdAt := m.timeFn()
 
+	submission.ID = newID
+	submission.CreatedAt = createdAt
+
 	stmt := `
 	INSERT INTO mw_submission (
     	id,
@@ -99,12 +102,12 @@ func (m *MatchWeekSubmissionRepo) Insert(ctx context.Context, submission *domain
 	if _, err := m.db.ExecContext(
 		ctx,
 		stmt,
-		newID,
+		submission.ID,
 		submission.EntryID,
 		submission.MatchWeekNumber,
 		teamRankingsRaw,
 		submission.LegacyEntryPredictionID,
-		createdAt,
+		submission.CreatedAt,
 	); err != nil {
 		return fmt.Errorf("cannot insert submission: %w", err)
 	}
@@ -124,6 +127,7 @@ func (m *MatchWeekSubmissionRepo) Update(ctx context.Context, submission *domain
 	}
 
 	updatedAt := m.timeFn()
+	submission.UpdatedAt = &updatedAt
 
 	stmt := `
 	UPDATE mw_submission
@@ -143,7 +147,7 @@ func (m *MatchWeekSubmissionRepo) Update(ctx context.Context, submission *domain
 		submission.MatchWeekNumber,
 		teamRankingsRaw,
 		submission.LegacyEntryPredictionID,
-		updatedAt,
+		submission.UpdatedAt,
 		submission.ID,
 	); err != nil {
 		return fmt.Errorf("cannot update submission: %w", err)
