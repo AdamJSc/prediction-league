@@ -11,12 +11,13 @@ import (
 
 // MatchWeekSubmission represents the league table submitted on behalf of the associated entry ID for the associated match week number
 type MatchWeekSubmission struct {
-	ID              uuid.UUID     // unique id
-	EntryID         uuid.UUID     // associated entry id
-	MatchWeekNumber uint16        // match week number that submission applies to (should be unique per entry)
-	TeamRankings    []TeamRanking // array of team ids with their respective positions
-	CreatedAt       time.Time     // date that submission was created
-	UpdatedAt       *time.Time    // date that submission was most recently updated, if applicable
+	ID                      uuid.UUID     // unique id
+	EntryID                 uuid.UUID     // associated entry id
+	MatchWeekNumber         uint16        // match week number that submission applies to (should be unique per entry)
+	TeamRankings            []TeamRanking // array of team ids with their respective positions
+	LegacyEntryPredictionID uuid.UUID     // original entry prediction id (retained to accommodate eventual migration)
+	CreatedAt               time.Time     // date that submission was created
+	UpdatedAt               *time.Time    // date that submission was most recently updated, if applicable
 }
 
 // TeamRanking associates a team ID with their position
@@ -28,12 +29,13 @@ type TeamRanking struct {
 // newMatchWeekSubmissionFromEntryPredictionAndStandings converts legacy entities to newer domain entity
 func newMatchWeekSubmissionFromEntryPredictionAndStandings(ep EntryPrediction, s Standings) *MatchWeekSubmission {
 	return &MatchWeekSubmission{
-		ID:              ep.ID,
-		EntryID:         ep.EntryID,
-		MatchWeekNumber: uint16(s.RoundNumber),
-		TeamRankings:    newTeamRankingsFromRankingCollection(ep.Rankings),
-		CreatedAt:       ep.CreatedAt,
-		UpdatedAt:       nil,
+		// id omitted - this model is eventually upserted by legacy entry prediction id / match week number so id will be populated then
+		EntryID:                 ep.EntryID,
+		MatchWeekNumber:         uint16(s.RoundNumber),
+		TeamRankings:            newTeamRankingsFromRankingCollection(ep.Rankings),
+		LegacyEntryPredictionID: ep.ID,
+		CreatedAt:               ep.CreatedAt,
+		UpdatedAt:               nil,
 	}
 }
 

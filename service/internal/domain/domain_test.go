@@ -12,7 +12,6 @@ import (
 	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/domain"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 
@@ -56,17 +55,10 @@ func TestMain(m *testing.M) {
 
 	dt = time.Date(2018, 5, 26, 14, 0, 0, 0, loc)
 
-	// get working directory
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// find service parent path - everything before the last occurrence of "service" within the current working directory path
-	svcParent := wd[:strings.LastIndex(wd, "service")]
+	projectRootDir := "../../.."
 
 	// setup env
-	mustLoadTestEnvFromPaths(svcParent + "/infra/test.env")
+	mustLoadTestEnvFromPaths(projectRootDir + "/infra/test.env")
 
 	// load config
 	var config struct {
@@ -124,7 +116,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// load templates
-	tpl, err = domain.ParseTemplates(svcParent + "/service/views")
+	tpl, err = domain.ParseTemplates(projectRootDir + "/service/views")
 	if err != nil {
 		log.Fatalf("cannot parse templates: %s", err.Error())
 	}

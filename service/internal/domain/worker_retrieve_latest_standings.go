@@ -325,9 +325,11 @@ func NewTestRetrieveLatestStandingsWorker(
 // GenerateScoredEntryPrediction generates a scored entry prediction from the provided entry prediction and standings
 func GenerateScoredEntryPrediction(ep EntryPrediction, s Standings) (*ScoredEntryPrediction, error) {
 	// TODO: migrate to MatchWeekSubmission entity + deprecate EntryPrediction
+
 	mwSubmission := newMatchWeekSubmissionFromEntryPredictionAndStandings(ep, s)
 
 	// TODO: migrate to MatchWeekStandings entity + deprecate Standings
+
 	mwStandings := newMatchWeekStandingsFromStandings(s)
 	mwResult, err := NewMatchWeekResult(
 		mwSubmission.ID,
@@ -339,6 +341,9 @@ func GenerateScoredEntryPrediction(ep EntryPrediction, s Standings) (*ScoredEntr
 	}
 
 	// TODO: migrate to MatchWeekResult entity + deprecate ScoredEntryPrediction
+
+	// TODO: feat - upsert mw submission by legacy entry prediction + match week number
+	// TODO: feat - upsert mw result by mw submission id (retrieved in previous step)
 
 	sep := ScoredEntryPrediction{
 		EntryPredictionID: ep.ID,
