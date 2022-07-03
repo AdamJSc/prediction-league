@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -87,6 +89,48 @@ func newRankingsWithScoreFromResultTeamRankings(resultRankings []ResultTeamRanki
 	}
 
 	return rankingsWithScore
+}
+
+type MatchWeekSubmissionRepository interface {
+	GetByLegacyIDAndMatchWeekNumber(ctx context.Context, entryPredictionID uuid.UUID, mwNumber uint16) (*MatchWeekSubmission, error)
+	Insert(ctx context.Context, submission *MatchWeekSubmission) error
+	Update(ctx context.Context, submission *MatchWeekSubmission) error
+}
+
+type MatchWeekSubmissionAgent struct {
+	repo MatchWeekSubmissionRepository
+}
+
+func (m *MatchWeekSubmissionAgent) UpsertByLegacy(ctx context.Context, submission *MatchWeekSubmission) error {
+	legacyID := submission.LegacyEntryPredictionID
+	mwNumber := submission.MatchWeekNumber
+
+	existing, err := m.repo.GetByLegacyIDAndMatchWeekNumber(ctx, legacyID, mwNumber)
+	switch {
+	case err == nil:
+		// update existing submission
+		submission.ID = existing.ID
+		if err := m.repo.Update(ctx, submission); err != nil {
+			return fmt.Errorf("cannot update submission: %w", err)
+		}
+		return nil
+	case errors.Is(err, MissingDBRecordError{}):
+		// create new submission
+		if err := m.repo.Insert(ctx, submission); err != nil {
+			return fmt.Errorf("cannot insert submission: %w", err)
+		}
+		return nil
+	default:
+		return fmt.Errorf("cannot get submission by legacy id: %w", err)
+	}
+}
+
+func NewMatchWeekSubmissionAgent(repo MatchWeekSubmissionRepository) (*MatchWeekSubmissionAgent, error) {
+	if repo == nil {
+		return nil, fmt.Errorf("match week submission repository: %w", ErrIsNil)
+	}
+
+	return &MatchWeekSubmissionAgent{repo: repo}, nil
 }
 
 // duplicateStringsError defines an error that represents duplicate occurrences of a set of values
