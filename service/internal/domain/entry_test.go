@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	gocmp "github.com/google/go-cmp/cmp"
-	"github.com/google/uuid"
-	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
 	"sort"
 	"testing"
 	"time"
+
+	gocmp "github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
+	"gotest.tools/assert/cmp"
 )
 
 func TestNewEntryAgent(t *testing.T) {
@@ -48,7 +49,7 @@ func TestNewEntryAgent(t *testing.T) {
 func TestEntryAgent_CreateEntry(t *testing.T) {
 	defer truncate(t)
 
-	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: dt})
+	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: testDate})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,12 +57,12 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	season := domain.Season{
 		ID: "199293_1",
 		EntriesAccepted: domain.TimeFrame{
-			From:  dt.Add(-12 * time.Hour),
-			Until: dt.Add(12 * time.Hour),
+			From:  testDate.Add(-12 * time.Hour),
+			Until: testDate.Add(12 * time.Hour),
 		},
 		Live: domain.TimeFrame{
-			From:  dt.Add(12 * time.Hour),
-			Until: dt.Add(24 * time.Hour),
+			From:  testDate.Add(12 * time.Hour),
+			Until: testDate.Add(24 * time.Hour),
 		},
 	}
 
@@ -89,9 +90,9 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		EntryPredictions: []domain.EntryPrediction{
 			domain.NewEntryPrediction([]string{"entry_team_id_1", "entry_team_id_2"}),
 		},
-		ApprovedAt: &dt,
+		ApprovedAt: &testDate,
 		CreatedAt:  time.Time{},
-		UpdatedAt:  &dt,
+		UpdatedAt:  &testDate,
 	}
 
 	t.Run("create a valid entry with a valid guard value must succeed", func(t *testing.T) {
@@ -1279,7 +1280,7 @@ func TestEntryAgent_ApproveEntryByID(t *testing.T) {
 	entryWithPaidStatus.Status = domain.EntryStatusPaid
 	entryWithPaidStatus = insertEntry(t, entryWithPaidStatus)
 
-	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: dt})
+	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: testDate})
 	if err != nil {
 		t.Fatal(err)
 	}

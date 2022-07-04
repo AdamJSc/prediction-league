@@ -24,7 +24,6 @@ import (
 
 var (
 	db         *sql.DB
-	dt         time.Time
 	epr        domain.EntryPredictionRepository
 	er         domain.EntryRepository
 	rc         domain.RealmCollection
@@ -33,6 +32,7 @@ var (
 	sr         domain.StandingsRepository
 	sc         domain.SeasonCollection
 	tc         domain.TeamCollection
+	testDate   time.Time
 	testSeason domain.Season
 	tpl        *domain.Templates
 	tr         domain.TokenRepository
@@ -53,7 +53,7 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	dt = time.Date(2018, 5, 26, 14, 0, 0, 0, loc)
+	testDate = time.Date(2018, 5, 26, 14, 0, 0, 0, loc)
 
 	projectRootDir := "../../.."
 
