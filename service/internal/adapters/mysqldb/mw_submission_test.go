@@ -364,9 +364,9 @@ func cmpErrorMsg(t *testing.T, wantMsg string, got error) {
 func generateMatchWeekSubmission(t *testing.T, id uuid.UUID, createdAt time.Time) *domain.MatchWeekSubmission {
 	t.Helper()
 
-	entry := seedEntry(t, generateEntry())
+	entry := seedEntry(t, generateEntry()) // entry id has foreign key restraint
 
-	seedLegacyEntryPredictionID, err := uuid.NewUUID()
+	seedLegacyEntryPredictionID, err := uuid.NewUUID() // no key restraint, generate new value
 	if err != nil {
 		t.Fatal(err)
 	}
