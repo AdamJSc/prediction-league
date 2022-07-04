@@ -47,7 +47,7 @@ func TestNewEntryAgent(t *testing.T) {
 }
 
 func TestEntryAgent_CreateEntry(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: testDate})
 	if err != nil {
@@ -289,7 +289,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 }
 
 func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	tz, err := time.LoadLocation("Europe/London")
 	if err != nil {
@@ -564,7 +564,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 }
 
 func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	entry := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
@@ -652,7 +652,7 @@ func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
 }
 
 func TestEntryAgent_RetrieveEntryByEntrantEmail(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	entry := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
@@ -750,7 +750,7 @@ func TestEntryAgent_RetrieveEntryByEntrantEmail(t *testing.T) {
 }
 
 func TestEntryAgent_RetrieveEntryByEntrantNickname(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	entry := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
@@ -848,7 +848,7 @@ func TestEntryAgent_RetrieveEntryByEntrantNickname(t *testing.T) {
 }
 
 func TestEntryAgent_RetrieveEntriesBySeasonID(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	// generate entries
 	var generatedEntries = []domain.Entry{
@@ -945,7 +945,7 @@ func TestEntryAgent_RetrieveEntriesBySeasonID(t *testing.T) {
 }
 
 func TestEntryAgent_UpdateEntry(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	entry := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
@@ -1134,7 +1134,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 }
 
 func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	entry := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
@@ -1264,7 +1264,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 }
 
 func TestEntryAgent_ApproveEntryByID(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	entry := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
@@ -1363,7 +1363,7 @@ func TestEntryAgent_ApproveEntryByID(t *testing.T) {
 }
 
 func TestEntryAgent_GetEntryPredictionByTimestamp(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	entry := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
@@ -1466,7 +1466,7 @@ func TestEntryAgent_GetEntryPredictionByTimestamp(t *testing.T) {
 // TODO - tests for EntryAgent.RetrieveEntryPredictionsForActiveSeasonByTimestamp
 
 func TestEntryAgent_GetPredictionRankingLimit(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	dt := time.Date(2018, 5, 26, 14, 0, 0, 0, time.FixedZone("Europe/London", 3600))
 
@@ -1571,7 +1571,7 @@ func TestEntryAgent_GetPredictionRankingLimit(t *testing.T) {
 }
 
 func TestEntryAgent_CheckRankingLimit(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	dt := time.Date(2018, 5, 26, 14, 0, 0, 0, time.FixedZone("Europe/London", 3600))
 	cl := &mockClock{t: dt}

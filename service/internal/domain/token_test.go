@@ -40,7 +40,7 @@ func TestNewTokenAgent(t *testing.T) {
 }
 
 func TestTokenAgent_GenerateToken(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewTokenAgent(tr, &mockClock{t: testDate}, &mockLogger{})
 	if err != nil {
@@ -122,7 +122,7 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 }
 
 func TestTokenAgent_GenerateExtendedToken(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewTokenAgent(tr, &mockClock{t: testDate}, &mockLogger{})
 	if err != nil {
@@ -206,7 +206,7 @@ func TestTokenAgent_GenerateExtendedToken(t *testing.T) {
 }
 
 func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewTokenAgent(tr, &mockClock{}, &mockLogger{})
 	if err != nil {
@@ -256,7 +256,7 @@ func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 }
 
 func TestTokenAgent_RedeemToken(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	ctx := context.Background()
 
@@ -321,7 +321,7 @@ func TestTokenAgent_RedeemToken(t *testing.T) {
 }
 
 func TestTokenAgent_DeleteToken(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewTokenAgent(tr, &mockClock{}, &mockLogger{})
 	if err != nil {
@@ -365,7 +365,7 @@ func TestTokenAgent_DeleteToken(t *testing.T) {
 }
 
 func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewTokenAgent(tr, &mockClock{}, &mockLogger{})
 	if err != nil {
@@ -430,7 +430,7 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 }
 
 func TestTokenAgent_DeleteInFlightTokens(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewTokenAgent(tr, &mockClock{}, &mockLogger{})
 	if err != nil {

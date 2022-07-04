@@ -41,7 +41,7 @@ func TestNewLeaderBoardAgent(t *testing.T) {
 }
 
 func TestLeaderBoardAgent_RetrieveLeaderBoardBySeasonAndRoundNumber(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	now := time.Now().Truncate(time.Second)
 

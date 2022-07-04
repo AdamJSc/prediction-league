@@ -379,11 +379,3 @@ func cmpErrorMsg(t *testing.T, wantMsg string, got error) {
 	}
 	cmpDiff(t, "error msg", wantMsg, got.Error())
 }
-
-func cmpErrorType(t *testing.T, want, got error) {
-	t.Helper()
-
-	if !errors.As(got, &want) {
-		t.Fatalf("want error (%T), got (%T)", want, got)
-	}
-}

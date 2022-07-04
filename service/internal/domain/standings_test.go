@@ -33,7 +33,7 @@ func TestNewStandingsAgent(t *testing.T) {
 }
 
 func TestStandingsAgent_CreateStandings(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewStandingsAgent(sr)
 	if err != nil {
@@ -84,7 +84,7 @@ func TestStandingsAgent_CreateStandings(t *testing.T) {
 }
 
 func TestStandingsAgent_UpdateStandings(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewStandingsAgent(sr)
 	if err != nil {
@@ -233,12 +233,14 @@ func TestValidateAndSortStandings(t *testing.T) {
 
 		wantErrType := domain.NotFoundError{}
 		gotErr := domain.ValidateAndSortStandings(standings, teamCollection)
-		cmpErrorType(t, wantErrType, gotErr)
+		if !errors.As(gotErr, &wantErrType) {
+			t.Fatalf("want error type %T, got %T", wantErrType, gotErr)
+		}
 	})
 }
 
 func TestStandingsAgent_RetrieveStandingsByID(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewStandingsAgent(sr)
 	if err != nil {
@@ -294,7 +296,7 @@ func TestStandingsAgent_RetrieveStandingsByID(t *testing.T) {
 }
 
 func TestStandingsAgent_RetrieveStandingsBySeasonAndRoundNumber(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewStandingsAgent(sr)
 	if err != nil {
@@ -363,7 +365,7 @@ func TestStandingsAgent_RetrieveStandingsBySeasonAndRoundNumber(t *testing.T) {
 }
 
 func TestStandingsAgent_RetrieveLatestStandingsBySeasonIDAndTimestamp(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewStandingsAgent(sr)
 	if err != nil {

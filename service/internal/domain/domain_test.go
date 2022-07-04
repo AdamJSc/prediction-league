@@ -160,11 +160,10 @@ func mustLoadTestEnvFromPaths(paths ...string) {
 }
 
 // truncate clears our test tables of all previous data between tests
-func truncate(t *testing.T) {
-	t.Helper()
-	for _, tableName := range []string{"token", "scored_entry_prediction", "entry_prediction", "standings", "entry"} {
+func truncate() {
+	for _, tableName := range []string{"mw_submission", "token", "scored_entry_prediction", "entry_prediction", "standings", "entry"} {
 		if _, err := db.Exec(fmt.Sprintf("DELETE FROM %s", tableName)); err != nil {
-			t.Fatal(err)
+			log.Fatal(err)
 		}
 	}
 }

@@ -251,7 +251,7 @@ func TestMatchWeekSubmissionRepo_Insert(t *testing.T) {
 		wantErrType := domain.DuplicateDBRecordError{}
 		gotErr := repo.Insert(ctx, got)
 		if !errors.As(gotErr, &wantErrType) {
-			t.Fatalf("want error (%T), got (%T)", wantErrType, gotErr)
+			t.Fatalf("want error type %T, got %T", wantErrType, gotErr)
 		}
 	})
 
@@ -339,7 +339,7 @@ func TestMatchWeekSubmissionRepo_Update(t *testing.T) {
 		wantErrType := domain.MissingDBRecordError{}
 		gotErr := repo.Update(ctx, submission)
 		if !errors.As(gotErr, &wantErrType) {
-			t.Fatalf("want error (%T), got (%T)", wantErrType, gotErr)
+			t.Fatalf("want error type %T, got %T", wantErrType, gotErr)
 		}
 	})
 }

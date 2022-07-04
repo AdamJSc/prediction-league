@@ -60,7 +60,7 @@ func TestNewRetrieveLatestStandingsWorker(t *testing.T) {
 
 func TestRetrieveLatestStandingsWorker_ProcessExistingStandings(t *testing.T) {
 	t.Run("happy path must produce the expected results", func(t *testing.T) {
-		defer truncate(t)
+		t.Cleanup(truncate)
 
 		ctx := context.Background()
 
@@ -120,7 +120,7 @@ func TestRetrieveLatestStandingsWorker_ProcessExistingStandings(t *testing.T) {
 }
 
 func TestRetrieveLatestStandingsWorker_ProcessNewStandings(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	ctx := context.Background()
 	now := time.Now().Truncate(time.Second)
