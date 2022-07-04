@@ -23,24 +23,64 @@ type MatchWeekSubmissionRepo struct {
 	timeFn timeFunc
 }
 
+// GetByID returns the MatchWeekSubmission that matches the provided id
+func (m *MatchWeekSubmissionRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.MatchWeekSubmission, error) {
+	stmt := `
+	SELECT
+    	id,
+    	entry_id,
+	    mw_number,
+	    team_rankings,
+	    legacy_entry_prediction_id,
+		created_at,
+		updated_at
+	FROM
+		mw_submission
+	WHERE
+		id = ?
+	`
+
+	row := m.db.QueryRowContext(ctx, stmt, id)
+	submission := &domain.MatchWeekSubmission{}
+	var teamRankingsRaw []byte
+
+	if err := row.Scan(
+		&submission.ID,
+		&submission.EntryID,
+		&submission.MatchWeekNumber,
+		&teamRankingsRaw,
+		&submission.LegacyEntryPredictionID,
+		&submission.CreatedAt,
+		&submission.UpdatedAt,
+	); err != nil {
+		return nil, wrapDBError(err)
+	}
+
+	if err := json.Unmarshal(teamRankingsRaw, &submission.TeamRankings); err != nil {
+		return nil, fmt.Errorf("cannot unmarshal raw team rankings: %w", err)
+	}
+
+	return submission, nil
+}
+
 // GetByLegacyIDAndMatchWeekNumber returns the MatchWeekSubmission that matches the provided entry prediction id and match week number
 func (m *MatchWeekSubmissionRepo) GetByLegacyIDAndMatchWeekNumber(ctx context.Context, entryPredictionID uuid.UUID, mwNumber uint16) (*domain.MatchWeekSubmission, error) {
 	stmt := `
 	SELECT
-    	mws.id,
-    	mws.entry_id,
-	    mws.mw_number,
-	    mws.team_rankings,
-	    mws.legacy_entry_prediction_id,
-		mws.created_at,
-		mws.updated_at
+    	id,
+    	entry_id,
+	    mw_number,
+	    team_rankings,
+	    legacy_entry_prediction_id,
+		created_at,
+		updated_at
 	FROM
-		mw_submission AS mws
+		mw_submission
 	WHERE
-		mws.legacy_entry_prediction_id = ?
+		legacy_entry_prediction_id = ?
 	AND
-	    mws.mw_number = ?
-	ORDER BY mws.created_at DESC
+	    mw_number = ?
+	ORDER BY created_at DESC
 	LIMIT 1
 	`
 
@@ -109,7 +149,7 @@ func (m *MatchWeekSubmissionRepo) Insert(ctx context.Context, submission *domain
 		submission.LegacyEntryPredictionID,
 		submission.CreatedAt,
 	); err != nil {
-		return fmt.Errorf("cannot insert submission: %w", err)
+		return wrapDBError(err)
 	}
 
 	return nil
