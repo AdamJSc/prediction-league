@@ -114,7 +114,7 @@ func (m *MatchWeekSubmissionAgent) UpsertByLegacy(ctx context.Context, submissio
 			return fmt.Errorf("cannot update submission: %w", err)
 		}
 		return nil
-	case errors.Is(err, MissingDBRecordError{}):
+	case errors.As(err, &MissingDBRecordError{}):
 		// create new submission
 		if err := m.repo.Insert(ctx, submission); err != nil {
 			return fmt.Errorf("cannot insert submission: %w", err)

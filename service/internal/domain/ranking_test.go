@@ -225,6 +225,7 @@ func TestGetChangedRankingIDs(t *testing.T) {
 		},
 	}
 
+	// TODO: feat - fix flaky test
 	for _, tc := range tt {
 		gotIDs := domain.GetChangedRankingIDs(tc.x, tc.y)
 		if diff := cmp.Diff(tc.wantIDs, gotIDs); diff != "" {
