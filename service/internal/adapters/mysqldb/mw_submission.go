@@ -180,7 +180,7 @@ func (m *MatchWeekSubmissionRepo) Update(ctx context.Context, submission *domain
 	WHERE id = ?
 	`
 
-	if _, err := m.db.ExecContext(
+	result, err := m.db.ExecContext(
 		ctx,
 		stmt,
 		submission.EntryID,
@@ -189,8 +189,18 @@ func (m *MatchWeekSubmissionRepo) Update(ctx context.Context, submission *domain
 		submission.LegacyEntryPredictionID,
 		submission.UpdatedAt,
 		submission.ID,
-	); err != nil {
-		return fmt.Errorf("cannot update submission: %w", err)
+	)
+	if err != nil {
+		return wrapDBError(err)
+	}
+
+	rowCount, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowCount == 0 {
+		return domain.MissingDBRecordError{Err: fmt.Errorf("match week submission not found: id %s", submission.ID)}
 	}
 
 	return nil
