@@ -187,7 +187,7 @@ func calculateHit(submissionRanking TeamRanking, standingsRanking StandingsTeamR
 
 // MatchWeekResultRepository defines i/o operations on a MatchWeekResult
 type MatchWeekResultRepository interface {
-	GetBySubmissionID(ctx context.Context, id uuid.UUID) (*MatchWeekResult, error)
+	GetBySubmissionID(ctx context.Context, submissionID uuid.UUID) (*MatchWeekResult, error)
 	Insert(ctx context.Context, mwResult *MatchWeekResult) error
 	Update(ctx context.Context, mwResult *MatchWeekResult) error
 }
