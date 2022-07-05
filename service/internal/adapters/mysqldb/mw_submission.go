@@ -211,12 +211,14 @@ func NewMatchWeekSubmissionRepo(db *sql.DB, idFn idFunc, timeFn timeFunc) (*Matc
 	if db == nil {
 		return nil, fmt.Errorf("db: %w", domain.ErrIsNil)
 	}
+
 	if idFn == nil {
 		idFn = uuid.NewUUID
 	}
 	if timeFn == nil {
 		timeFn = time.Now
 	}
+
 	return &MatchWeekSubmissionRepo{
 		db:     db,
 		idFn:   idFn,

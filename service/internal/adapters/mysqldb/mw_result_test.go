@@ -9,13 +9,13 @@ import (
 
 func TestNewMatchWeekResultRepo(t *testing.T) {
 	t.Run("passing non-nil db must succeed", func(t *testing.T) {
-		if _, err := mysqldb.NewMatchWeekResultRepo(db, nil, nil); err != nil {
+		if _, err := mysqldb.NewMatchWeekResultRepo(db, nil); err != nil {
 			t.Fatal(err)
 		}
 	})
 
 	t.Run("passing nil db must produce the expected error", func(t *testing.T) {
-		if _, err := mysqldb.NewMatchWeekResultRepo(nil, nil, nil); !errors.Is(err, domain.ErrIsNil) {
+		if _, err := mysqldb.NewMatchWeekResultRepo(nil, nil); !errors.Is(err, domain.ErrIsNil) {
 			t.Fatalf("want ErrIsNil, got %+v (%T)", err, err)
 		}
 	})
