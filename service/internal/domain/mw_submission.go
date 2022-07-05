@@ -91,16 +91,19 @@ func newRankingsWithScoreFromResultTeamRankings(resultRankings []ResultTeamRanki
 	return rankingsWithScore
 }
 
+// MatchWeekSubmissionRepository defines i/o operations on a MatchWeekSubmission
 type MatchWeekSubmissionRepository interface {
 	GetByLegacyIDAndMatchWeekNumber(ctx context.Context, entryPredictionID uuid.UUID, mwNumber uint16) (*MatchWeekSubmission, error)
 	Insert(ctx context.Context, submission *MatchWeekSubmission) error
 	Update(ctx context.Context, submission *MatchWeekSubmission) error
 }
 
+// MatchWeekSubmissionAgent encapsulates business logic relating to the MatchWeekSubmission entity
 type MatchWeekSubmissionAgent struct {
 	repo MatchWeekSubmissionRepository
 }
 
+// UpsertByLegacy updates the provided MatchWeekSubmission if it exists, otherwise creates it as a new one
 func (m *MatchWeekSubmissionAgent) UpsertByLegacy(ctx context.Context, submission *MatchWeekSubmission) error {
 	legacyID := submission.LegacyEntryPredictionID
 	mwNumber := submission.MatchWeekNumber
@@ -125,6 +128,7 @@ func (m *MatchWeekSubmissionAgent) UpsertByLegacy(ctx context.Context, submissio
 	}
 }
 
+// NewMatchWeekSubmissionAgent creates a new agent instance from the provided repository
 func NewMatchWeekSubmissionAgent(repo MatchWeekSubmissionRepository) (*MatchWeekSubmissionAgent, error) {
 	if repo == nil {
 		return nil, fmt.Errorf("match week submission repository: %w", ErrIsNil)

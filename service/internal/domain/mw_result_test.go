@@ -315,6 +315,16 @@ func TestTeamRankingsHitModifier(t *testing.T) {
 	})
 }
 
+func TestNewMatchWeekResultAgent(t *testing.T) {
+	t.Skip()
+	// TODO: feat - write agent constructor tests
+}
+
+func TestMatchWeekResultAgent_UpsertBySubmissionID(t *testing.T) {
+	t.Skip()
+	// TODO: feat - write agent method tests
+}
+
 func mustGetUUIDFromString(t *testing.T, input string) uuid.UUID {
 	value, err := uuidFromString(input)()
 	if err != nil {
