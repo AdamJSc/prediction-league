@@ -72,14 +72,14 @@ func TestMatchWeekSubmissionAgent_UpsertByLegacy(t *testing.T) {
 
 		// ensure that seed still exists
 		wantSeed := cloneMatchWeekSubmission(seed)
-		gotSeed, err := repo.GetByID(ctx, wantSeed.ID)
+		gotSeed, err := repo.GetByID(ctx, seed.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
 		cmpDiff(t, "seeded match week submission", wantSeed, gotSeed)
 
 		// ensure that submission was inserted
-		gotUpserted, err := repo.GetByID(ctx, wantUpserted.ID)
+		gotUpserted, err := repo.GetByID(ctx, toUpsert.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -110,14 +110,14 @@ func TestMatchWeekSubmissionAgent_UpsertByLegacy(t *testing.T) {
 
 		// ensure that seed still exists
 		wantSeed := cloneMatchWeekSubmission(seed)
-		gotSeed, err := repo.GetByID(ctx, wantSeed.ID)
+		gotSeed, err := repo.GetByID(ctx, seed.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
 		cmpDiff(t, "seeded match week submission", wantSeed, gotSeed)
 
 		// ensure that submission was inserted
-		gotUpserted, err := repo.GetByID(ctx, wantUpserted.ID)
+		gotUpserted, err := repo.GetByID(ctx, toUpsert.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -125,8 +125,32 @@ func TestMatchWeekSubmissionAgent_UpsertByLegacy(t *testing.T) {
 	})
 
 	t.Run("upsert submission that exists by legacy id and match week number should be updated", func(t *testing.T) {
-		t.Skip()
-		// TODO: feat - write test
+		repoDate := testDate // updatedAt date to update existing submission with
+		repo := newMatchWeekSubmissionRepo(t, uuid.UUID{}, repoDate)
+
+		agent, err := domain.NewMatchWeekSubmissionAgent(repo)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		toUpsert := cloneMatchWeekSubmission(seed) // only change team rankings so will be found by legacy id and match week number
+		toUpsert.TeamRankings = []domain.TeamRanking{
+			{Position: 1, TeamID: pooleTownTeamID},
+		}
+
+		wantUpserted := cloneMatchWeekSubmission(toUpsert) // capture state prior to upsert
+		wantUpserted.UpdatedAt = &repoDate                 // should be overridden on update
+
+		if err := agent.UpsertByLegacy(ctx, toUpsert); err != nil {
+			t.Fatal(err)
+		}
+
+		// ensure that submission was updated
+		gotUpserted, err := repo.GetByID(ctx, seed.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cmpDiff(t, "upserted match week submission", wantUpserted, gotUpserted)
 	})
 
 	t.Run("failure when matching by legacy id and match week number must return the expected error", func(t *testing.T) {
