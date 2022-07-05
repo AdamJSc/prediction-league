@@ -166,14 +166,29 @@ func TestMatchWeekSubmissionAgent_UpsertByLegacy(t *testing.T) {
 
 		submission := generateMatchWeekSubmission(t, uuid.UUID{}, time.Time{})
 
+		// new submission will be inserted but uuid function will return error
 		wantErrMsg := "cannot insert submission: cannot get uuid: sad times :'("
 		gotErr := agent.UpsertByLegacy(ctx, submission)
 		cmpErrorMsg(t, wantErrMsg, gotErr)
 	})
 
 	t.Run("update failure must return the expected error", func(t *testing.T) {
-		t.Skip()
-		// TODO: feat - write test
+		idFn := func() (uuid.UUID, error) {
+			return uuid.UUID{}, errors.New("sad times :'(")
+		}
+		repo, err := mysqldb.NewMatchWeekSubmissionRepo(db, idFn, nil)
+
+		agent, err := domain.NewMatchWeekSubmissionAgent(repo)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		submission := cloneMatchWeekSubmission(seed)
+		submission.EntryID = uuid.New() // change to non-existent entry id in order to fail foreign key constraint
+
+		wantErrMsg := "cannot update submission: Error 1452: Cannot add or update a child row: a foreign key constraint fails (`prediction-league-test`.`mw_submission`, CONSTRAINT `mw_submission_ibfk_1` FOREIGN KEY (`entry_id`) REFERENCES `entry` (`id`))"
+		gotErr := agent.UpsertByLegacy(ctx, submission)
+		cmpErrorMsg(t, wantErrMsg, gotErr)
 	})
 }
 
