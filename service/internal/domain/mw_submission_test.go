@@ -153,14 +153,22 @@ func TestMatchWeekSubmissionAgent_UpsertByLegacy(t *testing.T) {
 		cmpDiff(t, "upserted match week submission", wantUpserted, gotUpserted)
 	})
 
-	t.Run("failure when matching by legacy id and match week number must return the expected error", func(t *testing.T) {
-		t.Skip()
-		// TODO: feat - write test
-	})
-
 	t.Run("insert failure must return the expected error", func(t *testing.T) {
-		t.Skip()
-		// TODO: feat - write test
+		idFn := func() (uuid.UUID, error) {
+			return uuid.UUID{}, errors.New("sad times :'(")
+		}
+		repo, err := mysqldb.NewMatchWeekSubmissionRepo(db, idFn, nil)
+
+		agent, err := domain.NewMatchWeekSubmissionAgent(repo)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		submission := generateMatchWeekSubmission(t, uuid.UUID{}, time.Time{})
+
+		wantErrMsg := "cannot insert submission: cannot get uuid: sad times :'("
+		gotErr := agent.UpsertByLegacy(ctx, submission)
+		cmpErrorMsg(t, wantErrMsg, gotErr)
 	})
 
 	t.Run("update failure must return the expected error", func(t *testing.T) {
