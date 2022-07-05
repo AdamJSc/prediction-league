@@ -19,8 +19,83 @@ type MatchWeekResultRepo struct {
 
 // GetBySubmissionID returns the MatchWeekSubmission that matches the provided id
 func (m *MatchWeekResultRepo) GetBySubmissionID(ctx context.Context, submissionID uuid.UUID) (*domain.MatchWeekResult, error) {
-	// TODO: feat - implement repo method
-	return nil, nil
+	stmt := `
+	SELECT
+	    mw_submission_id,
+	    team_rankings,
+	    score,
+		created_at,
+	    updated_at
+	FROM
+		mw_result
+	WHERE
+		mw_submission_id = ?
+	`
+
+	row := m.db.QueryRowContext(ctx, stmt, submissionID)
+	result := &domain.MatchWeekResult{}
+	var teamRankingsRaw []byte
+
+	if err := row.Scan(
+		&result.MatchWeekSubmissionID,
+		&teamRankingsRaw,
+		&result.Score,
+		&result.CreatedAt,
+		&result.UpdatedAt,
+	); err != nil {
+		return nil, wrapDBError(err)
+	}
+
+	if err := json.Unmarshal(teamRankingsRaw, &result.TeamRankings); err != nil {
+		return nil, fmt.Errorf("cannot unmarshal raw team rankings: %w", err)
+	}
+
+	resultModifiers, err := m.getResultModifiers(ctx, submissionID)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get result modifiers: %w", err)
+	}
+
+	result.Modifiers = resultModifiers
+
+	return result, nil
+}
+
+// getResultModifiers from database
+func (m *MatchWeekResultRepo) getResultModifiers(ctx context.Context, resultID uuid.UUID) ([]domain.ModifierSummary, error) {
+	stmt := `
+	SELECT
+		code,
+		value
+	FROM
+		mw_result_modifier
+	WHERE
+		mw_result_id = ?
+	ORDER BY order ASC
+	`
+
+	rows, err := m.db.QueryContext(ctx, stmt, resultID)
+	if err != nil {
+		return nil, wrapDBError(err)
+	}
+
+	summaries := make([]domain.ModifierSummary, 0)
+	for rows.Next() {
+		summary := domain.ModifierSummary{}
+		if err := rows.Scan(
+			&summary.Code,
+			&summary.Value,
+		); err != nil {
+			return nil, fmt.Errorf("cannot scan row: %w", wrapDBError(err))
+		}
+
+		summaries = append(summaries, summary)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("cannot read result modifier rows: %w", wrapDBError(err))
+	}
+
+	return summaries, nil
 }
 
 // Insert the provided MatchWeekResult into the database
@@ -88,15 +163,17 @@ func (m *MatchWeekResultRepo) insertResultModifiers(ctx context.Context, resultI
 	insertStmt := `
 	INSERT INTO mw_result_modifier (
 		mw_result_id,
+		order,
 		code,
 		value
 	) VALUES
 	`
 
 	var args []interface{}
-	for _, modifier := range modifiers {
-		insertStmt += ` (?,?,?)`
-		args = append(args, resultID, modifier.Code, modifier.Value)
+	for idx, modifier := range modifiers {
+		insertStmt += ` (?,?,?,?)`
+		order := idx + 1 // order value matches position within slice sequence
+		args = append(args, resultID, order, modifier.Code, modifier.Value)
 	}
 
 	if _, err := m.db.ExecContext(
