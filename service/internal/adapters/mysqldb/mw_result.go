@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"prediction-league/service/internal/domain"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -70,7 +71,7 @@ func (m *MatchWeekResultRepo) getResultModifiers(ctx context.Context, resultID u
 		mw_result_modifier
 	WHERE
 		mw_result_id = ?
-	ORDER BY order ASC
+	ORDER BY sort_order ASC
 	`
 
 	rows, err := m.db.QueryContext(ctx, stmt, resultID)
@@ -163,23 +164,26 @@ func (m *MatchWeekResultRepo) insertResultModifiers(ctx context.Context, resultI
 	insertStmt := `
 	INSERT INTO mw_result_modifier (
 		mw_result_id,
-		order,
+		sort_order,
 		code,
 		value
 	) VALUES
 	`
 
 	var args []interface{}
+	var placeholders []string
 	for idx, modifier := range modifiers {
-		insertStmt += ` (?,?,?,?)`
-		order := idx + 1 // order value matches position within slice sequence
-		args = append(args, resultID, order, modifier.Code, modifier.Value)
+		placeholders = append(placeholders, ` (?,?,?,?)`)
+		sortOrder := idx + 1 // sort order value matches position within slice sequence
+		args = append(args, resultID, sortOrder, modifier.Code, modifier.Value)
 	}
+
+	insertStmt += strings.Join(placeholders, ",")
 
 	if _, err := m.db.ExecContext(
 		ctx,
 		insertStmt,
-		args,
+		args...,
 	); err != nil {
 		return wrapDBError(err)
 	}
