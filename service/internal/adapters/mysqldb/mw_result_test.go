@@ -2,6 +2,7 @@ package mysqldb_test
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/domain"
@@ -120,6 +121,25 @@ func TestMatchWeekResultRepo_Insert(t *testing.T) {
 		if !errors.As(gotErr, &wantErrType) {
 			t.Fatalf("want error type %T, got %T", wantErrType, gotErr)
 		}
+	})
+
+	t.Run("failed db operation must produce the expected error", func(t *testing.T) {
+		badDB, err := sql.Open("mysql", "connectionString/dbName")
+		if err != nil {
+			t.Fatal(badDB)
+		}
+
+		repo, err := mysqldb.NewMatchWeekResultRepo(badDB, newTimeFunc(createdAt))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		mwResult := generateMatchWeekResult(t, uuid.UUID{}, modifierSummaries, time.Time{})
+
+		// db will return error on first operation
+		wantErrMsg := "default addr for network 'connectionString' unknown"
+		gotErr := repo.Insert(ctx, mwResult)
+		cmpErrorMsg(t, wantErrMsg, gotErr)
 	})
 }
 
