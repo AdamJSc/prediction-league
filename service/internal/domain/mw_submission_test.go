@@ -158,6 +158,9 @@ func TestMatchWeekSubmissionAgent_UpsertByLegacy(t *testing.T) {
 			return uuid.UUID{}, errors.New("sad times :'(")
 		}
 		repo, err := mysqldb.NewMatchWeekSubmissionRepo(db, idFn, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		agent, err := domain.NewMatchWeekSubmissionAgent(repo)
 		if err != nil {
@@ -177,6 +180,9 @@ func TestMatchWeekSubmissionAgent_UpsertByLegacy(t *testing.T) {
 			return uuid.UUID{}, errors.New("sad times :'(")
 		}
 		repo, err := mysqldb.NewMatchWeekSubmissionRepo(db, idFn, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		agent, err := domain.NewMatchWeekSubmissionAgent(repo)
 		if err != nil {
