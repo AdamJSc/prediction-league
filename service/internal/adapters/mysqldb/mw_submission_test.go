@@ -170,8 +170,7 @@ func TestMatchWeekSubmissionRepo_GetByLegacyIDAndMatchWeekNumber(t *testing.T) {
 
 	ctx := context.Background()
 
-	seedID := parseUUID(t, uuidAll1s)
-	seed := seedMatchWeekSubmission(t, generateMatchWeekSubmission(t, seedID, testDate))
+	seed := seedMatchWeekSubmission(t, generateMatchWeekSubmission(t, parseUUID(t, uuidAll1s), testDate))
 
 	repo, err := mysqldb.NewMatchWeekSubmissionRepo(db, nil, nil)
 	if err != nil {
@@ -209,6 +208,8 @@ func TestMatchWeekSubmissionRepo_Insert(t *testing.T) {
 	t.Cleanup(truncate)
 
 	ctx := context.Background()
+	insertID := parseUUID(t, uuidAll1s)
+	createdAt := testDate
 
 	t.Run("passing nil match week submission must generate no error", func(t *testing.T) {
 		repo, err := mysqldb.NewMatchWeekSubmissionRepo(db, nil, nil)
@@ -222,23 +223,20 @@ func TestMatchWeekSubmissionRepo_Insert(t *testing.T) {
 	})
 
 	t.Run("valid match week submission must be inserted successfully", func(t *testing.T) {
-		submission := generateMatchWeekSubmission(t, uuid.UUID{}, time.Time{}) // empty id and createdAt timestamp
-		initialSubmission := cloneMatchWeekSubmission(submission)              // capture state before insert
-
-		insertID := parseUUID(t, uuidAll1s)
-		createdAt := testDate
 		repo, err := mysqldb.NewMatchWeekSubmissionRepo(db, newUUIDFunc(insertID), newTimeFunc(createdAt))
 		if err != nil {
 			t.Fatal(err)
 		}
 
+		submission := generateMatchWeekSubmission(t, uuid.UUID{}, time.Time{}) // empty id and createdAt timestamp
+
+		want := cloneMatchWeekSubmission(submission) // capture state before insert
+		want.ID = insertID                           // should be overridden on insert
+		want.CreatedAt = createdAt                   // should be overridden on insert
+
 		if err := repo.Insert(ctx, submission); err != nil {
 			t.Fatal(err)
 		}
-
-		want := initialSubmission
-		want.ID = insertID         // should be overridden on insert
-		want.CreatedAt = createdAt // should be overridden on insert
 
 		got, err := repo.GetByID(ctx, insertID)
 		if err != nil {
@@ -246,6 +244,8 @@ func TestMatchWeekSubmissionRepo_Insert(t *testing.T) {
 		}
 
 		cmpDiff(t, "match week submission", want, got)
+		cmpDiff(t, "id on entity", want.ID, submission.ID)
+		cmpDiff(t, "created date on entity", want.CreatedAt, submission.CreatedAt)
 
 		// inserting same submission again must return the expected error
 		wantErrType := domain.DuplicateDBRecordError{}
@@ -292,19 +292,16 @@ func TestMatchWeekSubmissionRepo_Update(t *testing.T) {
 	t.Run("updating match week submission that exists must be successful", func(t *testing.T) {
 		createdAt := testDate
 
-		submission1ID := parseUUID(t, uuidAll1s)
-		seed1 := seedMatchWeekSubmission(t, generateMatchWeekSubmission(t, submission1ID, createdAt))
-
-		submission2ID := parseUUID(t, uuidAll2s)
-		seed2 := seedMatchWeekSubmission(t, generateMatchWeekSubmission(t, submission2ID, createdAt))
-
 		updatedAt := createdAt.Add(time.Second)
 		repo, err := mysqldb.NewMatchWeekSubmissionRepo(db, nil, newTimeFunc(updatedAt))
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		changedSeed1 := &domain.MatchWeekSubmission{
+		seed1 := seedMatchWeekSubmission(t, generateMatchWeekSubmission(t, parseUUID(t, uuidAll1s), createdAt))
+		seed2 := seedMatchWeekSubmission(t, generateMatchWeekSubmission(t, parseUUID(t, uuidAll2s), createdAt))
+
+		changedSeed := &domain.MatchWeekSubmission{
 			ID:                      seed1.ID,
 			EntryID:                 seed2.EntryID,
 			MatchWeekNumber:         9999,
@@ -312,13 +309,13 @@ func TestMatchWeekSubmissionRepo_Update(t *testing.T) {
 			LegacyEntryPredictionID: seed2.LegacyEntryPredictionID,
 		}
 
-		if err := repo.Update(ctx, changedSeed1); err != nil {
+		want := cloneMatchWeekSubmission(changedSeed) // capture state before update
+		want.CreatedAt = seed1.CreatedAt              // should not be overridden on update
+		want.UpdatedAt = &updatedAt                   // should be overridden on update
+
+		if err := repo.Update(ctx, changedSeed); err != nil {
 			t.Fatal(err)
 		}
-
-		want := changedSeed1
-		want.CreatedAt = seed1.CreatedAt // should not be overridden on update
-		want.UpdatedAt = &updatedAt      // should be overridden on update
 
 		got, err := repo.GetByID(ctx, seed1.ID)
 		if err != nil {
@@ -326,6 +323,7 @@ func TestMatchWeekSubmissionRepo_Update(t *testing.T) {
 		}
 
 		cmpDiff(t, "match week submission", want, got)
+		cmpDiff(t, "updated date on entity", want.UpdatedAt, changedSeed.UpdatedAt)
 	})
 
 	t.Run("updating match week submission that does not exist must return the expected error", func(t *testing.T) {

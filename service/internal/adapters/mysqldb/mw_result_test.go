@@ -78,6 +78,7 @@ func TestMatchWeekResultRepo_Insert(t *testing.T) {
 	t.Cleanup(truncate)
 
 	ctx := context.Background()
+	createdAt := testDate
 
 	t.Run("passing nil match week result must generate no error", func(t *testing.T) {
 		repo, err := mysqldb.NewMatchWeekResultRepo(db, nil)
@@ -91,28 +92,27 @@ func TestMatchWeekResultRepo_Insert(t *testing.T) {
 	})
 
 	t.Run("valid match week result must be inserted successfully", func(t *testing.T) {
-		mwResult := generateMatchWeekResult(t, parseUUID(t, uuidAll1s), modifierSummaries, time.Time{}) // empty createdAt timestamp
-		initialMWResult := cloneMatchWeekResult(mwResult)                                               // capture state before insert
-
-		createdAt := testDate
 		repo, err := mysqldb.NewMatchWeekResultRepo(db, newTimeFunc(createdAt))
 		if err != nil {
 			t.Fatal(err)
 		}
 
+		mwResult := generateMatchWeekResult(t, parseUUID(t, uuidAll1s), modifierSummaries, time.Time{}) // empty createdAt timestamp
+
+		want := cloneMatchWeekResult(mwResult) // capture state before insert
+		want.CreatedAt = createdAt             // should be overridden on insert
+
 		if err := repo.Insert(ctx, mwResult); err != nil {
 			t.Fatal(err)
 		}
 
-		want := initialMWResult
-		want.CreatedAt = createdAt // should be overridden on insert
-
-		got, err := repo.GetBySubmissionID(ctx, initialMWResult.MatchWeekSubmissionID)
+		got, err := repo.GetBySubmissionID(ctx, mwResult.MatchWeekSubmissionID)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		cmpDiff(t, "match week result", want, got)
+		cmpDiff(t, "created date on entity", want.CreatedAt, mwResult.CreatedAt)
 
 		// inserting same mw result again must return the expected error
 		wantErrType := domain.DuplicateDBRecordError{}
