@@ -49,7 +49,7 @@ var (
 )
 
 func TestNewMatchWeekResult(t *testing.T) {
-	id := mustGetUUIDFromString(t, `12345678-1234-1234-1234-123456789012`)
+	id := parseUUID(t, `12345678-1234-1234-1234-123456789012`)
 
 	t.Run("no modifiers must populate match week result as expected", func(t *testing.T) {
 		wantMWResult := &domain.MatchWeekResult{
@@ -460,23 +460,6 @@ func newMatchWeekResultRepo(t *testing.T, ts time.Time) *mysqldb.MatchWeekResult
 
 	return repo
 }
-
-func mustGetUUIDFromString(t *testing.T, input string) uuid.UUID {
-	value, err := uuidFromString(input)()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return value
-}
-
-func uuidFromString(input string) uuidFunc {
-	return func() (uuid.UUID, error) {
-		return uuid.Parse(input)
-	}
-}
-
-type uuidFunc func() (uuid.UUID, error)
 
 func randomiseTeamRankings(rankings []domain.TeamRanking) []domain.TeamRanking {
 	copied := make([]domain.TeamRanking, 0)

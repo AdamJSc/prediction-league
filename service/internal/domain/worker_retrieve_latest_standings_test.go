@@ -429,13 +429,13 @@ func TestGenerateScoredEntryPrediction(t *testing.T) {
 	}
 
 	t.Run("valid entry prediction and standings must generate the expected scored entry prediction", func(t *testing.T) {
-		entryPredictionID := mustGetUUIDFromString(t, `11111111-1111-1111-1111-111111111111`)
+		entryPredictionID := parseUUID(t, `11111111-1111-1111-1111-111111111111`)
 		entryPrediction := domain.EntryPrediction{
 			ID:       entryPredictionID,
 			Rankings: okEntryPredictionRankings,
 		}
 
-		standingsID := mustGetUUIDFromString(t, `22222222-2222-2222-2222-222222222222`)
+		standingsID := parseUUID(t, `22222222-2222-2222-2222-222222222222`)
 		standings := domain.Standings{
 			ID:       standingsID,
 			Rankings: okStandingsRankings,
