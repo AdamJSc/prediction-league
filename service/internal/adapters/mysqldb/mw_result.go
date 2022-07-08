@@ -193,7 +193,52 @@ func (m *MatchWeekResultRepo) insertResultModifiers(ctx context.Context, resultI
 
 // Update the provided MatchWeekResult by its submission id
 func (m *MatchWeekResultRepo) Update(ctx context.Context, mwResult *domain.MatchWeekResult) error {
-	// TODO: feat - implement repo method
+	if mwResult == nil {
+		return nil
+	}
+
+	teamRankingsRaw, err := json.Marshal(mwResult.TeamRankings)
+	if err != nil {
+		return fmt.Errorf("cannot marshal team rankings: %w", err)
+	}
+
+	updatedAt := m.timeFn()
+	mwResult.UpdatedAt = &updatedAt
+
+	stmt := `
+	UPDATE mw_result
+	SET
+	    team_rankings = ?,
+	    score = ?,
+		updated_at = ?
+	WHERE mw_submission_id = ?
+	`
+
+	result, err := m.db.ExecContext(
+		ctx,
+		stmt,
+		teamRankingsRaw,
+		mwResult.Score,
+		mwResult.UpdatedAt,
+		mwResult.MatchWeekSubmissionID,
+	)
+	if err != nil {
+		return wrapDBError(err)
+	}
+
+	rowCount, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowCount == 0 {
+		return domain.MissingDBRecordError{Err: fmt.Errorf("match week result not found: submission id %s", mwResult.MatchWeekSubmissionID)}
+	}
+
+	if err := m.insertResultModifiers(ctx, mwResult.MatchWeekSubmissionID, mwResult.Modifiers); err != nil {
+		return fmt.Errorf("cannot insert result modifiers: %w", err)
+	}
+
 	return nil
 }
 
