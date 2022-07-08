@@ -124,8 +124,107 @@ func TestMatchWeekResultRepo_Insert(t *testing.T) {
 }
 
 func TestMatchWeekResultRepo_Update(t *testing.T) {
-	t.Skip()
-	// TODO: feat - write repo method tests
+	t.Cleanup(truncate)
+
+	ctx := context.Background()
+	createdAt := testDate
+
+	t.Run("passing nil match week result must generate no error", func(t *testing.T) {
+		repo, err := mysqldb.NewMatchWeekResultRepo(db, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if err := repo.Update(ctx, nil); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("updating match week result that exists must be successful", func(t *testing.T) {
+		updatedAt := createdAt.Add(time.Second)
+		repo, err := mysqldb.NewMatchWeekResultRepo(db, newTimeFunc(updatedAt))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		submissionID := parseUUID(t, uuidAll1s)
+		seed := seedMatchWeekResult(t, generateMatchWeekResult(t, submissionID, modifierSummaries, createdAt))
+
+		// change all available fields to non-empty values
+		changedSeed := &domain.MatchWeekResult{
+			MatchWeekSubmissionID: seed.MatchWeekSubmissionID,
+			TeamRankings:          []domain.ResultTeamRanking{{TeamRanking: domain.TeamRanking{Position: 9999}}},
+			Score:                 5678,
+			Modifiers:             []domain.ModifierSummary{{Code: "CHANGED_CODE", Value: 9999}},
+		}
+
+		want := cloneMatchWeekResult(changedSeed) // capture state before update
+		want.CreatedAt = seed.CreatedAt           // should not be overridden on update
+		want.UpdatedAt = &updatedAt               // should be overridden on update
+
+		if err := repo.Update(ctx, changedSeed); err != nil {
+			t.Fatal(err)
+		}
+
+		got, err := repo.GetBySubmissionID(ctx, seed.MatchWeekSubmissionID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cmpDiff(t, "match week result", want, got)
+		cmpDiff(t, "update date on entity", want.UpdatedAt, changedSeed.UpdatedAt)
+	})
+
+	t.Run("updating existing match week result with empty modifiers must return the expected result", func(t *testing.T) {
+		updatedAt := createdAt.Add(time.Second)
+		repo, err := mysqldb.NewMatchWeekResultRepo(db, newTimeFunc(updatedAt))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		submissionID := parseUUID(t, uuidAll2s)
+		seed := seedMatchWeekResult(t, generateMatchWeekResult(t, submissionID, modifierSummaries, createdAt))
+
+		// update with empty modifiers (ensure that old values are removed from linked table)
+		changedSeed := &domain.MatchWeekResult{
+			MatchWeekSubmissionID: seed.MatchWeekSubmissionID,
+			TeamRankings:          []domain.ResultTeamRanking{{TeamRanking: domain.TeamRanking{Position: 9999}}},
+			Score:                 5678,
+			// empty modifiers
+		}
+
+		want := cloneMatchWeekResult(changedSeed)   // capture state before update
+		want.Modifiers = []domain.ModifierSummary{} // should be empty slice, not nil
+		want.CreatedAt = seed.CreatedAt             // should not be overridden on update
+		want.UpdatedAt = &updatedAt                 // should be overridden on update
+
+		if err := repo.Update(ctx, changedSeed); err != nil {
+			t.Fatal(err)
+		}
+
+		got, err := repo.GetBySubmissionID(ctx, seed.MatchWeekSubmissionID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cmpDiff(t, "match week result", want, got)
+		cmpDiff(t, "update date on entity", want.UpdatedAt, changedSeed.UpdatedAt)
+	})
+
+	t.Run("updating match week result that does not exist must return the expected error", func(t *testing.T) {
+		repo, err := mysqldb.NewMatchWeekResultRepo(db, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		mwResult := &domain.MatchWeekResult{MatchWeekSubmissionID: parseUUID(t, uuidAll3s)}
+
+		wantErrType := domain.MissingDBRecordError{}
+		gotErr := repo.Update(ctx, mwResult)
+		if !errors.As(gotErr, &wantErrType) {
+			t.Fatalf("want error type %T, got %T", wantErrType, gotErr)
+		}
+	})
 }
 
 func generateMatchWeekResult(t *testing.T, submissionID uuid.UUID, modifiers []domain.ModifierSummary, createdAt time.Time) *domain.MatchWeekResult {
