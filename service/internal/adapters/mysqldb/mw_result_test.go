@@ -75,8 +75,52 @@ func TestMatchWeekResultRepo_GetBySubmissionID(t *testing.T) {
 }
 
 func TestMatchWeekResultRepo_Insert(t *testing.T) {
-	t.Skip()
-	// TODO: feat - write repo method tests
+	t.Cleanup(truncate)
+
+	ctx := context.Background()
+
+	t.Run("passing nil match week result must generate no error", func(t *testing.T) {
+		repo, err := mysqldb.NewMatchWeekResultRepo(db, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if err := repo.Insert(ctx, nil); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("valid match week result must be inserted successfully", func(t *testing.T) {
+		mwResult := generateMatchWeekResult(t, parseUUID(t, uuidAll1s), modifierSummaries, time.Time{}) // empty createdAt timestamp
+		initialMWResult := cloneMatchWeekResult(mwResult)                                               // capture state before insert
+
+		createdAt := testDate
+		repo, err := mysqldb.NewMatchWeekResultRepo(db, newTimeFunc(createdAt))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if err := repo.Insert(ctx, mwResult); err != nil {
+			t.Fatal(err)
+		}
+
+		want := initialMWResult
+		want.CreatedAt = createdAt // should be overridden on insert
+
+		got, err := repo.GetBySubmissionID(ctx, initialMWResult.MatchWeekSubmissionID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cmpDiff(t, "match week result", want, got)
+
+		// inserting same mw result again must return the expected error
+		wantErrType := domain.DuplicateDBRecordError{}
+		gotErr := repo.Insert(ctx, got)
+		if !errors.As(gotErr, &wantErrType) {
+			t.Fatalf("want error type %T, got %T", wantErrType, gotErr)
+		}
+	})
 }
 
 func TestMatchWeekResultRepo_Update(t *testing.T) {
@@ -88,7 +132,7 @@ func generateMatchWeekResult(t *testing.T, submissionID uuid.UUID, modifiers []d
 	t.Helper()
 
 	// submission id has foreign key restraint
-	submission := seedMatchWeekSubmission(t, generateMatchWeekSubmission(t, submissionID, createdAt))
+	submission := seedMatchWeekSubmission(t, generateMatchWeekSubmission(t, submissionID, testDate))
 
 	return &domain.MatchWeekResult{
 		MatchWeekSubmissionID: submission.ID,
