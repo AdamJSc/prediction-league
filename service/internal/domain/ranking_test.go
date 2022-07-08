@@ -159,7 +159,7 @@ func TestRankingCollection_JSON(t *testing.T) {
 }
 
 func TestGetChangedRankingIDs(t *testing.T) {
-	pughID, fletchID, pitmanID := "marc", "steve", "brett"
+	fletchID, pitmanID, pughID := "fletch", "pitman", "pugh"
 
 	tt := []struct {
 		name    string
@@ -168,7 +168,7 @@ func TestGetChangedRankingIDs(t *testing.T) {
 		wantIDs []string
 	}{
 		{
-			name: "identical collections, no ids",
+			name: "identical collections must produce no ids",
 			x: domain.RankingCollection{
 				{pughID, 1},
 				{fletchID, 2},
@@ -182,7 +182,7 @@ func TestGetChangedRankingIDs(t *testing.T) {
 			wantIDs: make([]string, 0),
 		},
 		{
-			name: "identical collection in alternative order, no ids",
+			name: "identical collection in alternative order must produce no ids",
 			x: domain.RankingCollection{
 				{pughID, 1},
 				{fletchID, 2},
@@ -196,7 +196,7 @@ func TestGetChangedRankingIDs(t *testing.T) {
 			wantIDs: make([]string, 0),
 		},
 		{
-			name: "two items swap one position, expect two ids",
+			name: "two items swap positions must produce two ids",
 			x: domain.RankingCollection{
 				{pughID, 1},
 				{fletchID, 2},
@@ -210,7 +210,7 @@ func TestGetChangedRankingIDs(t *testing.T) {
 			wantIDs: []string{fletchID, pitmanID},
 		},
 		{
-			name: "identical ids but one is one position different, expect one id",
+			name: "identical ids but one is one position different must return one id",
 			x: domain.RankingCollection{
 				{pughID, 1},
 				{fletchID, 2},
@@ -225,11 +225,12 @@ func TestGetChangedRankingIDs(t *testing.T) {
 		},
 	}
 
-	// TODO: feat - fix flaky test
 	for _, tc := range tt {
-		gotIDs := domain.GetChangedRankingIDs(tc.x, tc.y)
-		if diff := cmp.Diff(tc.wantIDs, gotIDs); diff != "" {
-			t.Fatalf("want ids %+v, got %+v, diff: %s", tc.wantIDs, gotIDs, diff)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			gotIDs := domain.GetChangedRankingIDs(tc.x, tc.y)
+			if diff := cmp.Diff(tc.wantIDs, gotIDs); diff != "" {
+				t.Fatalf("want ids %+v, got %+v, diff: %s", tc.wantIDs, gotIDs, diff)
+			}
+		})
 	}
 }
