@@ -3,6 +3,7 @@ package domain_test
 import (
 	"errors"
 	"math/rand"
+	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/domain"
 	"sort"
 	"testing"
@@ -316,13 +317,34 @@ func TestTeamRankingsHitModifier(t *testing.T) {
 }
 
 func TestNewMatchWeekResultAgent(t *testing.T) {
-	t.Skip()
-	// TODO: feat - write agent constructor tests
+	t.Run("passing non-nil repo must succeed", func(t *testing.T) {
+		repo := newMatchWeekResultRepo(t, time.Time{})
+		if _, err := domain.NewMatchWeekResultAgent(repo); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("passing nil repo must produce the expected error", func(t *testing.T) {
+		if _, err := domain.NewMatchWeekResultAgent(nil); !errors.Is(err, domain.ErrIsNil) {
+			t.Fatalf("want ErrIsNil, got %+v (%T)", err, err)
+		}
+	})
 }
 
 func TestMatchWeekResultAgent_UpsertBySubmissionID(t *testing.T) {
 	t.Skip()
 	// TODO: feat - write agent method tests
+}
+
+func newMatchWeekResultRepo(t *testing.T, ts time.Time) *mysqldb.MatchWeekResultRepo {
+	t.Helper()
+
+	repo, err := mysqldb.NewMatchWeekResultRepo(db, newTimeFunc(ts))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return repo
 }
 
 func mustGetUUIDFromString(t *testing.T, input string) uuid.UUID {
