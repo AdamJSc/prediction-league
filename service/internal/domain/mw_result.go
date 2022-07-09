@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -181,4 +183,49 @@ func calculateHit(submissionRanking TeamRanking, standingsRanking StandingsTeamR
 	diff := int16(submissionRanking.Position) - int16(standingsRanking.Position)
 	abs := math.Abs(float64(diff))
 	return int64(abs)
+}
+
+// MatchWeekResultRepository defines i/o operations on a MatchWeekResult
+type MatchWeekResultRepository interface {
+	GetBySubmissionID(ctx context.Context, submissionID uuid.UUID) (*MatchWeekResult, error)
+	Insert(ctx context.Context, mwResult *MatchWeekResult) error
+	Update(ctx context.Context, mwResult *MatchWeekResult) error
+}
+
+// MatchWeekResultAgent encapsulates business logic relating to the MatchWeekResult entity
+type MatchWeekResultAgent struct {
+	repo MatchWeekResultRepository
+}
+
+// UpsertBySubmissionID updates the provided MatchWeekResult if it exists, otherwise creates it as a new one
+func (m *MatchWeekResultAgent) UpsertBySubmissionID(ctx context.Context, mwResult *MatchWeekResult) error {
+	submissionID := mwResult.MatchWeekSubmissionID
+
+	existing, err := m.repo.GetBySubmissionID(ctx, submissionID)
+	switch {
+	case err == nil:
+		// update existing mw result
+		mwResult.MatchWeekSubmissionID = existing.MatchWeekSubmissionID
+		if err := m.repo.Update(ctx, mwResult); err != nil {
+			return fmt.Errorf("cannot update match week result: %w", err)
+		}
+		return nil
+	case errors.As(err, &MissingDBRecordError{}):
+		// create new mw result
+		if err := m.repo.Insert(ctx, mwResult); err != nil {
+			return fmt.Errorf("cannot insert match week result: %w", err)
+		}
+		return nil
+	default:
+		return fmt.Errorf("cannot get match week result by submission id: %w", err)
+	}
+}
+
+// NewMatchWeekResultAgent creates a new agent instance from the provided repository
+func NewMatchWeekResultAgent(repo MatchWeekResultRepository) (*MatchWeekResultAgent, error) {
+	if repo == nil {
+		return nil, fmt.Errorf("match week result repository: %w", ErrIsNil)
+	}
+
+	return &MatchWeekResultAgent{repo: repo}, nil
 }

@@ -40,7 +40,7 @@ func TestNewScoredEntryPredictionAgent(t *testing.T) {
 }
 
 func TestScoredEntryPredictionAgent_CreateScoredEntryPrediction(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewScoredEntryPredictionAgent(er, epr, sr, sepr)
 	if err != nil {
@@ -133,7 +133,7 @@ func TestScoredEntryPredictionAgent_CreateScoredEntryPrediction(t *testing.T) {
 }
 
 func TestScoredEntryPredictionAgent_UpdateScoredEntryPrediction(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewScoredEntryPredictionAgent(er, epr, sr, sepr)
 	if err != nil {
@@ -203,10 +203,8 @@ func TestScoredEntryPredictionAgent_UpdateScoredEntryPrediction(t *testing.T) {
 	})
 }
 
-// TODO - tests for GenerateScoredEntryPrediction
-
 func TestScoredEntryPredictionAgent_RetrieveScoredEntryPredictionByIDs(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewScoredEntryPredictionAgent(er, epr, sr, sepr)
 	if err != nil {
@@ -272,7 +270,7 @@ func TestScoredEntryPredictionAgent_RetrieveScoredEntryPredictionByIDs(t *testin
 }
 
 func TestScoredEntryPredictionAgent_RetrieveLatestScoredEntryPredictionByEntryIDAndRoundNumber(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewScoredEntryPredictionAgent(er, epr, sr, sepr)
 	if err != nil {

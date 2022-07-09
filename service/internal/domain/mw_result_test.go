@@ -1,8 +1,10 @@
 package domain_test
 
 import (
+	"context"
 	"errors"
 	"math/rand"
+	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/domain"
 	"sort"
 	"testing"
@@ -22,10 +24,31 @@ const (
 	wimborneTownTeamID       = "WTFC"
 )
 
-var randomiser = rand.New(rand.NewSource(time.Now().UnixNano()))
+var (
+	altModifierSummaries = []domain.ModifierSummary{
+		{Code: domain.TeamRankingsHitModifierCode, Value: 9999},
+	}
+
+	modifierSummaries = []domain.ModifierSummary{
+		{Code: domain.BaseScoreModifierCode, Value: 100},
+		{Code: domain.TeamRankingsHitModifierCode, Value: 88},
+	}
+
+	randomiser = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	resultTeamRankings = []domain.ResultTeamRanking{
+		{TeamRanking: domain.TeamRanking{Position: 1, TeamID: pooleTownTeamID}, StandingsPos: 7, Hit: 6},
+		{TeamRanking: domain.TeamRanking{Position: 2, TeamID: wimborneTownTeamID}, StandingsPos: 6, Hit: 4},
+		{TeamRanking: domain.TeamRanking{Position: 3, TeamID: dorchesterTownTeamID}, StandingsPos: 5, Hit: 2},
+		{TeamRanking: domain.TeamRanking{Position: 4, TeamID: hamworthyUnitedTeamID}, StandingsPos: 4, Hit: 0},
+		{TeamRanking: domain.TeamRanking{Position: 5, TeamID: bournemouthPoppiesTeamID}, StandingsPos: 3, Hit: 2},
+		{TeamRanking: domain.TeamRanking{Position: 6, TeamID: stJohnsRangersTeamID}, StandingsPos: 2, Hit: 4},
+		{TeamRanking: domain.TeamRanking{Position: 7, TeamID: branksomeUnitedTeamID}, StandingsPos: 1, Hit: 6},
+	}
+)
 
 func TestNewMatchWeekResult(t *testing.T) {
-	id := mustGetUUIDFromString(t, `12345678-1234-1234-1234-123456789012`)
+	id := parseUUID(t, `12345678-1234-1234-1234-123456789012`)
 
 	t.Run("no modifiers must populate match week result as expected", func(t *testing.T) {
 		wantMWResult := &domain.MatchWeekResult{
@@ -263,7 +286,7 @@ func TestTeamRankingsHitModifier(t *testing.T) {
 			&domain.MatchWeekStandings{TeamRankings: okStandingsRankings},
 		)
 
-		wantErrMsg := "submission team rankings: duplicate team ids found: 'PTFC' (3), 'WTFC' (2)"
+		wantErrMsg := "submission team rankings: duplicate team ids found: 'PTFC' (x3), 'WTFC' (x2)"
 		gotErr := modifier(&domain.MatchWeekResult{})
 		cmpErrorMsg(t, wantErrMsg, gotErr)
 	})
@@ -282,7 +305,7 @@ func TestTeamRankingsHitModifier(t *testing.T) {
 			}},
 		)
 
-		wantErrMsg := "standings team rankings: duplicate team ids found: 'PTFC' (3), 'WTFC' (2)"
+		wantErrMsg := "standings team rankings: duplicate team ids found: 'PTFC' (x3), 'WTFC' (x2)"
 		gotErr := modifier(&domain.MatchWeekResult{})
 		cmpErrorMsg(t, wantErrMsg, gotErr)
 	})
@@ -313,24 +336,162 @@ func TestTeamRankingsHitModifier(t *testing.T) {
 		gotErr := modifier(&domain.MatchWeekResult{})
 		cmpErrorMsg(t, wantErrMsg, gotErr)
 	})
+
+	t.Run("duplicate positions in submission rankings must produce expected error", func(t *testing.T) {
+		modifier := domain.TeamRankingsHitModifier(
+			&domain.MatchWeekSubmission{TeamRankings: []domain.TeamRanking{
+				{Position: 1, TeamID: pooleTownTeamID},
+				{Position: 2, TeamID: wimborneTownTeamID},
+				{Position: 3, TeamID: dorchesterTownTeamID},
+				{Position: 1, TeamID: hamworthyUnitedTeamID},
+				{Position: 3, TeamID: bournemouthPoppiesTeamID},
+				{Position: 1, TeamID: stJohnsRangersTeamID},
+				{Position: 7, TeamID: branksomeUnitedTeamID},
+			}},
+			&domain.MatchWeekStandings{TeamRankings: okStandingsRankings},
+		)
+
+		wantErrMsg := "submission team rankings: duplicate positions found: '1' (x3), '3' (x2)"
+		gotErr := modifier(&domain.MatchWeekResult{})
+		cmpErrorMsg(t, wantErrMsg, gotErr)
+	})
+
+	t.Run("duplicate positions in standings rankings must produce expected error", func(t *testing.T) {
+		modifier := domain.TeamRankingsHitModifier(
+			&domain.MatchWeekSubmission{TeamRankings: okSubmissionRankings},
+			&domain.MatchWeekStandings{TeamRankings: []domain.StandingsTeamRanking{
+				{TeamRanking: domain.TeamRanking{Position: 1, TeamID: branksomeUnitedTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 2, TeamID: stJohnsRangersTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 3, TeamID: bournemouthPoppiesTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 1, TeamID: hamworthyUnitedTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 3, TeamID: wimborneTownTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 1, TeamID: pooleTownTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 7, TeamID: dorchesterTownTeamID}},
+			}},
+		)
+
+		wantErrMsg := "standings team rankings: duplicate positions found: '1' (x3), '3' (x2)"
+		gotErr := modifier(&domain.MatchWeekResult{})
+		cmpErrorMsg(t, wantErrMsg, gotErr)
+	})
 }
 
-func mustGetUUIDFromString(t *testing.T, input string) uuid.UUID {
-	value, err := uuidFromString(input)()
+func TestNewMatchWeekResultAgent(t *testing.T) {
+	t.Run("passing non-nil repo must succeed", func(t *testing.T) {
+		repo := newMatchWeekResultRepo(t, time.Time{})
+		if _, err := domain.NewMatchWeekResultAgent(repo); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("passing nil repo must produce the expected error", func(t *testing.T) {
+		if _, err := domain.NewMatchWeekResultAgent(nil); !errors.Is(err, domain.ErrIsNil) {
+			t.Fatalf("want ErrIsNil, got %+v (%T)", err, err)
+		}
+	})
+}
+
+func TestMatchWeekResultAgent_UpsertBySubmissionID(t *testing.T) {
+	t.Cleanup(truncate)
+
+	seedCreatedAt := testDate.Add(-24 * time.Hour)
+	seed := seedMatchWeekResult(t, generateMatchWeekResult(t, parseUUID(t, uuidAll1s), modifierSummaries, seedCreatedAt))
+
+	ctx := context.Background()
+
+	t.Run("upsert result that does not exist by submission id should be inserted", func(t *testing.T) {
+		repoDate := testDate // createdAt date to insert new submission with
+		repo := newMatchWeekResultRepo(t, repoDate)
+		agent := newMatchWeekResultAgent(t, repo)
+
+		upsertID := parseUUID(t, uuidAll2s)
+		toUpsert := generateMatchWeekResult(t, upsertID, altModifierSummaries, time.Time{}) // will not be found by submission id, so should insert a new entry
+
+		wantUpserted := cloneMatchWeekResult(toUpsert) // capture state prior to upsert
+		wantUpserted.CreatedAt = repoDate              // should be overridden on insert
+
+		if err := agent.UpsertBySubmissionID(ctx, toUpsert); err != nil {
+			t.Fatal(err)
+		}
+
+		// ensure that seed still exists
+		gotSeed, err := repo.GetBySubmissionID(ctx, seed.MatchWeekSubmissionID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cmpDiff(t, "seeded match week submission", seed, gotSeed)
+
+		// ensure that submission was inserted
+		gotUpserted, err := repo.GetBySubmissionID(ctx, toUpsert.MatchWeekSubmissionID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cmpDiff(t, "upserted match week submission", wantUpserted, gotUpserted)
+	})
+
+	t.Run("upsert result that exists by submission id should be updated", func(t *testing.T) {
+		repoDate := testDate // updatedAt date to update existing submission with
+		repo := newMatchWeekResultRepo(t, repoDate)
+		agent := newMatchWeekResultAgent(t, repo)
+
+		toUpsert := cloneMatchWeekResult(seed) // only change team rankings so will be found by legacy id and match week number
+		toUpsert.TeamRankings = []domain.ResultTeamRanking{
+			{TeamRanking: domain.TeamRanking{Position: 1, TeamID: pooleTownTeamID}},
+		}
+
+		wantUpserted := cloneMatchWeekResult(toUpsert) // capture state prior to upsert
+		wantUpserted.UpdatedAt = &repoDate             // should be overridden on update
+
+		if err := agent.UpsertBySubmissionID(ctx, toUpsert); err != nil {
+			t.Fatal(err)
+		}
+
+		// ensure that submission was updated
+		gotUpserted, err := repo.GetBySubmissionID(ctx, seed.MatchWeekSubmissionID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cmpDiff(t, "upserted match week submission", wantUpserted, gotUpserted)
+	})
+
+	t.Run("failure to get by submission id must return the expected error", func(t *testing.T) {
+		repo, err := mysqldb.NewMatchWeekResultRepo(badDB, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		agent := newMatchWeekResultAgent(t, repo)
+
+		mwResult := generateMatchWeekResult(t, uuid.UUID{}, modifierSummaries, time.Time{})
+
+		// db will return error on first operation
+		wantErrMsg := "cannot get match week result by submission id: default addr for network 'connectionString' unknown"
+		gotErr := agent.UpsertBySubmissionID(ctx, mwResult)
+		cmpErrorMsg(t, wantErrMsg, gotErr)
+	})
+}
+
+func newMatchWeekResultRepo(t *testing.T, ts time.Time) *mysqldb.MatchWeekResultRepo {
+	t.Helper()
+
+	repo, err := mysqldb.NewMatchWeekResultRepo(db, newTimeFunc(ts))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	return value
+	return repo
 }
 
-func uuidFromString(input string) uuidFunc {
-	return func() (uuid.UUID, error) {
-		return uuid.Parse(input)
+func newMatchWeekResultAgent(t *testing.T, repo domain.MatchWeekResultRepository) *domain.MatchWeekResultAgent {
+	t.Helper()
+
+	agent, err := domain.NewMatchWeekResultAgent(repo)
+	if err != nil {
+		t.Fatal(err)
 	}
-}
 
-type uuidFunc func() (uuid.UUID, error)
+	return agent
+}
 
 func randomiseTeamRankings(rankings []domain.TeamRanking) []domain.TeamRanking {
 	copied := make([]domain.TeamRanking, 0)
@@ -358,6 +519,42 @@ func randomiseStandingsTeamRankings(rankings []domain.StandingsTeamRanking) []do
 	return copied
 }
 
+func generateMatchWeekResult(t *testing.T, submissionID uuid.UUID, modifiers []domain.ModifierSummary, createdAt time.Time) *domain.MatchWeekResult {
+	t.Helper()
+
+	// submission id has foreign key restraint
+	submission := seedMatchWeekSubmission(t, generateMatchWeekSubmission(t, submissionID, testDate))
+
+	return &domain.MatchWeekResult{
+		MatchWeekSubmissionID: submission.ID,
+		TeamRankings:          resultTeamRankings,
+		Score:                 1234,
+		Modifiers:             modifiers,
+		CreatedAt:             createdAt,
+	}
+}
+
+func seedMatchWeekResult(t *testing.T, seed *domain.MatchWeekResult) *domain.MatchWeekResult {
+	t.Helper()
+
+	repo, err := mysqldb.NewMatchWeekResultRepo(db, newTimeFunc(seed.CreatedAt))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := context.Background()
+	if err := repo.Insert(ctx, seed); err != nil {
+		t.Fatal(err)
+	}
+
+	return seed
+}
+
+func cloneMatchWeekResult(original *domain.MatchWeekResult) *domain.MatchWeekResult {
+	clone := *original
+	return &clone
+}
+
 func shouldSwap() bool {
 	randNum := randomiser.Intn(2) // either 0 or 1
 	return randNum == 1
@@ -378,12 +575,4 @@ func cmpErrorMsg(t *testing.T, wantMsg string, got error) {
 		t.Fatalf("want error msg '%s', got nil", wantMsg)
 	}
 	cmpDiff(t, "error msg", wantMsg, got.Error())
-}
-
-func cmpErrorType(t *testing.T, want, got error) {
-	t.Helper()
-
-	if !errors.As(got, &want) {
-		t.Fatalf("want error (%T), got (%T)", want, got)
-	}
 }

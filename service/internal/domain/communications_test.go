@@ -52,7 +52,7 @@ func TestNewCommunicationsAgent(t *testing.T) {
 }
 
 func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	payment := domain.PaymentDetails{
 		Amount:       "£12.34",
@@ -273,7 +273,7 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 }
 
 func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	entry := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
@@ -534,7 +534,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 }
 
 func TestCommunicationsAgent_IssueMagicLoginEmail(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	t.Run("issue magic login email with a valid entry must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)

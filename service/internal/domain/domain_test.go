@@ -12,7 +12,6 @@ import (
 	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/domain"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 
@@ -24,8 +23,8 @@ import (
 )
 
 var (
+	badDB      *sql.DB
 	db         *sql.DB
-	dt         time.Time
 	epr        domain.EntryPredictionRepository
 	er         domain.EntryRepository
 	rc         domain.RealmCollection
@@ -34,10 +33,16 @@ var (
 	sr         domain.StandingsRepository
 	sc         domain.SeasonCollection
 	tc         domain.TeamCollection
+	testDate   time.Time
 	testSeason domain.Season
 	tpl        *domain.Templates
 	tr         domain.TokenRepository
 	utc        *time.Location
+
+	uuidAll1s = `11111111-1111-1111-1111-111111111111`
+	uuidAll2s = `22222222-2222-2222-2222-222222222222`
+	uuidAll3s = `33333333-3333-3333-3333-333333333333`
+	uuidAll4s = `44444444-4444-4444-4444-444444444444`
 )
 
 const (
@@ -54,24 +59,17 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	dt = time.Date(2018, 5, 26, 14, 0, 0, 0, loc)
+	testDate = time.Date(2018, 5, 26, 14, 0, 0, 0, loc)
 
-	// get working directory
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// find service parent path - everything before the last occurrence of "service" within the current working directory path
-	svcParent := wd[:strings.LastIndex(wd, "service")]
+	projectRootDir := "../../.."
 
 	// setup env
-	mustLoadTestEnvFromPaths(svcParent + "/infra/test.env")
+	mustLoadTestEnvFromPaths(projectRootDir + "/infra/test.env")
 
 	// load config
 	var config struct {
-		MySQLURL      string `envconfig:"MYSQL_URL" required:"true"`
-		MigrationsURL string `envconfig:"MIGRATIONS_URL" required:"true"`
+		MySQLURL       string `envconfig:"MYSQL_URL" required:"true"`
+		MigrationsPath string `envconfig:"MIGRATIONS_PATH" required:"true"`
 	}
 	if err := envconfig.Process("", &config); err != nil {
 		log.Fatal(err)
@@ -88,7 +86,8 @@ func TestMain(m *testing.M) {
 	}
 
 	// setup db connection
-	db, err = mysqldb.ConnectAndMigrate(config.MySQLURL, config.MigrationsURL, l)
+	migrationsURL := fmt.Sprintf("file://%s/%s", projectRootDir, config.MigrationsPath)
+	db, err = mysqldb.ConnectAndMigrate(config.MySQLURL, migrationsURL, l)
 	if err != nil {
 		switch {
 		case errors.Is(err, migrate.ErrNoChange):
@@ -124,7 +123,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// load templates
-	tpl, err = domain.ParseTemplates(svcParent + "/service/views")
+	tpl, err = domain.ParseTemplates(projectRootDir + "/service/views")
 	if err != nil {
 		log.Fatalf("cannot parse templates: %s", err.Error())
 	}
@@ -140,6 +139,10 @@ func TestMain(m *testing.M) {
 	for _, s := range sc {
 		testSeason = s
 		break
+	}
+
+	if badDB, err = sql.Open("mysql", "connectionString/dbName"); err != nil {
+		log.Fatal(err)
 	}
 
 	// run tests
@@ -167,11 +170,10 @@ func mustLoadTestEnvFromPaths(paths ...string) {
 }
 
 // truncate clears our test tables of all previous data between tests
-func truncate(t *testing.T) {
-	t.Helper()
-	for _, tableName := range []string{"token", "scored_entry_prediction", "entry_prediction", "standings", "entry"} {
+func truncate() {
+	for _, tableName := range []string{"mw_result_modifier", "mw_result", "mw_submission", "token", "scored_entry_prediction", "entry_prediction", "standings", "entry"} {
 		if _, err := db.Exec(fmt.Sprintf("DELETE FROM %s", tableName)); err != nil {
-			t.Fatal(err)
+			log.Fatal(err)
 		}
 	}
 }
@@ -324,6 +326,8 @@ func insertEntry(t *testing.T, entry domain.Entry) domain.Entry {
 
 // generateTestEntryPrediction generates a new EntryPrediction entity for use within the testsuite
 func generateTestEntryPrediction(t *testing.T, entryID uuid.UUID) domain.EntryPrediction {
+	t.Helper()
+
 	// TODO: accept predetermined uuid
 	id, err := uuid.NewRandom()
 	if err != nil {
@@ -402,6 +406,8 @@ func newTestRealm() domain.Realm {
 }
 
 func checkStringPtrMatch(t *testing.T, exp *string, got *string) {
+	t.Helper()
+
 	if exp == nil {
 		t.Fatal("exp is nil")
 	}

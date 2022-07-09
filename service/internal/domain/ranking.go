@@ -3,7 +3,9 @@ package domain
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
+	"sync"
 )
 
 const (
@@ -127,26 +129,31 @@ func NewRankingWithScoreCollectionFromIDs(ids []string) RankingWithScoreCollecti
 
 // GetChangedRankingIDs returns the Ranking IDs that differ between the two provided RankingCollection objects
 func GetChangedRankingIDs(x RankingCollection, y RankingCollection) []string {
-	diffMap := make(map[string]struct{}, 0)
+	diff := &sync.Map{}
 
 	for _, xRnk := range x {
 		yRnk, err := y.GetByID(xRnk.ID)
 		if err != nil || yRnk.Position != xRnk.Position {
-			diffMap[xRnk.ID] = struct{}{}
+			diff.Store(xRnk.ID, struct{}{})
 		}
 	}
 
 	for _, yRnk := range y {
 		xRnk, err := x.GetByID(yRnk.ID)
 		if err != nil || xRnk.Position != yRnk.Position {
-			diffMap[yRnk.ID] = struct{}{}
+			diff.Store(yRnk.ID, struct{}{})
 		}
 	}
 
-	diff := make([]string, 0)
-	for id := range diffMap {
-		diff = append(diff, id)
-	}
+	keys := make([]string, 0)
+	diff.Range(func(key, value interface{}) bool {
+		keys = append(keys, key.(string))
+		return true
+	})
 
-	return diff
+	sort.SliceStable(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+
+	return keys
 }

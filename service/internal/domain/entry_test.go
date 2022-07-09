@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	gocmp "github.com/google/go-cmp/cmp"
-	"github.com/google/uuid"
-	"gotest.tools/assert/cmp"
 	"prediction-league/service/internal/domain"
 	"sort"
 	"testing"
 	"time"
+
+	gocmp "github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
+	"gotest.tools/assert/cmp"
 )
 
 func TestNewEntryAgent(t *testing.T) {
@@ -46,9 +47,9 @@ func TestNewEntryAgent(t *testing.T) {
 }
 
 func TestEntryAgent_CreateEntry(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
-	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: dt})
+	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: testDate})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,12 +57,12 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 	season := domain.Season{
 		ID: "199293_1",
 		EntriesAccepted: domain.TimeFrame{
-			From:  dt.Add(-12 * time.Hour),
-			Until: dt.Add(12 * time.Hour),
+			From:  testDate.Add(-12 * time.Hour),
+			Until: testDate.Add(12 * time.Hour),
 		},
 		Live: domain.TimeFrame{
-			From:  dt.Add(12 * time.Hour),
-			Until: dt.Add(24 * time.Hour),
+			From:  testDate.Add(12 * time.Hour),
+			Until: testDate.Add(24 * time.Hour),
 		},
 	}
 
@@ -89,9 +90,9 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 		EntryPredictions: []domain.EntryPrediction{
 			domain.NewEntryPrediction([]string{"entry_team_id_1", "entry_team_id_2"}),
 		},
-		ApprovedAt: &dt,
+		ApprovedAt: &testDate,
 		CreatedAt:  time.Time{},
-		UpdatedAt:  &dt,
+		UpdatedAt:  &testDate,
 	}
 
 	t.Run("create a valid entry with a valid guard value must succeed", func(t *testing.T) {
@@ -288,7 +289,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 }
 
 func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	tz, err := time.LoadLocation("Europe/London")
 	if err != nil {
@@ -563,7 +564,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 }
 
 func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	entry := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
@@ -651,7 +652,7 @@ func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
 }
 
 func TestEntryAgent_RetrieveEntryByEntrantEmail(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	entry := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
@@ -749,7 +750,7 @@ func TestEntryAgent_RetrieveEntryByEntrantEmail(t *testing.T) {
 }
 
 func TestEntryAgent_RetrieveEntryByEntrantNickname(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	entry := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
@@ -847,7 +848,7 @@ func TestEntryAgent_RetrieveEntryByEntrantNickname(t *testing.T) {
 }
 
 func TestEntryAgent_RetrieveEntriesBySeasonID(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	// generate entries
 	var generatedEntries = []domain.Entry{
@@ -944,7 +945,7 @@ func TestEntryAgent_RetrieveEntriesBySeasonID(t *testing.T) {
 }
 
 func TestEntryAgent_UpdateEntry(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	entry := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
@@ -1133,7 +1134,7 @@ func TestEntryAgent_UpdateEntry(t *testing.T) {
 }
 
 func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	entry := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
@@ -1263,7 +1264,7 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 }
 
 func TestEntryAgent_ApproveEntryByID(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	entry := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
@@ -1279,7 +1280,7 @@ func TestEntryAgent_ApproveEntryByID(t *testing.T) {
 	entryWithPaidStatus.Status = domain.EntryStatusPaid
 	entryWithPaidStatus = insertEntry(t, entryWithPaidStatus)
 
-	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: dt})
+	agent, err := domain.NewEntryAgent(er, epr, sr, sc, &mockClock{t: testDate})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1362,7 +1363,7 @@ func TestEntryAgent_ApproveEntryByID(t *testing.T) {
 }
 
 func TestEntryAgent_GetEntryPredictionByTimestamp(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	entry := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
@@ -1465,7 +1466,7 @@ func TestEntryAgent_GetEntryPredictionByTimestamp(t *testing.T) {
 // TODO - tests for EntryAgent.RetrieveEntryPredictionsForActiveSeasonByTimestamp
 
 func TestEntryAgent_GetPredictionRankingLimit(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	dt := time.Date(2018, 5, 26, 14, 0, 0, 0, time.FixedZone("Europe/London", 3600))
 
@@ -1570,7 +1571,7 @@ func TestEntryAgent_GetPredictionRankingLimit(t *testing.T) {
 }
 
 func TestEntryAgent_CheckRankingLimit(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	dt := time.Date(2018, 5, 26, 14, 0, 0, 0, time.FixedZone("Europe/London", 3600))
 	cl := &mockClock{t: dt}
@@ -1690,6 +1691,8 @@ func TestEntryAgent_CheckRankingLimit(t *testing.T) {
 }
 
 func checkTimePtrMatch(t *testing.T, exp *time.Time, got *time.Time) {
+	t.Helper()
+
 	switch {
 	case exp == nil && got == nil:
 		return
