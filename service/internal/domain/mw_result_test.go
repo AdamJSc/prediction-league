@@ -2,7 +2,6 @@ package domain_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"math/rand"
 	"prediction-league/service/internal/adapters/mysqldb"
@@ -418,11 +417,6 @@ func TestMatchWeekResultAgent_UpsertBySubmissionID(t *testing.T) {
 	})
 
 	t.Run("failure to get by submission id must return the expected error", func(t *testing.T) {
-		badDB, err := sql.Open("mysql", "connectionString/dbName")
-		if err != nil {
-			t.Fatal(badDB)
-		}
-
 		repo, err := mysqldb.NewMatchWeekResultRepo(badDB, nil)
 		if err != nil {
 			t.Fatal(err)

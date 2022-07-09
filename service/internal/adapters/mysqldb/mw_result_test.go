@@ -126,7 +126,7 @@ func TestMatchWeekResultRepo_Insert(t *testing.T) {
 	t.Run("failed db operation must produce the expected error", func(t *testing.T) {
 		badDB, err := sql.Open("mysql", "connectionString/dbName")
 		if err != nil {
-			t.Fatal(badDB)
+			t.Fatal(err)
 		}
 
 		repo, err := mysqldb.NewMatchWeekResultRepo(badDB, newTimeFunc(createdAt))

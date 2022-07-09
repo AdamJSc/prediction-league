@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/domain"
 	"sync"
 	"testing"
@@ -292,20 +293,6 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 
 	ctx := context.Background()
 
-	submissionRepoID := parseUUID(t, uuidAll1s)
-	submissionRepoDate := testDate.Add(-2 * time.Hour)
-	mwSubmissionRepo := newMatchWeekSubmissionRepo(t, submissionRepoID, submissionRepoDate)
-	mwSubmissionAgent := newMatchWeekSubmissionAgent(t, mwSubmissionRepo)
-
-	resultRepoDate := testDate.Add(-time.Hour)
-	mwResultRepo := newMatchWeekResultRepo(t, resultRepoDate)
-	mwResultAgent := newMatchWeekResultAgent(t, mwResultRepo)
-
-	worker := newTestRetrieveLatestStandingsWorker(t, domain.RetrieveLatestStandingsWorkerParams{
-		MatchWeekSubmissionAgent: mwSubmissionAgent,
-		MatchWeekResultAgent:     mwResultAgent,
-	})
-
 	okEntryPredictionRankings := domain.RankingCollection{
 		{Position: 1, ID: pooleTownTeamID},
 		{Position: 2, ID: wimborneTownTeamID},
@@ -338,9 +325,23 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 		{TeamRanking: domain.TeamRanking{Position: 7, TeamID: branksomeUnitedTeamID}, StandingsPos: 1, Hit: 6},
 	}
 
-	seededEntry := seedEntry(t, generateEntry())
-
 	t.Run("valid entry prediction and standings must generate the expected scored entry prediction", func(t *testing.T) {
+		submissionRepoID := parseUUID(t, uuidAll1s)
+		submissionRepoDate := testDate.Add(-2 * time.Hour)
+		mwSubmissionRepo := newMatchWeekSubmissionRepo(t, submissionRepoID, submissionRepoDate)
+		mwSubmissionAgent := newMatchWeekSubmissionAgent(t, mwSubmissionRepo)
+
+		resultRepoDate := testDate.Add(-time.Hour)
+		mwResultRepo := newMatchWeekResultRepo(t, resultRepoDate)
+		mwResultAgent := newMatchWeekResultAgent(t, mwResultRepo)
+
+		worker := newTestRetrieveLatestStandingsWorker(t, domain.RetrieveLatestStandingsWorkerParams{
+			MatchWeekSubmissionAgent: mwSubmissionAgent,
+			MatchWeekResultAgent:     mwResultAgent,
+		})
+
+		seededEntry := seedEntry(t, generateEntry())
+
 		entryPrediction := domain.EntryPrediction{
 			ID:       uuid.New(),
 			EntryID:  seededEntry.ID,
@@ -434,7 +435,67 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 
 	// TODO: feat - add test case for generating scored entry prediction that already exists as match week submission + result
 
-	// TODO: feat - add test case for failed db operation when upserting match week result
+	t.Run("failure to upsert match week submission must return the expected error", func(t *testing.T) {
+		badMWSubmissionRepo, err := mysqldb.NewMatchWeekSubmissionRepo(badDB, newUUIDFunc(parseUUID(t, uuidAll2s)), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		badMWSubmissionAgent := newMatchWeekSubmissionAgent(t, badMWSubmissionRepo)
+
+		worker := newTestRetrieveLatestStandingsWorker(t, domain.RetrieveLatestStandingsWorkerParams{
+			MatchWeekSubmissionAgent: badMWSubmissionAgent,
+		})
+
+		seededEntry := seedEntry(t, generateEntry())
+
+		entryPrediction := domain.EntryPrediction{
+			ID:       uuid.New(),
+			EntryID:  seededEntry.ID,
+			Rankings: okEntryPredictionRankings,
+		}
+
+		standings := domain.Standings{
+			ID:       uuid.New(),
+			Rankings: okStandingsRankings,
+		}
+
+		wantErrMsg := "cannot get submission by legacy id: default addr for network 'connectionString' unknown"
+		_, gotErr := worker.GenerateScoredEntryPrediction(ctx, entryPrediction, standings)
+		cmpErrorMsg(t, wantErrMsg, gotErr)
+	})
+
+	t.Run("failure to upsert match week result must return the expected error", func(t *testing.T) {
+		mwSubmissionRepo := newMatchWeekSubmissionRepo(t, parseUUID(t, uuidAll3s), testDate)
+		mwSubmissionAgent := newMatchWeekSubmissionAgent(t, mwSubmissionRepo)
+
+		badMWResultRepo, err := mysqldb.NewMatchWeekResultRepo(badDB, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		badMWResultAgent := newMatchWeekResultAgent(t, badMWResultRepo)
+
+		worker := newTestRetrieveLatestStandingsWorker(t, domain.RetrieveLatestStandingsWorkerParams{
+			MatchWeekSubmissionAgent: mwSubmissionAgent,
+			MatchWeekResultAgent:     badMWResultAgent,
+		})
+
+		seededEntry := seedEntry(t, generateEntry())
+
+		entryPrediction := domain.EntryPrediction{
+			ID:       uuid.New(),
+			EntryID:  seededEntry.ID,
+			Rankings: okEntryPredictionRankings,
+		}
+
+		standings := domain.Standings{
+			ID:       uuid.New(),
+			Rankings: okStandingsRankings,
+		}
+
+		wantErrMsg := "cannot get match week result by submission id: default addr for network 'connectionString' unknown"
+		_, gotErr := worker.GenerateScoredEntryPrediction(ctx, entryPrediction, standings)
+		cmpErrorMsg(t, wantErrMsg, gotErr)
+	})
 
 	t.Run("mismatch rankings count must produce expected error", func(t *testing.T) {
 		worker := &domain.RetrieveLatestStandingsWorker{}

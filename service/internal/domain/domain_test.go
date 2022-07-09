@@ -23,6 +23,7 @@ import (
 )
 
 var (
+	badDB      *sql.DB
 	db         *sql.DB
 	epr        domain.EntryPredictionRepository
 	er         domain.EntryRepository
@@ -137,6 +138,10 @@ func TestMain(m *testing.M) {
 	for _, s := range sc {
 		testSeason = s
 		break
+	}
+
+	if badDB, err = sql.Open("mysql", "connectionString/dbName"); err != nil {
+		log.Fatal(err)
 	}
 
 	// run tests
