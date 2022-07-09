@@ -99,7 +99,7 @@ func (r *RetrieveLatestStandingsWorker) DoWork(ctx context.Context) error {
 
 	// calculate and save ranking scores for each entry prediction based on the standings
 	for _, entryPrediction := range entryPredictions {
-		sep, err := GenerateScoredEntryPrediction(entryPrediction, jobStandings)
+		sep, err := r.GenerateScoredEntryPrediction(entryPrediction, jobStandings)
 		if err != nil {
 			return fmt.Errorf("cannot generate scored entry prediction: %w", err)
 		}
@@ -162,6 +162,39 @@ func (r *RetrieveLatestStandingsWorker) ProcessNewStandings(
 // HasFinalisedLastRound returns true if the provided Standings represents the worker's Season having been finalised, otherwise false
 func (r *RetrieveLatestStandingsWorker) HasFinalisedLastRound(stnd Standings) bool {
 	return r.season.IsCompletedByStandings(stnd) && stnd.Finalised
+}
+
+// GenerateScoredEntryPrediction generates a scored entry prediction from the provided entry prediction and standings
+func (r *RetrieveLatestStandingsWorker) GenerateScoredEntryPrediction(ep EntryPrediction, s Standings) (*ScoredEntryPrediction, error) {
+	// TODO: migrate to MatchWeekSubmission entity + deprecate EntryPrediction
+
+	mwSubmission := newMatchWeekSubmissionFromEntryPredictionAndStandings(ep, s)
+
+	// TODO: migrate to MatchWeekStandings entity + deprecate Standings
+
+	mwStandings := newMatchWeekStandingsFromStandings(s)
+	mwResult, err := NewMatchWeekResult(
+		mwSubmission.ID,
+		BaseScoreModifier(baseScore),
+		TeamRankingsHitModifier(mwSubmission, mwStandings),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: migrate to MatchWeekResult entity + deprecate ScoredEntryPrediction
+
+	// TODO: feat - upsert mw submission by legacy entry prediction + match week number
+	// TODO: feat - upsert mw result by mw submission id (retrieved in previous step)
+
+	sep := ScoredEntryPrediction{
+		EntryPredictionID: ep.ID,
+		StandingsID:       s.ID,
+		Rankings:          newRankingsWithScoreFromResultTeamRankings(mwResult.TeamRankings),
+		Score:             int(mwResult.Score),
+	}
+
+	return &sep, nil
 }
 
 // IssueEmails issues emails to entrants based on the provided Standings and ScoredEntryPredictions
@@ -329,39 +362,6 @@ func NewRetrieveLatestStandingsWorker(params RetrieveLatestStandingsWorkerParams
 		emailIssuer:                params.EmailIssuer,
 		footballClient:             params.FootballClient,
 	}, nil
-}
-
-// GenerateScoredEntryPrediction generates a scored entry prediction from the provided entry prediction and standings
-func GenerateScoredEntryPrediction(ep EntryPrediction, s Standings) (*ScoredEntryPrediction, error) {
-	// TODO: migrate to MatchWeekSubmission entity + deprecate EntryPrediction
-
-	mwSubmission := newMatchWeekSubmissionFromEntryPredictionAndStandings(ep, s)
-
-	// TODO: migrate to MatchWeekStandings entity + deprecate Standings
-
-	mwStandings := newMatchWeekStandingsFromStandings(s)
-	mwResult, err := NewMatchWeekResult(
-		mwSubmission.ID,
-		BaseScoreModifier(baseScore),
-		TeamRankingsHitModifier(mwSubmission, mwStandings),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: migrate to MatchWeekResult entity + deprecate ScoredEntryPrediction
-
-	// TODO: feat - upsert mw submission by legacy entry prediction + match week number
-	// TODO: feat - upsert mw result by mw submission id (retrieved in previous step)
-
-	sep := ScoredEntryPrediction{
-		EntryPredictionID: ep.ID,
-		StandingsID:       s.ID,
-		Rankings:          newRankingsWithScoreFromResultTeamRankings(mwResult.TeamRankings),
-		Score:             int(mwResult.Score),
-	}
-
-	return &sep, nil
 }
 
 // ValidateAndSortStandings sorts and validates the provided standings

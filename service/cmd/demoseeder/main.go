@@ -7,6 +7,8 @@ import (
 	"log"
 	"math/rand"
 	"path/filepath"
+	"prediction-league/service/internal/adapters/footballdataorg"
+	"prediction-league/service/internal/adapters/logger"
 	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/domain"
 	"runtime"
@@ -136,6 +138,11 @@ func run() error {
 		return fmt.Errorf("cannot instantiate new standings repo: %w", err)
 	}
 
+	worker, err := newRetrieveLatestStandingsWorker(db)
+	if err != nil {
+		return fmt.Errorf("cannot instantiate new retrieve latest standings worker: %w", err)
+	}
+
 	// run job
 	j := &job{
 		realmName:                 realmName,
@@ -144,6 +151,7 @@ func run() error {
 		entryPredictionRepo:       entryPredictionRepo,
 		scoredEntryPredictionRepo: scoredEntryPredictionRepo,
 		standingsRepo:             standingsRepo,
+		worker:                    worker,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -156,6 +164,42 @@ func run() error {
 	return nil
 }
 
+func newRetrieveLatestStandingsWorker(db *sql.DB) (*domain.RetrieveLatestStandingsWorker, error) {
+	mwSubmissionRepo, err := mysqldb.NewMatchWeekSubmissionRepo(db, uuid.NewUUID, time.Now)
+	if err != nil {
+		return nil, fmt.Errorf("cannot instantiate new match week submission repo: %w", err)
+	}
+	mwSubmissionAgent, err := domain.NewMatchWeekSubmissionAgent(mwSubmissionRepo)
+	if err != nil {
+		return nil, fmt.Errorf("cannot instantiate new match week submission agent: %w", err)
+	}
+
+	mwResultRepo, err := mysqldb.NewMatchWeekResultRepo(db, time.Now)
+	if err != nil {
+		return nil, fmt.Errorf("cannot instantiate new match week result repo: %w", err)
+	}
+	mwResultAgent, err := domain.NewMatchWeekResultAgent(mwResultRepo)
+	if err != nil {
+		return nil, fmt.Errorf("cannot instantiate new match week result agent: %w", err)
+	}
+
+	params := domain.RetrieveLatestStandingsWorkerParams{
+		Season:                     domain.Season{},
+		TeamCollection:             make(domain.TeamCollection, 0),
+		Clock:                      &domain.RealClock{},
+		Logger:                     &logger.Logger{},
+		EntryAgent:                 &domain.EntryAgent{},
+		StandingsAgent:             &domain.StandingsAgent{},
+		ScoredEntryPredictionAgent: &domain.ScoredEntryPredictionAgent{},
+		MatchWeekSubmissionAgent:   mwSubmissionAgent,
+		MatchWeekResultAgent:       mwResultAgent,
+		EmailIssuer:                &domain.CommunicationsAgent{},
+		FootballClient:             &footballdataorg.Client{},
+	}
+
+	return domain.NewRetrieveLatestStandingsWorker(params)
+}
+
 type job struct {
 	realmName                 string
 	season                    domain.Season
@@ -163,6 +207,7 @@ type job struct {
 	entryPredictionRepo       *mysqldb.EntryPredictionRepo
 	scoredEntryPredictionRepo *mysqldb.ScoredEntryPredictionRepo
 	standingsRepo             *mysqldb.StandingsRepo
+	worker                    *domain.RetrieveLatestStandingsWorker
 }
 
 func (j *job) process(ctx context.Context) error {
@@ -382,7 +427,7 @@ type scoredEntryPredictionParams struct {
 }
 
 func (j *job) generateScoredEntryPrediction(p scoredEntryPredictionParams) (*domain.ScoredEntryPrediction, error) {
-	sep, err := domain.GenerateScoredEntryPrediction(p.entryPrediction, p.standings)
+	sep, err := j.worker.GenerateScoredEntryPrediction(p.entryPrediction, p.standings)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse entry prediction and standings: %w", err)
 	}
