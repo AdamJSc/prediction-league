@@ -326,6 +326,18 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 		{Ranking: domain.Ranking{Position: 7, ID: dorchesterTownTeamID}},     // score = 4 (prediction = 3)
 	}
 
+	// wantResultRankings defines the expected outcome of generating the scored entry prediction
+	// from both sets of rankings above
+	wantResultRankings := []domain.ResultTeamRanking{
+		{TeamRanking: domain.TeamRanking{Position: 1, TeamID: pooleTownTeamID}, StandingsPos: 6, Hit: 5},
+		{TeamRanking: domain.TeamRanking{Position: 2, TeamID: wimborneTownTeamID}, StandingsPos: 5, Hit: 3},
+		{TeamRanking: domain.TeamRanking{Position: 3, TeamID: dorchesterTownTeamID}, StandingsPos: 7, Hit: 4},
+		{TeamRanking: domain.TeamRanking{Position: 4, TeamID: hamworthyUnitedTeamID}, StandingsPos: 4, Hit: 0},
+		{TeamRanking: domain.TeamRanking{Position: 5, TeamID: bournemouthPoppiesTeamID}, StandingsPos: 3, Hit: 2},
+		{TeamRanking: domain.TeamRanking{Position: 6, TeamID: stJohnsRangersTeamID}, StandingsPos: 2, Hit: 4},
+		{TeamRanking: domain.TeamRanking{Position: 7, TeamID: branksomeUnitedTeamID}, StandingsPos: 1, Hit: 6},
+	}
+
 	seededEntry := seedEntry(t, generateEntry())
 
 	t.Run("valid entry prediction and standings must generate the expected scored entry prediction", func(t *testing.T) {
@@ -383,7 +395,41 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 
 		cmpDiff(t, "scored entry prediction", wantScoredEntryPrediction, gotScoredEntryPrediction)
 
-		// TODO: feat - add checks to make sure that match week submission and match week result have been inserted
+		// ensure that the expected match week submission was inserted
+		wantMWSubmission := &domain.MatchWeekSubmission{
+			ID:                      submissionRepoID,
+			EntryID:                 seededEntry.ID,
+			MatchWeekNumber:         uint16(standings.RoundNumber),
+			TeamRankings:            newSubmissionRankings(entryPrediction.Rankings),
+			LegacyEntryPredictionID: entryPrediction.ID,
+			CreatedAt:               submissionRepoDate,
+		}
+
+		gotMWSubmission, err := mwSubmissionRepo.GetByID(ctx, submissionRepoID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cmpDiff(t, "inserted match week submission", wantMWSubmission, gotMWSubmission)
+
+		// ensure that the expected match week result was inserted
+		wantMWResult := &domain.MatchWeekResult{
+			MatchWeekSubmissionID: submissionRepoID,
+			TeamRankings:          wantResultRankings,
+			Score:                 int64(gotScoredEntryPrediction.Score),
+			Modifiers: []domain.ModifierSummary{
+				{Code: "BASE_SCORE", Value: 100},
+				{Code: "RANKINGS_HIT", Value: -24},
+			},
+			CreatedAt: resultRepoDate,
+		}
+
+		gotMWResult, err := mwResultRepo.GetBySubmissionID(ctx, submissionRepoID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cmpDiff(t, "inserted match week result", wantMWResult, gotMWResult)
 	})
 
 	// TODO: feat - add test case for generating scored entry prediction that already exists as match week submission + result
@@ -623,4 +669,17 @@ func newTestRetrieveLatestStandingsWorker(
 	}
 
 	return worker
+}
+
+func newSubmissionRankings(rc domain.RankingCollection) []domain.TeamRanking {
+	rankings := make([]domain.TeamRanking, 0)
+
+	for _, r := range rc {
+		rankings = append(rankings, domain.TeamRanking{
+			Position: uint16(r.Position),
+			TeamID:   r.ID,
+		})
+	}
+
+	return rankings
 }
