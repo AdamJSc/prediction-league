@@ -325,6 +325,16 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 		{TeamRanking: domain.TeamRanking{Position: 7, TeamID: branksomeUnitedTeamID}, StandingsPos: 1, Hit: 6},
 	}
 
+	wantRankingsWithScore := []domain.RankingWithScore{
+		{Ranking: domain.Ranking{Position: 1, ID: pooleTownTeamID}, Score: 5},
+		{Ranking: domain.Ranking{Position: 2, ID: wimborneTownTeamID}, Score: 3},
+		{Ranking: domain.Ranking{Position: 3, ID: dorchesterTownTeamID}, Score: 4},
+		{Ranking: domain.Ranking{Position: 4, ID: hamworthyUnitedTeamID}, Score: 0},
+		{Ranking: domain.Ranking{Position: 5, ID: bournemouthPoppiesTeamID}, Score: 2},
+		{Ranking: domain.Ranking{Position: 6, ID: stJohnsRangersTeamID}, Score: 4},
+		{Ranking: domain.Ranking{Position: 7, ID: branksomeUnitedTeamID}, Score: 6},
+	}
+
 	t.Run("valid entry prediction and standings must generate the expected scored entry prediction", func(t *testing.T) {
 		submissionRepoID := parseUUID(t, uuidAll1s)
 		submissionRepoDate := testDate.Add(-2 * time.Hour)
@@ -356,37 +366,8 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 		wantScoredEntryPrediction := &domain.ScoredEntryPrediction{
 			EntryPredictionID: entryPrediction.ID,
 			StandingsID:       standings.ID,
-			Rankings: []domain.RankingWithScore{
-				{
-					Ranking: domain.Ranking{Position: 1, ID: pooleTownTeamID},
-					Score:   5,
-				},
-				{
-					Ranking: domain.Ranking{Position: 2, ID: wimborneTownTeamID},
-					Score:   3,
-				},
-				{
-					Ranking: domain.Ranking{Position: 3, ID: dorchesterTownTeamID},
-					Score:   4,
-				},
-				{
-					Ranking: domain.Ranking{Position: 4, ID: hamworthyUnitedTeamID},
-					Score:   0,
-				},
-				{
-					Ranking: domain.Ranking{Position: 5, ID: bournemouthPoppiesTeamID},
-					Score:   2,
-				},
-				{
-					Ranking: domain.Ranking{Position: 6, ID: stJohnsRangersTeamID},
-					Score:   4,
-				},
-				{
-					Ranking: domain.Ranking{Position: 7, ID: branksomeUnitedTeamID},
-					Score:   6,
-				},
-			},
-			Score: 76, // 100 base points, minus 24 total hits (all of the above ranking scores added together)
+			Rankings:          wantRankingsWithScore,
+			Score:             76, // 100 base points, minus 24 total hits (all of the above ranking scores added together)
 		}
 
 		gotScoredEntryPrediction, err := worker.GenerateScoredEntryPrediction(ctx, entryPrediction, standings)
@@ -433,10 +414,106 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 		cmpDiff(t, "inserted match week result", wantMWResult, gotMWResult)
 	})
 
-	// TODO: feat - add test case for generating scored entry prediction that already exists as match week submission + result
+	t.Run("valid entry prediction and standings must generate the expected scored entry prediction", func(t *testing.T) {
+		submissionRepoID := parseUUID(t, uuidAll2s)
+		submissionRepoDate := testDate.Add(-2 * time.Hour)
+		mwSubmissionRepo := newMatchWeekSubmissionRepo(t, submissionRepoID, submissionRepoDate)
+		mwSubmissionAgent := newMatchWeekSubmissionAgent(t, mwSubmissionRepo)
+
+		resultRepoDate := testDate.Add(-time.Hour)
+		mwResultRepo := newMatchWeekResultRepo(t, resultRepoDate)
+		mwResultAgent := newMatchWeekResultAgent(t, mwResultRepo)
+
+		worker := newTestRetrieveLatestStandingsWorker(t, domain.RetrieveLatestStandingsWorkerParams{
+			MatchWeekSubmissionAgent: mwSubmissionAgent,
+			MatchWeekResultAgent:     mwResultAgent,
+		})
+
+		seededEntry := seedEntry(t, generateEntry())
+
+		entryPrediction := domain.EntryPrediction{
+			ID:       uuid.New(),
+			EntryID:  seededEntry.ID,
+			Rankings: okEntryPredictionRankings,
+		}
+
+		standings := domain.Standings{
+			ID:          uuid.New(),
+			RoundNumber: 1234,
+			Rankings:    okStandingsRankings,
+		}
+
+		// pre-insert mw submission - the upsert operation as part of the test method should update this
+		seededSubmission := seedMatchWeekSubmission(t, &domain.MatchWeekSubmission{
+			ID:                      submissionRepoID,
+			EntryID:                 seededEntry.ID,
+			MatchWeekNumber:         uint16(standings.RoundNumber), // match GetByLegacyIDAndMatchWeekNumber
+			LegacyEntryPredictionID: entryPrediction.ID,            // match GetByLegacyIDAndMatchWeekNumber
+			CreatedAt:               testDate,
+		})
+
+		// pre-insert mw result - the upsert operation as part of the test method should update this
+		seededResult := seedMatchWeekResult(t, &domain.MatchWeekResult{
+			MatchWeekSubmissionID: submissionRepoID,
+			CreatedAt:             testDate,
+		})
+
+		wantScoredEntryPrediction := &domain.ScoredEntryPrediction{
+			EntryPredictionID: entryPrediction.ID,
+			StandingsID:       standings.ID,
+			Rankings:          wantRankingsWithScore,
+			Score:             76, // 100 base points, minus 24 total hits (all of the above ranking scores added together)
+		}
+
+		gotScoredEntryPrediction, err := worker.GenerateScoredEntryPrediction(ctx, entryPrediction, standings)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cmpDiff(t, "scored entry prediction", wantScoredEntryPrediction, gotScoredEntryPrediction)
+
+		// ensure that the expected match week submission was updated
+		wantMWSubmission := &domain.MatchWeekSubmission{
+			ID:                      seededSubmission.ID,
+			EntryID:                 seededEntry.ID,
+			MatchWeekNumber:         uint16(standings.RoundNumber),
+			TeamRankings:            newSubmissionRankings(entryPrediction.Rankings),
+			LegacyEntryPredictionID: entryPrediction.ID,
+			CreatedAt:               seededSubmission.CreatedAt,
+			UpdatedAt:               &submissionRepoDate,
+		}
+
+		gotMWSubmission, err := mwSubmissionRepo.GetByID(ctx, seededSubmission.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cmpDiff(t, "updated match week submission", wantMWSubmission, gotMWSubmission)
+
+		// ensure that the expected match week result was updated
+		wantMWResult := &domain.MatchWeekResult{
+			MatchWeekSubmissionID: seededSubmission.ID,
+			TeamRankings:          wantResultRankings,
+			Score:                 int64(gotScoredEntryPrediction.Score),
+			Modifiers: []domain.ModifierSummary{
+				{Code: "BASE_SCORE", Value: 100},
+				{Code: "RANKINGS_HIT", Value: -24},
+			},
+			CreatedAt: seededResult.CreatedAt,
+			UpdatedAt: &resultRepoDate,
+		}
+
+		gotMWResult, err := mwResultRepo.GetBySubmissionID(ctx, seededSubmission.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cmpDiff(t, "updated match week result", wantMWResult, gotMWResult)
+	})
 
 	t.Run("failure to upsert match week submission must return the expected error", func(t *testing.T) {
-		badMWSubmissionRepo, err := mysqldb.NewMatchWeekSubmissionRepo(badDB, newUUIDFunc(parseUUID(t, uuidAll2s)), nil)
+		id := parseUUID(t, uuidAll3s)
+		badMWSubmissionRepo, err := mysqldb.NewMatchWeekSubmissionRepo(badDB, newUUIDFunc(id), nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -465,7 +542,8 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 	})
 
 	t.Run("failure to upsert match week result must return the expected error", func(t *testing.T) {
-		mwSubmissionRepo := newMatchWeekSubmissionRepo(t, parseUUID(t, uuidAll3s), testDate)
+		id := parseUUID(t, uuidAll4s)
+		mwSubmissionRepo := newMatchWeekSubmissionRepo(t, id, testDate)
 		mwSubmissionAgent := newMatchWeekSubmissionAgent(t, mwSubmissionRepo)
 
 		badMWResultRepo, err := mysqldb.NewMatchWeekResultRepo(badDB, nil)
