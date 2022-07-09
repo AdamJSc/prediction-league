@@ -99,7 +99,7 @@ func (r *RetrieveLatestStandingsWorker) DoWork(ctx context.Context) error {
 
 	// calculate and save ranking scores for each entry prediction based on the standings
 	for _, entryPrediction := range entryPredictions {
-		sep, err := r.GenerateScoredEntryPrediction(entryPrediction, jobStandings)
+		sep, err := r.GenerateScoredEntryPrediction(ctx, entryPrediction, jobStandings)
 		if err != nil {
 			return fmt.Errorf("cannot generate scored entry prediction: %w", err)
 		}
@@ -165,12 +165,13 @@ func (r *RetrieveLatestStandingsWorker) HasFinalisedLastRound(stnd Standings) bo
 }
 
 // GenerateScoredEntryPrediction generates a scored entry prediction from the provided entry prediction and standings
-func (r *RetrieveLatestStandingsWorker) GenerateScoredEntryPrediction(ep EntryPrediction, s Standings) (*ScoredEntryPrediction, error) {
+func (r *RetrieveLatestStandingsWorker) GenerateScoredEntryPrediction(ctx context.Context, ep EntryPrediction, s Standings) (*ScoredEntryPrediction, error) {
 	// TODO: migrate to MatchWeekSubmission entity + deprecate EntryPrediction
 
 	mwSubmission := newMatchWeekSubmissionFromEntryPredictionAndStandings(ep, s)
 
 	// TODO: migrate to MatchWeekStandings entity + deprecate Standings
+	// TODO: migrate to MatchWeekResult entity + deprecate ScoredEntryPrediction
 
 	mwStandings := newMatchWeekStandingsFromStandings(s)
 	mwResult, err := NewMatchWeekResult(
@@ -182,10 +183,14 @@ func (r *RetrieveLatestStandingsWorker) GenerateScoredEntryPrediction(ep EntryPr
 		return nil, err
 	}
 
-	// TODO: migrate to MatchWeekResult entity + deprecate ScoredEntryPrediction
+	if err := r.matchWeekSubmissionAgent.UpsertByLegacy(ctx, mwSubmission); err != nil {
+		return nil, err
+	}
 
-	// TODO: feat - upsert mw submission by legacy entry prediction + match week number
-	// TODO: feat - upsert mw result by mw submission id (retrieved in previous step)
+	mwResult.MatchWeekSubmissionID = mwSubmission.ID
+	if err := r.matchWeekResultAgent.UpsertBySubmissionID(ctx, mwResult); err != nil {
+		return nil, err
+	}
 
 	sep := ScoredEntryPrediction{
 		EntryPredictionID: ep.ID,

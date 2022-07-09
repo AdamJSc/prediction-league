@@ -52,11 +52,7 @@ func TestMatchWeekSubmissionAgent_UpsertByLegacy(t *testing.T) {
 		repoID := uuid.New() // id to insert new submission with
 		repoDate := testDate // createdAt date to insert new submission with
 		repo := newMatchWeekSubmissionRepo(t, repoID, repoDate)
-
-		agent, err := domain.NewMatchWeekSubmissionAgent(repo)
-		if err != nil {
-			t.Fatal(err)
-		}
+		agent := newMatchWeekSubmissionAgent(t, repo)
 
 		toUpsert := generateMatchWeekSubmission(t, uuid.UUID{}, time.Time{})
 		toUpsert.MatchWeekNumber = seed.MatchWeekNumber
@@ -90,11 +86,7 @@ func TestMatchWeekSubmissionAgent_UpsertByLegacy(t *testing.T) {
 		repoID := uuid.New() // id to insert new submission with
 		repoDate := testDate // createdAt date to insert new submission with
 		repo := newMatchWeekSubmissionRepo(t, repoID, repoDate)
-
-		agent, err := domain.NewMatchWeekSubmissionAgent(repo)
-		if err != nil {
-			t.Fatal(err)
-		}
+		agent := newMatchWeekSubmissionAgent(t, repo)
 
 		toUpsert := generateMatchWeekSubmission(t, uuid.UUID{}, time.Time{})
 		toUpsert.MatchWeekNumber = 9999 // will not be found by match week number, so should insert a new entry
@@ -127,11 +119,7 @@ func TestMatchWeekSubmissionAgent_UpsertByLegacy(t *testing.T) {
 	t.Run("upsert submission that exists by legacy id and match week number should be updated", func(t *testing.T) {
 		repoDate := testDate // updatedAt date to update existing submission with
 		repo := newMatchWeekSubmissionRepo(t, uuid.UUID{}, repoDate)
-
-		agent, err := domain.NewMatchWeekSubmissionAgent(repo)
-		if err != nil {
-			t.Fatal(err)
-		}
+		agent := newMatchWeekSubmissionAgent(t, repo)
 
 		toUpsert := cloneMatchWeekSubmission(seed) // only change team rankings so will be found by legacy id and match week number
 		toUpsert.TeamRankings = []domain.TeamRanking{
@@ -161,11 +149,7 @@ func TestMatchWeekSubmissionAgent_UpsertByLegacy(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-
-		agent, err := domain.NewMatchWeekSubmissionAgent(repo)
-		if err != nil {
-			t.Fatal(err)
-		}
+		agent := newMatchWeekSubmissionAgent(t, repo)
 
 		submission := generateMatchWeekSubmission(t, uuid.UUID{}, time.Time{})
 
@@ -183,11 +167,7 @@ func TestMatchWeekSubmissionAgent_UpsertByLegacy(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-
-		agent, err := domain.NewMatchWeekSubmissionAgent(repo)
-		if err != nil {
-			t.Fatal(err)
-		}
+		agent := newMatchWeekSubmissionAgent(t, repo)
 
 		submission := cloneMatchWeekSubmission(seed)
 		submission.EntryID = uuid.New() // change to non-existent entry id in order to fail foreign key constraint
@@ -207,6 +187,17 @@ func newMatchWeekSubmissionRepo(t *testing.T, id uuid.UUID, ts time.Time) *mysql
 	}
 
 	return repo
+}
+
+func newMatchWeekSubmissionAgent(t *testing.T, repo domain.MatchWeekSubmissionRepository) *domain.MatchWeekSubmissionAgent {
+	t.Helper()
+
+	agent, err := domain.NewMatchWeekSubmissionAgent(repo)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return agent
 }
 
 func generateMatchWeekSubmission(t *testing.T, id uuid.UUID, createdAt time.Time) *domain.MatchWeekSubmission {

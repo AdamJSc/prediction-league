@@ -123,11 +123,10 @@ func TestRetrieveLatestStandingsWorker_ProcessExistingStandings(t *testing.T) {
 			t.Fatal(sa)
 		}
 
-		params := domain.RetrieveLatestStandingsWorkerParams{
+		worker := newTestRetrieveLatestStandingsWorker(t, domain.RetrieveLatestStandingsWorkerParams{
 			Season:         domain.Season{},
 			StandingsAgent: sa,
-		}
-		worker := newTestRetrieveLatestStandingsWorker(t, params)
+		})
 
 		gotStandings, err := worker.ProcessExistingStandings(ctx, existingStandings, clientStandings)
 		if err != nil {
@@ -154,11 +153,10 @@ func TestRetrieveLatestStandingsWorker_ProcessNewStandings(t *testing.T) {
 		t.Fatal(sa)
 	}
 
-	params := domain.RetrieveLatestStandingsWorkerParams{
+	worker := newTestRetrieveLatestStandingsWorker(t, domain.RetrieveLatestStandingsWorkerParams{
 		Season:         domain.Season{},
 		StandingsAgent: sa,
-	}
-	worker := newTestRetrieveLatestStandingsWorker(t, params)
+	})
 
 	id1 := uuid.New()
 	id2 := uuid.New()
@@ -280,8 +278,9 @@ func TestRetrieveLatestStandingsWorker_HasFinalisedLastRound(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		params := domain.RetrieveLatestStandingsWorkerParams{Season: season}
-		worker := newTestRetrieveLatestStandingsWorker(t, params)
+		worker := newTestRetrieveLatestStandingsWorker(t, domain.RetrieveLatestStandingsWorkerParams{
+			Season: season,
+		})
 		if worker.HasFinalisedLastRound(tc.standings) != tc.want {
 			t.Fatalf("want finalised last round is %t, got %t", tc.want, !tc.want)
 		}
@@ -290,6 +289,22 @@ func TestRetrieveLatestStandingsWorker_HasFinalisedLastRound(t *testing.T) {
 
 func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.T) {
 	t.Cleanup(truncate)
+
+	ctx := context.Background()
+
+	submissionRepoID := parseUUID(t, uuidAll1s)
+	submissionRepoDate := testDate.Add(-2 * time.Hour)
+	mwSubmissionRepo := newMatchWeekSubmissionRepo(t, submissionRepoID, submissionRepoDate)
+	mwSubmissionAgent := newMatchWeekSubmissionAgent(t, mwSubmissionRepo)
+
+	resultRepoDate := testDate.Add(-time.Hour)
+	mwResultRepo := newMatchWeekResultRepo(t, resultRepoDate)
+	mwResultAgent := newMatchWeekResultAgent(t, mwResultRepo)
+
+	worker := newTestRetrieveLatestStandingsWorker(t, domain.RetrieveLatestStandingsWorkerParams{
+		MatchWeekSubmissionAgent: mwSubmissionAgent,
+		MatchWeekResultAgent:     mwResultAgent,
+	})
 
 	okEntryPredictionRankings := domain.RankingCollection{
 		{Position: 1, ID: pooleTownTeamID},
@@ -311,24 +326,23 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 		{Ranking: domain.Ranking{Position: 7, ID: dorchesterTownTeamID}},     // score = 4 (prediction = 3)
 	}
 
-	t.Run("valid entry prediction and standings must generate the expected scored entry prediction", func(t *testing.T) {
-		worker := &domain.RetrieveLatestStandingsWorker{}
+	seededEntry := seedEntry(t, generateEntry())
 
-		entryPredictionID := parseUUID(t, `11111111-1111-1111-1111-111111111111`)
+	t.Run("valid entry prediction and standings must generate the expected scored entry prediction", func(t *testing.T) {
 		entryPrediction := domain.EntryPrediction{
-			ID:       entryPredictionID,
+			ID:       uuid.New(),
+			EntryID:  seededEntry.ID,
 			Rankings: okEntryPredictionRankings,
 		}
 
-		standingsID := parseUUID(t, `22222222-2222-2222-2222-222222222222`)
 		standings := domain.Standings{
-			ID:       standingsID,
+			ID:       uuid.New(),
 			Rankings: okStandingsRankings,
 		}
 
 		wantScoredEntryPrediction := &domain.ScoredEntryPrediction{
-			EntryPredictionID: entryPredictionID,
-			StandingsID:       standingsID,
+			EntryPredictionID: entryPrediction.ID,
+			StandingsID:       standings.ID,
 			Rankings: []domain.RankingWithScore{
 				{
 					Ranking: domain.Ranking{Position: 1, ID: pooleTownTeamID},
@@ -362,7 +376,7 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 			Score: 76, // 100 base points, minus 24 total hits (all of the above ranking scores added together)
 		}
 
-		gotScoredEntryPrediction, err := worker.GenerateScoredEntryPrediction(entryPrediction, standings)
+		gotScoredEntryPrediction, err := worker.GenerateScoredEntryPrediction(ctx, entryPrediction, standings)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -384,7 +398,7 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 		}
 
 		wantErrMsg := "rankings count mismatch: submission 7: standings 0"
-		_, gotErr := worker.GenerateScoredEntryPrediction(entryPrediction, domain.Standings{})
+		_, gotErr := worker.GenerateScoredEntryPrediction(ctx, entryPrediction, domain.Standings{})
 		cmpErrorMsg(t, wantErrMsg, gotErr)
 	})
 }
@@ -465,11 +479,10 @@ func TestRetrieveLatestStandingsWorker_IssueEmails(t *testing.T) {
 				wantFinalRound: tc.wantFinalRound,
 			}
 
-			params := domain.RetrieveLatestStandingsWorkerParams{
+			worker := newTestRetrieveLatestStandingsWorker(t, domain.RetrieveLatestStandingsWorkerParams{
 				Season:      tc.season,
 				EmailIssuer: emailIssuer,
-			}
-			worker := newTestRetrieveLatestStandingsWorker(t, params)
+			})
 
 			if err := worker.IssueEmails(context.Background(), tc.standings, tc.scoredEntryPredictions); err != nil {
 				t.Fatal(err)
@@ -518,11 +531,10 @@ func TestRetrieveLatestStandingsWorker_IssueEmails(t *testing.T) {
 			errs: make(map[string]error),
 		}
 
-		params := domain.RetrieveLatestStandingsWorkerParams{
+		worker := newTestRetrieveLatestStandingsWorker(t, domain.RetrieveLatestStandingsWorkerParams{
 			Season:      season,
 			EmailIssuer: emailIssuer,
-		}
-		worker := newTestRetrieveLatestStandingsWorker(t, params)
+		})
 
 		err := worker.IssueEmails(context.Background(), standings, scoredEntryPredictions)
 		mErr := domain.MultiError{}

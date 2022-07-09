@@ -320,6 +320,8 @@ func insertEntry(t *testing.T, entry domain.Entry) domain.Entry {
 
 // generateTestEntryPrediction generates a new EntryPrediction entity for use within the testsuite
 func generateTestEntryPrediction(t *testing.T, entryID uuid.UUID) domain.EntryPrediction {
+	t.Helper()
+
 	// TODO: accept predetermined uuid
 	id, err := uuid.NewRandom()
 	if err != nil {
@@ -398,6 +400,8 @@ func newTestRealm() domain.Realm {
 }
 
 func checkStringPtrMatch(t *testing.T, exp *string, got *string) {
+	t.Helper()
+
 	if exp == nil {
 		t.Fatal("exp is nil")
 	}

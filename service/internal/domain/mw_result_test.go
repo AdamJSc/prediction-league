@@ -365,11 +365,7 @@ func TestMatchWeekResultAgent_UpsertBySubmissionID(t *testing.T) {
 	t.Run("upsert result that does not exist by submission id should be inserted", func(t *testing.T) {
 		repoDate := testDate // createdAt date to insert new submission with
 		repo := newMatchWeekResultRepo(t, repoDate)
-
-		agent, err := domain.NewMatchWeekResultAgent(repo)
-		if err != nil {
-			t.Fatal(err)
-		}
+		agent := newMatchWeekResultAgent(t, repo)
 
 		upsertID := parseUUID(t, uuidAll2s)
 		toUpsert := generateMatchWeekResult(t, upsertID, altModifierSummaries, time.Time{}) // will not be found by submission id, so should insert a new entry
@@ -399,11 +395,7 @@ func TestMatchWeekResultAgent_UpsertBySubmissionID(t *testing.T) {
 	t.Run("upsert result that exists by submission id should be updated", func(t *testing.T) {
 		repoDate := testDate // updatedAt date to update existing submission with
 		repo := newMatchWeekResultRepo(t, repoDate)
-
-		agent, err := domain.NewMatchWeekResultAgent(repo)
-		if err != nil {
-			t.Fatal(err)
-		}
+		agent := newMatchWeekResultAgent(t, repo)
 
 		toUpsert := cloneMatchWeekResult(seed) // only change team rankings so will be found by legacy id and match week number
 		toUpsert.TeamRankings = []domain.ResultTeamRanking{
@@ -436,10 +428,7 @@ func TestMatchWeekResultAgent_UpsertBySubmissionID(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		agent, err := domain.NewMatchWeekResultAgent(repo)
-		if err != nil {
-			t.Fatal(err)
-		}
+		agent := newMatchWeekResultAgent(t, repo)
 
 		mwResult := generateMatchWeekResult(t, uuid.UUID{}, modifierSummaries, time.Time{})
 
@@ -459,6 +448,17 @@ func newMatchWeekResultRepo(t *testing.T, ts time.Time) *mysqldb.MatchWeekResult
 	}
 
 	return repo
+}
+
+func newMatchWeekResultAgent(t *testing.T, repo domain.MatchWeekResultRepository) *domain.MatchWeekResultAgent {
+	t.Helper()
+
+	agent, err := domain.NewMatchWeekResultAgent(repo)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return agent
 }
 
 func randomiseTeamRankings(rankings []domain.TeamRanking) []domain.TeamRanking {

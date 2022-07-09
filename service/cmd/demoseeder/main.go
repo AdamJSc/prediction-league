@@ -259,7 +259,7 @@ func (j *job) process(ctx context.Context) error {
 	scoredEntryPredictions := make([]*domain.ScoredEntryPrediction, 0)
 	for mwIdx, mw := range matchWeeks {
 		for epIdx, ep := range mw.entryPredictions {
-			sep, err := j.generateScoredEntryPrediction(scoredEntryPredictionParams{
+			sep, err := j.generateScoredEntryPrediction(ctx, scoredEntryPredictionParams{
 				entryPrediction: ep,
 				standings:       *mw.standings,
 				timestamp:       mw.standings.CreatedAt.Add(time.Second),
@@ -426,8 +426,8 @@ type scoredEntryPredictionParams struct {
 	timestamp       time.Time
 }
 
-func (j *job) generateScoredEntryPrediction(p scoredEntryPredictionParams) (*domain.ScoredEntryPrediction, error) {
-	sep, err := j.worker.GenerateScoredEntryPrediction(p.entryPrediction, p.standings)
+func (j *job) generateScoredEntryPrediction(ctx context.Context, p scoredEntryPredictionParams) (*domain.ScoredEntryPrediction, error) {
+	sep, err := j.worker.GenerateScoredEntryPrediction(ctx, p.entryPrediction, p.standings)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse entry prediction and standings: %w", err)
 	}

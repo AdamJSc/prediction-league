@@ -1691,6 +1691,8 @@ func TestEntryAgent_CheckRankingLimit(t *testing.T) {
 }
 
 func checkTimePtrMatch(t *testing.T, exp *time.Time, got *time.Time) {
+	t.Helper()
+
 	switch {
 	case exp == nil && got == nil:
 		return
