@@ -255,6 +255,24 @@ func (j *job) process(ctx context.Context) error {
 		matchWeeks[mwNum] = mw
 	}
 
+	// insert entries and entry predictions
+	// these must be present in the db before we can generate the scored entry predictions in the next step
+	// because that operation will also insert the match week submission/result records which have a
+	// foreign key constraint on entry id
+	for eIdx, entry := range entries {
+		// insert entry
+		if err := j.entryRepo.Insert(ctx, entry); err != nil {
+			return fmt.Errorf("cannot insert entry: idx %d: %w", eIdx, err)
+		}
+
+		for epIdx, entryPrediction := range entry.EntryPredictions {
+			// insert entry prediction
+			if err := j.entryPredictionRepo.Insert(ctx, &entryPrediction); err != nil {
+				return fmt.Errorf("cannot insert entry prediction: idx %d: %w", epIdx, err)
+			}
+		}
+	}
+
 	// generate scored entry predictions from previously generated entry predictions and standings
 	scoredEntryPredictions := make([]*domain.ScoredEntryPrediction, 0)
 	for mwIdx, mw := range matchWeeks {
@@ -269,21 +287,6 @@ func (j *job) process(ctx context.Context) error {
 			}
 
 			scoredEntryPredictions = append(scoredEntryPredictions, sep)
-		}
-	}
-
-	// insert entries and entry predictions
-	for eIdx, entry := range entries {
-		// insert entry
-		if err := j.entryRepo.Insert(ctx, entry); err != nil {
-			return fmt.Errorf("cannot insert entry: idx %d: %w", eIdx, err)
-		}
-
-		for epIdx, entryPrediction := range entry.EntryPredictions {
-			// insert entry prediction
-			if err := j.entryPredictionRepo.Insert(ctx, &entryPrediction); err != nil {
-				return fmt.Errorf("cannot insert entry prediction: idx %d: %w", epIdx, err)
-			}
 		}
 	}
 
