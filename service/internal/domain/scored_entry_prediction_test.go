@@ -203,8 +203,6 @@ func TestScoredEntryPredictionAgent_UpdateScoredEntryPrediction(t *testing.T) {
 	})
 }
 
-// TODO - tests for GenerateScoredEntryPrediction
-
 func TestScoredEntryPredictionAgent_RetrieveScoredEntryPredictionByIDs(t *testing.T) {
 	t.Cleanup(truncate)
 
