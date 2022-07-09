@@ -116,6 +116,12 @@ belonged to an [Entry](#entry).
 * The most recently-created EntryPrediction is used to generate the [Scored Prediciton](#scoredentryprediction) for the current
 and future Game Weeks (until a new EntryPrediction is created).
 
+### MatchWeekSubmission
+
+* Transformed from `EntryPrediction` entity within `GenerateScoredEntryPrediction` method.
+
+* Interim state is stored in database by this method before being discarded to accommodate potential future migrations.
+
 ### Standings
 
 * A `Standings` object represents an instance of a real-world league table consumed from the upstream data source.
@@ -128,6 +134,10 @@ such as number of matches played, won, drawn, lost etc. for each [Team](#team).
 * Each Standings record is unique by SeasonID and Round Number (Game Week) which is overwritten by each cron job execution,
 until the next Game Week is reached (or the [Season](#season) reaches completion). 
 
+### MatchWeekStandings
+
+* Transformed from `Standings` entity within `GenerateScoredEntryPrediction` method.
+
 ### ScoredEntryPrediction
 
 * A `ScoredEntryPrediction` object represents a [Prediction](#entryprediction) that has been provided with a score of
@@ -136,6 +146,17 @@ penalty points based on a given [Standings](#standings) object.
 * It is unique to a single combination of a [Prediction](#entryprediction) object and a [Standings](#standings) object.
 
 * It is used to calculate the total cumulative score for each [Entry](#entry) on a [LeaderBoard](#leaderboard).
+
+### MatchWeekResult
+
+* Transformed from `ScoredEntryPrediction` within `GenerateScoredEntryPrediction` method.
+
+* Interim state is stored in database by this method before being discarded to accommodate potential future migrations.
+
+* Also introduces the concept of "Modifiers" which are the individual factors that influence the overall Score on a `MatchWeekResult`.
+
+* Modifiers are stored with an arbitrary Code (so that their nature, description etc. can be recalled in the future),
+  as well as a Value (the amount by which to affect the Score so that these can be replayed as required).
 
 ### Ranking
 

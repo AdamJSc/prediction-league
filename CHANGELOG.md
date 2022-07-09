@@ -6,9 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+// TODO: feat - update CHANGELOG
+
 ### Added
 
 - Demo data seeder cmd entrypoint
+- Introduced new entities `MatchWeekSubmission`, `MatchWeekStandings` and `MatchWeekResult`.
 
 ### Changed
 
@@ -24,8 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Legacy data seeder component
-
-// TODO: feat - update CHANGELOG
 
 ## [2.2.1] - 2022-06-15
 
