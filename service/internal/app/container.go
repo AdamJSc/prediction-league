@@ -43,8 +43,7 @@ func NewContainer(cfg *Config, l domain.Logger, cl domain.Clock) (*container, fu
 	}
 
 	// setup db connection
-	projectRootDir := "../.."
-	migrationsURL := fmt.Sprintf("file://%s/%s", projectRootDir, cfg.MigrationsPath)
+	migrationsURL := fmt.Sprintf("file://%s", cfg.MigrationsPath)
 	db, err := sqlConnectAndMigrate(cfg.MySQLURL, migrationsURL, l)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to connect and migrate database: %w", err)
