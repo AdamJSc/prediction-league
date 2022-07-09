@@ -286,7 +286,7 @@ func TestTeamRankingsHitModifier(t *testing.T) {
 			&domain.MatchWeekStandings{TeamRankings: okStandingsRankings},
 		)
 
-		wantErrMsg := "submission team rankings: duplicate team ids found: 'PTFC' (3), 'WTFC' (2)"
+		wantErrMsg := "submission team rankings: duplicate team ids found: 'PTFC' (x3), 'WTFC' (x2)"
 		gotErr := modifier(&domain.MatchWeekResult{})
 		cmpErrorMsg(t, wantErrMsg, gotErr)
 	})
@@ -305,7 +305,7 @@ func TestTeamRankingsHitModifier(t *testing.T) {
 			}},
 		)
 
-		wantErrMsg := "standings team rankings: duplicate team ids found: 'PTFC' (3), 'WTFC' (2)"
+		wantErrMsg := "standings team rankings: duplicate team ids found: 'PTFC' (x3), 'WTFC' (x2)"
 		gotErr := modifier(&domain.MatchWeekResult{})
 		cmpErrorMsg(t, wantErrMsg, gotErr)
 	})
@@ -333,6 +333,44 @@ func TestTeamRankingsHitModifier(t *testing.T) {
 		)
 
 		wantErrMsg := "team ids missing from standings rankings: 'BOSTON_RED_SOX', 'EDMONTON_OILERS', 'DARTFORD_TIDDLYWINKS_MASSIF'"
+		gotErr := modifier(&domain.MatchWeekResult{})
+		cmpErrorMsg(t, wantErrMsg, gotErr)
+	})
+
+	t.Run("duplicate positions in submission rankings must produce expected error", func(t *testing.T) {
+		modifier := domain.TeamRankingsHitModifier(
+			&domain.MatchWeekSubmission{TeamRankings: []domain.TeamRanking{
+				{Position: 1, TeamID: pooleTownTeamID},
+				{Position: 2, TeamID: wimborneTownTeamID},
+				{Position: 3, TeamID: dorchesterTownTeamID},
+				{Position: 1, TeamID: hamworthyUnitedTeamID},
+				{Position: 3, TeamID: bournemouthPoppiesTeamID},
+				{Position: 1, TeamID: stJohnsRangersTeamID},
+				{Position: 7, TeamID: branksomeUnitedTeamID},
+			}},
+			&domain.MatchWeekStandings{TeamRankings: okStandingsRankings},
+		)
+
+		wantErrMsg := "submission team rankings: duplicate positions found: '1' (x3), '3' (x2)"
+		gotErr := modifier(&domain.MatchWeekResult{})
+		cmpErrorMsg(t, wantErrMsg, gotErr)
+	})
+
+	t.Run("duplicate positions in standings rankings must produce expected error", func(t *testing.T) {
+		modifier := domain.TeamRankingsHitModifier(
+			&domain.MatchWeekSubmission{TeamRankings: okSubmissionRankings},
+			&domain.MatchWeekStandings{TeamRankings: []domain.StandingsTeamRanking{
+				{TeamRanking: domain.TeamRanking{Position: 1, TeamID: branksomeUnitedTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 2, TeamID: stJohnsRangersTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 3, TeamID: bournemouthPoppiesTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 1, TeamID: hamworthyUnitedTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 3, TeamID: wimborneTownTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 1, TeamID: pooleTownTeamID}},
+				{TeamRanking: domain.TeamRanking{Position: 7, TeamID: dorchesterTownTeamID}},
+			}},
+		)
+
+		wantErrMsg := "standings team rankings: duplicate positions found: '1' (x3), '3' (x2)"
 		gotErr := modifier(&domain.MatchWeekResult{})
 		cmpErrorMsg(t, wantErrMsg, gotErr)
 	})

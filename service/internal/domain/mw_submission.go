@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -137,19 +138,19 @@ func NewMatchWeekSubmissionAgent(repo MatchWeekSubmissionRepository) (*MatchWeek
 	return &MatchWeekSubmissionAgent{repo: repo}, nil
 }
 
-// duplicateStringsError defines an error that represents duplicate occurrences of a set of values
-type duplicateStringsError struct {
+// duplicatesError defines an error that represents duplicate occurrences of a set of values
+type duplicatesError struct {
 	valueCountMap map[string]uint16
 }
 
-func (d duplicateStringsError) Error() string {
+func (d duplicatesError) Error() string {
 	if len(d.valueCountMap) == 0 {
 		return ""
 	}
 
 	var msgs []string
 	for value, count := range d.valueCountMap {
-		msgs = append(msgs, fmt.Sprintf("'%s' (%d)", value, count))
+		msgs = append(msgs, fmt.Sprintf("'%s' (x%d)", value, count))
 	}
 
 	sort.SliceStable(msgs, func(i, j int) bool {
@@ -159,23 +160,32 @@ func (d duplicateStringsError) Error() string {
 	return strings.Join(msgs, ", ")
 }
 
-func newDuplicateStringsError() duplicateStringsError {
-	return duplicateStringsError{valueCountMap: make(map[string]uint16)}
+func newDuplicatesError() duplicatesError {
+	return duplicatesError{valueCountMap: make(map[string]uint16)}
 }
 
 func checkForDuplicateTeamRankings(input []TeamRanking) error {
-	// map team id against number of occurrences
-	idCountMap := make(map[string]uint16)
+	// map team id and position against number of occurrences
+	idCounts := make(map[string]uint16)
+	positionCounts := make(map[uint16]uint16)
 	for _, ranking := range input {
-		if _, ok := idCountMap[ranking.TeamID]; !ok {
-			idCountMap[ranking.TeamID] = 0
+		id := ranking.TeamID
+		pos := ranking.Position
+
+		if _, ok := idCounts[id]; !ok {
+			idCounts[id] = 0
 		}
-		idCountMap[ranking.TeamID]++
+		idCounts[id]++
+
+		if _, ok := positionCounts[pos]; !ok {
+			positionCounts[pos] = 0
+		}
+		positionCounts[pos]++
 	}
 
 	// determine if any duplicate team ids, and return error if so
-	dupeTeamIDsErr := newDuplicateStringsError()
-	for id, count := range idCountMap {
+	dupeTeamIDsErr := newDuplicatesError()
+	for id, count := range idCounts {
 		if count > 1 {
 			dupeTeamIDsErr.valueCountMap[id] = count
 		}
@@ -184,7 +194,16 @@ func checkForDuplicateTeamRankings(input []TeamRanking) error {
 		return fmt.Errorf("duplicate team ids found: %w", dupeTeamIDsErr)
 	}
 
-	// TODO: feat - check for duplicate positions
+	// determine if any duplicate positions, and return error if so
+	dupePositionsErr := newDuplicatesError()
+	for pos, count := range positionCounts {
+		if count > 1 {
+			dupePositionsErr.valueCountMap[strconv.Itoa(int(pos))] = count
+		}
+	}
+	if len(dupePositionsErr.valueCountMap) > 0 {
+		return fmt.Errorf("duplicate positions found: %w", dupePositionsErr)
+	}
 
 	return nil
 }
