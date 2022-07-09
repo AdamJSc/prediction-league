@@ -90,7 +90,7 @@ func TestCronFactory_GenerateCron(t *testing.T) {
 
 		sc := domain.SeasonCollection{"season-id": domain.Season{}}
 
-		cf := &CronHandler{rc: rc, sc: sc}
+		cf := &CronHandler{realmCollection: rc, seasonCollection: sc}
 		wantErrMsg := "cannot retrieve season by id 'non-existent-season-id': season id non-existent-season-id: not found"
 		if _, gotErr := cf.generateCron(); gotErr == nil || gotErr.Error() != wantErrMsg {
 			t.Fatalf("want err %s, got %+v", wantErrMsg, gotErr)
@@ -133,8 +133,20 @@ func TestCronFactory_GenerateCron(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cf := &CronHandler{rc: rc, sc: sc, tc: tc, cl: cl, ea: ea, ca: ca, sa: sa, sepa: sepa, l: l, fds: fds}
-		cr, err := cf.generateCron()
+		handler := &CronHandler{
+			realmCollection:            rc,
+			seasonCollection:           sc,
+			teamCollection:             tc,
+			clock:                      cl,
+			entryAgent:                 ea,
+			commsAgent:                 ca,
+			standingsAgent:             sa,
+			scoredEntryPredictionAgent: sepa,
+			logger:                     l,
+			footballClient:             fds,
+		}
+
+		cr, err := handler.generateCron()
 		if err != nil {
 			t.Fatal(err)
 		}

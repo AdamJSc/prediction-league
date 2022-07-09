@@ -4,58 +4,69 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"prediction-league/service/internal/adapters/footballdataorg"
 	"prediction-league/service/internal/domain"
-	"reflect"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 )
 
 func TestNewRetrieveLatestStandingsWorker(t *testing.T) {
-	t.Run("passing nil must return expected error", func(t *testing.T) {
-		tc := make(map[string]domain.Team)
-		cl := &mockClock{}
-		l := &mockLogger{}
-		ea := &domain.EntryAgent{}
-		sa := &domain.StandingsAgent{}
-		sepa := &domain.ScoredEntryPredictionAgent{}
-		ca := &domain.CommunicationsAgent{}
-		fds := &domain.NoopFootballDataSource{}
+	tColl := make(map[string]domain.Team)
+	cl := &mockClock{}
+	l := &mockLogger{}
+	ea := &domain.EntryAgent{}
+	sa := &domain.StandingsAgent{}
+	sepa := &domain.ScoredEntryPredictionAgent{}
+	ca := &domain.CommunicationsAgent{}
+	fds := &domain.NoopFootballDataSource{}
 
-		tt := []struct {
-			tc      domain.TeamCollection
-			cl      domain.Clock
-			l       domain.Logger
-			ea      *domain.EntryAgent
-			sa      *domain.StandingsAgent
-			sepa    *domain.ScoredEntryPredictionAgent
-			ca      *domain.CommunicationsAgent
-			fds     domain.FootballDataSource
-			wantErr bool
-		}{
-			{nil, cl, l, ea, sa, sepa, ca, fds, true},
-			{tc, nil, l, ea, sa, sepa, ca, fds, true},
-			{tc, cl, nil, ea, sa, sepa, ca, fds, true},
-			{tc, cl, l, nil, sa, sepa, ca, fds, true},
-			{tc, cl, l, ea, nil, sepa, ca, fds, true},
-			{tc, cl, l, ea, sa, nil, ca, fds, true},
-			{tc, cl, l, ea, sa, sepa, nil, fds, true},
-			{tc, cl, l, ea, sa, sepa, ca, nil, true},
-			{tc, cl, l, ea, sa, sepa, ca, fds, false},
-		}
-		for idx, tc := range tt {
-			w, gotErr := domain.NewRetrieveLatestStandingsWorker(domain.Season{}, tc.tc, tc.cl, tc.l, tc.ea, tc.sa, tc.sepa, tc.ca, tc.fds)
+	tt := []struct {
+		name        string
+		tColl       domain.TeamCollection
+		cl          domain.Clock
+		l           domain.Logger
+		ea          *domain.EntryAgent
+		sa          *domain.StandingsAgent
+		sepa        *domain.ScoredEntryPredictionAgent
+		emailIssuer domain.RoundCompleteEmailIssuer
+		fds         domain.FootballDataSource
+		wantErr     bool
+	}{
+		{"missing team collection", nil, cl, l, ea, sa, sepa, ca, fds, true},
+		{"missing clock", tColl, nil, l, ea, sa, sepa, ca, fds, true},
+		{"missing logger", tColl, cl, nil, ea, sa, sepa, ca, fds, true},
+		{"missing entry agent", tColl, cl, l, nil, sa, sepa, ca, fds, true},
+		{"missing standings agent", tColl, cl, l, ea, nil, sepa, ca, fds, true},
+		{"missing scored entry predictions agent", tColl, cl, l, ea, sa, nil, ca, fds, true},
+		{"missing communications agent", tColl, cl, l, ea, sa, sepa, nil, fds, true},
+		{"missing football client", tColl, cl, l, ea, sa, sepa, ca, nil, true},
+		{"no missing dependencies", tColl, cl, l, ea, sa, sepa, ca, fds, false},
+	}
+	for idx, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			params := domain.RetrieveLatestStandingsWorkerParams{
+				TeamCollection:             tc.tColl,
+				Clock:                      tc.cl,
+				Logger:                     tc.l,
+				EntryAgent:                 tc.ea,
+				StandingsAgent:             tc.sa,
+				ScoredEntryPredictionAgent: tc.sepa,
+				EmailIssuer:                tc.emailIssuer,
+				FootballClient:             tc.fds,
+			}
+
+			w, gotErr := domain.NewRetrieveLatestStandingsWorker(params)
 			if tc.wantErr && !errors.Is(gotErr, domain.ErrIsNil) {
 				t.Fatalf("tc #%d: want ErrIsNil, got %s (%T)", idx, gotErr, gotErr)
 			}
 			if !tc.wantErr && w == nil {
 				t.Fatalf("tc #%d: want non-empty worker, got nil", idx)
 			}
-		}
-	})
+		})
+	}
 }
 
 func TestRetrieveLatestStandingsWorker_ProcessExistingStandings(t *testing.T) {
@@ -66,7 +77,7 @@ func TestRetrieveLatestStandingsWorker_ProcessExistingStandings(t *testing.T) {
 
 		now := time.Now().Truncate(time.Second)
 
-		existStnd := domain.Standings{
+		existingStandings := domain.Standings{
 			ID:          uuid.New(),
 			SeasonID:    "season_id",
 			RoundNumber: 123,
@@ -76,46 +87,42 @@ func TestRetrieveLatestStandingsWorker_ProcessExistingStandings(t *testing.T) {
 			CreatedAt: now,
 		}
 
-		if err := sr.Insert(ctx, &existStnd); err != nil {
+		if err := sr.Insert(ctx, &existingStandings); err != nil {
 			t.Fatal(err)
 		}
 
-		clientStnd := domain.Standings{Rankings: []domain.RankingWithMeta{
+		clientStandings := domain.Standings{Rankings: []domain.RankingWithMeta{
 			{MetaData: map[string]int{domain.MetaKeyPlayedGames: 5678}},
 		}}
 
-		wantStnd := existStnd
-		wantStnd.Rankings = clientStnd.Rankings
-		wantStnd.UpdatedAt = &now
+		wantStandings := existingStandings
+		wantStandings.Rankings = clientStandings.Rankings
+		wantStandings.UpdatedAt = &now
 
-		wantSelect := []domain.Standings{wantStnd}
+		wantRetrieved := []domain.Standings{wantStandings}
 
 		sa, err := domain.NewStandingsAgent(sr)
 		if err != nil {
 			t.Fatal(sa)
 		}
 
-		r := domain.NewTestRetrieveLatestStandingsWorker(domain.Season{}, nil, nil, nil, nil, sa, nil, nil, nil)
+		params := domain.RetrieveLatestStandingsWorkerParams{
+			Season:         domain.Season{},
+			StandingsAgent: sa,
+		}
+		worker := newTestRetrieveLatestStandingsWorker(t, params)
 
-		gotStnd, err := r.ProcessExistingStandings(ctx, existStnd, clientStnd)
+		gotStandings, err := worker.ProcessExistingStandings(ctx, existingStandings, clientStandings)
 		if err != nil {
 			t.Fatal(err)
 		}
+		cmpDiff(t, "processed standings", wantStandings, gotStandings)
 
-		diff := cmp.Diff(wantStnd, gotStnd)
-		if diff != "" {
-			t.Fatalf("want %+v, got %+v, diff: %s", wantStnd, gotStnd, diff)
-		}
-
-		gotSelect, err := sr.Select(ctx, map[string]interface{}{"id": existStnd.ID.String()}, false)
+		gotRetrieved, err := sr.Select(ctx, map[string]interface{}{"id": existingStandings.ID.String()}, false)
 		if err != nil {
 			t.Fatal(err)
 		}
-
-		diff = cmp.Diff(wantSelect, gotSelect)
-		if diff != "" {
-			t.Fatalf("want %+v, got %+v, diff: %s", wantSelect, gotSelect, cmp.Diff(wantSelect, gotSelect))
-		}
+		cmpDiff(t, "retrieved standings", wantRetrieved, gotRetrieved)
 	})
 }
 
@@ -130,38 +137,42 @@ func TestRetrieveLatestStandingsWorker_ProcessNewStandings(t *testing.T) {
 		t.Fatal(sa)
 	}
 
-	r := domain.NewTestRetrieveLatestStandingsWorker(domain.Season{}, nil, nil, nil, nil, sa, nil, nil, nil)
+	params := domain.RetrieveLatestStandingsWorkerParams{
+		Season:         domain.Season{},
+		StandingsAgent: sa,
+	}
+	worker := newTestRetrieveLatestStandingsWorker(t, params)
 
 	id1 := uuid.New()
 	id2 := uuid.New()
 
 	tt := []struct {
-		seedStnd   *domain.Standings
-		stndToProc domain.Standings
-		wantStnd   domain.Standings
+		seededStandings    *domain.Standings // standings seeded prior to test case run
+		standingsToProcess domain.Standings  // standings to process / compare against seeded standings
+		wantStandings      domain.Standings  // expected result
 	}{
 		{
-			stndToProc: domain.Standings{
+			standingsToProcess: domain.Standings{
 				RoundNumber: 1, // process first round that does not yet exist (no seed), so expect this to be created straight away
 				CreatedAt:   now,
 			},
-			wantStnd: domain.Standings{
+			wantStandings: domain.Standings{
 				RoundNumber: 1, // expect process Standings to be created and returned
 				CreatedAt:   now,
 			},
 		},
 		{
-			seedStnd: &domain.Standings{
+			seededStandings: &domain.Standings{
 				ID:          id1,
 				RoundNumber: 2,
 				CreatedAt:   now,
 			},
-			stndToProc: domain.Standings{
+			standingsToProcess: domain.Standings{
 				ID:          id1,
 				RoundNumber: 3, // attempt to process next round when previous round has not been finalised
 				CreatedAt:   now,
 			},
-			wantStnd: domain.Standings{
+			wantStandings: domain.Standings{
 				ID:          id1,
 				RoundNumber: 2, // expected seeded Standings to be updated (finalised) and returned
 				Finalised:   true,
@@ -170,17 +181,17 @@ func TestRetrieveLatestStandingsWorker_ProcessNewStandings(t *testing.T) {
 			},
 		},
 		{
-			seedStnd: &domain.Standings{
+			seededStandings: &domain.Standings{
 				ID:          id2,
 				RoundNumber: 3,
 				Finalised:   true,
 				CreatedAt:   now,
 			},
-			stndToProc: domain.Standings{
+			standingsToProcess: domain.Standings{
 				RoundNumber: 4, // attempt to process next round when previous round HAS been finalised
 				CreatedAt:   now,
 			},
-			wantStnd: domain.Standings{
+			wantStandings: domain.Standings{
 				RoundNumber: 4, // expect process Standings to be created and returned
 				CreatedAt:   now,
 			},
@@ -188,69 +199,62 @@ func TestRetrieveLatestStandingsWorker_ProcessNewStandings(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		if tc.seedStnd != nil {
-			if err := sr.Insert(ctx, tc.seedStnd); err != nil {
+		if tc.seededStandings != nil {
+			if err := sr.Insert(ctx, tc.seededStandings); err != nil {
 				t.Fatal(err)
 			}
 		}
 
-		gotStnd, err := r.ProcessNewStandings(ctx, tc.stndToProc)
+		gotStandings, err := worker.ProcessNewStandings(ctx, tc.standingsToProcess)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// if the wanted Standings object doesn't specify an ID, we're expecting it to be created by our test method
 		// so populate the ID that we received in the return object
-		if tc.wantStnd.ID == *new(uuid.UUID) {
-			tc.wantStnd.ID = gotStnd.ID
+		if tc.wantStandings.ID == *new(uuid.UUID) {
+			tc.wantStandings.ID = gotStandings.ID
 		}
 
-		diff := cmp.Diff(tc.wantStnd, gotStnd)
-		if diff != "" {
-			t.Fatalf("want %+v, got %+v, diff: %s", tc.wantStnd, gotStnd, diff)
-		}
+		cmpDiff(t, "processed standings", tc.wantStandings, gotStandings)
 
-		wantSelect := []domain.Standings{tc.wantStnd}
-
-		gotSelect, err := sr.Select(ctx, map[string]interface{}{"id": gotStnd.ID.String()}, false)
+		wantRetrieved := []domain.Standings{tc.wantStandings}
+		gotRetrieved, err := sr.Select(ctx, map[string]interface{}{"id": gotStandings.ID.String()}, false)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		diff = cmp.Diff(wantSelect, gotSelect)
-		if diff != "" {
-			t.Fatalf("want %+v, got %+v, diff: %s", wantSelect, gotSelect, cmp.Diff(wantSelect, gotSelect))
-		}
+		cmpDiff(t, "retrieved standings", wantRetrieved, gotRetrieved)
 	}
 }
 
 func TestRetrieveLatestStandingsWorker_HasFinalisedLastRound(t *testing.T) {
-	s := domain.Season{ID: "season_id", MaxRounds: 5}
+	season := domain.Season{ID: "season_id", MaxRounds: 5}
 
 	tt := []struct {
-		stnd domain.Standings
-		want bool
+		standings domain.Standings
+		want      bool
 	}{
 		{
-			stnd: domain.Standings{SeasonID: "alt_season_id"},
-			want: false,
+			standings: domain.Standings{SeasonID: "alt_season_id"},
+			want:      false,
 		},
 		{
-			stnd: domain.Standings{SeasonID: "season_id", Rankings: []domain.RankingWithMeta{
+			standings: domain.Standings{SeasonID: "season_id", Rankings: []domain.RankingWithMeta{
 				{MetaData: map[string]int{domain.MetaKeyPlayedGames: 4}}, // one short of max rounds
 				{MetaData: map[string]int{domain.MetaKeyPlayedGames: 5}},
 			}},
 			want: false,
 		},
 		{
-			stnd: domain.Standings{SeasonID: "season_id", Rankings: []domain.RankingWithMeta{
+			standings: domain.Standings{SeasonID: "season_id", Rankings: []domain.RankingWithMeta{
 				{MetaData: map[string]int{domain.MetaKeyPlayedGames: 5}},
 				{MetaData: map[string]int{domain.MetaKeyPlayedGames: 5}},
 			}},
 			want: false,
 		},
 		{
-			stnd: domain.Standings{SeasonID: "season_id", Rankings: []domain.RankingWithMeta{
+			standings: domain.Standings{SeasonID: "season_id", Rankings: []domain.RankingWithMeta{
 				{MetaData: map[string]int{domain.MetaKeyPlayedGames: 5}},
 				{MetaData: map[string]int{domain.MetaKeyPlayedGames: 5}},
 			}, Finalised: true},
@@ -259,9 +263,10 @@ func TestRetrieveLatestStandingsWorker_HasFinalisedLastRound(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		r := domain.NewTestRetrieveLatestStandingsWorker(s, nil, nil, nil, nil, nil, nil, nil, nil)
-		if r.HasFinalisedLastRound(tc.stnd) != tc.want {
-			t.Fatalf("want %t, got %t", tc.want, !tc.want)
+		params := domain.RetrieveLatestStandingsWorkerParams{Season: season}
+		worker := newTestRetrieveLatestStandingsWorker(t, params)
+		if worker.HasFinalisedLastRound(tc.standings) != tc.want {
+			t.Fatalf("want finalised last round is %t, got %t", tc.want, !tc.want)
 		}
 	}
 }
@@ -269,24 +274,24 @@ func TestRetrieveLatestStandingsWorker_HasFinalisedLastRound(t *testing.T) {
 func TestRetrieveLatestStandingsWorker_IssueEmails(t *testing.T) {
 	t.Run("happy path must issue the expected number of emails", func(t *testing.T) {
 		tt := []struct {
-			s              domain.Season
-			st             domain.Standings
-			seps           []domain.ScoredEntryPrediction
-			wantCount      int
-			wantFinalRound bool
+			season                 domain.Season
+			standings              domain.Standings
+			scoredEntryPredictions []domain.ScoredEntryPrediction // email recipients (via entry prediction id -> entry id)
+			wantCount              int
+			wantFinalRound         bool
 		}{
 			{
-				s: domain.Season{
+				season: domain.Season{
 					ID:        "season_id",
 					MaxRounds: 2,
 				},
-				st: domain.Standings{
+				standings: domain.Standings{
 					SeasonID: "season_id",
 					Rankings: []domain.RankingWithMeta{
 						{MetaData: map[string]int{domain.MetaKeyPlayedGames: 2}}, // standings finalise the season
 					},
 				},
-				seps: []domain.ScoredEntryPrediction{
+				scoredEntryPredictions: []domain.ScoredEntryPrediction{
 					{EntryPredictionID: uuid.New(), Score: 123},
 					{EntryPredictionID: uuid.New(), Score: 456},
 					{EntryPredictionID: uuid.New(), Score: 789},
@@ -295,18 +300,18 @@ func TestRetrieveLatestStandingsWorker_IssueEmails(t *testing.T) {
 				wantFinalRound: true, // email represents final round
 			},
 			{
-				s: domain.Season{
+				season: domain.Season{
 					ID:        "season_id",
 					MaxRounds: 123,
 				},
-				st: domain.Standings{
+				standings: domain.Standings{
 					SeasonID:  "season_id",
 					Finalised: true,
 					Rankings: []domain.RankingWithMeta{
 						{MetaData: map[string]int{domain.MetaKeyPlayedGames: 2}}, // standings are finalised but do not finalise season
 					},
 				},
-				seps: []domain.ScoredEntryPrediction{
+				scoredEntryPredictions: []domain.ScoredEntryPrediction{
 					{EntryPredictionID: uuid.New(), Score: 123},
 					{EntryPredictionID: uuid.New(), Score: 456},
 					{EntryPredictionID: uuid.New(), Score: 789},
@@ -315,17 +320,17 @@ func TestRetrieveLatestStandingsWorker_IssueEmails(t *testing.T) {
 				wantFinalRound: false, // email does not represent final round
 			},
 			{
-				s: domain.Season{
+				season: domain.Season{
 					ID:        "season_id",
 					MaxRounds: 123, // non-finalised season
 				},
-				st: domain.Standings{
+				standings: domain.Standings{
 					SeasonID: "season_id",
 					Rankings: []domain.RankingWithMeta{
 						{MetaData: map[string]int{domain.MetaKeyPlayedGames: 2}}, // standings are not finalised
 					},
 				},
-				seps: []domain.ScoredEntryPrediction{
+				scoredEntryPredictions: []domain.ScoredEntryPrediction{
 					{EntryPredictionID: uuid.New(), Score: 123},
 					{EntryPredictionID: uuid.New(), Score: 456},
 					{EntryPredictionID: uuid.New(), Score: 789},
@@ -335,44 +340,46 @@ func TestRetrieveLatestStandingsWorker_IssueEmails(t *testing.T) {
 		}
 
 		for _, tc := range tt {
-			mrcei := &happyMockRoundCompleteEmailIssuer{
+			emailIssuer := &happyMockRoundCompleteEmailIssuer{
 				t:              t,
 				mux:            &sync.Mutex{},
 				seps:           make(map[string]domain.ScoredEntryPrediction),
 				wantFinalRound: tc.wantFinalRound,
 			}
 
-			r := domain.NewTestRetrieveLatestStandingsWorker(tc.s, nil, nil, nil, nil, nil, nil, mrcei, nil)
+			params := domain.RetrieveLatestStandingsWorkerParams{
+				Season:      tc.season,
+				EmailIssuer: emailIssuer,
+			}
+			worker := newTestRetrieveLatestStandingsWorker(t, params)
 
-			if err := r.IssueEmails(context.Background(), tc.st, tc.seps); err != nil {
+			if err := worker.IssueEmails(context.Background(), tc.standings, tc.scoredEntryPredictions); err != nil {
 				t.Fatal(err)
 			}
 
-			if len(mrcei.seps) != tc.wantCount {
-				t.Fatalf("want %d scored entry predictions, got %d", len(tc.seps), len(mrcei.seps))
+			if len(emailIssuer.seps) != tc.wantCount {
+				t.Fatalf("want %d emails issued, got %d", tc.wantCount, len(emailIssuer.seps))
 			}
 
 			if tc.wantCount > 0 {
-				for _, tcsep := range tc.seps {
-					sep, ok := mrcei.seps[tcsep.EntryPredictionID.String()]
+				for _, tcSEP := range tc.scoredEntryPredictions {
+					sep, ok := emailIssuer.seps[tcSEP.EntryPredictionID.String()]
 					if !ok {
-						t.Fatalf("scored entry prediction with score of %d is missing", tcsep.Score)
+						t.Fatalf("scored entry prediction with score of %d is missing", tcSEP.Score)
 					}
-					if !reflect.DeepEqual(tcsep, sep) {
-						t.Fatalf("want scored entry prediction %+v, got %+v", tcsep, sep)
-					}
+					cmpDiff(t, "scored entry prediction", tcSEP, sep)
 				}
 			}
 		}
 	})
 
 	t.Run("errors returned by issue emails method invocations must be accumulated as expected", func(t *testing.T) {
-		s := domain.Season{
+		season := domain.Season{
 			ID:        "season_id",
 			MaxRounds: 2,
 		}
 
-		st := domain.Standings{
+		standings := domain.Standings{
 			SeasonID:  "season_id",
 			Finalised: true,
 			Rankings: []domain.RankingWithMeta{
@@ -380,7 +387,7 @@ func TestRetrieveLatestStandingsWorker_IssueEmails(t *testing.T) {
 			},
 		}
 
-		seps := []domain.ScoredEntryPrediction{
+		scoredEntryPredictions := []domain.ScoredEntryPrediction{
 			{EntryPredictionID: uuid.New(), Score: 123},
 			{EntryPredictionID: uuid.New(), Score: 456},
 			{EntryPredictionID: uuid.New(), Score: 789},
@@ -388,14 +395,18 @@ func TestRetrieveLatestStandingsWorker_IssueEmails(t *testing.T) {
 
 		wantCount := 3 // want 3 errors
 
-		mrcei := &errMockRoundCompleteEmailIssuer{
+		emailIssuer := &errMockRoundCompleteEmailIssuer{
 			mux:  &sync.Mutex{},
 			errs: make(map[string]error),
 		}
 
-		r := domain.NewTestRetrieveLatestStandingsWorker(s, nil, nil, nil, nil, nil, nil, mrcei, nil)
+		params := domain.RetrieveLatestStandingsWorkerParams{
+			Season:      season,
+			EmailIssuer: emailIssuer,
+		}
+		worker := newTestRetrieveLatestStandingsWorker(t, params)
 
-		err := r.IssueEmails(context.Background(), st, seps)
+		err := worker.IssueEmails(context.Background(), standings, scoredEntryPredictions)
 		mErr := domain.MultiError{}
 		if !errors.As(err, &mErr) {
 			t.Fatalf("want multierror, got %T", err)
@@ -526,4 +537,43 @@ func (e *errMockRoundCompleteEmailIssuer) IssueRoundCompleteEmail(ctx context.Co
 	err := fmt.Errorf("error %s", sep.EntryPredictionID)
 	e.errs[sep.EntryPredictionID.String()] = err
 	return err
+}
+
+func newTestRetrieveLatestStandingsWorker(
+	t *testing.T,
+	params domain.RetrieveLatestStandingsWorkerParams,
+) *domain.RetrieveLatestStandingsWorker {
+	t.Helper()
+
+	if params.TeamCollection == nil {
+		params.TeamCollection = make(domain.TeamCollection, 0)
+	}
+	if params.Clock == nil {
+		params.Clock = &mockClock{}
+	}
+	if params.Logger == nil {
+		params.Logger = &mockLogger{}
+	}
+	if params.EntryAgent == nil {
+		params.EntryAgent = &domain.EntryAgent{}
+	}
+	if params.StandingsAgent == nil {
+		params.StandingsAgent = &domain.StandingsAgent{}
+	}
+	if params.ScoredEntryPredictionAgent == nil {
+		params.ScoredEntryPredictionAgent = &domain.ScoredEntryPredictionAgent{}
+	}
+	if params.EmailIssuer == nil {
+		params.EmailIssuer = &domain.CommunicationsAgent{}
+	}
+	if params.FootballClient == nil {
+		params.FootballClient = &footballdataorg.Client{}
+	}
+
+	worker, err := domain.NewRetrieveLatestStandingsWorker(params)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return worker
 }
