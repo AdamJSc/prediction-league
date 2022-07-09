@@ -26,6 +26,8 @@ type RetrieveLatestStandingsWorker struct {
 	entryAgent                 *EntryAgent
 	standingsAgent             *StandingsAgent
 	scoredEntryPredictionAgent *ScoredEntryPredictionAgent
+	matchWeekSubmissionAgent   *MatchWeekSubmissionAgent
+	matchWeekResultAgent       *MatchWeekResultAgent
 	emailIssuer                RoundCompleteEmailIssuer
 	footballClient             FootballDataSource
 }
@@ -277,6 +279,8 @@ type RetrieveLatestStandingsWorkerParams struct {
 	EntryAgent                 *EntryAgent
 	StandingsAgent             *StandingsAgent
 	ScoredEntryPredictionAgent *ScoredEntryPredictionAgent
+	MatchWeekSubmissionAgent   *MatchWeekSubmissionAgent
+	MatchWeekResultAgent       *MatchWeekResultAgent
 	EmailIssuer                RoundCompleteEmailIssuer
 	FootballClient             FootballDataSource
 }
@@ -300,6 +304,12 @@ func NewRetrieveLatestStandingsWorker(params RetrieveLatestStandingsWorkerParams
 	if params.ScoredEntryPredictionAgent == nil {
 		return nil, fmt.Errorf("scored entry predictions agent: %w", ErrIsNil)
 	}
+	if params.MatchWeekSubmissionAgent == nil {
+		return nil, fmt.Errorf("match week submission agent: %w", ErrIsNil)
+	}
+	if params.MatchWeekResultAgent == nil {
+		return nil, fmt.Errorf("match week result agent: %w", ErrIsNil)
+	}
 	if params.EmailIssuer == nil {
 		return nil, fmt.Errorf("email issuer: %w", ErrIsNil)
 	}
@@ -314,6 +324,8 @@ func NewRetrieveLatestStandingsWorker(params RetrieveLatestStandingsWorkerParams
 		entryAgent:                 params.EntryAgent,
 		standingsAgent:             params.StandingsAgent,
 		scoredEntryPredictionAgent: params.ScoredEntryPredictionAgent,
+		matchWeekSubmissionAgent:   params.MatchWeekSubmissionAgent,
+		matchWeekResultAgent:       params.MatchWeekResultAgent,
 		emailIssuer:                params.EmailIssuer,
 		footballClient:             params.FootballClient,
 	}, nil

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"prediction-league/service/internal/adapters/footballdataorg"
 	"prediction-league/service/internal/domain"
 	"sync"
 	"testing"
@@ -13,15 +12,27 @@ import (
 	"github.com/google/uuid"
 )
 
+var (
+	emptyCommunicationsAgent        = &domain.CommunicationsAgent{}
+	emptyEntryAgent                 = &domain.EntryAgent{}
+	emptyMatchWeekResultAgent       = &domain.MatchWeekResultAgent{}
+	emptyMatchWeekSubmissionAgent   = &domain.MatchWeekSubmissionAgent{}
+	emptyScoredEntryPredictionAgent = &domain.ScoredEntryPredictionAgent{}
+	emptyStandingsAgent             = &domain.StandingsAgent{}
+	noopFootballDataClient          = &domain.NoopFootballDataSource{}
+)
+
 func TestNewRetrieveLatestStandingsWorker(t *testing.T) {
 	tColl := make(map[string]domain.Team)
 	cl := &mockClock{}
 	l := &mockLogger{}
-	ea := &domain.EntryAgent{}
-	sa := &domain.StandingsAgent{}
-	sepa := &domain.ScoredEntryPredictionAgent{}
-	ca := &domain.CommunicationsAgent{}
-	fds := &domain.NoopFootballDataSource{}
+	ea := emptyEntryAgent
+	sa := emptyStandingsAgent
+	sepa := emptyScoredEntryPredictionAgent
+	mwsa := emptyMatchWeekSubmissionAgent
+	mwra := emptyMatchWeekResultAgent
+	ca := emptyCommunicationsAgent
+	fcl := noopFootballDataClient
 
 	tt := []struct {
 		name        string
@@ -31,19 +42,23 @@ func TestNewRetrieveLatestStandingsWorker(t *testing.T) {
 		ea          *domain.EntryAgent
 		sa          *domain.StandingsAgent
 		sepa        *domain.ScoredEntryPredictionAgent
+		mwsa        *domain.MatchWeekSubmissionAgent
+		mwra        *domain.MatchWeekResultAgent
 		emailIssuer domain.RoundCompleteEmailIssuer
-		fds         domain.FootballDataSource
+		fcl         domain.FootballDataSource
 		wantErr     bool
 	}{
-		{"missing team collection", nil, cl, l, ea, sa, sepa, ca, fds, true},
-		{"missing clock", tColl, nil, l, ea, sa, sepa, ca, fds, true},
-		{"missing logger", tColl, cl, nil, ea, sa, sepa, ca, fds, true},
-		{"missing entry agent", tColl, cl, l, nil, sa, sepa, ca, fds, true},
-		{"missing standings agent", tColl, cl, l, ea, nil, sepa, ca, fds, true},
-		{"missing scored entry predictions agent", tColl, cl, l, ea, sa, nil, ca, fds, true},
-		{"missing communications agent", tColl, cl, l, ea, sa, sepa, nil, fds, true},
-		{"missing football client", tColl, cl, l, ea, sa, sepa, ca, nil, true},
-		{"no missing dependencies", tColl, cl, l, ea, sa, sepa, ca, fds, false},
+		{"missing team collection", nil, cl, l, ea, sa, sepa, mwsa, mwra, ca, fcl, true},
+		{"missing clock", tColl, nil, l, ea, sa, sepa, mwsa, mwra, ca, fcl, true},
+		{"missing logger", tColl, cl, nil, ea, sa, sepa, mwsa, mwra, ca, fcl, true},
+		{"missing entry agent", tColl, cl, l, nil, sa, sepa, mwsa, mwra, ca, fcl, true},
+		{"missing standings agent", tColl, cl, l, ea, nil, sepa, mwsa, mwra, ca, fcl, true},
+		{"missing scored entry predictions agent", tColl, cl, l, ea, sa, nil, mwsa, mwra, ca, fcl, true},
+		{"missing match week submission agent", tColl, cl, l, ea, sa, sepa, nil, mwra, ca, fcl, true},
+		{"missing match week result agent", tColl, cl, l, ea, sa, sepa, mwsa, nil, ca, fcl, true},
+		{"missing communications agent", tColl, cl, l, ea, sa, sepa, mwsa, mwra, nil, fcl, true},
+		{"missing football client", tColl, cl, l, ea, sa, sepa, mwsa, mwra, ca, nil, true},
+		{"no missing dependencies", tColl, cl, l, ea, sa, sepa, mwsa, mwra, ca, fcl, false},
 	}
 	for idx, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
@@ -54,8 +69,10 @@ func TestNewRetrieveLatestStandingsWorker(t *testing.T) {
 				EntryAgent:                 tc.ea,
 				StandingsAgent:             tc.sa,
 				ScoredEntryPredictionAgent: tc.sepa,
+				MatchWeekSubmissionAgent:   tc.mwsa,
+				MatchWeekResultAgent:       tc.mwra,
 				EmailIssuer:                tc.emailIssuer,
-				FootballClient:             tc.fds,
+				FootballClient:             tc.fcl,
 			}
 
 			w, gotErr := domain.NewRetrieveLatestStandingsWorker(params)
@@ -555,19 +572,25 @@ func newTestRetrieveLatestStandingsWorker(
 		params.Logger = &mockLogger{}
 	}
 	if params.EntryAgent == nil {
-		params.EntryAgent = &domain.EntryAgent{}
+		params.EntryAgent = emptyEntryAgent
 	}
 	if params.StandingsAgent == nil {
-		params.StandingsAgent = &domain.StandingsAgent{}
+		params.StandingsAgent = emptyStandingsAgent
 	}
 	if params.ScoredEntryPredictionAgent == nil {
-		params.ScoredEntryPredictionAgent = &domain.ScoredEntryPredictionAgent{}
+		params.ScoredEntryPredictionAgent = emptyScoredEntryPredictionAgent
+	}
+	if params.MatchWeekSubmissionAgent == nil {
+		params.MatchWeekSubmissionAgent = emptyMatchWeekSubmissionAgent
+	}
+	if params.MatchWeekResultAgent == nil {
+		params.MatchWeekResultAgent = emptyMatchWeekResultAgent
 	}
 	if params.EmailIssuer == nil {
-		params.EmailIssuer = &domain.CommunicationsAgent{}
+		params.EmailIssuer = emptyCommunicationsAgent
 	}
 	if params.FootballClient == nil {
-		params.FootballClient = &footballdataorg.Client{}
+		params.FootballClient = noopFootballDataClient
 	}
 
 	worker, err := domain.NewRetrieveLatestStandingsWorker(params)

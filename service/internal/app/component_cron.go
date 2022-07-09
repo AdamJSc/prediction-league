@@ -29,6 +29,8 @@ type CronHandler struct {
 	standingsAgent             *domain.StandingsAgent
 	scoredEntryPredictionAgent *domain.ScoredEntryPredictionAgent
 	commsAgent                 *domain.CommunicationsAgent
+	mwSubmissionAgent          *domain.MatchWeekSubmissionAgent
+	mwResultAgent              *domain.MatchWeekResultAgent
 	seasonCollection           domain.SeasonCollection
 	teamCollection             domain.TeamCollection
 	realmCollection            domain.RealmCollection
@@ -115,6 +117,8 @@ func (c *CronHandler) newRetrieveLatestStandingsJob(season domain.Season) (*jobC
 		EntryAgent:                 c.entryAgent,
 		StandingsAgent:             c.standingsAgent,
 		ScoredEntryPredictionAgent: c.scoredEntryPredictionAgent,
+		MatchWeekSubmissionAgent:   c.mwSubmissionAgent,
+		MatchWeekResultAgent:       c.mwResultAgent,
 		EmailIssuer:                c.commsAgent,
 		FootballClient:             c.footballClient,
 	}
@@ -148,6 +152,12 @@ func NewCronHandler(c *container) (*CronHandler, error) {
 	if c.commsAgent == nil {
 		return nil, fmt.Errorf("communications agent: %w", domain.ErrIsNil)
 	}
+	if c.mwSubmissionAgent == nil {
+		return nil, fmt.Errorf("match week submission agent: %w", domain.ErrIsNil)
+	}
+	if c.mwResultAgent == nil {
+		return nil, fmt.Errorf("match week result agent: %w", domain.ErrIsNil)
+	}
 	if c.seasons == nil {
 		return nil, fmt.Errorf("season collection: %w", domain.ErrIsNil)
 	}
@@ -172,6 +182,8 @@ func NewCronHandler(c *container) (*CronHandler, error) {
 		standingsAgent:             c.standingsAgent,
 		scoredEntryPredictionAgent: c.sepAgent,
 		commsAgent:                 c.commsAgent,
+		mwSubmissionAgent:          c.mwSubmissionAgent,
+		mwResultAgent:              c.mwResultAgent,
 		seasonCollection:           c.seasons,
 		teamCollection:             c.teams,
 		realmCollection:            c.realms,

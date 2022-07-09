@@ -9,28 +9,32 @@ import (
 	"prediction-league/service/internal/adapters/mailgun"
 	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/domain"
+	"time"
 
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/google/uuid"
 )
 
 // container encapsulates the app dependencies
 type container struct {
-	config         *Config
-	realms         domain.RealmCollection
-	seasons        domain.SeasonCollection
-	teams          domain.TeamCollection
-	templates      *domain.Templates
-	commsAgent     *domain.CommunicationsAgent
-	entryAgent     *domain.EntryAgent
-	standingsAgent *domain.StandingsAgent
-	sepAgent       *domain.ScoredEntryPredictionAgent
-	tokenAgent     *domain.TokenAgent
-	lbAgent        *domain.LeaderBoardAgent
-	emailClient    domain.EmailClient
-	emailQueue     domain.EmailQueue
-	ftblDataSrc    domain.FootballDataSource
-	logger         domain.Logger
-	clock          domain.Clock
+	config            *Config
+	realms            domain.RealmCollection
+	seasons           domain.SeasonCollection
+	teams             domain.TeamCollection
+	templates         *domain.Templates
+	commsAgent        *domain.CommunicationsAgent
+	entryAgent        *domain.EntryAgent
+	standingsAgent    *domain.StandingsAgent
+	sepAgent          *domain.ScoredEntryPredictionAgent
+	tokenAgent        *domain.TokenAgent
+	lbAgent           *domain.LeaderBoardAgent
+	mwSubmissionAgent *domain.MatchWeekSubmissionAgent
+	mwResultAgent     *domain.MatchWeekResultAgent
+	emailClient       domain.EmailClient
+	emailQueue        domain.EmailQueue
+	ftblDataSrc       domain.FootballDataSource
+	logger            domain.Logger
+	clock             domain.Clock
 }
 
 // NewContainer instantiates a new container from the provided config object
@@ -124,6 +128,14 @@ func NewContainer(cfg *Config, l domain.Logger, cl domain.Clock) (*container, fu
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot instantiate token repo: %w", err)
 	}
+	mwSubmissionRepo, err := mysqldb.NewMatchWeekSubmissionRepo(db, uuid.NewUUID, time.Now)
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot instantiate match week submission repo: %w", err)
+	}
+	mwResultRepo, err := mysqldb.NewMatchWeekResultRepo(db, time.Now)
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot instantiate match week result repo: %w", err)
+	}
 
 	// instantiate agents
 	ca, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
@@ -150,6 +162,14 @@ func NewContainer(cfg *Config, l domain.Logger, cl domain.Clock) (*container, fu
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot instantiate leaderboard agent: %w", err)
 	}
+	mwSubmissionAgent, err := domain.NewMatchWeekSubmissionAgent(mwSubmissionRepo)
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot instantiate match week submission agent: %w", err)
+	}
+	mwResultAgent, err := domain.NewMatchWeekResultAgent(mwResultRepo)
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot instantiate match week result agent: %w", err)
+	}
 
 	cnt := &container{
 		cfg,
@@ -163,6 +183,8 @@ func NewContainer(cfg *Config, l domain.Logger, cl domain.Clock) (*container, fu
 		sepa,
 		ta,
 		lba,
+		mwSubmissionAgent,
+		mwResultAgent,
 		emlCl,
 		emlQ,
 		fds,
