@@ -8,14 +8,18 @@
             You have already made the maximum number of permitted changes for the current round.
         </div>
         <table v-bind:class="['teams-reorder', 'rankings', { 'clickable': canReorder }]">
-            <tbody>
+          <tbody>
             <tr v-for="(id, index) in teamsIDSequence" v-on:click="teamOnClick" v-bind:team-id="id"
                 v-bind:class="['team-row', 'rankings-row', { 'selected': isSelected(id), 'dirty': isDirty(id) && !isSelected(id) }]">
-                <td class="position">{{index+1}}</td>
-                <td class="crest-outer"><div class="crest"><img :alt="getTeamByID(id).name" :src="getTeamByID(id).crest_url" /></div></td>
-                <td><span class="name">{{getTeamByID(id).short_name}}</span></td>
+              <td class="position">{{index+1}}</td>
+              <td class="crest-outer" style="height:100%">
+                <div class="bg-img-fill" :style="getTeamCrestBGStyle(id)"></div>
+              </td>
+              <td>
+                <span class="name">{{getTeamByID(id).short_name}}</span>
+              </td>
             </tr>
-            </tbody>
+          </tbody>
         </table>
         <table class="teams-reorder-admin">
             <tbody>
@@ -105,6 +109,10 @@
                         return this.teams[i]
                     }
                 }
+            },
+            getTeamCrestBGStyle: function(id) {
+                let team = this.getTeamByID(id)
+                return `background-image:url('${team.crest_url}')`
             },
             isSelected: function(id) {
                 if (typeof id === 'undefined') {

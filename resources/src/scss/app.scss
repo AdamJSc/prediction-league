@@ -466,20 +466,19 @@ table.rankings, table.round, table.teams-reorder-admin {
   margin: 0 auto;
 
   .crest-outer {
-    width: 50px;
+    height: 100%;
+    padding: 10px 0;
     text-align: center;
-
-    .crest {
-      display: inline-block;
-      width: 40px;
-      padding: 0.25rem 0;
-      overflow: hidden;
-
-      img {
-        width: 100%;
-      }
-    }
+    width: 50px;
   }
+}
+
+.bg-img-fill {
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: 50% 50%;
+  height: 100%;
+  width: 100%;
 }
 
 table.round-navigation-container {
