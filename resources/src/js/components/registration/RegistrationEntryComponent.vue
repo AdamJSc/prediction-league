@@ -30,7 +30,6 @@
         <form id="registration-entry-form" class="form-primary">
             <div class="row">
                 <div class="col-lg-6 col-md-10">
-                    <h3>League details</h3>
 
                     <div class="form-label-definition">
                         <p class="form-label-definition-name">
@@ -46,22 +45,8 @@
                         <label for="inputNickname">Nickname</label>
                     </div>
 
-                    <div class="form-label-definition">
-                        <p class="form-label-definition-name">
-                            League PIN
-                            <a data-toggle="collapse" href="#league-pin-description" role="button" aria-expanded="false" aria-controls="league-pin-description">
-                                <i class="fa fa-question-circle-o" aria-hidden="true"></i>
-                            </a></p>
-                        <p class="collapse form-label-definition-description" id="league-pin-description">Required. This should have been provided to you by the organiser.</p>
-                    </div>
-
-                    <div class="form-label-group">
-                        <input v-model="formData.pin" type="password" id="inputPIN" class="form-control" placeholder="PIN" required>
-                        <label for="inputPIN">PIN</label>
-                    </div>
                 </div>
                 <div class="col-lg-6 col-md-10">
-                    <h3>Contact details</h3>
 
                     <div class="form-label-definition">
                         <p class="form-label-definition-name">
@@ -117,13 +102,18 @@
         props: {
             entryFeeData: {
                 type: Object
+            },
+            realmPin: {
+                type: String
             }
         },
         data: function() {
             return {
                 working: false,
                 errorMessages: [],
-                formData: {}
+                formData: {
+                    pin: this.realmPin
+                }
             }
         },
         methods: {
@@ -140,11 +130,12 @@
                     data: this.formData
                 })
                     .then(function (response) {
+                        let body = response.data
                         vm.$emit('update-entry-data', {
-                            id: response.data.data.entry.id,
+                            id: body.data.entry.id,
                             email: vm.formData.entrant_email,
-                            regToken: response.data.data.entry.reg_token,
-                            needsPayment: response.data.data.entry.needs_payment
+                            regToken: body.data.entry.reg_token,
+                            needsPayment: body.data.entry.needs_payment
                         })
                         vm.$el.querySelector('#registration-entry-form').reset()
                         vm.$emit('workflow-step-change', 'registrationPayment')

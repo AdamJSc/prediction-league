@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Requirement to enter Realm PIN on signup
 - Legacy data seeder component
 
 ## [2.2.1] - 2022-06-15

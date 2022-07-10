@@ -8,7 +8,8 @@
                             v-show="showRegistrationSteps.registrationForm"
                             v-on:workflow-step-change="changeWorkflowStep"
                             v-on:update-entry-data="updateEntryData"
-                            v-bind:entry-fee-data="entryFeeData"></registration-entry>
+                            v-bind:entry-fee-data="entryFeeData"
+                            v-bind:realm-pin="realmPin"></registration-entry>
                 </div>
                 <div class="carousel-item">
                     <registration-payment
@@ -59,6 +60,9 @@
                 type: String
             },
             realmName: {
+                type: String
+            },
+            realmPin: {
                 type: String
             }
         },

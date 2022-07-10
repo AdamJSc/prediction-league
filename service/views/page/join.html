@@ -9,7 +9,8 @@
                     raw-entry-fee-breakdown="{{jsonify_strings .Data.EntryFee.Breakdown}}"
                     support-email-formatted="{{.SupportEmailFormatted}}"
                     support-email-plain-text="{{.SupportEmailPlainText}}"
-                    realm-name="{{.RealmName}}"></registration-workflow>
+                    realm-name="{{.RealmName}}"
+                    realm-pin="{{.RealmPIN}}"></registration-workflow>
         {{else if .Data.EntriesClosed}}
             <h2>Entries are now closed for the {{.Data.SeasonName}} season</h2>
             <p>Make sure you check back again and join us for next season!</p>

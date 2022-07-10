@@ -16,6 +16,7 @@ type Base struct {
 	RealmName             string
 	RealmImage            string
 	RealmOrigin           string
+	RealmPIN              string
 	SeasonName            string
 	HomePageURL           string
 	LeaderBoardPageURL    string

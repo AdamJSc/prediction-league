@@ -137,6 +137,7 @@ func newPage(r *http.Request, c *container, title, activePage, bannerTitle strin
 		RealmName:             realm.Name,
 		RealmImage:            realm.Image,
 		RealmOrigin:           realm.Origin,
+		RealmPIN:              realm.PIN,
 		SeasonName:            s.ShortName,
 		HomePageURL:           domain.GetHomeURL(realm),
 		LeaderBoardPageURL:    domain.GetLeaderBoardURL(realm),
