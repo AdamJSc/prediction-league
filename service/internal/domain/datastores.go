@@ -13,7 +13,7 @@ const (
 	FakeSeasonID = "FakeSeason"
 
 	// fakeSeasonKey defines the key of the real-world Season to replicate as fake season
-	fakeSeasonKey = "202122_1"
+	fakeSeasonKey = "202223_1"
 )
 
 // GetTeamCollection returns the required TeamCollection
@@ -226,8 +226,8 @@ func GetTeamCollection() TeamCollection {
 			ID:        "NFFC",
 			ClientID:  TeamIdentifier{TeamID: 351},
 			Name:      "Nottingham Forest",
-			ShortName: "Notts Forest",
-			CrestURL:  "https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Nottingham_Forest_FC_Logo.png/227px-Nottingham_Forest_FC_Logo.png",
+			ShortName: "Nottm Forest",
+			CrestURL:  "https://upload.wikimedia.org/wikipedia/en/thumb/e/e5/Nottingham_Forest_F.C._logo.svg/225px-Nottingham_Forest_F.C._logo.svg.png",
 		},
 		"NUFC": {
 			ID:        "NUFC",
@@ -360,6 +360,49 @@ func GetSeasonCollection() (SeasonCollection, error) {
 
 	// define seasons using location
 	sc := SeasonCollection{
+
+		// Premier League 2022/23
+		"202223_1": {
+			ID:        "202223_1",
+			ClientID:  SeasonIdentifier{SeasonID: "PL"},
+			Name:      "Premier League 2022/23",
+			ShortName: "Prem 22/23",
+			Live: TimeFrame{
+				From:  time.Date(2022, 8, 5, 20, 0, 0, 0, loc),    // opening day kick-off
+				Until: time.Date(2023, 5, 28, 23, 59, 59, 0, loc), // end of final day (regular season)
+			},
+			EntriesAccepted: TimeFrame{
+				From:  time.Date(2022, 7, 22, 12, 0, 0, 0, loc), // competition opens
+				Until: time.Date(2023, 5, 28, 16, 0, 0, 0, loc), // final day kick-off
+			},
+			PredictionsAccepted: TimeFrame{
+				From:  time.Date(2022, 7, 22, 12, 0, 0, 0, loc),   // competition opens
+				Until: time.Date(2023, 5, 28, 23, 59, 59, 0, loc), // end of final day (regular season)
+			},
+			TeamIDs: []string{
+				"AFC",   // arsenal
+				"AVFC",  // aston villa
+				"AFCB",  // bournemouth
+				"BFC3",  // brentford
+				"BHAFC", // brighton
+				"CFC",   // chelsea
+				"CPFC",  // crystal palace
+				"EFC",   // everton
+				"FFC",   // fulham
+				"LUFC",  // leeds united
+				"LCFC",  // leicester city
+				"LFC",   // liverpool
+				"MCFC",  // man city
+				"MUFC",  // man united
+				"NFFC",  // nottm forest
+				"NUFC",  // newcastle
+				"SFC",   // southampton
+				"THFC",  // tottenham hotspur
+				"WHUFC", // west ham
+				"WWFC",  // wolves
+			},
+			MaxRounds: 38,
+		},
 
 		// Premier League 2021/22
 		"202122_1": {

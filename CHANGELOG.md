@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Demo data seeder cmd entrypoint
 - Introduced new entities `MatchWeekSubmission`, `MatchWeekStandings` and `MatchWeekResult`.
+- Config for 2022/23 Premier League season
 
 ### Changed
 
