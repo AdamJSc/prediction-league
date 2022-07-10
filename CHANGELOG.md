@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Inverted leaderboard logic to reflect new aim of the game outlined above.
 - General tidy up (remove unused constants/symbols)
 
+### Fixed
+
+- Team logos/crests render with consistent height
+
 ### Removed
 
 - Requirement to enter Realm PIN on signup
