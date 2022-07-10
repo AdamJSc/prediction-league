@@ -227,6 +227,12 @@ a {
   }
 }
 
+a.registration-form-toggle {
+  &:hover{
+    color: $primary-dark;
+  }
+}
+
 .registration-success-summary {
   text-align: center;
 
