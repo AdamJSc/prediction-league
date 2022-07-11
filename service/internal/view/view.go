@@ -7,27 +7,22 @@ import (
 )
 
 type Base struct {
-	Title                 string
-	BannerTitle           template.HTML
-	ActivePage            string
-	IsLoggedIn            bool
-	SupportEmailPlainText string
-	SupportEmailFormatted string
-	RealmName             string
-	RealmImage            string
-	RealmOrigin           string
-	RealmPIN              string
-	SeasonName            string
-	HomePageURL           string
-	LeaderBoardPageURL    string
-	JoinPageURL           string
-	FAQPageURL            string
-	PredictionPageURL     string
-	LoginPageURL          string
-	BuildVersion          string
-	BuildTimestamp        string
-	AnalyticsCode         string
-	Data                  interface{}
+	Title              string
+	BannerTitle        template.HTML
+	ActivePage         string
+	IsLoggedIn         bool
+	Realm              *domain.Realm
+	SeasonName         string
+	HomePageURL        string
+	LeaderBoardPageURL string
+	JoinPageURL        string
+	FAQPageURL         string
+	PredictionPageURL  string
+	LoginPageURL       string
+	BuildVersion       string
+	BuildTimestamp     string
+	AnalyticsCode      string
+	Data               interface{}
 }
 
 type PredictionPageData struct {

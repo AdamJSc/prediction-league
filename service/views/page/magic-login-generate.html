@@ -8,7 +8,7 @@
             <p>Check your email!</p>
             <p>If <strong>{{.Data.EmailAddr}}</strong> matches our records, we've just sent you a "magic link".</p>
             <p>Click on the link to login, or get in touch with us at
-                <a href="mailto:{{.SupportEmailFormatted}}?subject=Please%20help%20me%20reset%20my%20Short%20Code!">{{.SupportEmailPlainText}}</a>
+                <a href="mailto:{{.Realm.Contact.EmailProper}}?subject=Please%20help%20me%20reset%20my%20Short%20Code!">{{.Realm.Contact.EmailSanitised}}</a>
                 if you need any help.</p>
         {{end}}
     {{template "footer" .}}

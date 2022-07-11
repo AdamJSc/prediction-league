@@ -7,10 +7,10 @@
                     v-bind:entry-fee-amount="{{.Data.EntryFee.Amount}}"
                     entry-fee-label="{{.Data.EntryFee.Label}}"
                     raw-entry-fee-breakdown="{{jsonify_strings .Data.EntryFee.Breakdown}}"
-                    support-email-formatted="{{.SupportEmailFormatted}}"
-                    support-email-plain-text="{{.SupportEmailPlainText}}"
-                    realm-name="{{.RealmName}}"
-                    realm-pin="{{.RealmPIN}}"></registration-workflow>
+                    support-email-formatted="{{.Realm.Contact.EmailProper}}"
+                    support-email-plain-text="{{.Realm.Contact.EmailSanitised}}"
+                    realm-name="{{.Realm.Name}}"
+                    realm-pin="{{.Realm.PIN}}"></registration-workflow>
         {{else if .Data.EntriesClosed}}
             <h2>Entries are now closed for the {{.Data.SeasonName}} season</h2>
             <p>Make sure you check back again and join us for next season!</p>
