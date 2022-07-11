@@ -175,9 +175,6 @@ func ValidateSeason(s Season, tc TeamCollection) error {
 	if !s.EntriesAccepted.Valid() {
 		return errors.New("entries accepted timeframe must be valid")
 	}
-	if s.EntriesAccepted.OverlapsWith(s.Live) {
-		return errors.New("entries accepted timeframe must have elapsed before live timeframe begins")
-	}
 	if !s.PredictionsAccepted.Valid() {
 		return errors.New("predictions accepted timeframe must be valid")
 	}
