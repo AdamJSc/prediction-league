@@ -18,8 +18,10 @@ func TestGetHomeURL(t *testing.T) {
 			wantURL: "/",
 		},
 		{
-			name:    "with realm",
-			realm:   &domain.Realm{Origin: "http://localhost"},
+			name: "with realm",
+			realm: &domain.Realm{Config: domain.RealmConfig{
+				Origin: "http://localhost",
+			}},
 			wantURL: "http://localhost",
 		},
 	}
@@ -45,8 +47,10 @@ func TestGetLeaderBoardURL(t *testing.T) {
 			wantURL: "/leaderboard",
 		},
 		{
-			name:    "with realm",
-			realm:   &domain.Realm{Origin: "http://localhost"},
+			name: "with realm",
+			realm: &domain.Realm{Config: domain.RealmConfig{
+				Origin: "http://localhost",
+			}},
 			wantURL: "http://localhost/leaderboard",
 		},
 	}
@@ -72,8 +76,10 @@ func TestGetJoinURL(t *testing.T) {
 			wantURL: "/join",
 		},
 		{
-			name:    "with realm",
-			realm:   &domain.Realm{Origin: "http://localhost"},
+			name: "with realm",
+			realm: &domain.Realm{Config: domain.RealmConfig{
+				Origin: "http://localhost",
+			}},
 			wantURL: "http://localhost/join",
 		},
 	}
@@ -99,8 +105,10 @@ func TestGetFAQURL(t *testing.T) {
 			wantURL: "/faq",
 		},
 		{
-			name:    "with realm",
-			realm:   &domain.Realm{Origin: "http://localhost"},
+			name: "with realm",
+			realm: &domain.Realm{Config: domain.RealmConfig{
+				Origin: "http://localhost",
+			}},
 			wantURL: "http://localhost/faq",
 		},
 	}
@@ -126,8 +134,10 @@ func TestGetLoginURL(t *testing.T) {
 			wantURL: "/login",
 		},
 		{
-			name:    "with realm",
-			realm:   &domain.Realm{Origin: "http://localhost"},
+			name: "with realm",
+			realm: &domain.Realm{Config: domain.RealmConfig{
+				Origin: "http://localhost",
+			}},
 			wantURL: "http://localhost/login",
 		},
 	}
@@ -154,8 +164,10 @@ func TestGetMagicLoginURL(t *testing.T) {
 			wantURL: "/login",
 		},
 		{
-			name:    "realm but no token",
-			realm:   &domain.Realm{Origin: "http://localhost"},
+			name: "realm but no token",
+			realm: &domain.Realm{Config: domain.RealmConfig{
+				Origin: "http://localhost",
+			}},
 			wantURL: "http://localhost/login",
 		},
 		{
@@ -164,8 +176,10 @@ func TestGetMagicLoginURL(t *testing.T) {
 			wantURL: "/login/abc123",
 		},
 		{
-			name:    "realm and token",
-			realm:   &domain.Realm{Origin: "http://localhost"},
+			name: "realm and token",
+			realm: &domain.Realm{Config: domain.RealmConfig{
+				Origin: "http://localhost",
+			}},
 			token:   &domain.Token{ID: "abc123"},
 			wantURL: "http://localhost/login/abc123",
 		},
@@ -192,8 +206,10 @@ func TestGetPredictionURL(t *testing.T) {
 			wantURL: "/prediction",
 		},
 		{
-			name:    "with realm",
-			realm:   &domain.Realm{Origin: "http://localhost"},
+			name: "with realm",
+			realm: &domain.Realm{Config: domain.RealmConfig{
+				Origin: "http://localhost",
+			}},
 			wantURL: "http://localhost/prediction",
 		},
 	}

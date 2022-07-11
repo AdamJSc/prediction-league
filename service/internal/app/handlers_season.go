@@ -23,9 +23,11 @@ func retrieveSeasonHandler(c *container) func(w http.ResponseWriter, r *http.Req
 		}
 		defer cancel()
 
+		realm := domain.RealmFromContext(ctx)
+
 		if seasonID == "latest" {
 			// use the current realm's season ID instead
-			seasonID = domain.RealmFromContext(ctx).SeasonID
+			seasonID = realm.Config.SeasonID
 		}
 
 		// retrieve the season we need
@@ -76,9 +78,11 @@ func retrieveLeaderBoardHandler(c *container) func(w http.ResponseWriter, r *htt
 		}
 		defer cancel()
 
+		realm := domain.RealmFromContext(ctx)
+
 		if seasonID == "latest" {
 			// use the current realm's season ID instead
-			seasonID = domain.RealmFromContext(ctx).SeasonID
+			seasonID = realm.Config.SeasonID
 		}
 
 		// retrieve leaderboard

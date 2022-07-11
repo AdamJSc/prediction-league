@@ -45,9 +45,10 @@ func createEntryHandler(c *container) func(w http.ResponseWriter, r *http.Reques
 		}
 		defer cancel()
 
+		realm := domain.RealmFromContext(ctx)
 		if seasonID == "latest" {
 			// use the current realm's season ID instead
-			seasonID = domain.RealmFromContext(ctx).SeasonID
+			seasonID = realm.Config.SeasonID
 		}
 
 		// retrieve the season we need

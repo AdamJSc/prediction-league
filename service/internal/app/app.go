@@ -125,7 +125,7 @@ func newPage(r *http.Request, c *container, title, activePage, bannerTitle strin
 	defer cancel()
 
 	realm := domain.RealmFromContext(ctx)
-	s, _ := c.seasons.GetByID(realm.SeasonID)
+	s, _ := c.seasons.GetByID(realm.Config.SeasonID)
 
 	return &view.Base{
 		Title:              title,
@@ -142,7 +142,7 @@ func newPage(r *http.Request, c *container, title, activePage, bannerTitle strin
 		LoginPageURL:       domain.GetLoginURL(realm),
 		BuildVersion:       c.config.BuildVersion,
 		BuildTimestamp:     c.config.BuildTimestamp,
-		AnalyticsCode:      realm.AnalyticsCode,
+		AnalyticsCode:      realm.Config.AnalyticsCode,
 		Data:               data,
 	}
 }

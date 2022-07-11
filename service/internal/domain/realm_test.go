@@ -5,11 +5,11 @@ import (
 	"testing"
 )
 
-func TestRealmCollection_GetByID(t *testing.T) {
+func TestRealmCollection_GetByName(t *testing.T) {
 	collection := domain.RealmCollection{
-		"realm_1": domain.Realm{Name: "realm_1"},
-		"realm_2": domain.Realm{Name: "realm_2"},
-		"realm_3": domain.Realm{Name: "realm_3"},
+		domain.Realm{Config: domain.RealmConfig{Name: "realm_1"}},
+		domain.Realm{Config: domain.RealmConfig{Name: "realm_2"}},
+		domain.Realm{Config: domain.RealmConfig{Name: "realm_3"}},
 	}
 
 	t.Run("retrieving an existing realm by id must succeed", func(t *testing.T) {
@@ -19,8 +19,8 @@ func TestRealmCollection_GetByID(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if r.Name != id {
-			expectedGot(t, id, r.Name)
+		if r.Config.Name != id {
+			expectedGot(t, id, r.Config.Name)
 		}
 	})
 

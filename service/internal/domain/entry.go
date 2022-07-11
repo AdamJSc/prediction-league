@@ -98,8 +98,8 @@ func (e *EntryAgent) CreateEntry(ctx context.Context, entry Entry, s *Season) (E
 	}
 
 	// check realm PIN is ok
-	ctxRealm := RealmFromContext(ctx)
-	if !GuardFromContext(ctx).AttemptMatches(ctxRealm.PIN) {
+	realm := RealmFromContext(ctx)
+	if !GuardFromContext(ctx).AttemptMatches(realm.Config.PIN) {
 		return Entry{}, UnauthorizedError{errors.New("invalid PIN")}
 	}
 
@@ -117,7 +117,7 @@ func (e *EntryAgent) CreateEntry(ctx context.Context, entry Entry, s *Season) (E
 	// override these values
 	entry.ID = id
 	entry.SeasonID = s.ID
-	entry.RealmName = ctxRealm.Name
+	entry.RealmName = realm.Config.Name
 	entry.Status = EntryStatusPending
 	entry.PaymentMethod = nil
 	entry.PaymentRef = nil
@@ -186,8 +186,10 @@ func (e *EntryAgent) RetrieveEntryByID(ctx context.Context, id string) (Entry, e
 	}
 	entry := entries[0]
 
+	realm := RealmFromContext(ctx)
+
 	// ensure that Entry realm matches current realm
-	if RealmFromContext(ctx).Name != entry.RealmName {
+	if realm.Config.Name != entry.RealmName {
 		return Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
@@ -220,8 +222,10 @@ func (e *EntryAgent) RetrieveEntryByEntrantEmail(ctx context.Context, email, sea
 	}
 	entry := entries[0]
 
+	realm := RealmFromContext(ctx)
+
 	// ensure that Entry realm matches current realm
-	if RealmFromContext(ctx).Name != entry.RealmName {
+	if realm.Config.Name != entry.RealmName {
 		return Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
@@ -254,8 +258,10 @@ func (e *EntryAgent) RetrieveEntryByEntrantNickname(ctx context.Context, nicknam
 	}
 	entry := entries[0]
 
+	realm := RealmFromContext(ctx)
+
 	// ensure that Entry realm matches current realm
-	if RealmFromContext(ctx).Name != entry.RealmName {
+	if realm.Config.Name != entry.RealmName {
 		return Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
@@ -316,8 +322,10 @@ func (e *EntryAgent) RetrieveEntriesBySeasonID(ctx context.Context, seasonID str
 
 // UpdateEntry handles the updating of an existing Entry in the database
 func (e *EntryAgent) UpdateEntry(ctx context.Context, entry Entry) (Entry, error) {
+	realm := RealmFromContext(ctx)
+
 	// ensure that Entry realm matches current realm
-	if RealmFromContext(ctx).Name != entry.RealmName {
+	if realm.Config.Name != entry.RealmName {
 		return Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
@@ -345,8 +353,10 @@ func (e *EntryAgent) UpdateEntry(ctx context.Context, entry Entry) (Entry, error
 
 // AddEntryPredictionToEntry adds the provided EntryPrediction to the provided Entry
 func (e *EntryAgent) AddEntryPredictionToEntry(ctx context.Context, entryPrediction EntryPrediction, entry Entry) (Entry, error) {
+	realm := RealmFromContext(ctx)
+
 	// ensure that entry realm matches current realm
-	if RealmFromContext(ctx).Name != entry.RealmName {
+	if realm.Config.Name != entry.RealmName {
 		return Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
@@ -467,8 +477,10 @@ func (e *EntryAgent) UpdateEntryPaymentDetails(ctx context.Context, entryID, pay
 
 	entry := entries[0]
 
+	realm := RealmFromContext(ctx)
+
 	// ensure that Entry realm matches current realm
-	if RealmFromContext(ctx).Name != entry.RealmName {
+	if realm.Config.Name != entry.RealmName {
 		return Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 
@@ -510,8 +522,10 @@ func (e *EntryAgent) ApproveEntryByID(ctx context.Context, id string) (Entry, er
 
 	entry := entries[0]
 
+	realm := RealmFromContext(ctx)
+
 	// ensure that Entry realm matches current realm
-	if RealmFromContext(ctx).Name != entry.RealmName {
+	if realm.Config.Name != entry.RealmName {
 		return Entry{}, ConflictError{errors.New("invalid realm")}
 	}
 

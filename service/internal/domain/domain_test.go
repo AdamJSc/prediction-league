@@ -28,7 +28,7 @@ var (
 	epr        domain.EntryPredictionRepository
 	er         domain.EntryRepository
 	rc         domain.RealmCollection
-	rlm        domain.Realm
+	realm      domain.Realm
 	sepr       domain.ScoredEntryPredictionRepository
 	sr         domain.StandingsRepository
 	sc         domain.SeasonCollection
@@ -128,9 +128,9 @@ func TestMain(m *testing.M) {
 		log.Fatalf("cannot parse templates: %s", err.Error())
 	}
 
-	rlm = newTestRealm()
+	realm = newTestRealm()
 	rc = domain.RealmCollection{
-		rlm.Name: rlm,
+		realm,
 	}
 
 	// set testSeason to first entity in season collection
@@ -216,8 +216,8 @@ func testContextWithGuardAttempt(t *testing.T, attempt string) (context.Context,
 	ctx, cancel := domain.NewContext()
 
 	realm := domain.RealmFromContext(ctx)
-	realm.Name = testRealmName
-	realm.PIN = testRealmPIN
+	realm.Config.Name = testRealmName
+	realm.Config.PIN = testRealmPIN
 
 	domain.GuardFromContext(ctx).SetAttempt(attempt)
 
@@ -384,10 +384,12 @@ func insertScoredEntryPrediction(t *testing.T, scoredEntryPrediction domain.Scor
 
 func newTestRealm() domain.Realm {
 	return domain.Realm{
-		Name:     "TEST_REALM",
-		Origin:   "http://test_realm.org",
-		PIN:      "12345",
-		SeasonID: testSeason.ID,
+		Config: domain.RealmConfig{
+			Name:     "TEST_REALM",
+			Origin:   "http://test_realm.org",
+			PIN:      "12345",
+			SeasonID: testSeason.ID,
+		},
 		EntryFee: domain.RealmEntryFee{
 			Amount: 12.34,
 			Label:  "£12.34",

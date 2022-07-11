@@ -59,7 +59,7 @@ func (c *CronHandler) generateCron() (*cron.Cron, error) {
 	// get unique season IDs for all realms
 	seasonIDs := make(map[string]struct{})
 	for _, realm := range c.realmCollection {
-		seasonIDs[realm.SeasonID] = struct{}{}
+		seasonIDs[realm.Config.SeasonID] = struct{}{}
 	}
 
 	seasons := make([]domain.Season, 0)

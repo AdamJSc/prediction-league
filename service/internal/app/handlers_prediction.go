@@ -12,8 +12,10 @@ import (
 func getPredictionPageData(ctx context.Context, authTknID string, entryAgent *domain.EntryAgent, tokenAgent *domain.TokenAgent, sc domain.SeasonCollection, tc domain.TeamCollection, cl domain.Clock, l domain.Logger) view.PredictionPageData {
 	var data view.PredictionPageData
 
+	realm := domain.RealmFromContext(ctx)
+
 	// retrieve season and determine its current state
-	seasonID := domain.RealmFromContext(ctx).SeasonID
+	seasonID := realm.Config.SeasonID
 	season, err := sc.GetByID(seasonID)
 	if err != nil {
 		l.Errorf("prediction page: can't get season: %s", err.Error())

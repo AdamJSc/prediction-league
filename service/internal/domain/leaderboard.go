@@ -53,7 +53,9 @@ func (l *LeaderBoardAgent) RetrieveLeaderBoardBySeasonAndRoundNumber(ctx context
 	}
 
 	standings := retrievedStandings[0]
-	realmName := RealmFromContext(ctx).Name
+
+	realm := RealmFromContext(ctx)
+	realmName := realm.Config.Name
 
 	rankingsThisRound, err := l.sepr.SelectEntryCumulativeScoresByRealm(ctx, realmName, seasonID, roundNumber)
 	if err != nil {
@@ -129,7 +131,8 @@ func (l *LeaderBoardAgent) generateEmptyLeaderBoard(ctx context.Context, roundNu
 		RoundNumber: roundNumber,
 	}
 
-	realmName := RealmFromContext(ctx).Name
+	realm := RealmFromContext(ctx)
+	realmName := realm.Config.Name
 
 	// sort entries by entrant nickname
 	sort.SliceStable(entries, func(i, j int) bool {

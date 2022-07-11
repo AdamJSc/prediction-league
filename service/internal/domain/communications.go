@@ -258,7 +258,7 @@ func newEmail(realm Realm, to Identity, subject, plainText string) Email {
 			Name:    realm.Contact.Name,
 			Address: realm.Contact.EmailProper,
 		},
-		SenderDomain: realm.SenderDomain,
+		SenderDomain: realm.Contact.SenderDomain,
 		Subject:      subject,
 		PlainText:    plainText,
 	}

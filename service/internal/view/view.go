@@ -70,12 +70,7 @@ type JoinPageData struct {
 
 type FAQPageData struct {
 	Err  error
-	FAQs []FAQItem
-}
-
-type FAQItem struct {
-	Question string
-	Answer   template.HTML
+	FAQs []domain.RealmFAQ
 }
 
 type GenerateMagicLoginPageData struct {

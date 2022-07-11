@@ -20,7 +20,7 @@ func TestNewCronHandler(t *testing.T) {
 	mwra := &domain.MatchWeekResultAgent{}
 	sc := make(domain.SeasonCollection)
 	tc := make(domain.TeamCollection)
-	rlms := make(domain.RealmCollection)
+	rlms := make(domain.RealmCollection, 0)
 	cl := &domain.RealClock{}
 	l := &mockLogger{}
 	fds := &footballdataorg.Client{}
@@ -94,7 +94,9 @@ func TestCronFactory_GenerateCron(t *testing.T) {
 
 	t.Run("must fail if realm season id does not exist", func(t *testing.T) {
 		rc := domain.RealmCollection{
-			"realm-id": {SeasonID: "non-existent-season-id"},
+			domain.Realm{Config: domain.RealmConfig{
+				SeasonID: "non-existent-season-id",
+			}},
 		}
 
 		sc := domain.SeasonCollection{"season-id": domain.Season{}}
@@ -108,8 +110,12 @@ func TestCronFactory_GenerateCron(t *testing.T) {
 
 	t.Run("must produce 6 cron entries when football data source is provided", func(t *testing.T) {
 		rc := domain.RealmCollection{
-			"realm-1-id": {SeasonID: "season-1-id"},
-			"realm-2-id": {SeasonID: "season-2-id"},
+			domain.Realm{Config: domain.RealmConfig{
+				SeasonID: "season-1-id",
+			}},
+			domain.Realm{Config: domain.RealmConfig{
+				SeasonID: "season-2-id",
+			}},
 		}
 
 		sc := domain.SeasonCollection{

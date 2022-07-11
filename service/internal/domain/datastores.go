@@ -2,10 +2,7 @@ package domain
 
 import (
 	"fmt"
-	"io/ioutil"
 	"time"
-
-	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -606,31 +603,5 @@ func GetSeasonCollection() (SeasonCollection, error) {
 
 // GetRealmCollection returns the required RealmCollection
 func GetRealmCollection() (RealmCollection, error) {
-	return parseRealmsFromPath(fmt.Sprintf("./data/realms.yml"))
-}
-
-// parseRealmsFromPath parses the realms from the contents of the YAML file at the provided path
-func parseRealmsFromPath(yamlPath string) (RealmCollection, error) {
-	contents, err := ioutil.ReadFile(yamlPath)
-	if err != nil {
-		return nil, fmt.Errorf("cannot read file '%s': %w", yamlPath, err)
-	}
-
-	var payload struct {
-		Realms RealmCollection `yaml:"realms"`
-	}
-
-	// parse file contents
-	if err := yaml.Unmarshal(contents, &payload); err != nil {
-		return nil, fmt.Errorf("cannot unmarshal yaml at path '%s': %w", yamlPath, err)
-	}
-
-	// populate names of realms with map key
-	for key := range payload.Realms {
-		r := payload.Realms[key]
-		r.Name = key
-		payload.Realms[key] = r
-	}
-
-	return payload.Realms, nil
+	return parseRealmCollectionFromPath("data", "realms")
 }

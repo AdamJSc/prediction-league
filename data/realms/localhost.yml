@@ -1,0 +1,37 @@
+config:
+  name: localhost # realm id stored in database for entries
+  analytics_code: xxx # google analytics code
+  image: http://localhost:3000/assets/img/og.png # url for og:image tag
+  origin: http://localhost:3000 # url for og:url tag
+  pin: 1234 # pin to entry the game
+  season_id: FakeSeason # id of season to associate with the realm
+
+contact:
+  email_do_not_reply: do_not_reply@localhost # admin/sender email for transactional emails
+  email_proper: wont_you_please_please_help_me@localhost # formatted admin/sender email
+  email_sanitised: wont_you_please_please_help_me (at) localhost # sanitised admin/sender email
+  name: Harry R and the PL Team # admin/sender name
+  sender_domain: localhost # domain to issue transactional emails from
+
+entry_fee:
+  amount: 1.23 # entry payment numerical amount
+  breakdown: # breakdown of entry fee to display on entry page
+    - £1.00 entry fee
+    - £0.23 coffee fund
+  label: £1.23 # entry payment formatted/display amount
+
+faqs:
+
+  - question: "Which would you rather bee or a wasp?"
+    answer: "That depends on what we mean by **bee**.
+
+    In the traditional sense, a bee would be far more aware of its mortality following a single sting,
+    so would logically cause _fewer_ injuries to [humans](https://en.wikipedia.org/wiki/Human).
+
+    So, on the grounds of compassion, a bee."
+
+  - question: "What is the average air speed velocity of a laden swallow?"
+    answer: "The real question is... \"_How did the coconut get to medieval England?_\""
+
+  - question: "What's the Frequency, Kenneth?"
+    answer: "\"_Somewhere between 88.1 and 90.2 MHz on FM_\" - **Mr Bruce**"

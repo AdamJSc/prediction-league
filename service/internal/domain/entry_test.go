@@ -118,7 +118,7 @@ func TestEntryAgent_CreateEntry(t *testing.T) {
 
 		// check sanitised values
 		expectedSeasonID := season.ID
-		expectedRealm := domain.RealmFromContext(ctx).Name
+		expectedRealm := domain.RealmFromContext(ctx).Config.Name
 		expectedStatus := domain.EntryStatusPending
 
 		if createdEntry.ID.String() == "" {
@@ -375,7 +375,7 @@ func TestEntryAgent_AddEntryPredictionToEntry(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		domain.RealmFromContext(ctx).Name = "NOT_TEST_REALM"
+		domain.RealmFromContext(ctx).Config.Name = "NOT_TEST_REALM"
 
 		entryPrediction := domain.EntryPrediction{Rankings: domain.NewRankingCollectionFromIDs(testSeason.TeamIDs)}
 
@@ -642,7 +642,7 @@ func TestEntryAgent_RetrieveEntryByID(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		domain.RealmFromContext(ctx).Name = "DIFFERENT_REALM"
+		domain.RealmFromContext(ctx).Config.Name = "DIFFERENT_REALM"
 
 		_, err := agent.RetrieveEntryByID(ctx, entry.ID.String())
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
@@ -740,7 +740,7 @@ func TestEntryAgent_RetrieveEntryByEntrantEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		domain.RealmFromContext(ctx).Name = "DIFFERENT_REALM"
+		domain.RealmFromContext(ctx).Config.Name = "DIFFERENT_REALM"
 
 		_, err := agent.RetrieveEntryByEntrantEmail(ctx, entry.EntrantEmail, entry.SeasonID, entry.RealmName)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
@@ -838,7 +838,8 @@ func TestEntryAgent_RetrieveEntryByEntrantNickname(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		domain.RealmFromContext(ctx).Name = "DIFFERENT_REALM"
+		realm := domain.RealmFromContext(ctx)
+		realm.Config.Name = "DIFFERENT_REALM"
 
 		_, err := agent.RetrieveEntryByEntrantNickname(ctx, entry.EntrantNickname, entry.SeasonID, entry.RealmName)
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
@@ -1226,7 +1227,8 @@ func TestEntryAgent_UpdateEntryPaymentDetails(t *testing.T) {
 	})
 
 	t.Run("update payment details for an existing entry with an invalid realm must fail", func(t *testing.T) {
-		domain.RealmFromContext(ctx).Name = "DIFFERENT_REALM"
+		realm := domain.RealmFromContext(ctx)
+		realm.Config.Name = "DIFFERENT_REALM"
 
 		_, err := agent.UpdateEntryPaymentDetails(
 			ctx,
@@ -1330,7 +1332,9 @@ func TestEntryAgent_ApproveEntryByID(t *testing.T) {
 		ctx = domain.SetBasicAuthSuccessfulOnContext(ctx)
 		defer cancel()
 
-		domain.RealmFromContext(ctx).Name = "DIFFERENT_REALM"
+		realm := domain.RealmFromContext(ctx)
+		realm.Config.Name = "DIFFERENT_REALM"
+
 		_, err := agent.ApproveEntryByID(ctx, entry.ID.String())
 		if !cmp.ErrorType(err, domain.ConflictError{})().Success() {
 			expectedTypeOfGot(t, domain.ConflictError{}, err)

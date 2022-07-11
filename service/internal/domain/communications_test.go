@@ -103,19 +103,19 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
-				SignOff:      rlm.Contact.Name,
-				URL:          rlm.Origin,
-				SupportEmail: rlm.Contact.EmailProper,
+				SignOff:      realm.Contact.Name,
+				URL:          realm.Config.Origin,
+				SupportEmail: realm.Contact.EmailProper,
 			},
 			PaymentDetails: payment,
-			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
+			PredictionsURL: fmt.Sprintf("%s/prediction", realm.Config.Origin),
 		})
 
-		if email.From.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.From.Name)
+		if email.From.Name != realm.Contact.Name {
+			expectedGot(t, realm.Contact.Name, email.From.Name)
 		}
-		if email.From.Address != rlm.Contact.EmailDoNotReply {
-			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
+		if email.From.Address != realm.Contact.EmailDoNotReply {
+			expectedGot(t, realm.Contact.EmailDoNotReply, email.From.Address)
 		}
 		if email.To.Name != entry.EntrantName {
 			expectedGot(t, entry.EntrantName, email.To.Name)
@@ -123,11 +123,11 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 		if email.To.Address != entry.EntrantEmail {
 			expectedGot(t, entry.EntrantEmail, email.To.Address)
 		}
-		if email.ReplyTo.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
+		if email.ReplyTo.Name != realm.Contact.Name {
+			expectedGot(t, realm.Contact.Name, email.ReplyTo.Name)
 		}
-		if email.ReplyTo.Address != rlm.Contact.EmailProper {
-			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
+		if email.ReplyTo.Address != realm.Contact.EmailProper {
+			expectedGot(t, realm.Contact.EmailProper, email.ReplyTo.Address)
 		}
 		if email.Subject != expectedSubject {
 			expectedGot(t, expectedSubject, email.Subject)
@@ -295,13 +295,13 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
-				SignOff:      rlm.Contact.Name,
-				URL:          rlm.Origin,
-				SupportEmail: rlm.Contact.EmailProper,
+				SignOff:      realm.Contact.Name,
+				URL:          realm.Config.Origin,
+				SupportEmail: realm.Contact.EmailProper,
 			},
 			RoundNumber:    standings.RoundNumber,
-			LeaderBoardURL: fmt.Sprintf("%s/leaderboard", rlm.Origin),
-			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
+			LeaderBoardURL: fmt.Sprintf("%s/leaderboard", realm.Config.Origin),
+			PredictionsURL: fmt.Sprintf("%s/prediction", realm.Config.Origin),
 		})
 
 		emlQ := domain.NewInMemEmailQueue()
@@ -329,11 +329,11 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 
 		email := emls[0]
 
-		if email.From.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.From.Name)
+		if email.From.Name != realm.Contact.Name {
+			expectedGot(t, realm.Contact.Name, email.From.Name)
 		}
-		if email.From.Address != rlm.Contact.EmailDoNotReply {
-			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
+		if email.From.Address != realm.Contact.EmailDoNotReply {
+			expectedGot(t, realm.Contact.EmailDoNotReply, email.From.Address)
 		}
 		if email.To.Name != entry.EntrantName {
 			expectedGot(t, entry.EntrantName, email.To.Name)
@@ -341,11 +341,11 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		if email.To.Address != entry.EntrantEmail {
 			expectedGot(t, entry.EntrantEmail, email.To.Address)
 		}
-		if email.ReplyTo.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
+		if email.ReplyTo.Name != realm.Contact.Name {
+			expectedGot(t, realm.Contact.Name, email.ReplyTo.Name)
 		}
-		if email.ReplyTo.Address != rlm.Contact.EmailProper {
-			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
+		if email.ReplyTo.Address != realm.Contact.EmailProper {
+			expectedGot(t, realm.Contact.EmailProper, email.ReplyTo.Address)
 		}
 		if email.Subject != expectedSubject {
 			expectedGot(t, expectedSubject, email.Subject)
@@ -365,13 +365,13 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
-				SignOff:      rlm.Contact.Name,
-				URL:          rlm.Origin,
-				SupportEmail: rlm.Contact.EmailProper,
+				SignOff:      realm.Contact.Name,
+				URL:          realm.Config.Origin,
+				SupportEmail: realm.Contact.EmailProper,
 			},
 			RoundNumber:    standings.RoundNumber,
-			LeaderBoardURL: fmt.Sprintf("%s/leaderboard", rlm.Origin),
-			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
+			LeaderBoardURL: fmt.Sprintf("%s/leaderboard", realm.Config.Origin),
+			PredictionsURL: fmt.Sprintf("%s/prediction", realm.Config.Origin),
 		})
 
 		emlQ := domain.NewInMemEmailQueue()
@@ -400,11 +400,11 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 
 		email := emls[0]
 
-		if email.From.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.From.Name)
+		if email.From.Name != realm.Contact.Name {
+			expectedGot(t, realm.Contact.Name, email.From.Name)
 		}
-		if email.From.Address != rlm.Contact.EmailDoNotReply {
-			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
+		if email.From.Address != realm.Contact.EmailDoNotReply {
+			expectedGot(t, realm.Contact.EmailDoNotReply, email.From.Address)
 		}
 		if email.To.Name != entry.EntrantName {
 			expectedGot(t, entry.EntrantName, email.To.Name)
@@ -412,11 +412,11 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		if email.To.Address != entry.EntrantEmail {
 			expectedGot(t, entry.EntrantEmail, email.To.Address)
 		}
-		if email.ReplyTo.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
+		if email.ReplyTo.Name != realm.Contact.Name {
+			expectedGot(t, realm.Contact.Name, email.ReplyTo.Name)
 		}
-		if email.ReplyTo.Address != rlm.Contact.EmailProper {
-			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
+		if email.ReplyTo.Address != realm.Contact.EmailProper {
+			expectedGot(t, realm.Contact.EmailProper, email.ReplyTo.Address)
 		}
 		if email.Subject != expectedSubject {
 			expectedGot(t, expectedSubject, email.Subject)
@@ -581,18 +581,18 @@ func TestCommunicationsAgent_IssueMagicLoginEmail(t *testing.T) {
 			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
-				SignOff:      rlm.Contact.Name,
-				URL:          rlm.Origin,
-				SupportEmail: rlm.Contact.EmailProper,
+				SignOff:      realm.Contact.Name,
+				URL:          realm.Config.Origin,
+				SupportEmail: realm.Contact.EmailProper,
 			},
-			LoginURL: fmt.Sprintf("%s/login/%s", rlm.Origin, tokenId),
+			LoginURL: fmt.Sprintf("%s/login/%s", realm.Config.Origin, tokenId),
 		})
 
-		if email.From.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.From.Name)
+		if email.From.Name != realm.Contact.Name {
+			expectedGot(t, realm.Contact.Name, email.From.Name)
 		}
-		if email.From.Address != rlm.Contact.EmailDoNotReply {
-			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
+		if email.From.Address != realm.Contact.EmailDoNotReply {
+			expectedGot(t, realm.Contact.EmailDoNotReply, email.From.Address)
 		}
 		if email.To.Name != entry.EntrantName {
 			expectedGot(t, entry.EntrantName, email.To.Name)
@@ -600,11 +600,11 @@ func TestCommunicationsAgent_IssueMagicLoginEmail(t *testing.T) {
 		if email.To.Address != entry.EntrantEmail {
 			expectedGot(t, entry.EntrantEmail, email.To.Address)
 		}
-		if email.ReplyTo.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
+		if email.ReplyTo.Name != realm.Contact.Name {
+			expectedGot(t, realm.Contact.Name, email.ReplyTo.Name)
 		}
-		if email.ReplyTo.Address != rlm.Contact.EmailProper {
-			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
+		if email.ReplyTo.Address != realm.Contact.EmailProper {
+			expectedGot(t, realm.Contact.EmailProper, email.ReplyTo.Address)
 		}
 		if email.Subject != expectedSubject {
 			expectedGot(t, expectedSubject, email.Subject)
