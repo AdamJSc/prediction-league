@@ -22,16 +22,8 @@ func frontendIndexHandler(c *container) func(w http.ResponseWriter, r *http.Requ
 		defer cancel()
 
 		realm := domain.RealmFromContext(ctx)
-		seasonID := realm.Config.SeasonID
-		season, err := c.seasons.GetByID(seasonID)
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
-		}
 
-		bannerTitle := fmt.Sprintf("%s<br />Prediction League", season.Name)
-
-		p := newPage(r, c, "Home", "home", bannerTitle, nil)
+		p := newPage(r, c, "Home", "home", realm.Config.HomePageHeading, nil)
 
 		if err := c.templates.ExecuteTemplate(w, "index", p); err != nil {
 			internalError(err).writeTo(w)

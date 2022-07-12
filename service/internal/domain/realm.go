@@ -20,12 +20,15 @@ type Realm struct {
 
 // RealmConfig represents the core configuration of a Realm
 type RealmConfig struct {
-	Name          string `yaml:"name"`
-	AnalyticsCode string `yaml:"analytics_code"`
-	Image         string `yaml:"image"`
-	Origin        string `yaml:"origin"`
-	PIN           string `yaml:"pin"`
-	SeasonID      string `yaml:"season_id"`
+	Name            string `yaml:"name"`
+	AnalyticsCode   string `yaml:"analytics_code"`
+	HomePageHeading string `yaml:"home_page_heading"`
+	HomePageTagline string `yaml:"home_page_tagline"`
+	Image           string `yaml:"image"`
+	MenuTitle       string `yaml:"menu_title"`
+	Origin          string `yaml:"origin"`
+	PIN             string `yaml:"pin"`
+	SeasonID        string `yaml:"season_id"`
 }
 
 // RealmContact represents the contact details of a realm
