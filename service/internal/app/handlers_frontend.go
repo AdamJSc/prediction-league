@@ -121,7 +121,7 @@ func frontendJoinHandler(c *container) func(w http.ResponseWriter, r *http.Reque
 			EntryFee:        realm.EntryFee,
 		}
 
-		p := newPage(r, c, "Join", "join", "Join", data)
+		p := newPage(r, c, "Enter", "join", "Enter", data)
 
 		if err := c.templates.ExecuteTemplate(w, "join", p); err != nil {
 			internalError(err).writeTo(w)

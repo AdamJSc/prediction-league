@@ -15,7 +15,7 @@
                     <p>Your PayPal reference is <strong>{{paymentData.paymentReference}}</strong></p>
                     <p>We've just sent a confirmation email
                         to<br /><span class="text-highlight">{{entryData.email}}</span></p>
-                    <p>This will provide instructions on how to submit your first prediction!</p>
+                    <p>This will provide instructions on how to submit your league table prediction!</p>
                     <p>If you don't receive your email, please contact us
                         at <a v-bind:href="mailToSupportEmail">{{supportEmailPlainText}}</a></p>
                 </div>

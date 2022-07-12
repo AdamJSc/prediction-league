@@ -1,21 +1,5 @@
 <template>
     <div class="registration-form-container">
-        <div class="payment-info">
-            <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                <div>
-                    <p><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> <strong>Payment Info</strong></p>
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <p>The cost to enter the Prediction League is <strong>{{entryFeeData.label}}</strong> which covers the following:</p>
-                <ul>
-                    <li v-for="item in entryFeeData.breakdown">{{item}}</li>
-                </ul>
-                <p>On the next screen, you'll be taken to a secure <strong>PayPal</strong> integration in order to make payment.</p>
-                <p>If you don't have a PayPal account, you can <strong>pay by Debit or Credit card instead</strong>.</p>
-            </div>
-        </div>
         <div class="row">
             <div class="col">
                 <h2>Step 1/2: Your details</h2>
@@ -65,12 +49,6 @@
                     <label for="inputName">Name</label>
                   </div>
                 </div>
-              </div>
-
-            </div>
-
-            <div class="col-lg-6 col-md-10">
-              <div class="row">
 
                 <div class="col-lg-12">
                   <div class="form-label-definition">
@@ -87,20 +65,42 @@
                   </div>
                 </div>
 
-                <div class="col-lg-12">
-                  <div class="submit-wrapper">
-                    <action-button
-                        label="Join"
-                        @clicked="enterOnClick"
-                        :is-disabled="working"
-                        :is-working="working"
-                        :is-primary="true"></action-button>
-                  </div>
-
-                </div>
               </div>
 
             </div>
+
+            <div class="col-lg-6 col-md-10">
+              <div class="row">
+
+                <div class="col-lg-12">
+                  <div class="payment-info">
+                    <p><strong>Payment Info</strong></p>
+                    <p>Entry costs <strong>{{entryFeeData.label}}</strong> and includes:</p>
+                    <ul>
+                      <li v-for="item in entryFeeData.breakdown">{{item}}</li>
+                    </ul>
+                    <p>On the next screen, you'll be taken to a secure <strong>PayPal</strong> integration
+                      to make payment by debit/credit card.</p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+
+            <div class="col-lg-12">
+              <div class="submit-wrapper">
+                <action-button
+                    label="Enter"
+                    @clicked="enterOnClick"
+                    :is-disabled="working"
+                    :is-working="working"
+                    :is-primary="true"></action-button>
+              </div>
+            </div>
+
           </div>
         </form>
     </div>

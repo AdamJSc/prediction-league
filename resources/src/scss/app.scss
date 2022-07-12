@@ -129,7 +129,7 @@ a {
   max-width: 400px;
   margin: 0 auto;
   border: 2px solid $primary-dark;
-  border-radius: 5px;
+  border-radius: $border-radius;
   padding: 0.5rem;
 }
 
@@ -199,7 +199,7 @@ a {
 .highlight-container {
     background: $primary-dark;
     color: $text-light;
-    border-radius: 5px;
+    border-radius: $border-radius;
     padding: 0.5rem;
     font-family: $heading-font-family;
 
@@ -209,7 +209,10 @@ a {
 }
 
 .payment-info {
-  margin-bottom: 2rem;
+  background: $primary-light;
+  border-radius: $border-radius;
+  color: $primary-dark;
+  padding: 1rem;
 
   ul {
     margin-bottom: 1rem;
@@ -291,7 +294,7 @@ a.registration-form-toggle {
 
   input {
     height: auto;
-    border-radius: 1rem;
+    border-radius: $border-radius;
 
     &::-webkit-input-placeholder {
       color: transparent;
