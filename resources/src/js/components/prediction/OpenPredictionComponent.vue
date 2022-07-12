@@ -5,7 +5,7 @@
           <p>Select two teams to swap their positions.</p>
         </div>
         <div v-else class="text-center alert alert-block alert-info">
-            You have already made the maximum number of permitted changes for the current round.
+            You have already made the maximum number of permitted changes for the current Match Week.
         </div>
         <table v-bind:class="['teams-reorder', 'rankings', { 'clickable': canReorder }]">
           <tbody>
@@ -40,7 +40,7 @@
                                     Changed {{dirtyTeamIDs.length}} team(s).
                                 </div>
                                 <div v-if="success" class="alert alert-block alert-success">
-                                    Your prediction has been updated. Good luck!
+                                    Your table has been updated. Good luck!
                                 </div>
                                 <div v-else-if="canReorder && exceedsLimit" class="alert alert-block alert-danger">
                                     Sorry, you can only change up to {{predLimit}} teams! <a v-on:click="resetState" href="#">[Reset]</a>

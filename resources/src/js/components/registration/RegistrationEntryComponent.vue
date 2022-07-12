@@ -24,9 +24,8 @@
                         <i class="fa-solid fa-circle-question"></i>
                       </a></p>
                     <p class="collapse form-label-definition-description" id="email-description">
-                      The email address we will use to send you game-related communications such as your Short Code
-                      for making a prediction, as well as round-by-round progress updates.
-                      We will ONLY contact you regarding your participation within the Prediction League game.</p>
+                      The email address we will use to send you game-related communications.
+                      We will only contact you regarding your participation within the game.</p>
                   </div>
                   <div class="form-label-group">
                     <input v-model="formData.entrant_email" type="email" id="inputEmail" name="email" class="form-control" placeholder="Email" required>
@@ -93,7 +92,7 @@
             <div class="col-lg-12">
               <div class="submit-wrapper">
                 <action-button
-                    label="Enter"
+                    label="Next"
                     @clicked="enterOnClick"
                     :is-disabled="working"
                     :is-working="working"

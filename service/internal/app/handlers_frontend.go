@@ -133,7 +133,7 @@ func frontendJoinHandler(c *container) func(w http.ResponseWriter, r *http.Reque
 func frontendPredictionHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var writeResponse = func(data view.PredictionPageData) {
-			p := newPage(r, c, "Update My Prediction", "prediction", "Update My Prediction", data)
+			p := newPage(r, c, "Update My Table", "prediction", "Update My Table", data)
 
 			if err := c.templates.ExecuteTemplate(w, "prediction", p); err != nil {
 				internalError(err).writeTo(w)
