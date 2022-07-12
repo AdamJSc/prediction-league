@@ -64,37 +64,61 @@ func (rc RealmCollection) GetByName(name string) (Realm, error) {
 	return Realm{}, NotFoundError{fmt.Errorf("realm name '%s': not found", name)}
 }
 
-// parseRealmCollectionFromPath parses the files in the provided directory and returns a RealmCollection
-func parseRealmCollectionFromPath(path ...string) (RealmCollection, error) {
-	dirPath := filepath.Join(path...)
+// GetRealmCollection returns the required RealmCollection
+func GetRealmCollection() (RealmCollection, error) {
+	dirPath := filepath.Join("data", "realms")
 
-	files, err := ioutil.ReadDir(dirPath)
+	infos, err := ioutil.ReadDir(dirPath)
 	if err != nil {
-		return nil, fmt.Errorf("cannot read files from directory '%s': %w", dirPath, err)
+		return nil, fmt.Errorf("cannot read dir '%s': %w", dirPath, err)
 	}
 
 	realmCollection := make(RealmCollection, 0)
 
-	for _, file := range files {
-		filePath := filepath.Join(dirPath, file.Name())
+	for _, info := range infos {
+		if info.IsDir() {
+			// parse realm from directory
+			realmDirPath := filepath.Join(dirPath, info.Name())
 
-		b, err := ioutil.ReadFile(filePath)
-		if err != nil {
-			return nil, fmt.Errorf("cannot read file '%s': %w", filePath, err)
+			realm, err := parseRealmFromDir(realmDirPath)
+			if err != nil {
+				return nil, fmt.Errorf("cannot parse realm from dir '%s': %w", realmDirPath, err)
+			}
+
+			realmCollection = append(realmCollection, realm)
 		}
-
-		var realm Realm
-		if err := yaml.Unmarshal(b, &realm); err != nil {
-			return nil, fmt.Errorf("cannot unmarshal realm: %w", err)
-		}
-
-		for idx, faq := range realm.FAQs {
-			asHTML := markdown.ToHTML([]byte(faq.Answer), nil, nil)
-			realm.FAQs[idx].Answer = template.HTML(asHTML)
-		}
-
-		realmCollection = append(realmCollection, realm)
 	}
 
 	return realmCollection, nil
+}
+
+// parseRealmFromDir parses the files in the provided directory and returns a RealmCollection
+func parseRealmFromDir(dirPath string) (Realm, error) {
+	var realm Realm
+
+	filePaths := []string{
+		"main.yml",
+		"faqs.yml",
+	}
+
+	for _, filePath := range filePaths {
+		fullPath := filepath.Join(dirPath, filePath)
+
+		b, err := ioutil.ReadFile(fullPath)
+		if err != nil {
+			return Realm{}, fmt.Errorf("cannot read file '%s': %w", filePath, err)
+		}
+
+		if err := yaml.Unmarshal(b, &realm); err != nil {
+			return Realm{}, fmt.Errorf("cannot unmarshal realm from file '%s': %w", filePath, err)
+		}
+	}
+
+	// convert markdown faq answers to html
+	for idx, faq := range realm.FAQs {
+		asHTML := markdown.ToHTML([]byte(faq.Answer), nil, nil)
+		realm.FAQs[idx].Answer = template.HTML(asHTML)
+	}
+
+	return realm, nil
 }

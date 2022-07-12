@@ -600,8 +600,3 @@ func GetSeasonCollection() (SeasonCollection, error) {
 
 	return sc, nil
 }
-
-// GetRealmCollection returns the required RealmCollection
-func GetRealmCollection() (RealmCollection, error) {
-	return parseRealmCollectionFromPath("data", "realms")
-}
