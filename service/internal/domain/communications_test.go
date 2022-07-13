@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"prediction-league/service/internal/domain"
@@ -98,49 +97,13 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 			t.Fatalf("want 1 email, got %d", len(emls))
 		}
 
-		email := emls[0]
+		wantEmail := readCommsTestEmail(t, "new_entry_txt_email_meta.json")
+		gotEmail := emls[0]
+		cmpDiff(t, "email", wantEmail, gotEmail)
 
-		expectedSubject := domain.EmailSubjectNewEntry
-
-		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_new_entry", domain.NewEntryEmailData{
-			MessagePayload: domain.MessagePayload{
-				Name:         entry.EntrantName,
-				SeasonName:   testSeason.Name,
-				SignOff:      realm.Contact.SignOffName,
-				URL:          realm.Config.Origin,
-				SupportEmail: realm.Contact.EmailProper,
-			},
-			PaymentDetails: payment,
-			PredictionsURL: fmt.Sprintf("%s/prediction", realm.Config.Origin),
-		})
-
-		writeTestEmailToFile(t, "new_entry_txt_email_meta.json", email)
-		writeTestDataFile(t, "new_entry_txt_content_body.txt", expectedPlainText)
-
-		if email.From.Name != realm.Contact.SenderName {
-			expectedGot(t, realm.Contact.SenderName, email.From.Name)
-		}
-		if email.From.Address != realm.Contact.EmailDoNotReply {
-			expectedGot(t, realm.Contact.EmailDoNotReply, email.From.Address)
-		}
-		if email.To.Name != entry.EntrantName {
-			expectedGot(t, entry.EntrantName, email.To.Name)
-		}
-		if email.To.Address != entry.EntrantEmail {
-			expectedGot(t, entry.EntrantEmail, email.To.Address)
-		}
-		if email.ReplyTo.Name != realm.Contact.SenderName {
-			expectedGot(t, realm.Contact.SenderName, email.ReplyTo.Name)
-		}
-		if email.ReplyTo.Address != realm.Contact.EmailProper {
-			expectedGot(t, realm.Contact.EmailProper, email.ReplyTo.Address)
-		}
-		if email.Subject != expectedSubject {
-			expectedGot(t, expectedSubject, email.Subject)
-		}
-		if email.PlainText != expectedPlainText {
-			t.Fatal(gocmp.Diff(expectedPlainText, email.PlainText))
-		}
+		wantPlainContent := readCommsTestDataFile(t, "new_entry_txt_content_body.txt")
+		gotPlainContent := []byte(gotEmail.PlainText)
+		cmpDiff(t, "plain content", wantPlainContent, gotPlainContent)
 	})
 
 	t.Run("issue new entry email with no entry must fail", func(t *testing.T) {
@@ -295,21 +258,6 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
 
-		expectedSubject := fmt.Sprintf(domain.EmailSubjectRoundComplete, standings.RoundNumber+1)
-
-		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_round_complete", domain.RoundCompleteEmailData{
-			MessagePayload: domain.MessagePayload{
-				Name:         entry.EntrantName,
-				SeasonName:   testSeason.Name,
-				SignOff:      realm.Contact.SignOffName,
-				URL:          realm.Config.Origin,
-				SupportEmail: realm.Contact.EmailProper,
-			},
-			RoundNumber:    standings.RoundNumber,
-			LeaderBoardURL: fmt.Sprintf("%s/leaderboard", realm.Config.Origin),
-			PredictionsURL: fmt.Sprintf("%s/prediction", realm.Config.Origin),
-		})
-
 		emlQ := domain.NewInMemEmailQueue()
 
 		agent, err := domain.NewCommunicationsAgent(er, epr, sr, emlQ, tpl, sc, tc, rc)
@@ -333,55 +281,18 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			t.Fatalf("want 1 email, got %d", len(emls))
 		}
 
-		email := emls[0]
+		wantEmail := readCommsTestEmail(t, "round_complete_txt_email_meta.json")
+		gotEmail := emls[0]
+		cmpDiff(t, "email", wantEmail, gotEmail)
 
-		writeTestEmailToFile(t, "round_complete_txt_email_meta.json", email)
-		writeTestDataFile(t, "round_complete_txt_content_body.txt", expectedPlainText)
-
-		if email.From.Name != realm.Contact.SenderName {
-			expectedGot(t, realm.Contact.SenderName, email.From.Name)
-		}
-		if email.From.Address != realm.Contact.EmailDoNotReply {
-			expectedGot(t, realm.Contact.EmailDoNotReply, email.From.Address)
-		}
-		if email.To.Name != entry.EntrantName {
-			expectedGot(t, entry.EntrantName, email.To.Name)
-		}
-		if email.To.Address != entry.EntrantEmail {
-			expectedGot(t, entry.EntrantEmail, email.To.Address)
-		}
-		if email.ReplyTo.Name != realm.Contact.SenderName {
-			expectedGot(t, realm.Contact.SenderName, email.ReplyTo.Name)
-		}
-		if email.ReplyTo.Address != realm.Contact.EmailProper {
-			expectedGot(t, realm.Contact.EmailProper, email.ReplyTo.Address)
-		}
-		if email.Subject != expectedSubject {
-			expectedGot(t, expectedSubject, email.Subject)
-		}
-		if email.PlainText != expectedPlainText {
-			t.Fatal(gocmp.Diff(expectedPlainText, email.PlainText))
-		}
+		wantPlainContent := readCommsTestDataFile(t, "round_complete_txt_content_body.txt")
+		gotPlainContent := []byte(gotEmail.PlainText)
+		cmpDiff(t, "plain content", wantPlainContent, gotPlainContent)
 	})
 
 	t.Run("issue final round complete email with a valid scored entry prediction must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
-
-		expectedSubject := domain.EmailSubjectFinalRoundComplete
-
-		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_final_round_complete", domain.RoundCompleteEmailData{
-			MessagePayload: domain.MessagePayload{
-				Name:         entry.EntrantName,
-				SeasonName:   testSeason.Name,
-				SignOff:      realm.Contact.SignOffName,
-				URL:          realm.Config.Origin,
-				SupportEmail: realm.Contact.EmailProper,
-			},
-			RoundNumber:    standings.RoundNumber,
-			LeaderBoardURL: fmt.Sprintf("%s/leaderboard", realm.Config.Origin),
-			PredictionsURL: fmt.Sprintf("%s/prediction", realm.Config.Origin),
-		})
 
 		emlQ := domain.NewInMemEmailQueue()
 
@@ -407,35 +318,13 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			t.Fatalf("want 1 email, got %d", len(emls))
 		}
 
-		email := emls[0]
+		wantEmail := readCommsTestEmail(t, "final_round_complete_txt_email_meta.json")
+		gotEmail := emls[0]
+		cmpDiff(t, "email", wantEmail, gotEmail)
 
-		writeTestEmailToFile(t, "final_round_complete_txt_email_meta.json", email)
-		writeTestDataFile(t, "final_round_complete_txt_content_body.txt", expectedPlainText)
-
-		if email.From.Name != realm.Contact.SenderName {
-			expectedGot(t, realm.Contact.SenderName, email.From.Name)
-		}
-		if email.From.Address != realm.Contact.EmailDoNotReply {
-			expectedGot(t, realm.Contact.EmailDoNotReply, email.From.Address)
-		}
-		if email.To.Name != entry.EntrantName {
-			expectedGot(t, entry.EntrantName, email.To.Name)
-		}
-		if email.To.Address != entry.EntrantEmail {
-			expectedGot(t, entry.EntrantEmail, email.To.Address)
-		}
-		if email.ReplyTo.Name != realm.Contact.SenderName {
-			expectedGot(t, realm.Contact.SenderName, email.ReplyTo.Name)
-		}
-		if email.ReplyTo.Address != realm.Contact.EmailProper {
-			expectedGot(t, realm.Contact.EmailProper, email.ReplyTo.Address)
-		}
-		if email.Subject != expectedSubject {
-			expectedGot(t, expectedSubject, email.Subject)
-		}
-		if email.PlainText != expectedPlainText {
-			t.Fatal(gocmp.Diff(expectedPlainText, email.PlainText))
-		}
+		wantPlainContent := readCommsTestDataFile(t, "final_round_complete_txt_content_body.txt")
+		gotPlainContent := []byte(gotEmail.PlainText)
+		cmpDiff(t, "plain content", wantPlainContent, gotPlainContent)
 	})
 
 	t.Run("issue round complete email with a scored entry prediction whose entry prediction ID does not exist must fail", func(t *testing.T) {
@@ -585,48 +474,13 @@ func TestCommunicationsAgent_IssueMagicLoginEmail(t *testing.T) {
 			t.Fatalf("want 1 email, got %d", len(emls))
 		}
 
-		email := emls[0]
+		wantEmail := readCommsTestEmail(t, "magic_login_txt_email_meta.json")
+		gotEmail := emls[0]
+		cmpDiff(t, "email", wantEmail, gotEmail)
 
-		expectedSubject := domain.EmailSubjectMagicLogin
-
-		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_magic_login", domain.MagicLoginEmail{
-			MessagePayload: domain.MessagePayload{
-				Name:         entry.EntrantName,
-				SeasonName:   testSeason.Name,
-				SignOff:      realm.Contact.SignOffName,
-				URL:          realm.Config.Origin,
-				SupportEmail: realm.Contact.EmailProper,
-			},
-			LoginURL: fmt.Sprintf("%s/login/%s", realm.Config.Origin, tokenId),
-		})
-
-		writeTestEmailToFile(t, "magic_login_txt_email_meta.json", email)
-		writeTestDataFile(t, "magic_login_txt_content_body.txt", expectedPlainText)
-
-		if email.From.Name != realm.Contact.SenderName {
-			expectedGot(t, realm.Contact.SenderName, email.From.Name)
-		}
-		if email.From.Address != realm.Contact.EmailDoNotReply {
-			expectedGot(t, realm.Contact.EmailDoNotReply, email.From.Address)
-		}
-		if email.To.Name != entry.EntrantName {
-			expectedGot(t, entry.EntrantName, email.To.Name)
-		}
-		if email.To.Address != entry.EntrantEmail {
-			expectedGot(t, entry.EntrantEmail, email.To.Address)
-		}
-		if email.ReplyTo.Name != realm.Contact.SenderName {
-			expectedGot(t, realm.Contact.SenderName, email.ReplyTo.Name)
-		}
-		if email.ReplyTo.Address != realm.Contact.EmailProper {
-			expectedGot(t, realm.Contact.EmailProper, email.ReplyTo.Address)
-		}
-		if email.Subject != expectedSubject {
-			expectedGot(t, expectedSubject, email.Subject)
-		}
-		if email.PlainText != expectedPlainText {
-			t.Fatal(gocmp.Diff(expectedPlainText, email.PlainText))
-		}
+		wantPlainContent := readCommsTestDataFile(t, "magic_login_txt_content_body.txt")
+		gotPlainContent := []byte(gotEmail.PlainText)
+		cmpDiff(t, "plain content", wantPlainContent, gotPlainContent)
 	})
 
 	t.Run("issue magic login email with no entry must fail", func(t *testing.T) {
@@ -777,27 +631,35 @@ func TestNoopEmailClient_SendEmail(t *testing.T) {
 	})
 }
 
-func writeTestEmailToFile(t *testing.T, name string, email domain.Email) {
+func readCommsTestDataFile(t *testing.T, filename string) []byte {
+	t.Helper()
+	path := append([]string{"communications"}, filename)
+	return readTestDataFile(t, path...)
+}
+
+func readCommsTestEmail(t *testing.T, filename string) domain.Email {
+	t.Helper()
+	path := append([]string{"communications"}, filename)
+	b := readTestDataFile(t, path...)
+
+	var email domain.Email
+	if err := json.Unmarshal(b, &email); err != nil {
+		t.Fatal(err)
+	}
+
+	return email
+}
+
+func readTestDataFile(t *testing.T, path ...string) []byte {
 	t.Helper()
 
-	b, err := json.MarshalIndent(email, "", "  ")
+	path = append([]string{"testdata"}, path...)
+	joined := filepath.Join(path...)
+
+	b, err := ioutil.ReadFile(joined)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	path := filepath.Join("testdata", "communications", name)
-
-	if err := ioutil.WriteFile(path, b, 0644); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func writeTestDataFile(t *testing.T, name string, content string) {
-	t.Helper()
-
-	path := filepath.Join("testdata", "communications", name)
-
-	if err := ioutil.WriteFile(path, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
+	return b
 }
