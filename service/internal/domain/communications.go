@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	EmailSubjectNewEntry           = "You're In!"
-	EmailSubjectRoundComplete      = "Round %d predictions open!"
-	EmailSubjectFinalRoundComplete = "Thanks for playing!"
-	EmailSubjectMagicLogin         = "Your login link"
+	EmailSubjectNewEntry            = "You're In!"
+	EmailSubjectRoundCompleteFormat = "Match Week %d begins!"
+	EmailSubjectFinalRoundComplete  = "Thanks for playing!"
+	EmailSubjectMagicLogin          = "Your login link"
 )
 
 // CommunicationsAgent defines the behaviours for issuing communications
@@ -103,7 +103,7 @@ func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep S
 
 	templateName := "email_txt_round_complete"
 	nextRound := standings.RoundNumber + 1
-	subject := fmt.Sprintf(EmailSubjectRoundComplete, nextRound)
+	subject := fmt.Sprintf(EmailSubjectRoundCompleteFormat, nextRound)
 	if isFinalRound {
 		templateName = "email_txt_final_round_complete"
 		subject = EmailSubjectFinalRoundComplete

@@ -12,6 +12,6 @@
     "Address": "hello@world.net"
   },
   "SenderDomain": "configured_with_mailgun.com",
-  "Subject": "Round 2 predictions open!",
+  "Subject": "Match Week 2 begins!",
   "PlainText": "Hey Harry Redknapp,\n\nA new Match Week has begun!\n\nUpdate your table here:\nhttp://test_realm.org/prediction\n\nAnd don't forget to check out the leaderboard to see how you're doing:\nhttp://test_realm.org/leaderboard\n\nEnjoy! 🦁⚽️\n- Harry R and the PL Team\n\n---------------------------------------------\n\nYou have received this email because you have entered The Test Game for the Localhost Season season (http://test_realm.org)\n\nIf you have any questions, issues or concerns, please email hello@world.net\n\n"
 }
