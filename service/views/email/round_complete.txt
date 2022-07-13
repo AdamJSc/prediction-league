@@ -1,16 +1,13 @@
-{{define "email_txt_round_complete"}}Round {{.RoundNumber}} complete
-==================
+{{define "email_txt_round_complete"}}Hey {{.RecipientName}},
 
-Hey {{.RecipientName}},
+A new Match Week has begun!
 
-A new round has begun!
-
-Tweak your prediction for the next round:
+Update your table here:
 {{.PredictionsURL}}
 
 And don't forget to check out the leaderboard to see how you're doing:
 {{.LeaderBoardURL}}
 
-In the meantime, Happy Predicting! 🧙🔮
+Enjoy! 🦁⚽️
 {{- template "email_txt_footer" .}}
 {{end}}
