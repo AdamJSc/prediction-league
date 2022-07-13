@@ -1,0 +1,17 @@
+{
+  "From": {
+    "Name": "Mr Do Not Reply",
+    "Address": "do_not_reply@world.net"
+  },
+  "To": {
+    "Name": "Harry Redknapp",
+    "Address": "harry.redknapp@football.net"
+  },
+  "ReplyTo": {
+    "Name": "Mr Do Not Reply",
+    "Address": "hello@world.net"
+  },
+  "SenderDomain": "configured_with_mailgun.com",
+  "Subject": "Thanks for playing!",
+  "PlainText": "Final Round complete\n==================\n\nHey Harry Redknapp,\n\nAll 1 rounds are now complete!\n\nCheck out the leaderboard to see where you've finished the season:\nhttp://test_realm.org/leaderboard\n\nThank you for taking part in Prediction League - see you next season! 🧙🔮\n- Harry R and the PL Team\n\n---------------------------------------------\n\nYou have received this email because you have entered the Prediction League for the Localhost Season season (http://test_realm.org)\n\nIf you have any questions, issues or concerns, please email hello@world.net\n\n"
+}

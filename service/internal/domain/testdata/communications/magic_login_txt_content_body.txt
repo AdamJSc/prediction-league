@@ -1,0 +1,20 @@
+Login
+============================
+
+Hey Harry Redknapp!
+
+Here's your magic login link:
+
+http://test_realm.org/login/MAGIC12345
+
+This will automatically expire after 10 minutes.
+
+In the meantime, Happy Predicting! 🧙🔮
+- Harry R and the PL Team
+
+---------------------------------------------
+
+You have received this email because you have entered the Prediction League for the Localhost Season season (http://test_realm.org)
+
+If you have any questions, issues or concerns, please email hello@world.net
+

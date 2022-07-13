@@ -3,8 +3,11 @@ package domain_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 	"prediction-league/service/internal/domain"
 	"testing"
 
@@ -103,7 +106,7 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
-				SignOff:      realm.Contact.Name,
+				SignOff:      realm.Contact.SignOffName,
 				URL:          realm.Config.Origin,
 				SupportEmail: realm.Contact.EmailProper,
 			},
@@ -111,8 +114,11 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 			PredictionsURL: fmt.Sprintf("%s/prediction", realm.Config.Origin),
 		})
 
-		if email.From.Name != realm.Contact.Name {
-			expectedGot(t, realm.Contact.Name, email.From.Name)
+		writeTestEmailToFile(t, "new_entry_txt_email_meta.json", email)
+		writeTestDataFile(t, "new_entry_txt_content_body.txt", expectedPlainText)
+
+		if email.From.Name != realm.Contact.SenderName {
+			expectedGot(t, realm.Contact.SenderName, email.From.Name)
 		}
 		if email.From.Address != realm.Contact.EmailDoNotReply {
 			expectedGot(t, realm.Contact.EmailDoNotReply, email.From.Address)
@@ -123,8 +129,8 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 		if email.To.Address != entry.EntrantEmail {
 			expectedGot(t, entry.EntrantEmail, email.To.Address)
 		}
-		if email.ReplyTo.Name != realm.Contact.Name {
-			expectedGot(t, realm.Contact.Name, email.ReplyTo.Name)
+		if email.ReplyTo.Name != realm.Contact.SenderName {
+			expectedGot(t, realm.Contact.SenderName, email.ReplyTo.Name)
 		}
 		if email.ReplyTo.Address != realm.Contact.EmailProper {
 			expectedGot(t, realm.Contact.EmailProper, email.ReplyTo.Address)
@@ -295,7 +301,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
-				SignOff:      realm.Contact.Name,
+				SignOff:      realm.Contact.SignOffName,
 				URL:          realm.Config.Origin,
 				SupportEmail: realm.Contact.EmailProper,
 			},
@@ -329,8 +335,11 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 
 		email := emls[0]
 
-		if email.From.Name != realm.Contact.Name {
-			expectedGot(t, realm.Contact.Name, email.From.Name)
+		writeTestEmailToFile(t, "round_complete_txt_email_meta.json", email)
+		writeTestDataFile(t, "round_complete_txt_content_body.txt", expectedPlainText)
+
+		if email.From.Name != realm.Contact.SenderName {
+			expectedGot(t, realm.Contact.SenderName, email.From.Name)
 		}
 		if email.From.Address != realm.Contact.EmailDoNotReply {
 			expectedGot(t, realm.Contact.EmailDoNotReply, email.From.Address)
@@ -341,8 +350,8 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		if email.To.Address != entry.EntrantEmail {
 			expectedGot(t, entry.EntrantEmail, email.To.Address)
 		}
-		if email.ReplyTo.Name != realm.Contact.Name {
-			expectedGot(t, realm.Contact.Name, email.ReplyTo.Name)
+		if email.ReplyTo.Name != realm.Contact.SenderName {
+			expectedGot(t, realm.Contact.SenderName, email.ReplyTo.Name)
 		}
 		if email.ReplyTo.Address != realm.Contact.EmailProper {
 			expectedGot(t, realm.Contact.EmailProper, email.ReplyTo.Address)
@@ -365,7 +374,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
-				SignOff:      realm.Contact.Name,
+				SignOff:      realm.Contact.SignOffName,
 				URL:          realm.Config.Origin,
 				SupportEmail: realm.Contact.EmailProper,
 			},
@@ -400,8 +409,11 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 
 		email := emls[0]
 
-		if email.From.Name != realm.Contact.Name {
-			expectedGot(t, realm.Contact.Name, email.From.Name)
+		writeTestEmailToFile(t, "final_round_complete_txt_email_meta.json", email)
+		writeTestDataFile(t, "final_round_complete_txt_content_body.txt", expectedPlainText)
+
+		if email.From.Name != realm.Contact.SenderName {
+			expectedGot(t, realm.Contact.SenderName, email.From.Name)
 		}
 		if email.From.Address != realm.Contact.EmailDoNotReply {
 			expectedGot(t, realm.Contact.EmailDoNotReply, email.From.Address)
@@ -412,8 +424,8 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 		if email.To.Address != entry.EntrantEmail {
 			expectedGot(t, entry.EntrantEmail, email.To.Address)
 		}
-		if email.ReplyTo.Name != realm.Contact.Name {
-			expectedGot(t, realm.Contact.Name, email.ReplyTo.Name)
+		if email.ReplyTo.Name != realm.Contact.SenderName {
+			expectedGot(t, realm.Contact.SenderName, email.ReplyTo.Name)
 		}
 		if email.ReplyTo.Address != realm.Contact.EmailProper {
 			expectedGot(t, realm.Contact.EmailProper, email.ReplyTo.Address)
@@ -581,15 +593,18 @@ func TestCommunicationsAgent_IssueMagicLoginEmail(t *testing.T) {
 			MessagePayload: domain.MessagePayload{
 				Name:         entry.EntrantName,
 				SeasonName:   testSeason.Name,
-				SignOff:      realm.Contact.Name,
+				SignOff:      realm.Contact.SignOffName,
 				URL:          realm.Config.Origin,
 				SupportEmail: realm.Contact.EmailProper,
 			},
 			LoginURL: fmt.Sprintf("%s/login/%s", realm.Config.Origin, tokenId),
 		})
 
-		if email.From.Name != realm.Contact.Name {
-			expectedGot(t, realm.Contact.Name, email.From.Name)
+		writeTestEmailToFile(t, "magic_login_txt_email_meta.json", email)
+		writeTestDataFile(t, "magic_login_txt_content_body.txt", expectedPlainText)
+
+		if email.From.Name != realm.Contact.SenderName {
+			expectedGot(t, realm.Contact.SenderName, email.From.Name)
 		}
 		if email.From.Address != realm.Contact.EmailDoNotReply {
 			expectedGot(t, realm.Contact.EmailDoNotReply, email.From.Address)
@@ -600,8 +615,8 @@ func TestCommunicationsAgent_IssueMagicLoginEmail(t *testing.T) {
 		if email.To.Address != entry.EntrantEmail {
 			expectedGot(t, entry.EntrantEmail, email.To.Address)
 		}
-		if email.ReplyTo.Name != realm.Contact.Name {
-			expectedGot(t, realm.Contact.Name, email.ReplyTo.Name)
+		if email.ReplyTo.Name != realm.Contact.SenderName {
+			expectedGot(t, realm.Contact.SenderName, email.ReplyTo.Name)
 		}
 		if email.ReplyTo.Address != realm.Contact.EmailProper {
 			expectedGot(t, realm.Contact.EmailProper, email.ReplyTo.Address)
@@ -760,4 +775,29 @@ func TestNoopEmailClient_SendEmail(t *testing.T) {
 			t.Fatalf("want logged output %s, got %s, diff %s", wantOutput, gotOutput, diff)
 		}
 	})
+}
+
+func writeTestEmailToFile(t *testing.T, name string, email domain.Email) {
+	t.Helper()
+
+	b, err := json.MarshalIndent(email, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	path := filepath.Join("testdata", "communications", name)
+
+	if err := ioutil.WriteFile(path, b, 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeTestDataFile(t *testing.T, name string, content string) {
+	t.Helper()
+
+	path := filepath.Join("testdata", "communications", name)
+
+	if err := ioutil.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
 }

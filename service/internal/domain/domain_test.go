@@ -39,6 +39,7 @@ var (
 	tr         domain.TokenRepository
 	utc        *time.Location
 
+	// TODO: feat - replace with uuid.New()
 	uuidAll1s = `11111111-1111-1111-1111-111111111111`
 	uuidAll2s = `22222222-2222-2222-2222-222222222222`
 	uuidAll3s = `33333333-3333-3333-3333-333333333333`
@@ -133,12 +134,12 @@ func TestMain(m *testing.M) {
 		realm,
 	}
 
-	// set testSeason to first entity in season collection
+	// set testSeason to fake season
 	tc = domain.GetTeamCollection()
 	sc = mustGetSeasonCollection()
-	for _, s := range sc {
-		testSeason = s
-		break
+	testSeason, err = sc.GetByID(domain.FakeSeasonID)
+	if err != nil {
+		log.Fatalf("cannot get season with id '%s': %s", domain.FakeSeasonID, err.Error())
 	}
 
 	if badDB, err = sql.Open("mysql", "connectionString/dbName"); err != nil {
@@ -155,7 +156,7 @@ func mustGetSeasonCollection() domain.SeasonCollection {
 		log.Fatalf("cannot get seasons collection: %s", err.Error())
 	}
 	if len(sc) == 0 {
-		log.Fatal("must have at least one season collection")
+		log.Fatal("must have at least one season in collection")
 	}
 	return sc
 }
@@ -399,10 +400,12 @@ func newTestRealm() domain.Realm {
 			},
 		},
 		Contact: domain.RealmContact{
-			Name:            "Harry R and the PL Team",
+			SignOffName:     "Harry R and the PL Team",
 			EmailProper:     "hello@world.net",
 			EmailSanitised:  "hello (at) world (dot) net",
 			EmailDoNotReply: "do_not_reply@world.net",
+			SenderName:      "Mr Do Not Reply",
+			SenderDomain:    "configured_with_mailgun.com",
 		},
 	}
 }

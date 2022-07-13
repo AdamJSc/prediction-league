@@ -13,8 +13,9 @@ contact:
   email_do_not_reply: do_not_reply@localhost # admin/sender email for transactional emails
   email_proper: wont_you_please_please_help_me@localhost # formatted admin/sender email
   email_sanitised: wont_you_please_please_help_me (at) localhost # sanitised admin/sender email
-  name: Harry R and the PL Team # admin/sender name
+  sign_off_name: Harry R and the PL Team # name to sign-off emails with
   sender_domain: localhost # domain to issue transactional emails from
+  sender_name: Mr Sender # sender/from name for transactional emails
 
 entry_fee:
   amount: 1.23 # entry payment numerical amount

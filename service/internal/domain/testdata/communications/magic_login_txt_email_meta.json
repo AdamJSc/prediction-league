@@ -1,0 +1,17 @@
+{
+  "From": {
+    "Name": "Mr Do Not Reply",
+    "Address": "do_not_reply@world.net"
+  },
+  "To": {
+    "Name": "Harry Redknapp",
+    "Address": "harry.redknapp@football.net"
+  },
+  "ReplyTo": {
+    "Name": "Mr Do Not Reply",
+    "Address": "hello@world.net"
+  },
+  "SenderDomain": "configured_with_mailgun.com",
+  "Subject": "Your login link",
+  "PlainText": "Login\n============================\n\nHey Harry Redknapp!\n\nHere's your magic login link:\n\nhttp://test_realm.org/login/MAGIC12345\n\nThis will automatically expire after 10 minutes.\n\nIn the meantime, Happy Predicting! 🧙🔮\n- Harry R and the PL Team\n\n---------------------------------------------\n\nYou have received this email because you have entered the Prediction League for the Localhost Season season (http://test_realm.org)\n\nIf you have any questions, issues or concerns, please email hello@world.net\n\n"
+}

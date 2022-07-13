@@ -250,12 +250,12 @@ type Email struct {
 func newEmail(realm Realm, to Identity, subject, plainText string) Email {
 	return Email{
 		From: Identity{
-			Name:    realm.Contact.Name,
+			Name:    realm.Contact.SenderName,
 			Address: realm.Contact.EmailDoNotReply,
 		},
 		To: to,
 		ReplyTo: Identity{
-			Name:    realm.Contact.Name,
+			Name:    realm.Contact.SenderName,
 			Address: realm.Contact.EmailProper,
 		},
 		SenderDomain: realm.Contact.SenderDomain,
@@ -268,7 +268,7 @@ func newEmail(realm Realm, to Identity, subject, plainText string) Email {
 func newMessagePayload(realm Realm, name string, seasonName string) MessagePayload {
 	return MessagePayload{
 		Name:         name,
-		SignOff:      realm.Contact.Name,
+		SignOff:      realm.Contact.SignOffName,
 		SeasonName:   seasonName,
 		URL:          GetHomeURL(&realm),
 		SupportEmail: realm.Contact.EmailProper,

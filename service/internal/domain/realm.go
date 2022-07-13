@@ -36,8 +36,9 @@ type RealmContact struct {
 	EmailDoNotReply string `yaml:"email_do_not_reply"`
 	EmailProper     string `yaml:"email_proper"`
 	EmailSanitised  string `yaml:"email_sanitised"`
-	Name            string `yaml:"name"`
+	SignOffName     string `yaml:"sign_off_name"`
 	SenderDomain    string `yaml:"sender_domain"`
+	SenderName      string `yaml:"sender_name"`
 }
 
 // RealmEntryFee represents the entry fee settings for a realm
