@@ -265,23 +265,25 @@ func newEmail(realm Realm, to Identity, subject, plainText string) Email {
 }
 
 // newMessagePayload returns an email data object inflated with the provided data items
-func newMessagePayload(realm Realm, name string, seasonName string) MessagePayload {
+func newMessagePayload(realm Realm, recipientName string, seasonName string) MessagePayload {
 	return MessagePayload{
-		Name:         name,
-		SignOff:      realm.Contact.SignOffName,
-		SeasonName:   seasonName,
-		URL:          GetHomeURL(&realm),
-		SupportEmail: realm.Contact.EmailProper,
+		RecipientName: recipientName,
+		GameName:      realm.Config.GameName,
+		SignOff:       realm.Contact.SignOffName,
+		SeasonName:    seasonName,
+		URL:           GetHomeURL(&realm),
+		SupportEmail:  realm.Contact.EmailProper,
 	}
 }
 
 // MessagePayload defines the fields required by an email message
 type MessagePayload struct {
-	Name         string
-	SignOff      string
-	SeasonName   string
-	URL          string
-	SupportEmail string
+	RecipientName string
+	GameName      string
+	SignOff       string
+	SeasonName    string
+	URL           string
+	SupportEmail  string
 }
 
 // PaymentDetails defines the fields relating to a payment

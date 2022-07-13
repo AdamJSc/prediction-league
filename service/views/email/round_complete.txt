@@ -1,7 +1,7 @@
 {{define "email_txt_round_complete"}}Round {{.RoundNumber}} complete
 ==================
 
-Hey {{.Name}},
+Hey {{.RecipientName}},
 
 A new round has begun!
 

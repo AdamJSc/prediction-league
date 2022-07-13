@@ -1,7 +1,7 @@
 {{define "email_txt_magic_login"}}Login
 ============================
 
-Hey {{.Name}}!
+Hey {{.RecipientName}}!
 
 Here's your magic login link:
 

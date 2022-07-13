@@ -387,6 +387,7 @@ func newTestRealm() domain.Realm {
 	return domain.Realm{
 		Config: domain.RealmConfig{
 			Name:     "TEST_REALM",
+			GameName: "The Test Game",
 			Origin:   "http://test_realm.org",
 			PIN:      "12345",
 			SeasonID: testSeason.ID,

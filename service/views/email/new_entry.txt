@@ -1,7 +1,7 @@
 {{define "email_txt_new_entry"}}Welcome to Prediction League
 ============================
 
-Great news {{.Name}} - you're in! 🎉
+Great news {{.RecipientName}} - you're in! 🎉
 
 It's lovely to have you on-board for the {{.SeasonName}} season ⚽️
 

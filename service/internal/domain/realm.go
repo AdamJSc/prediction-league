@@ -20,32 +20,33 @@ type Realm struct {
 
 // RealmConfig represents the core configuration of a Realm
 type RealmConfig struct {
-	Name            string        `yaml:"name"`
-	AnalyticsCode   string        `yaml:"analytics_code"`
-	HomePageHeading string        `yaml:"home_page_heading"`
-	HomePageTagline template.HTML `yaml:"home_page_tagline"`
-	Image           string        `yaml:"image"`
-	MenuTitle       string        `yaml:"menu_title"`
-	Origin          string        `yaml:"origin"`
-	PIN             string        `yaml:"pin"`
-	SeasonID        string        `yaml:"season_id"`
+	Name            string        `yaml:"name"`              // realm id stored in database for entries
+	AnalyticsCode   string        `yaml:"analytics_code"`    // google analytics code
+	GameName        string        `yaml:"game_name"`         // name of the game (referenced in transactional emails)
+	HomePageHeading string        `yaml:"home_page_heading"` // heading to render on home page
+	HomePageTagline template.HTML `yaml:"home_page_tagline"` // tagline to render on home page
+	Image           string        `yaml:"image"`             // url for og:image tag
+	MenuTitle       string        `yaml:"menu_title"`        // title to render inside menu bar
+	Origin          string        `yaml:"origin"`            // url for og:url tag
+	PIN             string        `yaml:"pin"`               // pin to enter the game
+	SeasonID        string        `yaml:"season_id"`         // id of season to associate with the realm
 }
 
 // RealmContact represents the contact details of a realm
 type RealmContact struct {
-	EmailDoNotReply string `yaml:"email_do_not_reply"`
-	EmailProper     string `yaml:"email_proper"`
-	EmailSanitised  string `yaml:"email_sanitised"`
-	SignOffName     string `yaml:"sign_off_name"`
-	SenderDomain    string `yaml:"sender_domain"`
-	SenderName      string `yaml:"sender_name"`
+	EmailDoNotReply string `yaml:"email_do_not_reply"` // admin/sender email for transactional emails
+	EmailProper     string `yaml:"email_proper"`       // formatted admin/sender email
+	EmailSanitised  string `yaml:"email_sanitised"`    // sanitised admin/sender email
+	SignOffName     string `yaml:"sign_off_name"`      // name to sign-off emails with
+	SenderDomain    string `yaml:"sender_domain"`      // domain to issue transactional emails from
+	SenderName      string `yaml:"sender_name"`        // sender/from name for transactional emails
 }
 
 // RealmEntryFee represents the entry fee settings for a realm
 type RealmEntryFee struct {
-	Amount    float32  `yaml:"amount"`
-	Breakdown []string `yaml:"breakdown"`
-	Label     string   `yaml:"label"`
+	Amount    float32  `yaml:"amount"`    // entry payment numerical amount
+	Breakdown []string `yaml:"breakdown"` // breakdown of entry fee to display on entry page
+	Label     string   `yaml:"label"`     // entry payment formatted/display amount
 }
 
 // RealmFAQ defines the structure of a frequently-asked question
