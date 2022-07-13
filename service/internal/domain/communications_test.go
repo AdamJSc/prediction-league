@@ -97,7 +97,7 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 			t.Fatalf("want 1 email, got %d", len(emls))
 		}
 
-		wantEmail := readCommsTestEmail(t, "new_entry_txt_email_meta.json")
+		wantEmail := readCommsTestEmail(t, "new_entry_email_meta.json")
 		gotEmail := emls[0]
 		cmpDiff(t, "email", wantEmail, gotEmail)
 
@@ -281,7 +281,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			t.Fatalf("want 1 email, got %d", len(emls))
 		}
 
-		wantEmail := readCommsTestEmail(t, "round_complete_txt_email_meta.json")
+		wantEmail := readCommsTestEmail(t, "round_complete_email_meta.json")
 		gotEmail := emls[0]
 		cmpDiff(t, "email", wantEmail, gotEmail)
 
@@ -318,7 +318,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			t.Fatalf("want 1 email, got %d", len(emls))
 		}
 
-		wantEmail := readCommsTestEmail(t, "final_round_complete_txt_email_meta.json")
+		wantEmail := readCommsTestEmail(t, "final_round_complete_email_meta.json")
 		gotEmail := emls[0]
 		cmpDiff(t, "email", wantEmail, gotEmail)
 
@@ -474,7 +474,7 @@ func TestCommunicationsAgent_IssueMagicLoginEmail(t *testing.T) {
 			t.Fatalf("want 1 email, got %d", len(emls))
 		}
 
-		wantEmail := readCommsTestEmail(t, "magic_login_txt_email_meta.json")
+		wantEmail := readCommsTestEmail(t, "magic_login_email_meta.json")
 		gotEmail := emls[0]
 		cmpDiff(t, "email", wantEmail, gotEmail)
 
