@@ -9,6 +9,7 @@ config:
   origin: http://localhost:3000 # url for og:url tag
   pin: 1234 # pin to enter the game
   season_id: FakeSeason # id of season to associate with the realm
+  site_description: It's hosted locally. It's a game. It's... Localhost Game! # content of og:description tag
 
 contact:
   email_do_not_reply: do_not_reply@localhost # admin/sender email for transactional emails

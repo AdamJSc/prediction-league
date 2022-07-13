@@ -30,6 +30,7 @@ type RealmConfig struct {
 	Origin          string        `yaml:"origin"`            // url for og:url tag
 	PIN             string        `yaml:"pin"`               // pin to enter the game
 	SeasonID        string        `yaml:"season_id"`         // id of season to associate with the realm
+	SiteDescription string        `yaml:"site_description"`  // content of og:description tag
 }
 
 // RealmContact represents the contact details of a realm
