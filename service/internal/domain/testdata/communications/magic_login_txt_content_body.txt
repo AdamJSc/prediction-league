@@ -1,6 +1,3 @@
-Login
-============================
-
 Hey Harry Redknapp!
 
 Here's your magic login link:
@@ -9,7 +6,7 @@ http://test_realm.org/login/MAGIC12345
 
 This will automatically expire after 10 minutes.
 
-In the meantime, Happy Predicting! 🧙🔮
+Enjoy! 🦁⚽️
 - Harry R and the PL Team
 
 ---------------------------------------------

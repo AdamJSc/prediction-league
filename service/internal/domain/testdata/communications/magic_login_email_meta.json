@@ -13,5 +13,5 @@
   },
   "SenderDomain": "configured_with_mailgun.com",
   "Subject": "Your login link",
-  "PlainText": "Login\n============================\n\nHey Harry Redknapp!\n\nHere's your magic login link:\n\nhttp://test_realm.org/login/MAGIC12345\n\nThis will automatically expire after 10 minutes.\n\nIn the meantime, Happy Predicting! 🧙🔮\n- Harry R and the PL Team\n\n---------------------------------------------\n\nYou have received this email because you have entered The Test Game for the Localhost Season season (http://test_realm.org)\n\nIf you have any questions, issues or concerns, please email hello@world.net\n\n"
+  "PlainText": "Hey Harry Redknapp!\n\nHere's your magic login link:\n\nhttp://test_realm.org/login/MAGIC12345\n\nThis will automatically expire after 10 minutes.\n\nEnjoy! 🦁⚽️\n- Harry R and the PL Team\n\n---------------------------------------------\n\nYou have received this email because you have entered The Test Game for the Localhost Season season (http://test_realm.org)\n\nIf you have any questions, issues or concerns, please email hello@world.net\n\n"
 }
