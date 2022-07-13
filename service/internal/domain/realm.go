@@ -22,7 +22,7 @@ type Realm struct {
 type RealmConfig struct {
 	Name            string        `yaml:"name"`              // realm id stored in database for entries
 	AnalyticsCode   string        `yaml:"analytics_code"`    // google analytics code
-	GameName        string        `yaml:"game_name"`         // name of the game (referenced in transactional emails)
+	GameName        string        `yaml:"game_name"`         // name of the game, referenced in transactional emails and html titles
 	HomePageHeading string        `yaml:"home_page_heading"` // heading to render on home page
 	HomePageTagline template.HTML `yaml:"home_page_tagline"` // tagline to render on home page
 	Image           string        `yaml:"image"`             // url for og:image tag

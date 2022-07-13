@@ -118,7 +118,7 @@ func isLoggedIn(r *http.Request) bool {
 }
 
 // newPage creates a new base page from the provided arguments
-func newPage(r *http.Request, c *container, title, activePage, bannerTitle string, data interface{}) *view.Base {
+func newPage(r *http.Request, c *container, pageTitle, activePage, bannerTitle string, data interface{}) *view.Base {
 	// ignore error because if the realm doesn't exist the other agent methods will prevent core functionality anyway
 	// we only need the realm for populating a couple of trivial attributes which will be the least of our worries if any issues...
 	ctx, cancel, _ := contextFromRequest(r, c)
@@ -128,7 +128,7 @@ func newPage(r *http.Request, c *container, title, activePage, bannerTitle strin
 	s, _ := c.seasons.GetByID(realm.Config.SeasonID)
 
 	return &view.Base{
-		Title:              title,
+		PageTitle:          pageTitle,
 		BannerTitle:        template.HTML(bannerTitle),
 		ActivePage:         activePage,
 		IsLoggedIn:         isLoggedIn(r),

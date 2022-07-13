@@ -7,7 +7,7 @@ import (
 )
 
 type Base struct {
-	Title              string
+	PageTitle          string
 	BannerTitle        template.HTML
 	ActivePage         string
 	IsLoggedIn         bool

@@ -1,7 +1,7 @@
 config:
   name: localhost # realm id stored in database for entries
   analytics_code: xxx # google analytics code
-  game_name: The Localhost Game # name of the game (referenced in transactional emails)
+  game_name: The Localhost Game # name of the game, referenced in transactional emails and html titles
   home_page_heading: Welcome to Localhost! # heading to render on home page
   home_page_tagline: We've been expecting you... # tagline to render on home page
   image: http://localhost:3000/assets/img/og.png # url for og:image tag
