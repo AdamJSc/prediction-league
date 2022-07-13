@@ -1,7 +1,6 @@
 package domain_test
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -551,18 +550,6 @@ func TestCommunicationsAgent_IssueMagicLoginEmail(t *testing.T) {
 			expectedTypeOfGot(t, domain.NotFoundError{}, err)
 		}
 	})
-}
-
-// mustExecuteTemplate executes the provided template name with the provided template data or produces a test failure on error
-func mustExecuteTemplate(t *testing.T, templates *domain.Templates, templateName string, templateData interface{}) string {
-	t.Helper()
-
-	buf := bytes.NewBuffer(nil)
-	if err := templates.ExecuteTemplate(buf, templateName, templateData); err != nil {
-		t.Fatal(err)
-	}
-
-	return buf.String()
 }
 
 func TestNewNoopEmailClient(t *testing.T) {
