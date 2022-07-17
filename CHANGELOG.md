@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Demo data seeder cmd entrypoint
 - Introduced new entities `MatchWeekSubmission`, `MatchWeekStandings` and `MatchWeekResult`.
 - Config for 2022/23 Premier League season
+- Improve test coverage for transactional email templates
 
 ### Changed
 
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       (essentially taking a points "hit").
     - The aim of the game is now to accrue the **MOST** points across a season, not the fewest.
 - Inverted leaderboard logic to reflect new aim of the game outlined above.
+- Revise copy and tweak layout
 - General tidy up
     - Reconfigure Realm object
     - Amend site copy
