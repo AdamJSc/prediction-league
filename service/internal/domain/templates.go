@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -17,13 +18,8 @@ import (
 type Templates struct{ *template.Template }
 
 var templateFunctions = template.FuncMap{
-	"timestamp_as_unix": func(ts time.Time) int64 {
-		var emptyTime time.Time
-
-		if ts.Equal(emptyTime) {
-			return 0
-		}
-		return ts.Unix()
+	"concat_strings": func(str ...string) string {
+		return strings.Join(str, " ")
 	},
 	"format_timestamp": func(ts time.Time, layout string) string {
 		return ts.Format(layout)
@@ -35,6 +31,14 @@ var templateFunctions = template.FuncMap{
 		}
 
 		return string(bytes)
+	},
+	"timestamp_as_unix": func(ts time.Time) int64 {
+		var emptyTime time.Time
+
+		if ts.Equal(emptyTime) {
+			return 0
+		}
+		return ts.Unix()
 	},
 }
 
