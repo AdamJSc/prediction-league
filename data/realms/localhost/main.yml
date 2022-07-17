@@ -22,6 +22,7 @@ entry_fee:
 site:
   analytics_code: xxx # google analytics code
   description: It's hosted locally. It's a game. It's... Localhost Game! # content of og:description tag
+  footer_message: "Message for your <a href=\"https://en.wikipedia.org/wiki/Page_footer\" target=\"_blank\">page footer</a>" # html-formatted message to include within the page footer
   home_page_banner_image_url: http://localhost:3000/assets/img/placeholder_home_page_banner.png # url for home page banner image
   home_page_heading: Welcome to Localhost! # heading to render on home page
   home_page_tagline: We've been expecting you... # tagline to render on home page

@@ -78,6 +78,7 @@ type RealmFAQ struct {
 type RealmSite struct {
 	AnalyticsCode          string        `yaml:"analytics_code"`             // google analytics code
 	Description            string        `yaml:"description"`                // content of og:description tag
+	FooterMessage          template.HTML `yaml:"footer_message"`             // html-formatted message to include within the page footer
 	HomePageBannerImageURL string        `yaml:"home_page_banner_image_url"` // url for home page banner image
 	HomePageHeading        string        `yaml:"home_page_heading"`          // heading to render on home page
 	HomePageTagline        template.HTML `yaml:"home_page_tagline"`          // tagline to render on home page

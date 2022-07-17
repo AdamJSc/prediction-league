@@ -2,6 +2,11 @@
                                         </div> <!-- close .col-md-8 offset-md-2 -->
                                 </div> <!-- close .row -->
                         </div> <!-- close .container-fluid -->
+                        {{if .Realm.Site.FooterMessage}}
+                        <div class="pre-footer-message">
+                            {{.Realm.Site.FooterMessage}}
+                        </div>
+                        {{end}}
                 </div> <!-- close .content-wrapper -->
                 <div class="footer">
                         <div class="left-section">
