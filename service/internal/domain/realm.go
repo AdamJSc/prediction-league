@@ -19,6 +19,18 @@ type Realm struct {
 	Site     RealmSite     `yaml:"site"`
 }
 
+func (r Realm) GetFullHomeURL() string {
+	return r.Site.Origin + r.Site.Paths.Home
+}
+
+func (r Realm) GetFullLeaderboardURL() string {
+	return r.Site.Origin + r.Site.Paths.Leaderboard
+}
+
+func (r Realm) GetFullMyTableURL() string {
+	return r.Site.Origin + r.Site.Paths.MyTable
+}
+
 // RealmConfig represents the core configuration of a Realm
 type RealmConfig struct {
 	Name     string `yaml:"name"`      // realm id stored in database for entries
@@ -61,6 +73,17 @@ type RealmSite struct {
 	MenuTitle       string        `yaml:"menu_title"`        // title to render inside menu bar
 	Origin          string        `yaml:"origin"`            // url for og:url tag
 	TwitterUsername string        `yaml:"twitter_username"`  // twitter handle associated with site
+	Paths           RealmSitePaths
+}
+
+// RealmSitePaths store the paths to each page
+type RealmSitePaths struct {
+	FAQ         string
+	Home        string
+	Join        string
+	Leaderboard string
+	Login       string
+	MyTable     string
 }
 
 // RealmCollection is slice of Realm
@@ -133,5 +156,19 @@ func parseRealmFromDir(dirPath string) (Realm, error) {
 		realm.FAQs[idx].Answer = template.HTML(asHTML)
 	}
 
+	// populate site paths
+	realm.Site.Paths = NewRealmSitePaths()
+
 	return realm, nil
+}
+
+func NewRealmSitePaths() RealmSitePaths {
+	return RealmSitePaths{
+		FAQ:         "/faq",
+		Home:        "/",
+		Join:        "/join",
+		Leaderboard: "/leaderboard",
+		Login:       "/login",
+		MyTable:     "/prediction",
+	}
 }

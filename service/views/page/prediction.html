@@ -15,7 +15,7 @@
                 {{if $parent.IsLoggedIn}}
                     <open-prediction v-bind:entry="{id: '{{.Entry.ID}}', predToken: '{{.Entry.PredictionToken}}'}" v-bind:pred-limit="{{.Predictions.Limit}}" raw-teams="{{.Teams.Raw}}" unix="{{timestamp_as_unix .Teams.LastUpdated}}"></open-prediction>
                 {{else}}
-                    <prediction-login login-page-url="{{$parent.LoginPageURL}}"></prediction-login>
+                    <prediction-login login-page-url="{{$parent.Realm.Site.Paths.Login}}"></prediction-login>
                 {{end}}
             {{else if eq .Predictions.Status "pending"}}
                 <countdown label="Window opens in..." v-bind:unix="{{timestamp_as_unix .Predictions.AcceptedFrom}}"></countdown>

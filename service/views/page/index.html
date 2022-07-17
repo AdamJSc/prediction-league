@@ -8,7 +8,7 @@
                 <i class="fas fa-trophy" aria-hidden="true"></i>
             </div>
             <h2>{{.Realm.Site.HomePageTagline}}</h2>
-            <a class="btn btn-primary btn-lg" href="{{.JoinPageURL}}" role="button">Enter Now</a>
+            <a class="btn btn-primary btn-lg" href="{{.Realm.Site.Paths.Join}}" role="button">Enter Now</a>
         </div>
     </div>
     <div class="how-it-works page-section row">
@@ -24,7 +24,7 @@
                     <div class="label">1: Enter</div>
                 </div>
                 <div class="stage-description">
-                    <p><a href="{{.JoinPageURL}}">Sign up</a> to play.</p>
+                    <p><a href="{{.Realm.Site.Paths.Join}}">Sign up</a> to play.</p>
                 </div>
             </div>
         </div>
@@ -37,7 +37,7 @@
                     <div class="label">2: Submit</div>
                 </div>
                 <div class="stage-description">
-                    <p>Predict the league table and <a href="{{.PredictionPageURL}}">swap up to 2 teams</a> each Match Week.</p>
+                    <p>Predict the league table and <a href="{{.Realm.Site.Paths.MyTable}}">swap up to 2 teams</a> each Match Week.</p>
                 </div>
             </div>
         </div>
@@ -63,7 +63,7 @@
                     <div class="label">4: Win</div>
                 </div>
                 <div class="stage-description">
-                    <p>Keep an eye on the <a href="{{.LeaderBoardPageURL}}">Leaderboard</a>
+                    <p>Keep an eye on the <a href="{{.Realm.Site.Paths.Leaderboard}}">Leaderboard</a>
                         - highest total score at the end of the season wins!</p>
                 </div>
             </div>
@@ -74,10 +74,10 @@
             <h3>Already signed up?</h3>
         </div>
         <div class="cta left-side col-md-6">
-            <p><a class="btn btn-primary btn-lg" href="{{.LeaderBoardPageURL}}" role="button">See how I'm doing</a></p>
+            <p><a class="btn btn-primary btn-lg" href="{{.Realm.Site.Paths.Leaderboard}}" role="button">See how I'm doing</a></p>
         </div>
         <div class="cta right-side col-md-6">
-            <p><a class="btn btn-primary btn-lg" href="{{.PredictionPageURL}}" role="button">Update my table</a></p>
+            <p><a class="btn btn-primary btn-lg" href="{{.Realm.Site.Paths.MyTable}}" role="button">Update my table</a></p>
         </div>
     </div>
     <div class="cta-group page-section row">
@@ -86,7 +86,7 @@
             <div class="icon">
                 <i class="fas fa-question-circle" aria-hidden="true"></i>
             </div>
-            <p>Visit our <a href="{{.FAQPageURL}}">FAQs</a> page</p>
+            <p>Visit our <a href="{{.Realm.Site.Paths.FAQ}}">FAQs</a> page</p>
         </div>
         <div class="cta col-lg-6">
             <h3>Still need help?</h3>

@@ -273,7 +273,7 @@ func frontendRedeemMagicLoginHandler(c *container) func(w http.ResponseWriter, r
 		defer cancel()
 
 		realm := domain.RealmFromContext(ctx)
-		redirOk := domain.GetPredictionURL(realm)
+		redirOk := realm.GetFullMyTableURL()
 
 		// parse magic token from route
 		var mTknID string

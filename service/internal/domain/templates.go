@@ -61,43 +61,8 @@ func ParseTemplates(viewsPath string) (*Templates, error) {
 	return &Templates{Template: tpl}, nil
 }
 
-// GetHomeURL generates a home page URL from the provided Realm
-func GetHomeURL(r *Realm) string {
-	if r != nil {
-		return r.Site.Origin
-	}
-	return "/"
-}
-
-// GetLeaderBoardURL generates a leaderboard page URL from the provided Realm
-func GetLeaderBoardURL(r *Realm) string {
-	domain := ""
-	if r != nil {
-		domain = r.Site.Origin
-	}
-	return fmt.Sprintf("%s/leaderboard", domain)
-}
-
-// GetJoinURL generates a join page URL from the provided Realm
-func GetJoinURL(r *Realm) string {
-	domain := ""
-	if r != nil {
-		domain = r.Site.Origin
-	}
-	return fmt.Sprintf("%s/join", domain)
-}
-
-// GetFAQURL generates an faq page URL from the provided Realm
-func GetFAQURL(r *Realm) string {
-	domain := ""
-	if r != nil {
-		domain = r.Site.Origin
-	}
-	return fmt.Sprintf("%s/faq", domain)
-}
-
-// GetLoginURL generates a login page URL from the provided Realm
-func GetLoginURL(r *Realm) string {
+// getLoginURL generates a login page URL from the provided Realm
+func getLoginURL(r *Realm) string {
 	domain := ""
 	if r != nil {
 		domain = r.Site.Origin
@@ -111,16 +76,7 @@ func GetMagicLoginURL(r *Realm, t *Token) string {
 	if t != nil {
 		tID = "/" + t.ID
 	}
-	return GetLoginURL(r) + tID
-}
-
-// GetPredictionURL generates a prediction page URL from the provided Realm
-func GetPredictionURL(r *Realm) string {
-	domain := ""
-	if r != nil {
-		domain = r.Site.Origin
-	}
-	return fmt.Sprintf("%s/prediction", domain)
+	return getLoginURL(r) + tID
 }
 
 // walkPathAndParseTemplates recursively parses templates within a given top-level directory

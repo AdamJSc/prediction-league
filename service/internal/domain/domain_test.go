@@ -409,6 +409,7 @@ func newTestRealm() domain.Realm {
 		},
 		Site: domain.RealmSite{
 			Origin: "http://test_realm.org",
+			Paths:  domain.NewRealmSitePaths(),
 		},
 	}
 }

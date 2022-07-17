@@ -128,21 +128,15 @@ func newPage(r *http.Request, c *container, pageTitle, activePage, bannerTitle s
 	s, _ := c.seasons.GetByID(realm.Config.SeasonID)
 
 	return &view.Base{
-		PageTitle:          pageTitle,
-		BannerTitle:        template.HTML(bannerTitle),
-		ActivePage:         activePage,
-		IsLoggedIn:         isLoggedIn(r),
-		Realm:              realm,
-		SeasonName:         s.ShortName,
-		HomePageURL:        domain.GetHomeURL(realm),
-		LeaderBoardPageURL: domain.GetLeaderBoardURL(realm),
-		JoinPageURL:        domain.GetJoinURL(realm),
-		FAQPageURL:         domain.GetFAQURL(realm),
-		PredictionPageURL:  domain.GetPredictionURL(realm),
-		LoginPageURL:       domain.GetLoginURL(realm),
-		BuildVersion:       c.config.BuildVersion,
-		BuildTimestamp:     c.config.BuildTimestamp,
-		Data:               data,
+		PageTitle:      pageTitle,
+		BannerTitle:    template.HTML(bannerTitle),
+		ActivePage:     activePage,
+		IsLoggedIn:     isLoggedIn(r),
+		Realm:          realm,
+		SeasonName:     s.ShortName,
+		BuildVersion:   c.config.BuildVersion,
+		BuildTimestamp: c.config.BuildTimestamp,
+		Data:           data,
 	}
 }
 

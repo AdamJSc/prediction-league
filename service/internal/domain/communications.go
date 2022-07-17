@@ -53,7 +53,7 @@ func (c *CommunicationsAgent) IssueNewEntryEmail(ctx context.Context, entry *Ent
 	d := NewEntryEmailData{
 		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
 		PaymentDetails: *paymentDetails,
-		PredictionsURL: GetPredictionURL(&realm),
+		PredictionsURL: realm.GetFullMyTableURL(),
 	}
 	var emailContent bytes.Buffer
 	if err := c.tpl.ExecuteTemplate(&emailContent, "email_txt_new_entry", d); err != nil {
@@ -97,8 +97,8 @@ func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep S
 	d := RoundCompleteEmailData{
 		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
 		RoundNumber:    standings.RoundNumber,
-		LeaderBoardURL: GetLeaderBoardURL(&realm),
-		PredictionsURL: GetPredictionURL(&realm),
+		LeaderBoardURL: realm.GetFullLeaderboardURL(),
+		PredictionsURL: realm.GetFullMyTableURL(),
 	}
 
 	templateName := "email_txt_round_complete"
@@ -271,7 +271,7 @@ func newMessagePayload(realm Realm, recipientName string, seasonName string) Mes
 		GameName:      realm.Config.GameName,
 		SignOff:       realm.Contact.SignOffName,
 		SeasonName:    seasonName,
-		URL:           GetHomeURL(&realm),
+		URL:           realm.GetFullHomeURL(),
 		SupportEmail:  realm.Contact.EmailProper,
 	}
 }
