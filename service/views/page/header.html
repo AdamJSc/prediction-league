@@ -1,22 +1,30 @@
 {{define "header"}}
-    {{$title := concat_strings .PageTitle "|" .Realm.Config.GameName}}
-    {{$imageURL := .Realm.Site.Image}}
     {{$description := .Realm.Site.Description}}
+    {{$imageAlt := .Realm.Site.ImageAlt}}
+    {{$imageURL := .Realm.Site.ImageURL}}
+    {{$title := concat_strings .PageTitle "|" .Realm.Config.GameName}}
+    {{$twitterHandle := concat_no_space "@" .Realm.Site.TwitterUsername}}
     <!DOCTYPE html>
     <html>
         <head>
             <title>{{$title}}</title>
+
             <meta property="og:description" content="{{$description}}️" />
             <meta property="og:image" content="{{$imageURL}}" />
+            <meta property="og:image:alt" content="{{$imageAlt}}" />
             <meta property="og:image:url" content="{{$imageURL}}" />
             <meta property="og:title" content="{{$title}}" />
             <meta property="og:type" content="website" />
             <meta property="og:url" content="{{.Realm.Site.Origin}}" />
             <meta property="twitter:card" content="website" />
+            <meta property="twitter:creator" content="{{$twitterHandle}}" />
             <meta property="twitter:description" content="{{$description}}️" />
             <meta property="twitter:image" content="{{$imageURL}}" />
+            <meta property="twitter:image:alt" content="{{$imageAlt}}" />
+            <meta property="twitter:site" content="{{$twitterHandle}}" />
             <meta property="twitter:title" content="{{$title}}" />
             <meta name="viewport" content="width=device-width, initial-scale=1">
+
             <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" type="text/css" />
             <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.1.1/css/all.css">
             <link rel="stylesheet" href="/assets/app.css?{{.BuildVersion}}" type="text/css" />

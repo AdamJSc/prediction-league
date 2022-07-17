@@ -18,6 +18,9 @@ import (
 type Templates struct{ *template.Template }
 
 var templateFunctions = template.FuncMap{
+	"concat_no_space": func(str ...string) string {
+		return strings.Join(str, "")
+	},
 	"concat_strings": func(str ...string) string {
 		return strings.Join(str, " ")
 	},

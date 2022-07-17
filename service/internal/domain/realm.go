@@ -56,9 +56,11 @@ type RealmSite struct {
 	Description     string        `yaml:"description"`       // content of og:description tag
 	HomePageHeading string        `yaml:"home_page_heading"` // heading to render on home page
 	HomePageTagline template.HTML `yaml:"home_page_tagline"` // tagline to render on home page
-	Image           string        `yaml:"image"`             // url for og:image tag
+	ImageAlt        string        `yaml:"image_alt"`         // textual description of the image used for og:image
+	ImageURL        string        `yaml:"image_url"`         // url for og:image tag
 	MenuTitle       string        `yaml:"menu_title"`        // title to render inside menu bar
 	Origin          string        `yaml:"origin"`            // url for og:url tag
+	TwitterUsername string        `yaml:"twitter_username"`  // twitter handle associated with site
 }
 
 // RealmCollection is slice of Realm

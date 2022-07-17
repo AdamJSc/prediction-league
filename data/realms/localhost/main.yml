@@ -24,6 +24,8 @@ site:
   description: It's hosted locally. It's a game. It's... Localhost Game! # content of og:description tag
   home_page_heading: Welcome to Localhost! # heading to render on home page
   home_page_tagline: We've been expecting you... # tagline to render on home page
-  image: http://localhost:3000/assets/img/og.png # url for og:image tag
+  image_alt: Logo for localhost site # textual description of the image used for og:image
+  image_url: http://localhost:3000/assets/img/og.png # url for og:image tag
   menu_title: Prediction League # title to render inside menu bar
   origin: http://localhost:3000 # url for og:url tag
+  twitter_username: adamalsotweets # twitter handle associated with site (don't @ me...)
