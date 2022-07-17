@@ -1,15 +1,8 @@
 config:
   name: localhost # realm id stored in database for entries
-  analytics_code: xxx # google analytics code
   game_name: The Localhost Game # name of the game, referenced in transactional emails and html titles
-  home_page_heading: Welcome to Localhost! # heading to render on home page
-  home_page_tagline: We've been expecting you... # tagline to render on home page
-  image: http://localhost:3000/assets/img/og.png # url for og:image tag
-  menu_title: Prediction League # title to render inside menu bar
-  origin: http://localhost:3000 # url for og:url tag
   pin: 1234 # pin to enter the game
   season_id: FakeSeason # id of season to associate with the realm
-  site_description: It's hosted locally. It's a game. It's... Localhost Game! # content of og:description tag
 
 contact:
   email_do_not_reply: do_not_reply@localhost # admin/sender email for transactional emails
@@ -25,3 +18,12 @@ entry_fee:
     - £1.00 entry fee
     - £0.23 coffee fund
   label: £1.23 # entry payment formatted/display amount
+
+site:
+  analytics_code: xxx # google analytics code
+  description: It's hosted locally. It's a game. It's... Localhost Game! # content of og:description tag
+  home_page_heading: Welcome to Localhost! # heading to render on home page
+  home_page_tagline: We've been expecting you... # tagline to render on home page
+  image: http://localhost:3000/assets/img/og.png # url for og:image tag
+  menu_title: Prediction League # title to render inside menu bar
+  origin: http://localhost:3000 # url for og:url tag

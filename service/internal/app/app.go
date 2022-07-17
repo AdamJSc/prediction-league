@@ -142,7 +142,6 @@ func newPage(r *http.Request, c *container, pageTitle, activePage, bannerTitle s
 		LoginPageURL:       domain.GetLoginURL(realm),
 		BuildVersion:       c.config.BuildVersion,
 		BuildTimestamp:     c.config.BuildTimestamp,
-		AnalyticsCode:      realm.Config.AnalyticsCode,
 		Data:               data,
 	}
 }

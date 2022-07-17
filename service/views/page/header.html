@@ -4,22 +4,22 @@
         <head>
             <title>{{.PageTitle}} | {{.Realm.Config.GameName}}</title>
             <meta property="og:title" content="{{.PageTitle}} | {{.Realm.Config.GameName}}" />
-            <meta property="og:url" content="{{.Realm.Config.Origin}}" />
-            <meta property="og:description" content="{{.Realm.Config.SiteDescription}}️" />
-            <meta property="og:image" content="{{.Realm.Config.Image}}" />
+            <meta property="og:url" content="{{.Realm.Site.Origin}}" />
+            <meta property="og:description" content="{{.Realm.Site.Description}}️" />
+            <meta property="og:image" content="{{.Realm.Site.Image}}" />
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" type="text/css" />
             <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.1.1/css/all.css">
             <link rel="stylesheet" href="/assets/app.css?{{.BuildVersion}}" type="text/css" />
-            {{if .AnalyticsCode}}
+            {{if .Realm.Site.AnalyticsCode}}
                 <!-- Global site tag (gtag.js) - Google Analytics -->
-                <script async src="https://www.googletagmanager.com/gtag/js?id={{.AnalyticsCode}}"></script>
+                <script async src="https://www.googletagmanager.com/gtag/js?id={{.Realm.Site.AnalyticsCode}}"></script>
                 <script>
                     window.dataLayer = window.dataLayer || [];
                     function gtag(){dataLayer.push(arguments);}
                     gtag('js', new Date());
 
-                    gtag('config', '{{.AnalyticsCode}}');
+                    gtag('config', '{{.Realm.Site.AnalyticsCode}}');
                 </script>
             {{end}}
         </head>
@@ -28,7 +28,7 @@
                 <nav class="navbar navbar-expand-lg navbar-light">
                     <div class="navbar-brand">
                         <i class="fas fa-hat-wizard" aria-hidden="true"></i>
-                        <span>{{.Realm.Config.MenuTitle}}</span>
+                        <span>{{.Realm.Site.MenuTitle}}</span>
                     </div>
                     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
                         <i class="fa fa-bars" aria-hidden="true"></i>

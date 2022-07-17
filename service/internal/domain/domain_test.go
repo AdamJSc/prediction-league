@@ -388,7 +388,6 @@ func newTestRealm() domain.Realm {
 		Config: domain.RealmConfig{
 			Name:     "TEST_REALM",
 			GameName: "The Test Game",
-			Origin:   "http://test_realm.org",
 			PIN:      "12345",
 			SeasonID: testSeason.ID,
 		},
@@ -407,6 +406,9 @@ func newTestRealm() domain.Realm {
 			EmailDoNotReply: "do_not_reply@world.net",
 			SenderName:      "Mr Do Not Reply",
 			SenderDomain:    "configured_with_mailgun.com",
+		},
+		Site: domain.RealmSite{
+			Origin: "http://test_realm.org",
 		},
 	}
 }

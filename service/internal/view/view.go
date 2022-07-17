@@ -21,7 +21,6 @@ type Base struct {
 	LoginPageURL       string
 	BuildVersion       string
 	BuildTimestamp     string
-	AnalyticsCode      string
 	Data               interface{}
 }
 

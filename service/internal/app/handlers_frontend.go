@@ -23,7 +23,7 @@ func frontendIndexHandler(c *container) func(w http.ResponseWriter, r *http.Requ
 
 		realm := domain.RealmFromContext(ctx)
 
-		p := newPage(r, c, "Home", "home", realm.Config.HomePageHeading, nil)
+		p := newPage(r, c, "Home", "home", realm.Site.HomePageHeading, nil)
 
 		if err := c.templates.ExecuteTemplate(w, "index", p); err != nil {
 			internalError(err).writeTo(w)

@@ -16,21 +16,15 @@ type Realm struct {
 	Contact  RealmContact  `yaml:"contact"`
 	EntryFee RealmEntryFee `yaml:"entry_fee"`
 	FAQs     []RealmFAQ    `yaml:"faqs"`
+	Site     RealmSite     `yaml:"site"`
 }
 
 // RealmConfig represents the core configuration of a Realm
 type RealmConfig struct {
-	Name            string        `yaml:"name"`              // realm id stored in database for entries
-	AnalyticsCode   string        `yaml:"analytics_code"`    // google analytics code
-	GameName        string        `yaml:"game_name"`         // name of the game, referenced in transactional emails and html titles
-	HomePageHeading string        `yaml:"home_page_heading"` // heading to render on home page
-	HomePageTagline template.HTML `yaml:"home_page_tagline"` // tagline to render on home page
-	Image           string        `yaml:"image"`             // url for og:image tag
-	MenuTitle       string        `yaml:"menu_title"`        // title to render inside menu bar
-	Origin          string        `yaml:"origin"`            // url for og:url tag
-	PIN             string        `yaml:"pin"`               // pin to enter the game
-	SeasonID        string        `yaml:"season_id"`         // id of season to associate with the realm
-	SiteDescription string        `yaml:"site_description"`  // content of og:description tag
+	Name     string `yaml:"name"`      // realm id stored in database for entries
+	GameName string `yaml:"game_name"` // name of the game, referenced in transactional emails and html titles
+	PIN      string `yaml:"pin"`       // pin to enter the game
+	SeasonID string `yaml:"season_id"` // id of season to associate with the realm
 }
 
 // RealmContact represents the contact details of a realm
@@ -54,6 +48,17 @@ type RealmEntryFee struct {
 type RealmFAQ struct {
 	Question string        `yaml:"question"`
 	Answer   template.HTML `yaml:"answer"`
+}
+
+// RealmSite defines data points that are rendered as markup
+type RealmSite struct {
+	AnalyticsCode   string        `yaml:"analytics_code"`    // google analytics code
+	Description     string        `yaml:"description"`       // content of og:description tag
+	HomePageHeading string        `yaml:"home_page_heading"` // heading to render on home page
+	HomePageTagline template.HTML `yaml:"home_page_tagline"` // tagline to render on home page
+	Image           string        `yaml:"image"`             // url for og:image tag
+	MenuTitle       string        `yaml:"menu_title"`        // title to render inside menu bar
+	Origin          string        `yaml:"origin"`            // url for og:url tag
 }
 
 // RealmCollection is slice of Realm

@@ -19,7 +19,7 @@ func TestGetHomeURL(t *testing.T) {
 		},
 		{
 			name: "with realm",
-			realm: &domain.Realm{Config: domain.RealmConfig{
+			realm: &domain.Realm{Site: domain.RealmSite{
 				Origin: "http://localhost",
 			}},
 			wantURL: "http://localhost",
@@ -48,7 +48,7 @@ func TestGetLeaderBoardURL(t *testing.T) {
 		},
 		{
 			name: "with realm",
-			realm: &domain.Realm{Config: domain.RealmConfig{
+			realm: &domain.Realm{Site: domain.RealmSite{
 				Origin: "http://localhost",
 			}},
 			wantURL: "http://localhost/leaderboard",
@@ -77,7 +77,7 @@ func TestGetJoinURL(t *testing.T) {
 		},
 		{
 			name: "with realm",
-			realm: &domain.Realm{Config: domain.RealmConfig{
+			realm: &domain.Realm{Site: domain.RealmSite{
 				Origin: "http://localhost",
 			}},
 			wantURL: "http://localhost/join",
@@ -106,7 +106,7 @@ func TestGetFAQURL(t *testing.T) {
 		},
 		{
 			name: "with realm",
-			realm: &domain.Realm{Config: domain.RealmConfig{
+			realm: &domain.Realm{Site: domain.RealmSite{
 				Origin: "http://localhost",
 			}},
 			wantURL: "http://localhost/faq",
@@ -135,7 +135,7 @@ func TestGetLoginURL(t *testing.T) {
 		},
 		{
 			name: "with realm",
-			realm: &domain.Realm{Config: domain.RealmConfig{
+			realm: &domain.Realm{Site: domain.RealmSite{
 				Origin: "http://localhost",
 			}},
 			wantURL: "http://localhost/login",
@@ -165,7 +165,7 @@ func TestGetMagicLoginURL(t *testing.T) {
 		},
 		{
 			name: "realm but no token",
-			realm: &domain.Realm{Config: domain.RealmConfig{
+			realm: &domain.Realm{Site: domain.RealmSite{
 				Origin: "http://localhost",
 			}},
 			wantURL: "http://localhost/login",
@@ -177,7 +177,7 @@ func TestGetMagicLoginURL(t *testing.T) {
 		},
 		{
 			name: "realm and token",
-			realm: &domain.Realm{Config: domain.RealmConfig{
+			realm: &domain.Realm{Site: domain.RealmSite{
 				Origin: "http://localhost",
 			}},
 			token:   &domain.Token{ID: "abc123"},
@@ -207,7 +207,7 @@ func TestGetPredictionURL(t *testing.T) {
 		},
 		{
 			name: "with realm",
-			realm: &domain.Realm{Config: domain.RealmConfig{
+			realm: &domain.Realm{Site: domain.RealmSite{
 				Origin: "http://localhost",
 			}},
 			wantURL: "http://localhost/prediction",

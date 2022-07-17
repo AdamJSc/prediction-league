@@ -57,7 +57,7 @@ func ParseTemplates(viewsPath string) (*Templates, error) {
 // GetHomeURL generates a home page URL from the provided Realm
 func GetHomeURL(r *Realm) string {
 	if r != nil {
-		return r.Config.Origin
+		return r.Site.Origin
 	}
 	return "/"
 }
@@ -66,7 +66,7 @@ func GetHomeURL(r *Realm) string {
 func GetLeaderBoardURL(r *Realm) string {
 	domain := ""
 	if r != nil {
-		domain = r.Config.Origin
+		domain = r.Site.Origin
 	}
 	return fmt.Sprintf("%s/leaderboard", domain)
 }
@@ -75,7 +75,7 @@ func GetLeaderBoardURL(r *Realm) string {
 func GetJoinURL(r *Realm) string {
 	domain := ""
 	if r != nil {
-		domain = r.Config.Origin
+		domain = r.Site.Origin
 	}
 	return fmt.Sprintf("%s/join", domain)
 }
@@ -84,7 +84,7 @@ func GetJoinURL(r *Realm) string {
 func GetFAQURL(r *Realm) string {
 	domain := ""
 	if r != nil {
-		domain = r.Config.Origin
+		domain = r.Site.Origin
 	}
 	return fmt.Sprintf("%s/faq", domain)
 }
@@ -93,7 +93,7 @@ func GetFAQURL(r *Realm) string {
 func GetLoginURL(r *Realm) string {
 	domain := ""
 	if r != nil {
-		domain = r.Config.Origin
+		domain = r.Site.Origin
 	}
 	return fmt.Sprintf("%s/login", domain)
 }
@@ -111,7 +111,7 @@ func GetMagicLoginURL(r *Realm, t *Token) string {
 func GetPredictionURL(r *Realm) string {
 	domain := ""
 	if r != nil {
-		domain = r.Config.Origin
+		domain = r.Site.Origin
 	}
 	return fmt.Sprintf("%s/prediction", domain)
 }
