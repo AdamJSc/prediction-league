@@ -42,11 +42,16 @@
         </head>
         <body>
             <div class="main-wrapper">
-                <nav class="navbar navbar-expand-lg navbar-light">
+                <nav class="menu-bar navbar navbar-expand-lg navbar-light">
                     <div class="navbar-brand">
-                        <!-- TODO: render menu icon url -->
-                        <i class="fas fa-hat-wizard" aria-hidden="true"></i>
-                        <span>{{.Realm.Site.MenuTitle}}</span>
+                        <div class="brand-container">
+                            <div class="icon-container">
+                                <img src="{{.Realm.Site.MenuBarIconURL}}" />
+                            </div>
+                            <div class="title-container">
+                                {{.Realm.Site.MenuBarTitle}}
+                            </div>
+                        </div>
                     </div>
                     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
                         <i class="fa fa-bars" aria-hidden="true"></i>

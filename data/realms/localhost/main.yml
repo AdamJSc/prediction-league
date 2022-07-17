@@ -22,10 +22,12 @@ entry_fee:
 site:
   analytics_code: xxx # google analytics code
   description: It's hosted locally. It's a game. It's... Localhost Game! # content of og:description tag
+  home_page_banner_image_url: http://localhost:3000/assets/img/placeholder_home_page_banner.png # url for home page banner image
   home_page_heading: Welcome to Localhost! # heading to render on home page
   home_page_tagline: We've been expecting you... # tagline to render on home page
   image_alt: Logo for localhost site # textual description of the image used for og:image
-  image_url: http://localhost:3000/assets/img/og.png # url for og:image tag
-  menu_title: Prediction League # title to render inside menu bar
+  image_url: http://localhost:3000/assets/img/placeholder_og.png # url for og:image tag
+  menu_bar_icon_url: http://localhost:3000/assets/img/placeholder_menu_bar_icon.png # url for image rendered as icon in menu bar
+  menu_bar_title: Prediction League # title to render inside menu bar
   origin: http://localhost:3000 # url for og:url tag
   twitter_username: adamalsotweets # twitter handle associated with site (don't @ me...)

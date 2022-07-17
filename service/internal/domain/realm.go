@@ -76,16 +76,18 @@ type RealmFAQ struct {
 
 // RealmSite defines data points that are rendered as markup
 type RealmSite struct {
-	AnalyticsCode   string        `yaml:"analytics_code"`    // google analytics code
-	Description     string        `yaml:"description"`       // content of og:description tag
-	HomePageHeading string        `yaml:"home_page_heading"` // heading to render on home page
-	HomePageTagline template.HTML `yaml:"home_page_tagline"` // tagline to render on home page
-	ImageAlt        string        `yaml:"image_alt"`         // textual description of the image used for og:image
-	ImageURL        string        `yaml:"image_url"`         // url for og:image tag
-	MenuTitle       string        `yaml:"menu_title"`        // title to render inside menu bar
-	Origin          string        `yaml:"origin"`            // url for og:url tag
-	TwitterUsername string        `yaml:"twitter_username"`  // twitter handle associated with site
-	Paths           RealmSitePaths
+	AnalyticsCode          string        `yaml:"analytics_code"`             // google analytics code
+	Description            string        `yaml:"description"`                // content of og:description tag
+	HomePageBannerImageURL string        `yaml:"home_page_banner_image_url"` // url for home page banner image
+	HomePageHeading        string        `yaml:"home_page_heading"`          // heading to render on home page
+	HomePageTagline        template.HTML `yaml:"home_page_tagline"`          // tagline to render on home page
+	ImageAlt               string        `yaml:"image_alt"`                  // textual description of the image used for og:image
+	ImageURL               string        `yaml:"image_url"`                  // url for og:image tag
+	MenuBarIconURL         string        `yaml:"menu_bar_icon_url"`          // url for image rendered as icon in menu bar
+	MenuBarTitle           string        `yaml:"menu_bar_title"`             // title to render inside menu bar
+	Origin                 string        `yaml:"origin"`                     // url for og:url tag
+	TwitterUsername        string        `yaml:"twitter_username"`           // twitter handle associated with site
+	Paths                  RealmSitePaths
 }
 
 // RealmSitePaths store the paths to each page

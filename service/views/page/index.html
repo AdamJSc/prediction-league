@@ -2,11 +2,8 @@
     {{template "header" .}}
     <div class="row">
         <div class="intro-cta col">
-            <div class="icon">
-                <!-- TODO: render home page banner image url -->
-                <i class="fas fa-hat-wizard" aria-hidden="true"></i>
-                <i class="far fa-futbol" aria-hidden="true"></i>
-                <i class="fas fa-trophy" aria-hidden="true"></i>
+            <div class="home-page-banner">
+                <img alt="{{.Realm.Site.ImageAlt}}" src="{{.Realm.Site.HomePageBannerImageURL}}" />
             </div>
             <h2>{{.Realm.Site.HomePageTagline}}</h2>
             <a class="btn btn-primary btn-lg" href="{{.Realm.Site.Paths.Join}}" role="button">Enter Now</a>

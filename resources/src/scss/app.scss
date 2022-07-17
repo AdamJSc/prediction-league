@@ -99,6 +99,29 @@ a {
   }
 }
 
+.menu-bar {
+  .brand-container {
+    .icon-container {
+      display: inline-block;
+      height: 30px;
+      overflow: hidden;
+      padding-bottom: 5px;
+      vertical-align: middle;
+      width: 30px;
+
+      img {
+        vertical-align: top;
+        width: 100%;
+      }
+    }
+
+    .title-container {
+      display: inline-block;
+      vertical-align: middle;
+    }
+  }
+}
+
 .banner-container {
   height: 130px;
 
@@ -122,6 +145,16 @@ a {
       padding: 0 0.5rem;
       color: $primary-light;
     }
+  }
+}
+
+.home-page-banner {
+  display: block;
+  margin: 0 auto;
+  width: 350px;
+
+  img {
+    width: 100%;
   }
 }
 
