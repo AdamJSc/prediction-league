@@ -144,7 +144,7 @@ func (c *CommunicationsAgent) IssueMagicLoginEmail(ctx context.Context, entry *E
 
 	d := MagicLoginEmail{
 		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
-		LoginURL:       GetMagicLoginURL(&realm, &Token{ID: tokenId}),
+		LoginURL:       realm.GetMagicLoginURL(&Token{ID: tokenId}),
 	}
 	var emailContent bytes.Buffer
 	if err := c.tpl.ExecuteTemplate(&emailContent, "email_txt_magic_login", d); err != nil {

@@ -61,24 +61,6 @@ func ParseTemplates(viewsPath string) (*Templates, error) {
 	return &Templates{Template: tpl}, nil
 }
 
-// getLoginURL generates a login page URL from the provided Realm
-func getLoginURL(r *Realm) string {
-	domain := ""
-	if r != nil {
-		domain = r.Site.Origin
-	}
-	return fmt.Sprintf("%s/login", domain)
-}
-
-// GetMagicLoginURL generates a magic login URL from the provided Realm and Token
-func GetMagicLoginURL(r *Realm, t *Token) string {
-	tID := ""
-	if t != nil {
-		tID = "/" + t.ID
-	}
-	return getLoginURL(r) + tID
-}
-
 // walkPathAndParseTemplates recursively parses templates within a given top-level directory
 func walkPathAndParseTemplates(tpl *template.Template, path string) error {
 	// walk through our views folder and parse each item to pack the assets

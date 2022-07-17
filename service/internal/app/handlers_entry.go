@@ -358,7 +358,7 @@ func generateExtendedMagicLoginTokenHandler(c *container) func(w http.ResponseWr
 		}
 
 		realm := domain.RealmFromContext(ctx)
-		url := domain.GetMagicLoginURL(realm, predTkn)
+		url := realm.GetMagicLoginURL(predTkn)
 
 		// success!
 		okResponse(&data{

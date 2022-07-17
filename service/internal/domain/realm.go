@@ -19,16 +19,28 @@ type Realm struct {
 	Site     RealmSite     `yaml:"site"`
 }
 
+// GetFullHomeURL returns the home page path appended to the realm origin
 func (r Realm) GetFullHomeURL() string {
 	return r.Site.Origin + r.Site.Paths.Home
 }
 
+// GetFullLeaderboardURL returns the leaderboard page path appended to the realm origin
 func (r Realm) GetFullLeaderboardURL() string {
 	return r.Site.Origin + r.Site.Paths.Leaderboard
 }
 
+// GetFullMyTableURL returns the my table page path appended to the realm origin
 func (r Realm) GetFullMyTableURL() string {
 	return r.Site.Origin + r.Site.Paths.MyTable
+}
+
+// GetMagicLoginURL generates a login URL using the provided Token
+func (r Realm) GetMagicLoginURL(t *Token) string {
+	tID := ""
+	if t != nil {
+		tID = "/" + t.ID
+	}
+	return r.Site.Origin + r.Site.Paths.Login + tID
 }
 
 // RealmConfig represents the core configuration of a Realm

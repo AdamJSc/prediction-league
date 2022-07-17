@@ -53,6 +53,38 @@ func TestRealm_GetFullMyTableURL(t *testing.T) {
 	cmpDiff(t, "full leaderboard url", want, got)
 }
 
+func TestRealm_GetMagicLoginURL(t *testing.T) {
+	realm := domain.Realm{Site: domain.RealmSite{
+		Origin: "http://localhost",
+		Paths: domain.RealmSitePaths{
+			Login: "/login",
+		},
+	}}
+
+	tt := []struct {
+		name    string
+		token   *domain.Token
+		wantURL string
+	}{
+		{
+			name:    "no token",
+			wantURL: "http://localhost/login",
+		},
+		{
+			name:    "valid token",
+			token:   &domain.Token{ID: "abc123"},
+			wantURL: "http://localhost/login/abc123",
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			gotURL := realm.GetMagicLoginURL(tc.token)
+			cmpDiff(t, "magic login url", tc.wantURL, gotURL)
+		})
+	}
+}
+
 func TestRealmCollection_GetByName(t *testing.T) {
 	collection := domain.RealmCollection{
 		domain.Realm{Config: domain.RealmConfig{Name: "realm_1"}},
