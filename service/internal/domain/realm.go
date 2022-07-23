@@ -87,6 +87,8 @@ type RealmSite struct {
 	MenuBarIconURL         string        `yaml:"menu_bar_icon_url"`          // url for image rendered as icon in menu bar
 	MenuBarTitle           string        `yaml:"menu_bar_title"`             // title to render inside menu bar
 	Origin                 string        `yaml:"origin"`                     // url for og:url tag
+	TrailerTitle           string        `yaml:"trailer_title"`              // title to render for trailer video embedded on home page
+	TrailerURL             string        `yaml:"trailer_url"`                // url to render for trailer video embedded on home page
 	TwitterUsername        string        `yaml:"twitter_username"`           // twitter handle associated with site
 	Paths                  RealmSitePaths
 }

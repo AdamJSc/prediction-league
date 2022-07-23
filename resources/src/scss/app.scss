@@ -169,6 +169,19 @@ a {
   }
 }
 
+.trailer-container {
+  display: none;
+  height: 100%;
+  margin: 1rem auto 0;
+  width: 100%;
+
+  iframe {
+    border: 0;
+    height: 100%;
+    width: 100%;
+  }
+}
+
 .accented-component {
   max-width: 400px;
   margin: 0 auto;
@@ -581,6 +594,21 @@ table.round-navigation-container {
   color: $text-light-tint-dark;
 }
 
+@media screen and (min-width: 280px) {
+  .trailer-container {
+    display: block;
+    height: 196.25px;
+    width: 260px;
+  }
+}
+
+@media screen and (min-width: 360px) {
+  .trailer-container {
+    height: 210px;
+    width: 350px;
+  }
+}
+
 @media screen and (min-width: 576px) {
   h2 {
     font-size: 2rem;
@@ -593,9 +621,20 @@ table.round-navigation-container {
   .right-section {
     text-align: right!important;
   }
+
+  .trailer-container {
+    display: block;
+    height: 308.4px;
+    width: 550px;
+  }
 }
 
 @media screen and (min-width: 768px) {
+  .trailer-container {
+    height: 392.6px;
+    width: 700px;
+  }
+
   table.rankings:not(.full-width), table.round, table.teams-reorder-admin {
     width: 75%;
   }

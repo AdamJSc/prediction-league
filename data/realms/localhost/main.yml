@@ -31,4 +31,6 @@ site:
   menu_bar_icon_url: http://localhost:3000/assets/img/placeholder_menu_bar_icon.png # url for image rendered as icon in menu bar
   menu_bar_title: Prediction League # title to render inside menu bar
   origin: http://localhost:3000 # url for og:url tag
+  trailer_title: Have some cat videos... # title to render for trailer video embedded on home page
+  trailer_url: https://www.youtube.com/embed/tpiyEe_CqB4 # url to render for trailer video embedded on home page
   twitter_username: adamalsotweets # twitter handle associated with site (don't @ me...)
