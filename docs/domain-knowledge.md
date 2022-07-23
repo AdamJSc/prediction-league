@@ -8,47 +8,33 @@ Here is a detailed breakdown of each Entity:
 
 ### Realm
 
-* A `Realm` is an arbitrary "flag" that represents a distinct instance of the game. It can also be thought of as a sub-grouping
-of [Entries](#entry).
+* A `Realm` represents a distinct instance of the game. It can also be thought of as a sub-grouping of [Entries](#entry).
 
-* [Entries](#entry) that have different Realm values belong to different game instances, and are therefore not
-competing against each other.
+* Entries that have different Realm values belong to different game instances, and are therefore not competing against
+each other.
 
-* The Realm Name is determined by the domain portion of the request URL via which an [Entry](#entry) is initially created.
+* The Realm Name is determined by the domain portion of the request URL via which an Entry is initially created.
 This excludes any port numbers that are appended to the domain name portion of the request URL.
 
-* This approach enables multiple hosts/domains/sub-domains to route traffic to a single running binary, which itself can
-serve multiple game instances at the same time.
+* This approach enables several hosts/domains/sub-domains to be proxied to the same hosted application, therefore 
+accommodating multiple game instances at the same time.
 
-* Each Realm must comprise one [Season](#season), which determines the [Teams](#team) that are available to select when
-making a [Prediction](#entryprediction), as well as the real-world league table data that each [Entry](#entry) will be
+* Each Realm must comprise one [Season](#season), which determines the [Teams](#team) that are available to players when
+making a [Prediction](#entryprediction), as well as the real-world league table data that each Prediction will be
 scored against.
 
-* The [Season](#season) that is associated with a Realm can (and should) change every year, in line with changes to the
-currently active real-world season - i.e. `201920_1` ("Premier League 2019/20") becomes `202021_1` ("Premier League 2020/21")
+* The Season that is associated with a Realm can (and should) change every year, in line with changes to the currently
+active real-world season - i.e. `201920_1` ("Premier League 2019/20") becomes `202021_1` ("Premier League 2020/21")
 etc.
 
-* Each Realm must also have a corresponding PIN that is supplied when creating an [Entry](#entry), in order to prevent
-unwelcome sign-ups.
+* A Realm has historically had a corresponding PIN that must be supplied when creating an Entry, in order to prevent
+unwelcome sign-ups (players must be given the PIN by whoever is administering the game instance).
+However, this feature was "deprecated" in v2.3.0 (the PIN mechanism has been retained, but the frontend simply includes
+its value as part of the Entry creation request).
 
-* Realms must be configured in advance, within the `./data/realms.yml` file. This file's payload comprises the single
-root-level key named `realms`, and each key beneath this should match the lowercase realm name (domain) -
-e.g. `localhost` or `my.sub.domain.com`. See the file itself for an example.
-
-* Each Realm config object should comprise the following values:
-    * `origin`: Base URL to use for links inside transactional emails that are sent to [Entries](#entry) belonging to Realm
-    (e.g. `http://localhost:3000` or `http://example.com`)
-    * `contact.name`: Name to sign off transactional emails with (e.g .`Harry R and the PL Team`)
-    * `contact.email_proper`: Formatted support email address (e.g. `wont_you_please_please_help_me@example.com`)
-    * `contact.email_sanitised`: Sanitised support email address for display purposes (e.g. `wont_you_please_please_help_me (at) example.com`)
-    * `contact.email_do_not_reply`: Sender's email address on transactional emails (e.g. `do_not_reply@example.com`)
-    * `sender_domain`: Outgoing sender domain validated via DNS with Mailgun.
-    * `pin`: Arbitrary string value required when creating a new [Entry](#entry) to prevent unwanted sign-ups (e.g. `MYPIN1234`)
-    * `season_id`: ID of current [Season](#season) that Realm pertains to, must be an existing key within the supplied `SeasonCollection` (e.g. `201920_1`)
-    * `entry_fee.amount`: Numerical entry fee value charged via PayPal, currently supports GBP only (e.g. `1.23`)
-    * `entry_fee.label`: Entry fee's display value (e.g. `£1.23`)
-    * `entry_fee.breakdown`: Array of strings that explain breakdown of entry fee (e.g. `- £1.00 kitty contribution, - £0.23 processing fee`) 
-    * `analytics_code`: Google Analytics code for Realm (optional, analytics ignored if left blank)
+* Realms must be configured in advance, within the `./data/realms` directory. Each Realm is provided as a sub-directory
+which contains the files `main.yml` and `faqs.yml`. See the `localhost` example in this repo for the exact schema required
+for these files.
 
 * The values of these payloads are parsed as `Realm` objects within the main app bootstrap, and subsequently retrievable
 by accessing `GetByName(realm_name)` on the `RealmCollection` which originates in the app's container and is passed as a dependency
@@ -64,8 +50,8 @@ to each domain entity that requires it, such as handlers, agents, workers etc.
 * The Seasons data used throughout the system is defined in code and instantiated on the app container as `SeasonCollection`.
 Again, this is passed as a dependency to each domain entity that requires it, such as handlers, agents, workers etc.
 
-* This data is deliberately controlled by the project maintainer as a one-off action that is required approximately once a year
-(i.e. between one Season finishing and another beginning).
+* This data is deliberately controlled by the project maintainer as a one-off action since updating it is required
+approximately once a year (i.e. between one Season finishing and another beginning) and applies to the project as a whole.
 
 * For details on the system's default Season, see ["FakeSeason"](#fakeseason) (below).
 
@@ -73,35 +59,34 @@ Again, this is passed as a dependency to each domain entity that requires it, su
 
 * A `Team` represents a team that competes within a [Season](#season).
 
-* Each [Season](#season) defines a slice of Teams that...
-    * ...are presented to the User when setting their [Prediction](#entryprediction), and...
+* Each Season defines a slice of Teams that...
+    * ...are presented to the player when setting their [Prediction](#entryprediction), and...
     * ...must be present within the ingested real-world [Standings](#standings) from the upstream data source
     for a given [Season](#season).
 
 * The Teams data used throughout the system is defined in code and instantiated on the app container as `TeamCollection`.
 Again, this is passed as a dependency to each domain entity that requires it, such as handlers, agents, workers etc.
 
-* This data is deliberately controlled by the project maintainer as a one-off action that is required approximately once a year
-(i.e. between one Season finishing and another beginning).
+* This data is deliberately controlled by the project maintainer as a one-off action since updating it is required
+  approximately once a year (i.e. between one Season finishing and another beginning) and applies to the project as a whole.
 
 ### Entry
 
-* An `Entry` represents a user who has been entered into a game instance.
+* An `Entry` represents a player who has been entered into a game instance.
 
 * Each Entry belongs to a single combination of [Realm](#realm) and [Season](#season).
 
 * Entries are only considered active if they have been "approved" by an Admin (see [Payments](../README.md#payments)).
-Prior to this, they are not included within the [LeaderBoard](#leaderboard).
+Prior to this, they are not included within the [Leaderboard](#leaderboard).
 
 * To login and make a [Prediction](#entryprediction), the user must generate a magic login link (see [Token](#token)).
 
 ### EntryPrediction
 
-* An `EntryPrediction` (also referred to as a `Prediction`) represents a Prediction that has been made as part of an [Entry](#entry)
+* An `EntryPrediction` (also referred to as a `Prediction`) represents a Prediction that has been made as part of an [Entry](#entry).
 
-* It comprises a creation timestamp, as well as a JSON array containing a sequence of [Team](#team) IDs that are considered
-to be the chosen order of [Teams](#team) by which the [Entry](#entry) will accrue points for all current and subsequent
-Game Weeks (until a new Prediction is made).
+* It comprises a creation timestamp, as well as a JSON array containing a sequence of [Team](#team) IDs that the player
+will be scored against each [Match Week](../README.md#match-weeks).
 
 * Each EntryPrediction belongs to a single [Entry](#entry).
 
@@ -109,14 +94,16 @@ Game Weeks (until a new Prediction is made).
 
 * The act of a user changing their existing EntryPrediction creates a new one with a more recent timestamp instead. This
 facilitates an "event-based" paradigm, providing a full historic audit trail of all EntryPredictions that have ever
-belonged to an [Entry](#entry).
+belonged to an Entry.
 
 * Only one EntryPrediction per Entry is ever considered to be active/current at any given time.
 
-* The most recently-created EntryPrediction is used to generate the [Scored Prediciton](#scoredentryprediction) for the current
-and future Game Weeks (until a new EntryPrediction is created).
+* The most recently-created EntryPrediction is used to generate the [Scored Prediction](#scoredentryprediction) for the current
+and future Match Weeks (until a new EntryPrediction is created).
 
 ### MatchWeekSubmission
+
+* Introduced in v2.3.0 to accommodate new scoring rules.
 
 * Transformed from `EntryPrediction` entity within `GenerateScoredEntryPrediction` method.
 
@@ -127,25 +114,27 @@ and future Game Weeks (until a new EntryPrediction is created).
 * A `Standings` object represents an instance of a real-world league table consumed from the upstream data source.
 
 * It comprises a JSON object called Rankings, which represents a sequence of [Team](#team) IDs along with their meta values,
-such as number of matches played, won, drawn, lost etc. for each [Team](#team).
+such as number of matches played, won, drawn, lost etc. for each Team.
 
 * It is inflated as part of the [Retrieve Latest Standings](#retrieve-latest-standings) cron job.
 
-* Each Standings record is unique by SeasonID and Round Number (Game Week) which is overwritten by each cron job execution,
-until the next Game Week is reached (or the [Season](#season) reaches completion). 
+* Each Standings record is unique by SeasonID and Round Number (Match Week) which is overwritten by each cron job execution,
+until the next Match Week is reached (or the [Season](#season) reaches completion). 
 
 ### MatchWeekStandings
+
+* Introduced in v2.3.0 to accommodate new scoring rules.
 
 * Transformed from `Standings` entity within `GenerateScoredEntryPrediction` method.
 
 ### ScoredEntryPrediction
 
-* A `ScoredEntryPrediction` object represents a [Prediction](#entryprediction) that has been provided with a score of
-penalty points based on a given [Standings](#standings) object.
+* A `ScoredEntryPrediction` object represents a [Prediction](#entryprediction) that has been provided with a score based
+on a given [Standings](#standings) object.
 
-* It is unique to a single combination of a [Prediction](#entryprediction) object and a [Standings](#standings) object.
+* It is unique to a single combination of a Prediction and a Standings.
 
-* It is used to calculate the total cumulative score for each [Entry](#entry) on a [LeaderBoard](#leaderboard).
+* It is used to calculate the total cumulative score for each [Entry](#entry) on a [Leaderboard](#leaderboard).
 
 ### MatchWeekResult
 
@@ -155,8 +144,8 @@ penalty points based on a given [Standings](#standings) object.
 
 * Also introduces the concept of "Modifiers" which are the individual factors that influence the overall Score on a `MatchWeekResult`.
 
-* Modifiers are stored with an arbitrary Code (so that their nature, description etc. can be recalled in the future),
-  as well as a Value (the amount by which to affect the Score so that these can be replayed as required).
+* Modifiers are stored with an arbitrary Code so that their nature (description etc.) can be recalled in the future,
+as well as a Value (the amount by which to affect the Score so that the modifiers can be "replayed" as required).
 
 ### Ranking
 
@@ -175,7 +164,7 @@ within a [ScoredEntryPrediction](#scoredentryprediction) object.
 ### RankingWithScore + MetaPosition
 
 * This object represents a [RankingWithScore](#rankingwithscore) object that has an associated "meta position", such as
-those found within a `scoredEntryPredictionResponseRanking` object.
+those found within a `scoredEntryPredictionResponseRanking` object from the upstream football data API response.
 
 * Here, the "meta position" represents the real-world league table position of the Team ID represented by the Ranking, e.g.
     * For the following pseudo `Standings.Rankings`:
@@ -191,16 +180,16 @@ those found within a `scoredEntryPredictionResponseRanking` object.
         * `2nd Team C (Score = 1, Meta Position = 3)`
         * `3rd Team A (Score = 2, Meta Position = 1)`
 
-### LeaderBoard
+### Leaderboard
 
-* A `LeaderBoard` represents the cumulative total scores for all [Entries](#entry) within a [Season](#season), ordered
-by total score (lowest first), then by minimum score (lowest first), then by current round score (lowest first).
+* A `Leaderboard` represents the cumulative total scores for all [Entries](#entry) within a [Season](#season), ordered
+by total score (highest first), then by maximum score (highest first), then by current Match Week score (highest first).
 
-* It is unique to a Round Number (Game Week).
+* It is unique to a Round Number (Match Week).
 
-### LeaderBoardRanking
+### LeaderboardRanking
 
-* A `LeaderBoardRanking` represents the position of a single [Entry](#entry) within a [LeaderBoard](#leaderboard).
+* A `LeaderboardRanking` represents the position of a single [Entry](#entry) within a [LeaderBoard](#leaderboard).
 
 * It combines a [RankingWithScore](#rankingwithscore), with a numerical Total Score and a numerical Min Score.
 
@@ -216,15 +205,15 @@ This is `NULL`/`nil` for any instances that have been created but not yet been r
 
 * Each Token also has an `ExpiresAt` timestamp, representing the point at which it can no longer be considered active.
 
-* Tokens have one of four types:
-    * `Auth` Tokens are used to identify a session cookie. They have a duration of 60 minutes before expiring and their
+* Tokens represent one of four types:
+    * `Auth` Tokens are used to identify a user's session. They have a duration of 60 minutes before expiring and their
     Value represents the [Entry](#entry) ID associated with the session.
     * `Entry Registration` Tokens are generated as single-use in order to facilitate the payment step that follows creating
     an Entry. They have a duration of 10 minutes before expiring and their Value represents the associated [Entry](#entry) ID.
     * `Magic Login` Tokens are used as part of a magic login link. They have a duration of 10 minutes before expiring
     and their Value represents the [Entry](#entry) ID associated with requested magic login.
     * `Prediction` Tokens are generated as single-use in order to facilitate the creation of a new Entry Prediction.
-    They have a duration of 10 minutes before expiring and their Value represents the associated [Entry](#entry) ID.
+    They have a duration of 60 minutes before expiring and their Value represents the associated [Entry](#entry) ID.
 
 * At the moment, there is no clean-up process for Tokens that have expired without being redeemed/consumed. A bulk-delete
  agent method has been implemented although is not yet invoked as part of a cron job etc. This should ideally be reviewed
@@ -244,74 +233,71 @@ This is `NULL`/`nil` for any instances that have been created but not yet been r
 ### Retrieving Latest Standings
 
 Real-world league table standings are consumed from the [football-data.org](https://www.football-data.org/) API, for the
-purposes of calculating new scores for each [Entry](#entry) per Game Week (also known as
-[ScoredEntryPredictions](#scoredentryprediction)).
+purposes of calculating new scores for each [Entry](#entry) per Match Week (also known as
+[ScoredEntryPrediction](#scoredentryprediction)).
 
-This occurs within a cron job that is scheduled to run every 15 minutes (see `domain.RetrieveLatestStandingsWorker`).
+This occurs as a cron job that is scheduled to run every 15 minutes (see `domain.RetrieveLatestStandingsWorker`).
 
 A separate cron job is instantiated for every existing [Season](#season) that fulfils all of the following criteria
 at the time the service boots up:
 
 * ...is currently affiliated with an existing [Realm](#realm), and...
-* ...comprises a `ClientID` that is not `nil`.
+* ...comprises a `ClientID` (for calling the upstream football data API) that is not `nil`.
 
 The `.env` variable `FOOTBALLDATA_API_TOKEN` must also have a value for any of these cron jobs to run.
 
 The cron job's task executes the following logic:
 
-* Check that [Season](#season) is `Active` - exit if not.
+* Check that the associated Season is `Active` - exit if not.
 
-* Retrieve **newest** [EntryPredictions](#entryprediction) associated with the provided [Season](#season) - exit if none.
+* Retrieve **newest** [Predictions](#entryprediction) belonging to the associated [Season](#season) - exit if none.
 
 * Retrieve latest [Standings](#standings) from football data client - exit if error
 
-* Validate and sort retrieved [Standings](#standings) - exit if error
+* Validate and sort retrieved Standings - exit if error
 
-* Check for an existing [Standings](#standings) record that matches the Round Number (Game Week) of the retrieved
-[Standings](#standings):
+* Check for an existing Standings object that matches the Round Number (Match Week) of the retrieved Standings:
     * If we already have it, just update its Rankings
-    * Otherwise we have a new one, so retrieve the [Standings](#standings) for the **previous** Round Number (Game Week) 
-    mark it as "finalised", and continue with this one instead.
+    * Otherwise we have a new one, so retrieve the Standings for the **previous** Round Number (Match Week), mark it as
+      "finalised", and continue with this one instead.
 
-* For each [Prediction](#entryprediction) we retrieved earlier:
-    * Calculate new [ScoredEntryPrediction](#scoredentryprediction) based on our [Standings](#standings)
-    * Insert new/Update existing [ScoredEntryPrediction](#scoredentryprediction) for current [Entry](#entry) ID and
-    [Standings](#standings) ID.
+* For each Prediction we retrieved earlier:
+    * Calculate new ScoredPrediction based on our Standings.
+    * Upsert ScoredEntryPrediction for current Entry ID and Standings ID.
 
-* If [Standings](#standings) has been marked as finalised, then issue a "round complete" email to each [Entry](#entry)
+* If Standings has been marked as finalised, then issue a "round complete" email to each player (Entry).
 
 ### "FakeSeason"
 
 Much of the functionality within this system is time-sensitive in relation to the [Season](#season) that applies to the
 current [Realm](#realm).
 
-Functionality such as whether or not an [Entry](#entry) or [Prediction](#entryprediction)
-can be created or updated at any given moment is determined by the corresponding timeframes set on the [Season](#season)
-object itself.
+Functionality such as whether or not an [Entry](#entry) or [Prediction](#entryprediction) can be created or updated at
+any given moment is determined by the corresponding timeframes set on the Season object itself.
 
-Usually these will be **absolute** timeframes that pertain to the dates relevant to a real-world [Season](#season)
-(see `201920_1` in the collection returned by `domain.GetSeasonCollection()` as an example).
+Usually these will be **absolute** timeframes pertaining to dates that are relevant to a real-world Season (see
+`201920_1` in the collection returned by `domain.GetSeasonCollection()` as an example).
 
-For this reason, the default [Realm](#realm) (`localhost`) is affiliated with a [Season](#season) which has the ID `FakeSeason`
-and whose sole purpose is to enable time-sensitive operations to be more easily debugged.
+For this reason, the default Realm (`localhost`) is affiliated with a Season which has the ID `FakeSeason` and whose
+sole purpose is to enable time-sensitive operations to be more easily debugged.
 
-This [Season's](#season) timeframes are **relative** to the point at which the system is run, so that core functionality
+The `FakeSeason` timeframes are **relative** to the point at which the system is run, so that core functionality
 can be used immediately when running locally.
 
 The schedule takes place as follows:
 
 * 0 mins - 20 mins
-    * [Entries](#entry) **can** be created or updated
-    * [Predictions](#entryprediction) **can** be created
+    * Entries **can** be created or updated
+    * Predictions **can** be created
 * 20 mins - 40 mins
-    * [Entries](#entry) **cannot** be created or updated
-    * [Predictions](#entryprediction) **cannot** be created
+    * Entries **cannot** be created or updated
+    * Predictions **cannot** be created
 * 40 mins - 60 mins
-    * [Entries](#entry) **cannot** be created or updated
-    * [Predictions](#entryprediction) **can** be created
+    * Entries **cannot** be created or updated
+    * Predictions **can** be created
 * 60 mins+
-    * [Entries](#entry) **cannot** be created or updated
-    * [Predictions](#entryprediction) **cannot** be created
+    * Entries **cannot** be created or updated
+    * Predictions **cannot** be created
 
 ### Transactional Emails
 
@@ -358,7 +344,7 @@ The route handler might then invoke `domain.GuardFromContext(ctx).SetAttempt(inp
 i.e. the value "attempting" to match the Target - using some data point that has been supplied in the user's request
 
 (In this case, our Guard Attempt is the "PIN" field of the incoming request body, so our agent method will likely want
-this to match the PIN of the request's current [Realm](#realm) so it can decide to allow the operation to continue).
+this to match the PIN of the request's current Realm so it can decide whether to allow the operation to continue).
 
 The handler will pass this context to the main agent method that it invokes (e.g. `domain.EntryAgent.CreateEntry(ctx ....)`).
 

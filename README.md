@@ -16,19 +16,23 @@ Whoever is closest at the end of the season wins the kitty. And sometimes gets t
 
 ### Who needs pen-and-paper?? 📝
 
-This project is a digital representation of the game, which implements a Frontend and Backend for handling new entries,
-payment workflows, management of predictions and scoring of points (which are now accrued on a cumulative basis throughout
-the season instead of just at the end).
+This project is a digital representation of the game with some additional "gamification" to retain engagement throughout
+the season (players can swap the position of two teams in their table each Match Week).
 
-It's written in [Go](https://golang.org/), using [templates](https://golang.org/pkg/text/template/) for HTML.
+This repo implements a frontend and backend for handling new entries, payment workflows, management of predictions and
+scoring of points (which are now accrued on a cumulative basis throughout the season instead of just at the end).
 
-[Vuejs](https://vuejs.org/) and [Bootstrap](https://getbootstrap.com/) are used on the Frontend.
+## Stack 💻
+
+The project is written predominantly in [Go](https://golang.org/), using [templates](https://golang.org/pkg/text/template/)
+to generate  dynamic HTML.
+
+[Vuejs](https://vuejs.org/) and [Bootstrap](https://getbootstrap.com/) are used on the frontend.
+
 [Sass](https://sass-lang.com/) is used for pre-processing CSS and [npm](https://npmjs.com/) + [Webpack](https://webpack.js.org/)
 are used for building assets.
 
-It's hosted at [prem.footyga.me](https://prem.footyga.me) (current Premier League season) and
-[champ.footyga.me](https://champ.footyga.me) (current EFL Championship season).
-
+It's hosted at [play.taybl.app](https://play.taybl.app).
 
 ## Local Environment ♻️ 🌳
 
@@ -60,7 +64,7 @@ Leaving the following values blank will result in the default behaviour as descr
 ### Fully-Dockerised Setup
 
 Look out for CPU with this option. Where the asset builds are watching for changes across a network, it
-can get quite resource-hungry...
+can become quite resource-hungry...
 
 #### Requirements
 
@@ -131,12 +135,12 @@ To cleanup the changes made by the demo seeder, execute the file `service/cmd/de
 
 ### Entries and Predictions
 
-Users can sign-up to create an [Entry](docs/domain-knowledge.md#entry) and make their first [Prediction](docs/domain-knowledge.md#entryprediction)
+Players can sign-up to create an [Entry](docs/domain-knowledge.md#entry) and make their first [Prediction](docs/domain-knowledge.md#entryprediction)
 before the [Season](docs/domain-knowledge.md#season) begins.
 
 They can make subsequent changes to their [Prediction](docs/domain-knowledge.md#entryprediction) throughout the
 [Season](docs/domain-knowledge.md#season) - swapping the positions of a maximum two [Teams](docs/domain-knowledge.md#team)
-per [Game Week](#game-weeks).
+per [Match Week](#match-weeks).
 
 Timeframes are configured independently for each [Season](docs/domain-knowledge.md#season).
 
@@ -163,52 +167,57 @@ This is a single API endpoint that is protected by Basic Auth. These Basic Auth 
 Payment can be skipped when running locally for debugging purposes, by leaving the `.env` variable named `PAYPAL_CLIENT_ID`
 with an empty value.
 
-### Scoring
+### Match Weeks
 
-For every [Game Week](#game-weeks), each [Prediction](docs/domain-knowledge.md#entryprediction) receives a score, which produces
-a [Scored Prediction](docs/domain-knowledge.md#scoredentryprediction) for that Game Week.
-
-[Scored Predictions](docs/domain-knowledge.md#scoredentryprediction) receive 1 "penalty point" for each position that a
-[Team](docs/domain-knowledge.md#team) has been placed incorrectly within the corresponding Prediction.
-
-For example, if Team A are in 3rd place but are predicted to finish 1st, `2` penalty points will be received.
-
-Likewise, placing Team B at the bottom (in 20th), who currently sit in 15th, will cause `5` penalty points to be issued.
-
-Placing a team in the exact position they are in the real-world table will receive `0` penalty points.
-
-### Game Weeks
-
-Each [Season](docs/domain-knowledge.md#season) is broken down into a number of "Game Weeks", which work exactly the same as in
+Each [Season](docs/domain-knowledge.md#season) is broken down into a number of "Match Weeks", which work the same as in
 [Fantasy Football](https://fantasy.premierleague.com/).
 
-i.e. For a Premier League season with 20 teams, there are 38 Game Weeks.
-For a Championship season with 24 teams, there are 46 Game Weeks.
+i.e. For a Premier League season with 20 teams, there are 38 Match Weeks.
+For a Championship season with 24 teams, there are 46 Match Weeks.
 
-Once a new Game Week starts, the previous Game Week’s score is frozen and the next Game Week begins with a score of `0`.
+Once a new Match Week starts, the previous Match Week’s score is frozen and the next Match Week begins with a fresh score.
 
-### LeaderBoard
+### Scoring
 
-The total cumulative score for all [Scored Predictions](docs/domain-knowledge.md#scoredentryprediction) is calculated and used to
-produce the [LeaderBoard](docs/domain-knowledge.md#leaderboard). The [LeaderBoard](docs/domain-knowledge.md#leaderboard)
-is topped by the [Entry](docs/domain-knowledge.md#entry) with the lowest cumulative score of penalty points.
+For every [Match Week](#match-weeks), each [Prediction](docs/domain-knowledge.md#entryprediction) receives a score, which produces
+a [Scored Prediction](docs/domain-knowledge.md#scoredentryprediction) for that Match Week.
 
-In the event of a tie on the [LeaderBoard](docs/domain-knowledge.md#leaderboard), the tied [Entries](docs/domain-knowledge.md#entry) will
-be ordered by the **minimum** score that each one has gained throughout all Game Weeks so far, lowest first. You can think
-of this as the equivalent of “goal difference” when ranking teams on equal points in the real-world.
+Each player begins with 100 points every Match Week, and accrues 1 "hit point" for each position that a [Team](docs/domain-knowledge.md#team)
+has been placed incorrectly within their Prediction.
+
+For example, if Team A are in 3rd place but are predicted to be in 1st, `2` hit points will be accrued.
+
+Likewise, placing Team B at the bottom (in 20th), who sit in 15th in the real table, will accrue `5` hit points.
+
+Placing a team in the exact position they are in the real-world table will receive `0` hit points.
+
+The total number of hit points is added up and then deducted from the player's initial 100 points, to give them their
+overall score for that Match Week.
+
+### Leaderboard
+
+The total cumulative score for all players' [Scored Predictions](docs/domain-knowledge.md#scoredentryprediction) across
+all [Match Weeks](#match-weeks) forms the foundation of the [Leaderboard](docs/domain-knowledge.md#leaderboard).
+The Leaderboard is topped by the player with the highest cumulative score across all Match Weeks.
+
+In the event of a tie on the Leaderboard, the tied players will be ordered by the **maximum** score that each one has
+gained throughout all Match Weeks so far, highest first. You can think  of this as the equivalent of “goal difference”
+when ranking teams who are on equal points in a real-world league table.
 
 ### Data Source
 
 The real-world league table data used to calculate each score is retrieved from [football-data.org](https://www.football-data.org/).
 
-This data source is polled every 15 minutes as a cron task. At this point, the most recently made [Prediction](docs/domain-knowledge.md#entryprediction)
+This data source is polled every 15 minutes as a cron task.
+
+At this point, the most recently made [Prediction](docs/domain-knowledge.md#entryprediction)
 for each [Entry](docs/domain-knowledge.md#entry) is used to calculate the [Scored Prediction](docs/domain-knowledge.md#scoredentryprediction)
-for the current Game Week. It is also used to determine if a new Game Week has begun, or if the final Game Week has
+for the current Match Week. It is also used to determine if a new Match Week has begun, or if the final Match Week has
 ended (at which point the [Season](docs/domain-knowledge.md#season) is considered to be complete and is therefore finalised).
 
 ### FAQ
 
-The Frontend also provides an FAQ page which can be customised on a per-[Realm](docs/domain-knowledge.md#realm) basis. 
+The frontend accommodates an FAQ page which can be customised on a per-[Realm](docs/domain-knowledge.md#realm) basis. 
 
 
 ## Domain Knowledge

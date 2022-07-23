@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-// TODO: feat - update CHANGELOG
+## [2.3.0] - 2022-07-24
 
 ### Added
 
@@ -113,7 +113,7 @@ through user's previous game week results within the same view.
 
 ### Changed
 - Replace sequence of Season prediction windows, with a single window/timeframe.
-- Implement ranking limit: permit a maximum of two teams to be swapped per Round/Game Week.
+- Implement ranking limit: permit a maximum of two teams to be swapped per Round/Match Week.
 - Replace email/short code login with magic link
 
 ### Removed
@@ -167,7 +167,7 @@ Perform this filter explicitly, by iterating over response payload and checking 
 
 ### Fixed
 - Bug where the most recently created Scored Entry Prediction was not necessarily being retrieved for each specified
-combination of Entry/Round Number (Game Week) when building the Leaderboard, due to spurious behaviour of MySQL's
+combination of Entry/Round Number (Match Week) when building the Leaderboard, due to spurious behaviour of MySQL's
 Group/Order By functions.
 - Amended the sub-queries that are used to select Entries' cumulative scores by Realm, such that the order of records
 produced when descending by Scored Entry Prediction's `created_at` field is guaranteed to be retained by the parent query. 
@@ -206,7 +206,8 @@ Standings object that has just been received from data client.
 ### Added
 - This project to the Open Source "dimension"...
 
-[Unreleased]: https://github.com/AdamJSc/prediction-league/compare/v2.2.1...HEAD
+[Unreleased]: https://github.com/AdamJSc/prediction-league/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/AdamJSc/prediction-league/compare/v2.2.1...v2.3.0
 [2.2.1]: https://github.com/AdamJSc/prediction-league/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/AdamJSc/prediction-league/compare/v2.1.5...v2.2.0
 [2.1.5]: https://github.com/AdamJSc/prediction-league/compare/v2.1.4...v2.1.5
