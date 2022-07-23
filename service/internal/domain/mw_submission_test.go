@@ -42,7 +42,7 @@ func TestNewMatchWeekSubmissionAgent(t *testing.T) {
 func TestMatchWeekSubmissionAgent_UpsertByLegacy(t *testing.T) {
 	t.Cleanup(truncate)
 
-	seedID := parseUUID(t, uuidAll1s)
+	seedID := newUUID(t)
 	seedCreatedAt := testDate.Add(-24 * time.Hour)
 	seed := seedMatchWeekSubmission(t, generateMatchWeekSubmission(t, seedID, seedCreatedAt))
 
@@ -267,10 +267,10 @@ func seedEntry(t *testing.T, seed *domain.Entry) *domain.Entry {
 	return seed
 }
 
-func parseUUID(t *testing.T, id string) uuid.UUID {
+func newUUID(t *testing.T) uuid.UUID {
 	t.Helper()
 
-	val, err := uuid.Parse(id)
+	val, err := uuid.NewUUID()
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -48,7 +48,7 @@ func TestMatchWeekResultRepo_GetBySubmissionID(t *testing.T) {
 
 	ctx := context.Background()
 
-	seedID := parseUUID(t, uuidAll1s)
+	seedID := newUUID(t)
 	seed := seedMatchWeekResult(t, generateMatchWeekResult(t, seedID, modifierSummaries, testDate))
 
 	repo, err := mysqldb.NewMatchWeekResultRepo(db, nil)
@@ -67,7 +67,7 @@ func TestMatchWeekResultRepo_GetBySubmissionID(t *testing.T) {
 	})
 
 	t.Run("match week result that does not exist by submission id must return the expected error", func(t *testing.T) {
-		nonExistentID := parseUUID(t, uuidAll2s)
+		nonExistentID := newUUID(t)
 		_, err := repo.GetBySubmissionID(ctx, nonExistentID)
 		if !errors.As(err, &domain.MissingDBRecordError{}) {
 			t.Fatalf("want missing db record error, got %+v (%T)", err, err)
@@ -98,7 +98,7 @@ func TestMatchWeekResultRepo_Insert(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		mwResult := generateMatchWeekResult(t, parseUUID(t, uuidAll1s), modifierSummaries, time.Time{}) // empty createdAt timestamp
+		mwResult := generateMatchWeekResult(t, newUUID(t), modifierSummaries, time.Time{}) // empty createdAt timestamp
 
 		want := cloneMatchWeekResult(mwResult) // capture state before insert
 		want.CreatedAt = createdAt             // should be overridden on insert
@@ -167,7 +167,7 @@ func TestMatchWeekResultRepo_Update(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		submissionID := parseUUID(t, uuidAll1s)
+		submissionID := newUUID(t)
 		seed := seedMatchWeekResult(t, generateMatchWeekResult(t, submissionID, modifierSummaries, createdAt))
 
 		// change all available fields to non-empty values
@@ -202,7 +202,7 @@ func TestMatchWeekResultRepo_Update(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		submissionID := parseUUID(t, uuidAll2s)
+		submissionID := newUUID(t)
 		seed := seedMatchWeekResult(t, generateMatchWeekResult(t, submissionID, modifierSummaries, createdAt))
 
 		// update with empty modifiers (ensure that old values are removed from linked table)
@@ -237,7 +237,7 @@ func TestMatchWeekResultRepo_Update(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		mwResult := &domain.MatchWeekResult{MatchWeekSubmissionID: parseUUID(t, uuidAll3s)}
+		mwResult := &domain.MatchWeekResult{MatchWeekSubmissionID: newUUID(t)}
 
 		wantErrType := domain.MissingDBRecordError{}
 		gotErr := repo.Update(ctx, mwResult)

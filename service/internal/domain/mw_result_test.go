@@ -48,7 +48,7 @@ var (
 )
 
 func TestNewMatchWeekResult(t *testing.T) {
-	id := parseUUID(t, `12345678-1234-1234-1234-123456789012`)
+	id := newUUID(t)
 
 	t.Run("no modifiers must populate match week result as expected", func(t *testing.T) {
 		wantMWResult := &domain.MatchWeekResult{
@@ -395,7 +395,7 @@ func TestMatchWeekResultAgent_UpsertBySubmissionID(t *testing.T) {
 	t.Cleanup(truncate)
 
 	seedCreatedAt := testDate.Add(-24 * time.Hour)
-	seed := seedMatchWeekResult(t, generateMatchWeekResult(t, parseUUID(t, uuidAll1s), modifierSummaries, seedCreatedAt))
+	seed := seedMatchWeekResult(t, generateMatchWeekResult(t, newUUID(t), modifierSummaries, seedCreatedAt))
 
 	ctx := context.Background()
 
@@ -404,7 +404,7 @@ func TestMatchWeekResultAgent_UpsertBySubmissionID(t *testing.T) {
 		repo := newMatchWeekResultRepo(t, repoDate)
 		agent := newMatchWeekResultAgent(t, repo)
 
-		upsertID := parseUUID(t, uuidAll2s)
+		upsertID := newUUID(t)
 		toUpsert := generateMatchWeekResult(t, upsertID, altModifierSummaries, time.Time{}) // will not be found by submission id, so should insert a new entry
 
 		wantUpserted := cloneMatchWeekResult(toUpsert) // capture state prior to upsert

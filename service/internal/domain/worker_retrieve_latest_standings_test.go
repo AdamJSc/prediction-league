@@ -336,7 +336,7 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 	}
 
 	t.Run("valid entry prediction and standings must generate the expected scored entry prediction", func(t *testing.T) {
-		submissionRepoID := parseUUID(t, uuidAll1s)
+		submissionRepoID := newUUID(t)
 		submissionRepoDate := testDate.Add(-2 * time.Hour)
 		mwSubmissionRepo := newMatchWeekSubmissionRepo(t, submissionRepoID, submissionRepoDate)
 		mwSubmissionAgent := newMatchWeekSubmissionAgent(t, mwSubmissionRepo)
@@ -415,7 +415,7 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 	})
 
 	t.Run("valid entry prediction and standings must generate the expected scored entry prediction", func(t *testing.T) {
-		submissionRepoID := parseUUID(t, uuidAll2s)
+		submissionRepoID := newUUID(t)
 		submissionRepoDate := testDate.Add(-2 * time.Hour)
 		mwSubmissionRepo := newMatchWeekSubmissionRepo(t, submissionRepoID, submissionRepoDate)
 		mwSubmissionAgent := newMatchWeekSubmissionAgent(t, mwSubmissionRepo)
@@ -512,7 +512,7 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 	})
 
 	t.Run("failure to upsert match week submission must return the expected error", func(t *testing.T) {
-		id := parseUUID(t, uuidAll3s)
+		id := newUUID(t)
 		badMWSubmissionRepo, err := mysqldb.NewMatchWeekSubmissionRepo(badDB, newUUIDFunc(id), nil)
 		if err != nil {
 			t.Fatal(err)
@@ -542,7 +542,7 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 	})
 
 	t.Run("failure to upsert match week result must return the expected error", func(t *testing.T) {
-		id := parseUUID(t, uuidAll4s)
+		id := newUUID(t)
 		mwSubmissionRepo := newMatchWeekSubmissionRepo(t, id, testDate)
 		mwSubmissionAgent := newMatchWeekSubmissionAgent(t, mwSubmissionRepo)
 

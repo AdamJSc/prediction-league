@@ -45,10 +45,6 @@ var (
 
 	testDate time.Time
 	utc      *time.Location
-
-	uuidAll1s = `11111111-1111-1111-1111-111111111111`
-	uuidAll2s = `22222222-2222-2222-2222-222222222222`
-	uuidAll3s = `33333333-3333-3333-3333-333333333333`
 )
 
 func TestMain(m *testing.M) {
@@ -138,7 +134,7 @@ func TestMatchWeekSubmissionRepo_GetByID(t *testing.T) {
 
 	ctx := context.Background()
 
-	seedID := parseUUID(t, uuidAll1s)
+	seedID := newUUID(t)
 	seed := seedMatchWeekSubmission(t, generateMatchWeekSubmission(t, seedID, testDate))
 
 	repo, err := mysqldb.NewMatchWeekSubmissionRepo(db, nil, nil)
@@ -157,7 +153,7 @@ func TestMatchWeekSubmissionRepo_GetByID(t *testing.T) {
 	})
 
 	t.Run("match week submission that does not exist must return the expected error", func(t *testing.T) {
-		nonExistentID := parseUUID(t, uuidAll2s)
+		nonExistentID := newUUID(t)
 		_, err := repo.GetByID(ctx, nonExistentID)
 		if !errors.As(err, &domain.MissingDBRecordError{}) {
 			t.Fatalf("want missing db record error, got %+v (%T)", err, err)
@@ -170,7 +166,7 @@ func TestMatchWeekSubmissionRepo_GetByLegacyIDAndMatchWeekNumber(t *testing.T) {
 
 	ctx := context.Background()
 
-	seed := seedMatchWeekSubmission(t, generateMatchWeekSubmission(t, parseUUID(t, uuidAll1s), testDate))
+	seed := seedMatchWeekSubmission(t, generateMatchWeekSubmission(t, newUUID(t), testDate))
 
 	repo, err := mysqldb.NewMatchWeekSubmissionRepo(db, nil, nil)
 	if err != nil {
@@ -188,7 +184,7 @@ func TestMatchWeekSubmissionRepo_GetByLegacyIDAndMatchWeekNumber(t *testing.T) {
 	})
 
 	t.Run("match week submission that does not exist by legacy id must return the expected error", func(t *testing.T) {
-		nonExistentID := parseUUID(t, uuidAll2s)
+		nonExistentID := newUUID(t)
 		_, err := repo.GetByLegacyIDAndMatchWeekNumber(ctx, nonExistentID, seed.MatchWeekNumber)
 		if !errors.As(err, &domain.MissingDBRecordError{}) {
 			t.Fatalf("want missing db record error, got %+v (%T)", err, err)
@@ -208,7 +204,7 @@ func TestMatchWeekSubmissionRepo_Insert(t *testing.T) {
 	t.Cleanup(truncate)
 
 	ctx := context.Background()
-	insertID := parseUUID(t, uuidAll1s)
+	insertID := newUUID(t)
 	createdAt := testDate
 
 	t.Run("passing nil match week submission must generate no error", func(t *testing.T) {
@@ -298,8 +294,8 @@ func TestMatchWeekSubmissionRepo_Update(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		seed1 := seedMatchWeekSubmission(t, generateMatchWeekSubmission(t, parseUUID(t, uuidAll1s), createdAt))
-		seed2 := seedMatchWeekSubmission(t, generateMatchWeekSubmission(t, parseUUID(t, uuidAll2s), createdAt))
+		seed1 := seedMatchWeekSubmission(t, generateMatchWeekSubmission(t, newUUID(t), createdAt))
+		seed2 := seedMatchWeekSubmission(t, generateMatchWeekSubmission(t, newUUID(t), createdAt))
 
 		changedSeed := &domain.MatchWeekSubmission{
 			ID:                      seed1.ID,
@@ -332,7 +328,7 @@ func TestMatchWeekSubmissionRepo_Update(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		submission := &domain.MatchWeekSubmission{ID: parseUUID(t, uuidAll3s)}
+		submission := &domain.MatchWeekSubmission{ID: newUUID(t)}
 
 		wantErrType := domain.MissingDBRecordError{}
 		gotErr := repo.Update(ctx, submission)
@@ -426,10 +422,10 @@ func seedEntry(t *testing.T, seed *domain.Entry) *domain.Entry {
 	return seed
 }
 
-func parseUUID(t *testing.T, id string) uuid.UUID {
+func newUUID(t *testing.T) uuid.UUID {
 	t.Helper()
 
-	val, err := uuid.Parse(id)
+	val, err := uuid.NewUUID()
 	if err != nil {
 		t.Fatal(err)
 	}
