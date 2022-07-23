@@ -119,7 +119,7 @@ func GetTeamCollection() TeamCollection {
 			ClientID:  TeamIdentifier{TeamID: 354},
 			Name:      "Crystal Palace",
 			ShortName: "Palace",
-			CrestURL:  "https://upload.wikimedia.org/wikipedia/en/0/0c/Crystal_Palace_FC_logo.svg",
+			CrestURL:  "https://upload.wikimedia.org/wikipedia/en/thumb/a/a2/Crystal_Palace_FC_logo_%282022%29.svg/385px-Crystal_Palace_FC_logo_%282022%29.svg.png",
 		},
 		"DCFC": {
 			ID:        "DCFC",
