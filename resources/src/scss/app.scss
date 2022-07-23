@@ -102,9 +102,13 @@ a {
       font-size: 0.3em;
     }
 
-    .repo-link {
+    .social-icons {
       display: inline-block;
       font-size: 0.7em;
+
+      a {
+        text-decoration: none;
+      }
     }
   }
 }

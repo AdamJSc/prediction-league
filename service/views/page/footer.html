@@ -15,10 +15,15 @@
                         </div>
                         <div class="right-section">
                                 <div class="support-email status-information">email: {{.Realm.Contact.EmailSanitised}}</div>
-                                <div class="repo-link">
-                                        <a href="https://github.com/AdamJSc/prediction-league" target="_blank">
-                                                <i class="fab fa-github" aria-hidden="true"></i>
-                                        </a>
+                                <div class="social-icons">
+                                    {{if .Realm.Site.TwitterUsername}}
+                                    <a href="https://twitter.com/{{.Realm.Site.TwitterUsername}}" target="_blank">
+                                        <i class="fa-brands fa-twitter"></i>
+                                    </a>
+                                    {{end}}
+                                    <a href="https://github.com/AdamJSc/prediction-league" target="_blank">
+                                        <i class="fab fa-github" aria-hidden="true"></i>
+                                    </a>
                                 </div>
                         </div>
                 </div>
