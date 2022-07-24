@@ -10,10 +10,10 @@ import (
 func getLeaderBoardPageData(ctx context.Context, entryAgent *domain.EntryAgent, standingsAgent *domain.StandingsAgent, leaderBoardAgent *domain.LeaderBoardAgent, sc domain.SeasonCollection, tc domain.TeamCollection, cl domain.Clock) view.LeaderBoardPageData {
 	var data view.LeaderBoardPageData
 
-	ctxRealm := domain.RealmFromContext(ctx)
+	realm := domain.RealmFromContext(ctx)
 
 	// retrieve realm's current season ID
-	seasonID := ctxRealm.SeasonID
+	seasonID := realm.Config.SeasonID
 	data.Season.ID = seasonID
 
 	// retrieve round number
@@ -72,7 +72,7 @@ func getLeaderBoardPageData(ctx context.Context, entryAgent *domain.EntryAgent, 
 	// only retain entries if they belong to the current realm
 	mappedEntries := make(map[string]string)
 	for _, entry := range entries {
-		if entry.RealmName == ctxRealm.Name {
+		if entry.RealmName == realm.Config.Name {
 			mappedEntries[entry.ID.String()] = entry.EntrantNickname
 		}
 	}

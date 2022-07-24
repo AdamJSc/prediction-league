@@ -2,6 +2,11 @@
                                         </div> <!-- close .col-md-8 offset-md-2 -->
                                 </div> <!-- close .row -->
                         </div> <!-- close .container-fluid -->
+                        {{if .Realm.Site.FooterMessage}}
+                        <div class="pre-footer-message">
+                            {{.Realm.Site.FooterMessage}}
+                        </div>
+                        {{end}}
                 </div> <!-- close .content-wrapper -->
                 <div class="footer">
                         <div class="left-section">
@@ -9,11 +14,16 @@
                                 <div class="build-timestamp status-information">released: {{.BuildTimestamp}}</div>
                         </div>
                         <div class="right-section">
-                                <div class="support-email status-information">email: {{.SupportEmailPlainText}}</div>
-                                <div class="repo-link">
-                                        <a href="https://github.com/AdamJSc/prediction-league" target="_blank">
-                                                <i class="fab fa-github" aria-hidden="true"></i>
-                                        </a>
+                                <div class="support-email status-information">email: {{.Realm.Contact.EmailSanitised}}</div>
+                                <div class="social-icons">
+                                    {{if .Realm.Site.TwitterUsername}}
+                                    <a href="https://twitter.com/{{.Realm.Site.TwitterUsername}}" target="_blank">
+                                        <i class="fa-brands fa-twitter"></i>
+                                    </a>
+                                    {{end}}
+                                    <a href="https://github.com/AdamJSc/prediction-league" target="_blank">
+                                        <i class="fab fa-github" aria-hidden="true"></i>
+                                    </a>
                                 </div>
                         </div>
                 </div>

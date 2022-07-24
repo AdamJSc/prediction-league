@@ -21,8 +21,8 @@ const (
 type Season struct {
 	ID                  string             // representation of season's start/end year along with instance number, e.g. 202021_1
 	ClientID            ResourceIdentifier // identifier within the football data source
-	Name                string             // season name, e.g. Premier League 2021/22
-	ShortName           string             // short name, e.g. Prem 21/22
+	Name                string             // season name, e.g. Premier League 2022/23
+	ShortName           string             // short name, e.g. Prem 22/23
 	Live                TimeFrame          // timeframe for which the season is live (real-world standings will be consumed during this timeframe)
 	EntriesAccepted     TimeFrame          // timeframe within which new entries will be accepted
 	PredictionsAccepted TimeFrame          // timeframe within which changes to entry predictions will be accepted
@@ -148,7 +148,7 @@ type ResourceIdentifier interface {
 
 // ValidateSeason returns an error if validation rules are not satisfied for the provided Season
 func ValidateSeason(s Season, tc TeamCollection) error {
-	if s.ID == fakeSeasonID {
+	if s.ID == FakeSeasonID {
 		// don't validate our faked season
 		return nil
 	}
@@ -174,9 +174,6 @@ func ValidateSeason(s Season, tc TeamCollection) error {
 	}
 	if !s.EntriesAccepted.Valid() {
 		return errors.New("entries accepted timeframe must be valid")
-	}
-	if s.EntriesAccepted.OverlapsWith(s.Live) {
-		return errors.New("entries accepted timeframe must have elapsed before live timeframe begins")
 	}
 	if !s.PredictionsAccepted.Valid() {
 		return errors.New("predictions accepted timeframe must be valid")

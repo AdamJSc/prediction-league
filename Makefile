@@ -11,7 +11,7 @@ app.run:
 test.run:
 	docker-compose up -d db_test
 	sleep 5
-	go test ./...
+	go test -p 1 --count=1 ./...
 	docker-compose stop db_test
 
 # Run via Docker

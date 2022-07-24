@@ -5,7 +5,7 @@ pipelines:
     v*.*.*:
       - step:
           name: Run Go tests
-          image: golang:1.16
+          image: golang:1.18
           caches:
             - gomodules
           services:
@@ -22,7 +22,7 @@ pipelines:
             # run go tests
             - export MYSQL_URL="test-db-user:test-db-pwd@tcp(localhost:3306)/test-db-name?parseTime=true"
             - go mod vendor
-            - go test ./...
+            - go test -p 1 ./...
       - step:
           name: Run Node build
           image: node:13.10

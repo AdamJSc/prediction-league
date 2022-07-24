@@ -1,0 +1,15 @@
+faqs: # content to populate the faqs page with
+
+  - question: "Which would you rather bee or a wasp?"
+    answer: "That depends on what we mean by **bee**.
+
+    In the traditional sense, a bee would be far more aware of its mortality following a single sting,
+    so would logically cause _fewer_ injuries to [humans](https://en.wikipedia.org/wiki/Human).
+
+    So, on the grounds of compassion, a bee."
+
+  - question: "What is the average air speed velocity of a laden swallow?"
+    answer: "The real question is... \"_How did the coconut get to medieval England?_\""
+
+  - question: "What's the Frequency, Kenneth?"
+    answer: "\"_Somewhere between 88.1 and 90.2 MHz on FM_\" - **Mr Bruce**"

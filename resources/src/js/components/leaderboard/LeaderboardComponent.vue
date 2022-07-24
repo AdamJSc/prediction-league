@@ -63,7 +63,7 @@
       initialLastUpdatedUnix: { // last updated timestamp of leaderboard relating to initial round number
         type: String
       },
-      initialRankings: { // array of rankings objects that pertain to initial round number, with the schema id, position, score, min_score, total_score, movement
+      initialRankings: { // array of rankings objects that pertain to initial round number, with the schema id, position, score, max_score, total_score, movement
         type: Array
       },
       roundNumber: { // round number that is inc/decremented by navigation controls

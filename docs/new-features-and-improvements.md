@@ -33,67 +33,14 @@ at the top of each test case for clarity.
 * Should this attempt fail, the send is currently not reattempted - although, a user's experience is unlikely to be
 significantly impaired by lacking this information (it's more of a "nice to know").
 
-* However, the same is also true of transactional emails, such as "new entry" confirmations and Short Code resets. The
-non-receipt of this type of email **will** prevent the user from engaging with the application.
+* However, the same is also true of transactional emails, such as "new entry" confirmations. The non-receipt of this 
+type of email **will** prevent the user from engaging with the application.
 
 * A retry mechanism should be built such that any emails whose send attempt fails are retried a maximum of 3 times in
 total with an increasing cool-off period of several seconds occurring between each attempt.
 
 * Any emails that fail on all 3 attempts should be sent to a "dead letter" queue, which persists external to the
 existing in-memory queue/channel so that appropriate subsequent action can be taken.
-
-## ✅ Short Codes
-
-### Removed in v2.1.0
-
-* A Short Code is a 6-character alphanumeric string that is affiliated with an [Entry](domain-knowledge.md#entry).
-
-* It is randomly-generated at the point an [Entry](domain-knowledge.md#entry) is created, and confirmed to the end-user
-within the "new entry" transactional email.
-
-* The initial intention behind the Short Code was to serve as a quick means of authentication for operations that will
-only occur a handful of times throughout a season (i.e. a user changing their [Prediction](domain-knowledge.md#entryprediction)).
-
-* The likelihood of users' data being compromised is therefore reduced in so much as there is no risk that a user will
-re-use one of their existing passwords from another (more data-sensitive) application, if we were to require them to
-set this themselves.
-
-* Also, the Short Code cannot be used to access or modify personal details such as name or email address either, so the decision
-was made to store this in plain-text for convenience.
-
-* However, as development of the system has progressed, the lines between a Short Code and a traditional password (within
-the context of this project) have become somewhat ambiguous.
-
-* Given the infrequency by which a user will actually need to make use of their Short Code, it is unlikely that they will
-remember what their Short Code actually is when they come to need it. If they have deleted, or are unable to locate,
-their "new entry" confirmation email, they have no way of retrieving their existing Short Code.
-
-* For this reason, a Short Code Reset workflow has been developed, whereby a user can generate themselves a new random
-Short Code via a series of double opt-in "magic link" emails - a bit like the way in which a traditional password may
-be reset...
-
-* This brings about a couple of issues in particular:
-
-    * The new Short Code remains stored against its [Entry](domain-knowledge.md#entry) beyond its initial
-    "consumption"/first usage - until such time as it is reset again by the user. In effect, this is acting like a
-    traditional password - except for the fact that it is still present in the user's reset confirmation email, which is
-    in no way obfuscated...
-
-    * Resetting a Short Code overrides the previous one, which is discarded entirely. This means that at some point in
-    the future, any user could **theoretically** be randomly-generated the exact same Short Code that was previously used
-    by a different user (who has perhaps even entered the game via a different [Realm](domain-knowledge.md#realm) and
-    [Season](domain-knowledge.md#season)).
-
-* Therefore, a decision should be made as to whether Short Codes are retained longer-term, or replaced by a traditional
-password mechanism.
-
-    * If Short Codes are to be retained, they should become **ephemeral** - i.e. single-use for a limited timeframe, and
-    discarded as soon as they have been consumed (so more like a typical "magic link").
-    
-    * Alternatively, a traditional password will require the usual hashing, additional considerations around storage and
-    security of the system's data source, and sensible UX workflows that enable a user to set/reset their own password
-    at any time (and not just during the pre-determined timeframe windows that allow a [Prediction](domain-knowledge.md#entryprediction)
-    to be updated).
 
 ## Tokens
 
@@ -123,8 +70,8 @@ after the first [Entry](domain-knowledge.md#entry) creation stage has been succe
 
 ## Cookies / Logout
 
-* When user "logs out" after making a prediction, consider clearing the cookie on the Backend (and deleting the token)
-rather than just the Frontend
+* When user "logs out" after making a prediction, consider explicitly deleting the token on the backend rather than
+just removing from frontend storage.
 
 ## Concurrency within Scheduled Tasks
 
@@ -151,7 +98,7 @@ and returns a `bool`. An implementation of this interface can then be passed to 
 resultant source file "chunks" are too large.
 
 * As a quick workaround for this, Vue is instead loaded from a CDN via a Frontend script tag. However, this means that
-Vue will run in **either** development or production mode.
+Vue will **only** run in one of development or production mode.
 
 * Switching between the two is no longer a case of changing Webpack's build flag, and instead requires changing the script
 tag within the HTML template itself.

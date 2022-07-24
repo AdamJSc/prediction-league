@@ -35,7 +35,9 @@
         <tbody>
         <tr v-for="ranking in scoredEntryToShow.rankings" class="rankings-row">
           <td class="position">{{ranking.position}}</td>
-          <td class="crest-outer"><div class="crest"><img :alt="getTeamByID(ranking.id).name" :src="getTeamByID(ranking.id).crest_url" /></div></td>
+          <td class="crest-outer" style="height:100%">
+            <div class="bg-img-fill" :style="getTeamCrestBGStyle(ranking.id)"></div>
+          </td>
           <td><span class="name">{{getTeamByID(ranking.id).short_name}}</span></td>
           <td class="score text-right text-highlight">{{ranking.score}}</td>
           <td class="meta_position text-right text-lolight">{{ranking.meta_position}}</td>
@@ -87,6 +89,10 @@
         }
         return null
       },
+      getTeamCrestBGStyle: function(id) {
+        let team = this.getTeamByID(id)
+        return `background-image:url('${team.crest_url}')`
+      },
       resetErrorMessages: function() {
         this.errorMessages = []
       },
@@ -119,7 +125,7 @@
           method: 'get',
           url: `/api/entry/${entryId}/scored/${roundNumber}`
         }).then(function(response) {
-          // get array of rankings objects that pertain to initial round number, with the schema id, position, score, min_score, total_score, movement
+          // get array of rankings objects that pertain to initial round number, with the schema id, position, score, max_score, total_score, movement
           let rankings = response.data.data.scored.rankings
           let roundScore = response.data.data.scored.round_score
           for (let i in rankings) {

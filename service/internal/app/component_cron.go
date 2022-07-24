@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/robfig/cron/v3"
 	"prediction-league/service/internal/domain"
 	"strings"
+
+	"github.com/robfig/cron/v3"
 )
 
 const (
@@ -24,20 +25,22 @@ const (
 
 // CronHandler encapsulates the logic required to generate our cron jobs
 type CronHandler struct {
-	ea   *domain.EntryAgent
-	sa   *domain.StandingsAgent
-	sepa *domain.ScoredEntryPredictionAgent
-	ca   *domain.CommunicationsAgent
-	sc   domain.SeasonCollection
-	tc   domain.TeamCollection
-	rc   domain.RealmCollection
-	cl   domain.Clock
-	l    domain.Logger
-	fds  domain.FootballDataSource
+	entryAgent                 *domain.EntryAgent
+	standingsAgent             *domain.StandingsAgent
+	scoredEntryPredictionAgent *domain.ScoredEntryPredictionAgent
+	commsAgent                 *domain.CommunicationsAgent
+	mwSubmissionAgent          *domain.MatchWeekSubmissionAgent
+	mwResultAgent              *domain.MatchWeekResultAgent
+	seasonCollection           domain.SeasonCollection
+	teamCollection             domain.TeamCollection
+	realmCollection            domain.RealmCollection
+	clock                      domain.Clock
+	logger                     domain.Logger
+	footballClient             domain.FootballDataSource
 }
 
 func (c *CronHandler) Run(_ context.Context) error {
-	c.l.Info("running cron handler...")
+	c.logger.Info("running cron handler...")
 	cr, err := c.generateCron()
 	if err != nil {
 		return fmt.Errorf("cannot generate cron: %w", err)
@@ -47,21 +50,21 @@ func (c *CronHandler) Run(_ context.Context) error {
 }
 
 func (c *CronHandler) Halt(_ context.Context) error {
-	c.l.Info("halting cron handler...")
+	c.logger.Info("halting cron handler...")
 	return nil
 }
 
 // generateCron generates a populated cron
 func (c *CronHandler) generateCron() (*cron.Cron, error) {
 	// get unique season IDs for all realms
-	sIDs := make(map[string]struct{})
-	for _, rlm := range c.rc {
-		sIDs[rlm.SeasonID] = struct{}{}
+	seasonIDs := make(map[string]struct{})
+	for _, realm := range c.realmCollection {
+		seasonIDs[realm.Config.SeasonID] = struct{}{}
 	}
 
 	seasons := make([]domain.Season, 0)
-	for id := range sIDs {
-		s, err := c.sc.GetByID(id)
+	for id := range seasonIDs {
+		s, err := c.seasonCollection.GetByID(id)
 		if err != nil {
 			return nil, fmt.Errorf("cannot retrieve season by id '%s': %w", id, err)
 		}
@@ -103,15 +106,29 @@ func (c *CronHandler) generateJobConfigs(seasons []domain.Season) ([]*jobConfig,
 }
 
 // newRetrieveLatestStandingsJob returns a new job that retrieves the latest standings, pertaining to the provided season
-func (c *CronHandler) newRetrieveLatestStandingsJob(s domain.Season) (*jobConfig, error) {
-	jobName := strings.ToLower(fmt.Sprintf("retrieve-latest-standings-%s", s.ID))
+func (c *CronHandler) newRetrieveLatestStandingsJob(season domain.Season) (*jobConfig, error) {
+	jobName := strings.ToLower(fmt.Sprintf("retrieve-latest-standings-%s", season.ID))
 
-	w, err := domain.NewRetrieveLatestStandingsWorker(s, c.tc, c.cl, c.l, c.ea, c.sa, c.sepa, c.ca, c.fds)
+	params := domain.RetrieveLatestStandingsWorkerParams{
+		Season:                     season,
+		TeamCollection:             c.teamCollection,
+		Clock:                      c.clock,
+		Logger:                     c.logger,
+		EntryAgent:                 c.entryAgent,
+		StandingsAgent:             c.standingsAgent,
+		ScoredEntryPredictionAgent: c.scoredEntryPredictionAgent,
+		MatchWeekSubmissionAgent:   c.mwSubmissionAgent,
+		MatchWeekResultAgent:       c.mwResultAgent,
+		EmailIssuer:                c.commsAgent,
+		FootballClient:             c.footballClient,
+	}
+
+	worker, err := domain.NewRetrieveLatestStandingsWorker(params)
 	if err != nil {
 		return nil, fmt.Errorf("cannot instantiate retrieve last standings worker: %w", err)
 	}
 
-	task, err := domain.HandleWorker(jobName, 5, w, c.l)
+	task, err := domain.HandleWorker(jobName, 5, worker, c.logger)
 
 	return &jobConfig{
 		spec: retrieveLatestStandingsCronSpec,
@@ -119,51 +136,60 @@ func (c *CronHandler) newRetrieveLatestStandingsJob(s domain.Season) (*jobConfig
 	}, nil
 }
 
-func NewCronHandler(cnt *container) (*CronHandler, error) {
-	if cnt == nil {
+func NewCronHandler(c *container) (*CronHandler, error) {
+	if c == nil {
 		return nil, fmt.Errorf("container: %w", domain.ErrIsNil)
 	}
-	if cnt.entryAgent == nil {
+	if c.entryAgent == nil {
 		return nil, fmt.Errorf("entry agent: %w", domain.ErrIsNil)
 	}
-	if cnt.standingsAgent == nil {
+	if c.standingsAgent == nil {
 		return nil, fmt.Errorf("standings agent: %w", domain.ErrIsNil)
 	}
-	if cnt.sepAgent == nil {
+	if c.sepAgent == nil {
 		return nil, fmt.Errorf("scored entry prediction agent: %w", domain.ErrIsNil)
 	}
-	if cnt.commsAgent == nil {
+	if c.commsAgent == nil {
 		return nil, fmt.Errorf("communications agent: %w", domain.ErrIsNil)
 	}
-	if cnt.seasons == nil {
+	if c.mwSubmissionAgent == nil {
+		return nil, fmt.Errorf("match week submission agent: %w", domain.ErrIsNil)
+	}
+	if c.mwResultAgent == nil {
+		return nil, fmt.Errorf("match week result agent: %w", domain.ErrIsNil)
+	}
+	if c.seasons == nil {
 		return nil, fmt.Errorf("season collection: %w", domain.ErrIsNil)
 	}
-	if cnt.teams == nil {
+	if c.teams == nil {
 		return nil, fmt.Errorf("team collection: %w", domain.ErrIsNil)
 	}
-	if cnt.realms == nil {
+	if c.realms == nil {
 		return nil, fmt.Errorf("realms: %w", domain.ErrIsNil)
 	}
-	if cnt.clock == nil {
+	if c.clock == nil {
 		return nil, fmt.Errorf("clock: %w", domain.ErrIsNil)
 	}
-	if cnt.logger == nil {
+	if c.logger == nil {
 		return nil, fmt.Errorf("logger: %w", domain.ErrIsNil)
 	}
-	if cnt.ftblDataSrc == nil {
+	if c.ftblDataSrc == nil {
 		return nil, fmt.Errorf("football data source: %w", domain.ErrIsNil)
 	}
+
 	return &CronHandler{
-		cnt.entryAgent,
-		cnt.standingsAgent,
-		cnt.sepAgent,
-		cnt.commsAgent,
-		cnt.seasons,
-		cnt.teams,
-		cnt.realms,
-		cnt.clock,
-		cnt.logger,
-		cnt.ftblDataSrc,
+		entryAgent:                 c.entryAgent,
+		standingsAgent:             c.standingsAgent,
+		scoredEntryPredictionAgent: c.sepAgent,
+		commsAgent:                 c.commsAgent,
+		mwSubmissionAgent:          c.mwSubmissionAgent,
+		mwResultAgent:              c.mwResultAgent,
+		seasonCollection:           c.seasons,
+		teamCollection:             c.teams,
+		realmCollection:            c.realms,
+		clock:                      c.clock,
+		logger:                     c.logger,
+		footballClient:             c.ftblDataSrc,
 	}, nil
 }
 

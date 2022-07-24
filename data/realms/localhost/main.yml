@@ -1,0 +1,36 @@
+config:
+  name: localhost # realm id stored in database for entries
+  game_name: The Localhost Game # name of the game, referenced in transactional emails and html titles
+  pin: 1234 # pin to enter the game
+  season_id: FakeSeason # id of season to associate with the realm
+
+contact:
+  email_do_not_reply: do_not_reply@localhost # admin/sender email for transactional emails
+  email_proper: wont_you_please_please_help_me@localhost # formatted admin/sender email
+  email_sanitised: wont_you_please_please_help_me (at) localhost # sanitised admin/sender email
+  sign_off_name: Harry R and the PL Team # name to sign-off emails with
+  sender_domain: localhost # domain to issue transactional emails from
+  sender_name: Mr Sender # sender/from name for transactional emails
+
+entry_fee:
+  amount: 1.23 # entry payment numerical amount
+  breakdown: # breakdown of entry fee to display on entry page
+    - £1.00 entry fee
+    - £0.23 coffee fund
+  label: £1.23 # entry payment formatted/display amount
+
+site:
+  analytics_code: xxx # google analytics code
+  description: It's hosted locally. It's a game. It's... Localhost Game! # content of og:description tag
+  footer_message: "Message for your <a href=\"https://en.wikipedia.org/wiki/Page_footer\" target=\"_blank\">page footer</a>" # html-formatted message to include within the page footer
+  home_page_banner_image_url: http://localhost:3000/assets/img/placeholder_home_page_banner.png # url for home page banner image
+  home_page_heading: Welcome to Localhost! # heading to render on home page
+  home_page_tagline: We've been expecting you... # tagline to render on home page
+  image_alt: Logo for localhost site # textual description of the image used for og:image
+  image_url: http://localhost:3000/assets/img/placeholder_og.png # url for og:image tag
+  menu_bar_icon_url: http://localhost:3000/assets/img/placeholder_menu_bar_icon.png # url for image rendered as icon in menu bar
+  menu_bar_title: Prediction League # title to render inside menu bar
+  origin: http://localhost:3000 # url for og:url tag
+  trailer_title: Have some cat videos... # title to render for trailer video embedded on home page
+  trailer_url: https://www.youtube.com/embed/tpiyEe_CqB4 # url to render for trailer video embedded on home page
+  twitter_username: adamalsotweets # twitter handle associated with site (don't @ me...)

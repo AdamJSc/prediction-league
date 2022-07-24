@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -17,13 +18,11 @@ import (
 type Templates struct{ *template.Template }
 
 var templateFunctions = template.FuncMap{
-	"timestamp_as_unix": func(ts time.Time) int64 {
-		var emptyTime time.Time
-
-		if ts.Equal(emptyTime) {
-			return 0
-		}
-		return ts.Unix()
+	"concat_no_space": func(str ...string) string {
+		return strings.Join(str, "")
+	},
+	"concat_strings": func(str ...string) string {
+		return strings.Join(str, " ")
 	},
 	"format_timestamp": func(ts time.Time, layout string) string {
 		return ts.Format(layout)
@@ -35,6 +34,14 @@ var templateFunctions = template.FuncMap{
 		}
 
 		return string(bytes)
+	},
+	"timestamp_as_unix": func(ts time.Time) int64 {
+		var emptyTime time.Time
+
+		if ts.Equal(emptyTime) {
+			return 0
+		}
+		return ts.Unix()
 	},
 }
 
@@ -52,68 +59,6 @@ func ParseTemplates(viewsPath string) (*Templates, error) {
 
 	// return our wrapped template struct
 	return &Templates{Template: tpl}, nil
-}
-
-// GetHomeURL generates a home page URL from the provided Realm
-func GetHomeURL(r *Realm) string {
-	if r != nil {
-		return r.Origin
-	}
-	return "/"
-}
-
-// GetLeaderBoardURL generates a leaderboard page URL from the provided Realm
-func GetLeaderBoardURL(r *Realm) string {
-	domain := ""
-	if r != nil {
-		domain = r.Origin
-	}
-	return fmt.Sprintf("%s/leaderboard", domain)
-}
-
-// GetJoinURL generates a join page URL from the provided Realm
-func GetJoinURL(r *Realm) string {
-	domain := ""
-	if r != nil {
-		domain = r.Origin
-	}
-	return fmt.Sprintf("%s/join", domain)
-}
-
-// GetFAQURL generates an faq page URL from the provided Realm
-func GetFAQURL(r *Realm) string {
-	domain := ""
-	if r != nil {
-		domain = r.Origin
-	}
-	return fmt.Sprintf("%s/faq", domain)
-}
-
-// GetLoginURL generates a login page URL from the provided Realm
-func GetLoginURL(r *Realm) string {
-	domain := ""
-	if r != nil {
-		domain = r.Origin
-	}
-	return fmt.Sprintf("%s/login", domain)
-}
-
-// GetMagicLoginURL generates a magic login URL from the provided Realm and Token
-func GetMagicLoginURL(r *Realm, t *Token) string {
-	tID := ""
-	if t != nil {
-		tID = "/" + t.ID
-	}
-	return GetLoginURL(r) + tID
-}
-
-// GetPredictionURL generates a prediction page URL from the provided Realm
-func GetPredictionURL(r *Realm) string {
-	domain := ""
-	if r != nil {
-		domain = r.Origin
-	}
-	return fmt.Sprintf("%s/prediction", domain)
 }
 
 // walkPathAndParseTemplates recursively parses templates within a given top-level directory

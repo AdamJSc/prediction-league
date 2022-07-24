@@ -7,9 +7,10 @@
                     v-bind:entry-fee-amount="{{.Data.EntryFee.Amount}}"
                     entry-fee-label="{{.Data.EntryFee.Label}}"
                     raw-entry-fee-breakdown="{{jsonify_strings .Data.EntryFee.Breakdown}}"
-                    support-email-formatted="{{.SupportEmailFormatted}}"
-                    support-email-plain-text="{{.SupportEmailPlainText}}"
-                    realm-name="{{.RealmName}}"></registration-workflow>
+                    support-email-formatted="{{.Realm.Contact.EmailProper}}"
+                    support-email-plain-text="{{.Realm.Contact.EmailSanitised}}"
+                    realm-name="{{.Realm.Config.Name}}"
+                    realm-pin="{{.Realm.Config.PIN}}"></registration-workflow>
         {{else if .Data.EntriesClosed}}
             <h2>Entries are now closed for the {{.Data.SeasonName}} season</h2>
             <p>Make sure you check back again and join us for next season!</p>
@@ -18,10 +19,10 @@
                     <h3>Already signed up?</h3>
                 </div>
                 <div class="cta left-side col-md-6">
-                    <p><a class="btn btn-primary btn-lg" href="{{.LeaderBoardPageURL}}" role="button">See how I'm doing</a></p>
+                    <p><a class="btn btn-primary btn-lg" href="{{.Realm.Site.Paths.Leaderboard}}" role="button">See how I'm doing</a></p>
                 </div>
                 <div class="cta right-side col-md-6">
-                    <p><a class="btn btn-primary btn-lg" href="{{.PredictionPageURL}}" role="button">Change my prediction</a></p>
+                    <p><a class="btn btn-primary btn-lg" href="{{.Realm.Site.Paths.MyTable}}" role="button">Update my table</a></p>
                 </div>
             </div>
         {{else}}

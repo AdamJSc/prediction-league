@@ -1,10 +1,11 @@
 package domain_test
 
 import (
-	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
-	"fmt"
+	"io/ioutil"
+	"path/filepath"
 	"prediction-league/service/internal/domain"
 	"testing"
 
@@ -52,7 +53,7 @@ func TestNewCommunicationsAgent(t *testing.T) {
 }
 
 func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	payment := domain.PaymentDetails{
 		Amount:       "£12.34",
@@ -95,46 +96,13 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 			t.Fatalf("want 1 email, got %d", len(emls))
 		}
 
-		email := emls[0]
+		wantEmail := readCommsTestEmail(t, "new_entry_email_meta.json")
+		gotEmail := emls[0]
+		cmpDiff(t, "email", wantEmail, gotEmail)
 
-		expectedSubject := domain.EmailSubjectNewEntry
-
-		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_new_entry", domain.NewEntryEmailData{
-			MessagePayload: domain.MessagePayload{
-				Name:         entry.EntrantName,
-				SeasonName:   testSeason.Name,
-				SignOff:      rlm.Contact.Name,
-				URL:          rlm.Origin,
-				SupportEmail: rlm.Contact.EmailProper,
-			},
-			PaymentDetails: payment,
-			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
-		})
-
-		if email.From.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.From.Name)
-		}
-		if email.From.Address != rlm.Contact.EmailDoNotReply {
-			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
-		}
-		if email.To.Name != entry.EntrantName {
-			expectedGot(t, entry.EntrantName, email.To.Name)
-		}
-		if email.To.Address != entry.EntrantEmail {
-			expectedGot(t, entry.EntrantEmail, email.To.Address)
-		}
-		if email.ReplyTo.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
-		}
-		if email.ReplyTo.Address != rlm.Contact.EmailProper {
-			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
-		}
-		if email.Subject != expectedSubject {
-			expectedGot(t, expectedSubject, email.Subject)
-		}
-		if email.PlainText != expectedPlainText {
-			t.Fatal(gocmp.Diff(expectedPlainText, email.PlainText))
-		}
+		wantPlainContent := readCommsTestDataFile(t, "new_entry_txt_content_body.txt")
+		gotPlainContent := []byte(gotEmail.PlainText)
+		cmpDiff(t, "plain content", wantPlainContent, gotPlainContent)
 	})
 
 	t.Run("issue new entry email with no entry must fail", func(t *testing.T) {
@@ -273,7 +241,7 @@ func TestCommunicationsAgent_IssueNewEntryEmail(t *testing.T) {
 }
 
 func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	entry := insertEntry(t, generateTestEntry(t,
 		"Harry Redknapp",
@@ -288,21 +256,6 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 	t.Run("issue round complete email with a valid scored entry prediction must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
-
-		expectedSubject := fmt.Sprintf(domain.EmailSubjectRoundComplete, standings.RoundNumber+1)
-
-		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_round_complete", domain.RoundCompleteEmailData{
-			MessagePayload: domain.MessagePayload{
-				Name:         entry.EntrantName,
-				SeasonName:   testSeason.Name,
-				SignOff:      rlm.Contact.Name,
-				URL:          rlm.Origin,
-				SupportEmail: rlm.Contact.EmailProper,
-			},
-			RoundNumber:    standings.RoundNumber,
-			LeaderBoardURL: fmt.Sprintf("%s/leaderboard", rlm.Origin),
-			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
-		})
 
 		emlQ := domain.NewInMemEmailQueue()
 
@@ -327,52 +280,18 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			t.Fatalf("want 1 email, got %d", len(emls))
 		}
 
-		email := emls[0]
+		wantEmail := readCommsTestEmail(t, "round_complete_email_meta.json")
+		gotEmail := emls[0]
+		cmpDiff(t, "email", wantEmail, gotEmail)
 
-		if email.From.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.From.Name)
-		}
-		if email.From.Address != rlm.Contact.EmailDoNotReply {
-			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
-		}
-		if email.To.Name != entry.EntrantName {
-			expectedGot(t, entry.EntrantName, email.To.Name)
-		}
-		if email.To.Address != entry.EntrantEmail {
-			expectedGot(t, entry.EntrantEmail, email.To.Address)
-		}
-		if email.ReplyTo.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
-		}
-		if email.ReplyTo.Address != rlm.Contact.EmailProper {
-			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
-		}
-		if email.Subject != expectedSubject {
-			expectedGot(t, expectedSubject, email.Subject)
-		}
-		if email.PlainText != expectedPlainText {
-			t.Fatal(gocmp.Diff(expectedPlainText, email.PlainText))
-		}
+		wantPlainContent := readCommsTestDataFile(t, "round_complete_txt_content_body.txt")
+		gotPlainContent := []byte(gotEmail.PlainText)
+		cmpDiff(t, "plain content", wantPlainContent, gotPlainContent)
 	})
 
 	t.Run("issue final round complete email with a valid scored entry prediction must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
 		defer cancel()
-
-		expectedSubject := domain.EmailSubjectFinalRoundComplete
-
-		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_final_round_complete", domain.RoundCompleteEmailData{
-			MessagePayload: domain.MessagePayload{
-				Name:         entry.EntrantName,
-				SeasonName:   testSeason.Name,
-				SignOff:      rlm.Contact.Name,
-				URL:          rlm.Origin,
-				SupportEmail: rlm.Contact.EmailProper,
-			},
-			RoundNumber:    standings.RoundNumber,
-			LeaderBoardURL: fmt.Sprintf("%s/leaderboard", rlm.Origin),
-			PredictionsURL: fmt.Sprintf("%s/prediction", rlm.Origin),
-		})
 
 		emlQ := domain.NewInMemEmailQueue()
 
@@ -398,32 +317,13 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 			t.Fatalf("want 1 email, got %d", len(emls))
 		}
 
-		email := emls[0]
+		wantEmail := readCommsTestEmail(t, "final_round_complete_email_meta.json")
+		gotEmail := emls[0]
+		cmpDiff(t, "email", wantEmail, gotEmail)
 
-		if email.From.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.From.Name)
-		}
-		if email.From.Address != rlm.Contact.EmailDoNotReply {
-			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
-		}
-		if email.To.Name != entry.EntrantName {
-			expectedGot(t, entry.EntrantName, email.To.Name)
-		}
-		if email.To.Address != entry.EntrantEmail {
-			expectedGot(t, entry.EntrantEmail, email.To.Address)
-		}
-		if email.ReplyTo.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
-		}
-		if email.ReplyTo.Address != rlm.Contact.EmailProper {
-			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
-		}
-		if email.Subject != expectedSubject {
-			expectedGot(t, expectedSubject, email.Subject)
-		}
-		if email.PlainText != expectedPlainText {
-			t.Fatal(gocmp.Diff(expectedPlainText, email.PlainText))
-		}
+		wantPlainContent := readCommsTestDataFile(t, "final_round_complete_txt_content_body.txt")
+		gotPlainContent := []byte(gotEmail.PlainText)
+		cmpDiff(t, "plain content", wantPlainContent, gotPlainContent)
 	})
 
 	t.Run("issue round complete email with a scored entry prediction whose entry prediction ID does not exist must fail", func(t *testing.T) {
@@ -534,7 +434,7 @@ func TestCommunicationsAgent_IssueRoundCompleteEmail(t *testing.T) {
 }
 
 func TestCommunicationsAgent_IssueMagicLoginEmail(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	t.Run("issue magic login email with a valid entry must succeed", func(t *testing.T) {
 		ctx, cancel := testContextDefault(t)
@@ -573,45 +473,13 @@ func TestCommunicationsAgent_IssueMagicLoginEmail(t *testing.T) {
 			t.Fatalf("want 1 email, got %d", len(emls))
 		}
 
-		email := emls[0]
+		wantEmail := readCommsTestEmail(t, "magic_login_email_meta.json")
+		gotEmail := emls[0]
+		cmpDiff(t, "email", wantEmail, gotEmail)
 
-		expectedSubject := domain.EmailSubjectMagicLogin
-
-		expectedPlainText := mustExecuteTemplate(t, tpl, "email_txt_magic_login", domain.MagicLoginEmail{
-			MessagePayload: domain.MessagePayload{
-				Name:         entry.EntrantName,
-				SeasonName:   testSeason.Name,
-				SignOff:      rlm.Contact.Name,
-				URL:          rlm.Origin,
-				SupportEmail: rlm.Contact.EmailProper,
-			},
-			LoginURL: fmt.Sprintf("%s/login/%s", rlm.Origin, tokenId),
-		})
-
-		if email.From.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.From.Name)
-		}
-		if email.From.Address != rlm.Contact.EmailDoNotReply {
-			expectedGot(t, rlm.Contact.EmailDoNotReply, email.From.Address)
-		}
-		if email.To.Name != entry.EntrantName {
-			expectedGot(t, entry.EntrantName, email.To.Name)
-		}
-		if email.To.Address != entry.EntrantEmail {
-			expectedGot(t, entry.EntrantEmail, email.To.Address)
-		}
-		if email.ReplyTo.Name != rlm.Contact.Name {
-			expectedGot(t, rlm.Contact.Name, email.ReplyTo.Name)
-		}
-		if email.ReplyTo.Address != rlm.Contact.EmailProper {
-			expectedGot(t, rlm.Contact.EmailProper, email.ReplyTo.Address)
-		}
-		if email.Subject != expectedSubject {
-			expectedGot(t, expectedSubject, email.Subject)
-		}
-		if email.PlainText != expectedPlainText {
-			t.Fatal(gocmp.Diff(expectedPlainText, email.PlainText))
-		}
+		wantPlainContent := readCommsTestDataFile(t, "magic_login_txt_content_body.txt")
+		gotPlainContent := []byte(gotEmail.PlainText)
+		cmpDiff(t, "plain content", wantPlainContent, gotPlainContent)
 	})
 
 	t.Run("issue magic login email with no entry must fail", func(t *testing.T) {
@@ -684,18 +552,6 @@ func TestCommunicationsAgent_IssueMagicLoginEmail(t *testing.T) {
 	})
 }
 
-// mustExecuteTemplate executes the provided template name with the provided template data or produces a test failure on error
-func mustExecuteTemplate(t *testing.T, templates *domain.Templates, templateName string, templateData interface{}) string {
-	t.Helper()
-
-	buf := bytes.NewBuffer(nil)
-	if err := templates.ExecuteTemplate(buf, templateName, templateData); err != nil {
-		t.Fatal(err)
-	}
-
-	return buf.String()
-}
-
 func TestNewNoopEmailClient(t *testing.T) {
 	t.Run("passing invalid parameters must return expected error", func(t *testing.T) {
 		l := &mockLogger{}
@@ -760,4 +616,37 @@ func TestNoopEmailClient_SendEmail(t *testing.T) {
 			t.Fatalf("want logged output %s, got %s, diff %s", wantOutput, gotOutput, diff)
 		}
 	})
+}
+
+func readCommsTestDataFile(t *testing.T, filename string) []byte {
+	t.Helper()
+	path := append([]string{"communications"}, filename)
+	return readTestDataFile(t, path...)
+}
+
+func readCommsTestEmail(t *testing.T, filename string) domain.Email {
+	t.Helper()
+	path := append([]string{"communications"}, filename)
+	b := readTestDataFile(t, path...)
+
+	var email domain.Email
+	if err := json.Unmarshal(b, &email); err != nil {
+		t.Fatal(err)
+	}
+
+	return email
+}
+
+func readTestDataFile(t *testing.T, path ...string) []byte {
+	t.Helper()
+
+	path = append([]string{"testdata"}, path...)
+	joined := filepath.Join(path...)
+
+	b, err := ioutil.ReadFile(joined)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return b
 }

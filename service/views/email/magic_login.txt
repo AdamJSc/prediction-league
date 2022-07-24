@@ -1,7 +1,4 @@
-{{define "email_txt_magic_login"}}Login
-============================
-
-Hey {{.Name}}!
+{{define "email_txt_magic_login"}}Hey {{.RecipientName}}!
 
 Here's your magic login link:
 
@@ -9,6 +6,6 @@ Here's your magic login link:
 
 This will automatically expire after 10 minutes.
 
-In the meantime, Happy Predicting! 🧙🔮
+Enjoy! 🦁⚽️
 {{- template "email_txt_footer" .}}
 {{end}}

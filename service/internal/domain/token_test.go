@@ -40,9 +40,9 @@ func TestNewTokenAgent(t *testing.T) {
 }
 
 func TestTokenAgent_GenerateToken(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
-	agent, err := domain.NewTokenAgent(tr, &mockClock{t: dt}, &mockLogger{})
+	agent, err := domain.NewTokenAgent(tr, &mockClock{t: testDate}, &mockLogger{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,13 +91,13 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 			if token.Value != val {
 				t.Fatalf("want token value %s, got %s", val, token.Value)
 			}
-			if !token.IssuedAt.Equal(dt) {
-				t.Fatalf("want token issued at %+v, got %+v", dt, token.IssuedAt)
+			if !token.IssuedAt.Equal(testDate) {
+				t.Fatalf("want token issued at %+v, got %+v", testDate, token.IssuedAt)
 			}
 			if token.RedeemedAt != nil {
 				t.Fatalf("want nil token redeemed at, got %+v", token.RedeemedAt)
 			}
-			wantExp := dt.Add(domain.TokenValidityDuration[typ])
+			wantExp := testDate.Add(domain.TokenValidityDuration[typ])
 			if !token.ExpiresAt.Equal(wantExp) {
 				t.Fatalf("want token expires at %+v, got %+v", wantExp, token.ExpiresAt)
 			}
@@ -122,9 +122,9 @@ func TestTokenAgent_GenerateToken(t *testing.T) {
 }
 
 func TestTokenAgent_GenerateExtendedToken(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
-	agent, err := domain.NewTokenAgent(tr, &mockClock{t: dt}, &mockLogger{})
+	agent, err := domain.NewTokenAgent(tr, &mockClock{t: testDate}, &mockLogger{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,13 +174,13 @@ func TestTokenAgent_GenerateExtendedToken(t *testing.T) {
 			if token.Value != val {
 				t.Fatalf("want token value %s, got %s", val, token.Value)
 			}
-			if !token.IssuedAt.Equal(dt) {
-				t.Fatalf("want token issued at %+v, got %+v", dt, token.IssuedAt)
+			if !token.IssuedAt.Equal(testDate) {
+				t.Fatalf("want token issued at %+v, got %+v", testDate, token.IssuedAt)
 			}
 			if token.RedeemedAt != nil {
 				t.Fatalf("want nil token redeemed at, got %+v", token.RedeemedAt)
 			}
-			wantExp := dt.Add(6 * time.Hour)
+			wantExp := testDate.Add(6 * time.Hour)
 			if !token.ExpiresAt.Equal(wantExp) {
 				t.Fatalf("want token expires at %+v, got %+v", wantExp, token.ExpiresAt)
 			}
@@ -206,7 +206,7 @@ func TestTokenAgent_GenerateExtendedToken(t *testing.T) {
 }
 
 func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewTokenAgent(tr, &mockClock{}, &mockLogger{})
 	if err != nil {
@@ -256,7 +256,7 @@ func TestTokenAgent_RetrieveTokenByID(t *testing.T) {
 }
 
 func TestTokenAgent_RedeemToken(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	ctx := context.Background()
 
@@ -275,7 +275,7 @@ func TestTokenAgent_RedeemToken(t *testing.T) {
 		return res[0]
 	}
 
-	agent, err := domain.NewTokenAgent(tr, &mockClock{t: dt}, &mockLogger{})
+	agent, err := domain.NewTokenAgent(tr, &mockClock{t: testDate}, &mockLogger{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -292,7 +292,7 @@ func TestTokenAgent_RedeemToken(t *testing.T) {
 
 		// token must be redeemed
 		wantTkn := *token
-		wantTkn.RedeemedAt = &dt
+		wantTkn.RedeemedAt = &testDate
 		gotTkn := getTokenByID(token.ID)
 
 		if diff := gocmp.Diff(wantTkn, gotTkn); diff != "" {
@@ -302,7 +302,7 @@ func TestTokenAgent_RedeemToken(t *testing.T) {
 
 	t.Run("redeem an existing token that has already been redeemed must fail", func(t *testing.T) {
 		token := generateTestToken("tkn-2")
-		token.RedeemedAt = &dt
+		token.RedeemedAt = &testDate
 		if err := tr.Insert(ctx, token); err != nil {
 			t.Fatal(err)
 		}
@@ -321,7 +321,7 @@ func TestTokenAgent_RedeemToken(t *testing.T) {
 }
 
 func TestTokenAgent_DeleteToken(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewTokenAgent(tr, &mockClock{}, &mockLogger{})
 	if err != nil {
@@ -365,7 +365,7 @@ func TestTokenAgent_DeleteToken(t *testing.T) {
 }
 
 func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewTokenAgent(tr, &mockClock{}, &mockLogger{})
 	if err != nil {
@@ -430,7 +430,7 @@ func TestTokenAgent_DeleteTokensExpiredAfter(t *testing.T) {
 }
 
 func TestTokenAgent_DeleteInFlightTokens(t *testing.T) {
-	defer truncate(t)
+	t.Cleanup(truncate)
 
 	agent, err := domain.NewTokenAgent(tr, &mockClock{}, &mockLogger{})
 	if err != nil {
@@ -438,7 +438,7 @@ func TestTokenAgent_DeleteInFlightTokens(t *testing.T) {
 	}
 
 	now := time.Now().Truncate(time.Second)
-	redeemed := dt
+	redeemed := testDate
 
 	// tkn1 represents our target token
 	tkn1 := &domain.Token{
@@ -526,7 +526,7 @@ func TestTokenAgent_IsTokenValid(t *testing.T) {
 		ID:        "tkn-id",
 		Type:      domain.TokenTypeAuth,
 		Value:     "abcdef",
-		ExpiresAt: dt,
+		ExpiresAt: testDate,
 	}
 
 	tt := []struct {
@@ -541,21 +541,21 @@ func TestTokenAgent_IsTokenValid(t *testing.T) {
 			name:    "token with expiry that matches now must be valid",
 			typ:     domain.TokenTypeAuth,
 			val:     "abcdef",
-			now:     dt,
+			now:     testDate,
 			wantRes: true,
 		},
 		{
 			name:    "token with expiry that occurs after now must be valid",
 			typ:     domain.TokenTypeAuth,
 			val:     "abcdef",
-			now:     dt.Add(-time.Nanosecond),
+			now:     testDate.Add(-time.Nanosecond),
 			wantRes: true,
 		},
 		{
 			name:       "token with alt type must not be valid",
 			typ:        domain.TokenTypeEntryRegistration,
 			val:        "abcdef",
-			now:        dt,
+			now:        testDate,
 			wantRes:    false,
 			wantLogMsg: "token id 'tkn-id': token type 0 is not 1",
 		},
@@ -563,7 +563,7 @@ func TestTokenAgent_IsTokenValid(t *testing.T) {
 			name:       "token with alt value must not be valid",
 			typ:        domain.TokenTypeAuth,
 			val:        "ghijkl",
-			now:        dt,
+			now:        testDate,
 			wantRes:    false,
 			wantLogMsg: "token id 'tkn-id': token value 'abcdef' is not 'ghijkl'",
 		},
@@ -571,7 +571,7 @@ func TestTokenAgent_IsTokenValid(t *testing.T) {
 			name:       "token that has expired must not be valid",
 			typ:        domain.TokenTypeAuth,
 			val:        "abcdef",
-			now:        dt.Add(time.Second),
+			now:        testDate.Add(time.Second),
 			wantRes:    false,
 			wantLogMsg: "token id 'tkn-id': expired",
 		},

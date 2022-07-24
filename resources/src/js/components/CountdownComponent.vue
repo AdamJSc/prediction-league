@@ -1,5 +1,5 @@
 <template>
-    <div class="countdown-container">
+    <div v-if="shouldShow" class="countdown-container">
         <div class="countdown highlight-container">
             <p>{{label}}</p>
             <p class="remaining-time">{{remainingVerbose}}</p>
@@ -33,6 +33,11 @@
             }
         },
         computed: {
+            shouldShow: function() {
+                let oneHour = 3600000
+                // within 24 hours
+                return (this.target - this.now) < (24 * oneHour)
+            },
             remainingVerbose: function() {
                 const helpers = require('../helpers.js')
                 return helpers.formatVerboseDuration(this.now, this.target)

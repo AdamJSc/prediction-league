@@ -1,44 +1,49 @@
 {{define "index"}}
     {{template "header" .}}
-    <div class="page-section row">
+    <div class="row">
         <div class="intro-cta col">
-            <div class="icon">
-                <i class="fas fa-hat-wizard" aria-hidden="true"></i>
-                <i class="far fa-futbol" aria-hidden="true"></i>
-                <i class="fas fa-trophy" aria-hidden="true"></i>
+            <div class="home-page-banner">
+                <img alt="{{.Realm.Site.ImageAlt}}" src="{{.Realm.Site.HomePageBannerImageURL}}" />
             </div>
-            <h2>Put your prediction skills to the test</h2>
-            <p>Predict the league table and receive the fewest "penalty points" to win!</p>
-            <a class="btn btn-primary btn-lg" href="{{.JoinPageURL}}" role="button">Enter Now</a>
+            <h2>{{.Realm.Site.HomePageTagline}}</h2>
+            <a class="btn btn-primary btn-lg" href="{{.Realm.Site.Paths.Join}}" role="button">Enter Now</a>
+            <div class="trailer-container">
+                <iframe
+                    src="{{.Realm.Site.TrailerURL}}"
+                    title="{{.Realm.Site.TrailerTitle}}"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                ></iframe>
+            </div>
         </div>
     </div>
     <div class="how-it-works page-section row">
         <div class="heading col-md-12">
-            <h2>How it works</h2>
+            <h2>How to play</h2>
         </div>
         <div class="stage col-lg-6">
             <div class="accented-component">
                 <div class="icon">
-                    <i class="fa fa-laptop" aria-hidden="true"></i>
+                    <i class="fa-solid fa-user-plus"></i>
                 </div>
                 <div class="stage-title">
-                    <div class="label">1: Enter</div>
+                    <div class="label">1. Join</div>
                 </div>
                 <div class="stage-description">
-                    <p>Sign up via the <a href="{{.JoinPageURL}}">Join</a> page.</p>
+                    <p><a href="{{.Realm.Site.Paths.Join}}">Enter</a> this season's game.</p>
                 </div>
             </div>
         </div>
         <div class="stage col-lg-6">
             <div class="accented-component">
                 <div class="icon">
-                    <i class="fas fa-edit" aria-hidden="true"></i>
+                    <i class="fa-solid fa-square-poll-horizontal"></i>
                 </div>
                 <div class="stage-title">
                     <div class="label">2: Predict</div>
                 </div>
                 <div class="stage-description">
-                    <p>Submit your prediction and <a href="{{.PredictionPageURL}}">swap up to 2 teams</a> each Game Week.</p>
+                    <p>Plot your initial league table and <a href="{{.Realm.Site.Paths.MyTable}}">swap up to 2 teams</a> each Match Week.</p>
                 </div>
             </div>
         </div>
@@ -51,8 +56,7 @@
                     <div class="label">3: Score</div>
                 </div>
                 <div class="stage-description">
-                    <p>Avoid "penalty points" for inaccuracy and see how you're doing on the
-                        <a href="{{.LeaderBoardPageURL}}">Leaderboard</a>.</p>
+                    <p>The closer you are to the real table, the more points you score each Match Week!</p>
                 </div>
             </div>
         </div>
@@ -65,7 +69,8 @@
                     <div class="label">4: Win</div>
                 </div>
                 <div class="stage-description">
-                    <p>Lowest score at the end of the season wins!</p>
+                    <p>Keep an eye on the <a href="{{.Realm.Site.Paths.Leaderboard}}">Leaderboard</a>
+                        - highest total score at the end of the season wins!</p>
                 </div>
             </div>
         </div>
@@ -75,10 +80,10 @@
             <h3>Already signed up?</h3>
         </div>
         <div class="cta left-side col-md-6">
-            <p><a class="btn btn-primary btn-lg" href="{{.LeaderBoardPageURL}}" role="button">See how I'm doing</a></p>
+            <p><a class="btn btn-primary btn-lg" href="{{.Realm.Site.Paths.Leaderboard}}" role="button">See how I'm doing</a></p>
         </div>
         <div class="cta right-side col-md-6">
-            <p><a class="btn btn-primary btn-lg" href="{{.PredictionPageURL}}" role="button">Change my prediction</a></p>
+            <p><a class="btn btn-primary btn-lg" href="{{.Realm.Site.Paths.MyTable}}" role="button">Update my table</a></p>
         </div>
     </div>
     <div class="cta-group page-section row">
@@ -87,14 +92,14 @@
             <div class="icon">
                 <i class="fas fa-question-circle" aria-hidden="true"></i>
             </div>
-            <p>Visit our <a href="{{.FAQPageURL}}">FAQs</a> page</p>
+            <p>Visit our <a href="{{.Realm.Site.Paths.FAQ}}">FAQs</a> page</p>
         </div>
         <div class="cta col-lg-6">
             <h3>Still need help?</h3>
             <div class="icon">
                 <i class="fa fa-envelope" aria-hidden="true"></i>
             </div>
-            <p>Drop us a line!<br /><a href="mailto:{{.SupportEmailFormatted}}?subject=Greetings%20from%20{{.RealmName}}!">{{.SupportEmailPlainText}}</a></p>
+            <p>Drop us a line!<br /><a href="mailto:{{.Realm.Contact.EmailProper}}?subject=Greetings%20from%20{{.Realm.Config.Name}}!">{{.Realm.Contact.EmailSanitised}}</a></p>
         </div>
     </div>
     {{template "footer" .}}

@@ -3,20 +3,14 @@ package domain
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
+	"sync"
 )
 
 const (
 	// MetaKeyPlayedGames defines the ranking with meta key that represents played games
-	MetaKeyPlayedGames = "playedGames"
-	// MetaKeyPoints defines the ranking with meta key that represents points
-	MetaKeyPoints = "points"
-	// MetaKeyGoalsFor defines the ranking with meta key that represents goals for
-	MetaKeyGoalsFor = "goalsFor"
-	// MetaKeyGoalsAgainst defines the ranking with meta key that represents goals against
-	MetaKeyGoalsAgainst = "goalsAgainst"
-	// MetaKeyGoalDifference defines the ranking with meta key that represents goal difference
-	MetaKeyGoalDifference = "goalDifference"
+	MetaKeyPlayedGames = "playedGames" // TODO: deprecate once migrated to MatchWeekStandings from Standings
 )
 
 // Ranking defines our base ranking structure
@@ -115,19 +109,6 @@ func NewRankingCollectionFromIDs(ids []string) RankingCollection {
 	return collection
 }
 
-// NewRankingCollectionFromRankingWithMetas creates a new RankingCollection from the provide RankingWithMetas
-func NewRankingCollectionFromRankingWithMetas(rwms []RankingWithMeta) RankingCollection {
-	var collection RankingCollection
-
-	for _, rwm := range rwms {
-		collection = append(collection, Ranking{
-			ID:       rwm.ID,
-			Position: rwm.Position,
-		})
-	}
-	return collection
-}
-
 // NewRankingWithScoreCollectionFromIDs creates a new RankingWithScoreCollection from a set of IDs
 func NewRankingWithScoreCollectionFromIDs(ids []string) RankingWithScoreCollection {
 	var (
@@ -146,97 +127,33 @@ func NewRankingWithScoreCollectionFromIDs(ids []string) RankingWithScoreCollecti
 	return collection
 }
 
-// CalculateRankingsScores compares baseRC with comparisonRC to produce a new RankingWithScoreCollection
-func CalculateRankingsScores(baseRC, comparisonRC RankingCollection) (*RankingWithScoreCollection, error) {
-	var collection RankingWithScoreCollection
-
-	if err := rankingsIDsMatch(baseRC, comparisonRC); err != nil {
-		return nil, err
-	}
-
-	for _, baseRanking := range baseRC {
-		var rws RankingWithScore
-		rws.ID = baseRanking.ID
-		rws.Position = baseRanking.Position
-
-		comparisonRanking, err := comparisonRC.GetByID(baseRanking.ID)
-		if err != nil {
-			return nil, NotFoundError{err}
-		}
-
-		// score should be the absolute value of the difference between our ranking positions
-		diff := baseRanking.Position - comparisonRanking.Position
-		switch {
-		case diff < 0:
-			rws.Score = -diff
-		default:
-			rws.Score = diff
-		}
-
-		collection = append(collection, rws)
-	}
-
-	return &collection, nil
-}
-
 // GetChangedRankingIDs returns the Ranking IDs that differ between the two provided RankingCollection objects
 func GetChangedRankingIDs(x RankingCollection, y RankingCollection) []string {
-	diffMap := make(map[string]struct{}, 0)
+	diff := &sync.Map{}
 
 	for _, xRnk := range x {
 		yRnk, err := y.GetByID(xRnk.ID)
 		if err != nil || yRnk.Position != xRnk.Position {
-			diffMap[xRnk.ID] = struct{}{}
+			diff.Store(xRnk.ID, struct{}{})
 		}
 	}
 
 	for _, yRnk := range y {
 		xRnk, err := x.GetByID(yRnk.ID)
 		if err != nil || xRnk.Position != yRnk.Position {
-			diffMap[yRnk.ID] = struct{}{}
+			diff.Store(yRnk.ID, struct{}{})
 		}
 	}
 
-	diff := make([]string, 0)
-	for id := range diffMap {
-		diff = append(diff, id)
-	}
+	keys := make([]string, 0)
+	diff.Range(func(key, value interface{}) bool {
+		keys = append(keys, key.(string))
+		return true
+	})
 
-	return diff
-}
+	sort.SliceStable(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
 
-// rankingsIDsMatch returns an error if the provided RankingCollections do not match their respective IDs in full
-func rankingsIDsMatch(base, comparison RankingCollection) error {
-	baseIDs := base.GetIDs()
-	compIDs := comparison.GetIDs()
-
-	if len(baseIDs) != len(compIDs) {
-		return fmt.Errorf("mismatched baseIDs length: base %d, comparison %d", len(baseIDs), len(compIDs))
-	}
-
-	mapBaseIDs := make(map[string]int)
-	mapCompIDs := make(map[string]int)
-
-	for _, id := range baseIDs {
-		count := mapBaseIDs[id]
-		mapBaseIDs[id] = count + 1
-	}
-
-	for _, id := range compIDs {
-		count := mapCompIDs[id]
-		mapCompIDs[id] = count + 1
-	}
-
-	for id, compCount := range mapCompIDs {
-		baseCount, ok := mapBaseIDs[id]
-		if !ok {
-			return fmt.Errorf("base collection does not have id: '%s'", id)
-		}
-
-		if baseCount != compCount {
-			return fmt.Errorf("mismatched counts: id '%s' base collection count = %d, collection count = %d", id, baseCount, compCount)
-		}
-	}
-
-	return nil
+	return keys
 }

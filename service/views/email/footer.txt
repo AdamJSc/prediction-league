@@ -3,7 +3,7 @@
 
 ---------------------------------------------
 
-You have received this email because you have entered the Prediction League for the {{.SeasonName}} season ({{.URL}})
+You have received this email because you have entered {{.GameName}} for the {{.SeasonName}} season ({{.URL}})
 
 If you have any questions, issues or concerns, please email {{.SupportEmail}}
 {{end}}

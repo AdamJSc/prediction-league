@@ -21,16 +21,9 @@ func frontendIndexHandler(c *container) func(w http.ResponseWriter, r *http.Requ
 		}
 		defer cancel()
 
-		seasonID := domain.RealmFromContext(ctx).SeasonID
-		season, err := c.seasons.GetByID(seasonID)
-		if err != nil {
-			internalError(err).writeTo(w)
-			return
-		}
+		realm := domain.RealmFromContext(ctx)
 
-		bannerTitle := fmt.Sprintf("%s<br />Prediction League", season.Name)
-
-		p := newPage(r, c, "Home", "home", bannerTitle, nil)
+		p := newPage(r, c, "Play now", "home", realm.Site.HomePageHeading, nil)
 
 		if err := c.templates.ExecuteTemplate(w, "index", p); err != nil {
 			internalError(err).writeTo(w)
@@ -89,7 +82,10 @@ func frontendFAQHandler(c *container) func(w http.ResponseWriter, r *http.Reques
 		}
 		defer cancel()
 
-		data := getFAQPageData(domain.RealmFromContext(ctx).Name)
+		realm := domain.RealmFromContext(ctx)
+		data := view.FAQPageData{
+			FAQs: realm.FAQs,
+		}
 
 		writeResponse(data)
 	}
@@ -104,7 +100,8 @@ func frontendJoinHandler(c *container) func(w http.ResponseWriter, r *http.Reque
 		}
 		defer cancel()
 
-		season, err := c.seasons.GetByID(domain.RealmFromContext(ctx).SeasonID)
+		realm := domain.RealmFromContext(ctx)
+		season, err := c.seasons.GetByID(realm.Config.SeasonID)
 		if err != nil {
 			internalError(err).writeTo(w)
 			return
@@ -121,10 +118,10 @@ func frontendJoinHandler(c *container) func(w http.ResponseWriter, r *http.Reque
 			EntriesClosedTS: season.EntriesAccepted.Until,
 			SeasonName:      season.Name,
 			PayPalClientID:  c.config.PayPalClientID,
-			EntryFee:        domain.RealmFromContext(ctx).EntryFee,
+			EntryFee:        realm.EntryFee,
 		}
 
-		p := newPage(r, c, "Join", "join", "Join", data)
+		p := newPage(r, c, "Enter", "join", "Enter", data)
 
 		if err := c.templates.ExecuteTemplate(w, "join", p); err != nil {
 			internalError(err).writeTo(w)
@@ -136,7 +133,7 @@ func frontendJoinHandler(c *container) func(w http.ResponseWriter, r *http.Reque
 func frontendPredictionHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var writeResponse = func(data view.PredictionPageData) {
-			p := newPage(r, c, "Update My Prediction", "prediction", "Update My Prediction", data)
+			p := newPage(r, c, "Update My Table", "prediction", "Update My Table", data)
 
 			if err := c.templates.ExecuteTemplate(w, "prediction", p); err != nil {
 				internalError(err).writeTo(w)
@@ -209,7 +206,7 @@ func frontendGenerateMagicLoginHandler(c *container) func(w http.ResponseWriter,
 		realm := domain.RealmFromContext(ctx)
 
 		// retrieve entry
-		entry, err := retrieveEntryByEmailAddr(ctx, input.EmailAddr, realm.SeasonID, realm.Name, c.entryAgent)
+		entry, err := retrieveEntryByEmailAddr(ctx, input.EmailAddr, realm.Config.SeasonID, realm.Config.Name, c.entryAgent)
 		if err != nil {
 			switch {
 			case errors.As(err, &domain.NotFoundError{}):
@@ -224,8 +221,8 @@ func frontendGenerateMagicLoginHandler(c *container) func(w http.ResponseWriter,
 		}
 
 		// does realm name match our entry?
-		if ctxRealmName := domain.RealmFromContext(ctx).Name; ctxRealmName != entry.RealmName {
-			c.logger.Errorf("context realm name '%s' does not match entry realm name '%s'", ctxRealmName, entry.RealmName)
+		if realm.Config.Name != entry.RealmName {
+			c.logger.Errorf("context realm name '%s' does not match entry realm name '%s'", realm.Config.Name, entry.RealmName)
 			writeResponse(view.GenerateMagicLoginPageData{Err: genericErr})
 			return
 		}
@@ -259,22 +256,12 @@ func frontendGenerateMagicLoginHandler(c *container) func(w http.ResponseWriter,
 
 func frontendRedeemMagicLoginHandler(c *container) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		realm := domain.RealmFromContext(r.Context())
-		redirFail := domain.GetLoginURL(realm) + "/failed"
-		redirOk := domain.GetPredictionURL(realm)
-
 		var writeRedirect = func(loc string) {
 			w.Header().Set("Location", loc)
 			w.WriteHeader(http.StatusFound)
 		}
 
-		// parse magic token from route
-		var mTknID string
-		if err := getRouteParam(r, "magic_token_id", &mTknID); err != nil {
-			c.logger.Errorf("cannot parse route param 'magic_token_id': %s", err.Error())
-			writeRedirect(redirFail)
-			return
-		}
+		redirFail := "/failed"
 
 		// get context from request
 		ctx, cancel, err := contextFromRequest(r, c)
@@ -284,6 +271,17 @@ func frontendRedeemMagicLoginHandler(c *container) func(w http.ResponseWriter, r
 			return
 		}
 		defer cancel()
+
+		realm := domain.RealmFromContext(ctx)
+		redirOk := realm.GetFullMyTableURL()
+
+		// parse magic token from route
+		var mTknID string
+		if err := getRouteParam(r, "magic_token_id", &mTknID); err != nil {
+			c.logger.Errorf("cannot parse route param 'magic_token_id': %s", err.Error())
+			writeRedirect(redirFail)
+			return
+		}
 
 		// retrieve token
 		mTkn, err := c.tokenAgent.RetrieveTokenByID(ctx, mTknID)
@@ -322,8 +320,8 @@ func frontendRedeemMagicLoginHandler(c *container) func(w http.ResponseWriter, r
 		}
 
 		// does realm name match our entry?
-		if ctxRealmName := domain.RealmFromContext(ctx).Name; ctxRealmName != entry.RealmName {
-			c.logger.Errorf("context realm name '%s' does not match entry realm name '%s'", ctxRealmName, entry.RealmName)
+		if realm.Config.Name != entry.RealmName {
+			c.logger.Errorf("context realm name '%s' does not match entry realm name '%s'", realm.Config.Name, entry.RealmName)
 			writeRedirect(redirFail)
 			return
 		}

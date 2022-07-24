@@ -1,7 +1,4 @@
-{{define "email_txt_new_entry"}}Welcome to Prediction League
-============================
-
-Great news {{.Name}} - you're in! 🎉
+{{define "email_txt_new_entry"}}Great news {{.RecipientName}} - you're in! 🎉
 
 It's lovely to have you on-board for the {{.SeasonName}} season ⚽️
 
@@ -9,11 +6,11 @@ Your payment of {{.PaymentDetails.Amount}} will show on your bank statement as {
 
 Your PayPal reference is {{.PaymentDetails.Reference}}
 
-To submit your first prediction, go to:
+To submit your initial table, go to:
 {{.PredictionsURL}}
 
 Let us know if you get stuck - we're here to help 🙂
 
-In the meantime, Happy Predicting! 🧙🔮
+Enjoy! 🦁⚽️
 {{- template "email_txt_footer" .}}
 {{end}}

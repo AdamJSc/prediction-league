@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	EmailSubjectNewEntry           = "You're In!"
-	EmailSubjectRoundComplete      = "Round %d predictions open!"
-	EmailSubjectFinalRoundComplete = "Thanks for playing!"
-	EmailSubjectMagicLogin         = "Your login link"
+	EmailSubjectNewEntry            = "You're In!"
+	EmailSubjectRoundCompleteFormat = "Match Week %d begins!"
+	EmailSubjectFinalRoundComplete  = "Thanks for playing!"
+	EmailSubjectMagicLogin          = "Your login link"
 )
 
 // CommunicationsAgent defines the behaviours for issuing communications
@@ -53,7 +53,7 @@ func (c *CommunicationsAgent) IssueNewEntryEmail(ctx context.Context, entry *Ent
 	d := NewEntryEmailData{
 		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
 		PaymentDetails: *paymentDetails,
-		PredictionsURL: GetPredictionURL(&realm),
+		PredictionsURL: realm.GetFullMyTableURL(),
 	}
 	var emailContent bytes.Buffer
 	if err := c.tpl.ExecuteTemplate(&emailContent, "email_txt_new_entry", d); err != nil {
@@ -97,13 +97,13 @@ func (c *CommunicationsAgent) IssueRoundCompleteEmail(ctx context.Context, sep S
 	d := RoundCompleteEmailData{
 		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
 		RoundNumber:    standings.RoundNumber,
-		LeaderBoardURL: GetLeaderBoardURL(&realm),
-		PredictionsURL: GetPredictionURL(&realm),
+		LeaderBoardURL: realm.GetFullLeaderboardURL(),
+		PredictionsURL: realm.GetFullMyTableURL(),
 	}
 
 	templateName := "email_txt_round_complete"
 	nextRound := standings.RoundNumber + 1
-	subject := fmt.Sprintf(EmailSubjectRoundComplete, nextRound)
+	subject := fmt.Sprintf(EmailSubjectRoundCompleteFormat, nextRound)
 	if isFinalRound {
 		templateName = "email_txt_final_round_complete"
 		subject = EmailSubjectFinalRoundComplete
@@ -144,7 +144,7 @@ func (c *CommunicationsAgent) IssueMagicLoginEmail(ctx context.Context, entry *E
 
 	d := MagicLoginEmail{
 		MessagePayload: newMessagePayload(realm, entry.EntrantName, season.Name),
-		LoginURL:       GetMagicLoginURL(&realm, &Token{ID: tokenId}),
+		LoginURL:       realm.GetMagicLoginURL(&Token{ID: tokenId}),
 	}
 	var emailContent bytes.Buffer
 	if err := c.tpl.ExecuteTemplate(&emailContent, "email_txt_magic_login", d); err != nil {
@@ -250,38 +250,40 @@ type Email struct {
 func newEmail(realm Realm, to Identity, subject, plainText string) Email {
 	return Email{
 		From: Identity{
-			Name:    realm.Contact.Name,
+			Name:    realm.Contact.SenderName,
 			Address: realm.Contact.EmailDoNotReply,
 		},
 		To: to,
 		ReplyTo: Identity{
-			Name:    realm.Contact.Name,
+			Name:    realm.Contact.SenderName,
 			Address: realm.Contact.EmailProper,
 		},
-		SenderDomain: realm.SenderDomain,
+		SenderDomain: realm.Contact.SenderDomain,
 		Subject:      subject,
 		PlainText:    plainText,
 	}
 }
 
 // newMessagePayload returns an email data object inflated with the provided data items
-func newMessagePayload(realm Realm, name string, seasonName string) MessagePayload {
+func newMessagePayload(realm Realm, recipientName string, seasonName string) MessagePayload {
 	return MessagePayload{
-		Name:         name,
-		SignOff:      realm.Contact.Name,
-		SeasonName:   seasonName,
-		URL:          GetHomeURL(&realm),
-		SupportEmail: realm.Contact.EmailProper,
+		RecipientName: recipientName,
+		GameName:      realm.Config.GameName,
+		SignOff:       realm.Contact.SignOffName,
+		SeasonName:    seasonName,
+		URL:           realm.GetFullHomeURL(),
+		SupportEmail:  realm.Contact.EmailProper,
 	}
 }
 
 // MessagePayload defines the fields required by an email message
 type MessagePayload struct {
-	Name         string
-	SignOff      string
-	SeasonName   string
-	URL          string
-	SupportEmail string
+	RecipientName string
+	GameName      string
+	SignOff       string
+	SeasonName    string
+	URL           string
+	SupportEmail  string
 }
 
 // PaymentDetails defines the fields relating to a payment

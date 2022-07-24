@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/net/context"
 	"prediction-league/service/internal/domain"
+
+	"golang.org/x/net/context"
 )
 
 // stmtSelectEntryWithTotalScore represents a partial nested statement for grouping entry IDs along with their
@@ -67,12 +68,12 @@ const stmtSelectEntryWithScoreThisRound = `
 	GROUP BY t1.entry_id
 `
 
-// stmtSelectEntryWithMinScore represents a partial nested statement for grouping entry IDs along with their
-// minimum score at the point of the provided round number
-const stmtSelectEntryWithMinScore = `
+// stmtSelectEntryWithMaxScore represents a partial nested statement for grouping entry IDs along with their
+// maximum score at the point of the provided round number
+const stmtSelectEntryWithMaxScore = `
 	SELECT
 		t2.entry_id,
-		MIN(t2.score) AS min_score
+		MAX(t2.score) AS max_score
 	FROM (
 		SELECT
 			t1.entry_id,
@@ -246,20 +247,20 @@ func (s *ScoredEntryPredictionRepo) SelectEntryCumulativeScoresByRealm(ctx conte
 			entry_with_total_score.entry_id,
 			entry_with_total_score.total_score,
 			entry_with_score_this_round.score_this_round,
-			entry_with_min_score.min_score
+			entry_with_max_score.max_score
 		FROM (%s) AS entry_with_total_score
 		INNER JOIN (%s) AS entry_with_score_this_round
 			ON entry_with_total_score.entry_id = entry_with_score_this_round.entry_id
-		INNER JOIN (%s) AS entry_with_min_score
-			ON entry_with_total_score.entry_id = entry_with_min_score.entry_id
+		INNER JOIN (%s) AS entry_with_max_score
+			ON entry_with_total_score.entry_id = entry_with_max_score.entry_id
 		ORDER BY
-			entry_with_total_score.total_score ASC,
-			entry_with_min_score.min_score ASC,
-			entry_with_score_this_round.score_this_round ASC
+			entry_with_total_score.total_score DESC,
+			entry_with_max_score.max_score DESC,
+			entry_with_score_this_round.score_this_round DESC
 		`,
 		stmtSelectEntryWithTotalScore,
 		stmtSelectEntryWithScoreThisRound,
-		stmtSelectEntryWithMinScore,
+		stmtSelectEntryWithMaxScore,
 	)
 
 	params := []interface{}{
@@ -271,7 +272,7 @@ func (s *ScoredEntryPredictionRepo) SelectEntryCumulativeScoresByRealm(ctx conte
 		realmName,
 		seasonID,
 		roundNumber,
-		// params for stmtSelectEntryWithMinScore partial
+		// params for stmtSelectEntryWithMaxScore partial
 		realmName,
 		seasonID,
 		roundNumber,
@@ -292,13 +293,13 @@ func (s *ScoredEntryPredictionRepo) SelectEntryCumulativeScoresByRealm(ctx conte
 			entryID      string
 			totalScore   int
 			currentScore int
-			minScore     int
+			maxScore     int
 		)
 		if err := rows.Scan(
 			&entryID,
 			&totalScore,
 			&currentScore,
-			&minScore,
+			&maxScore,
 		); err != nil {
 			return nil, wrapDBError(err)
 		}
@@ -311,7 +312,7 @@ func (s *ScoredEntryPredictionRepo) SelectEntryCumulativeScoresByRealm(ctx conte
 				},
 				Score: currentScore,
 			},
-			MinScore:   minScore,
+			MaxScore:   maxScore,
 			TotalScore: totalScore,
 		})
 	}

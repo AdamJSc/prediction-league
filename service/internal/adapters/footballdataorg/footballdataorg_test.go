@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/google/go-cmp/cmp"
 	"io/ioutil"
 	"net/http"
 	"prediction-league/service/internal/adapters"
 	"prediction-league/service/internal/domain"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestNewClient(t *testing.T) {
@@ -148,11 +149,7 @@ func TestClient_RetrieveLatestStandingsBySeason(t *testing.T) {
 						Position: 1,
 					},
 					MetaData: map[string]int{
-						domain.MetaKeyPlayedGames:    1,
-						domain.MetaKeyPoints:         5,
-						domain.MetaKeyGoalsFor:       2,
-						domain.MetaKeyGoalsAgainst:   3,
-						domain.MetaKeyGoalDifference: 4,
+						domain.MetaKeyPlayedGames: 1,
 					},
 				},
 				{
@@ -161,11 +158,7 @@ func TestClient_RetrieveLatestStandingsBySeason(t *testing.T) {
 						Position: 2,
 					},
 					MetaData: map[string]int{
-						domain.MetaKeyPlayedGames:    6,
-						domain.MetaKeyPoints:         10,
-						domain.MetaKeyGoalsFor:       7,
-						domain.MetaKeyGoalsAgainst:   8,
-						domain.MetaKeyGoalDifference: 9,
+						domain.MetaKeyPlayedGames: 6,
 					},
 				},
 				{
@@ -174,11 +167,7 @@ func TestClient_RetrieveLatestStandingsBySeason(t *testing.T) {
 						Position: 3,
 					},
 					MetaData: map[string]int{
-						domain.MetaKeyPlayedGames:    11,
-						domain.MetaKeyPoints:         15,
-						domain.MetaKeyGoalsFor:       12,
-						domain.MetaKeyGoalsAgainst:   13,
-						domain.MetaKeyGoalDifference: 14,
+						domain.MetaKeyPlayedGames: 11,
 					},
 				},
 			},

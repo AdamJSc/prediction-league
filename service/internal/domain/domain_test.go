@@ -6,33 +6,34 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/google/uuid"
-	"github.com/joho/godotenv"
-	"github.com/kelseyhightower/envconfig"
 	"log"
 	"os"
 	"prediction-league/service/internal/adapters/logger"
 	"prediction-league/service/internal/adapters/mysqldb"
 	"prediction-league/service/internal/domain"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/google/uuid"
+	"github.com/joho/godotenv"
+	"github.com/kelseyhightower/envconfig"
 )
 
 var (
+	badDB      *sql.DB
 	db         *sql.DB
-	dt         time.Time
 	epr        domain.EntryPredictionRepository
 	er         domain.EntryRepository
 	rc         domain.RealmCollection
-	rlm        domain.Realm
+	realm      domain.Realm
 	sepr       domain.ScoredEntryPredictionRepository
 	sr         domain.StandingsRepository
 	sc         domain.SeasonCollection
 	tc         domain.TeamCollection
+	testDate   time.Time
 	testSeason domain.Season
 	tpl        *domain.Templates
 	tr         domain.TokenRepository
@@ -53,24 +54,17 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	dt = time.Date(2018, 5, 26, 14, 0, 0, 0, loc)
+	testDate = time.Date(2018, 5, 26, 14, 0, 0, 0, loc)
 
-	// get working directory
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// find service parent path - everything before the last occurrence of "service" within the current working directory path
-	svcParent := wd[:strings.LastIndex(wd, "service")]
+	projectRootDir := "../../.."
 
 	// setup env
-	mustLoadTestEnvFromPaths(svcParent + "/infra/test.env")
+	mustLoadTestEnvFromPaths(projectRootDir + "/infra/test.env")
 
 	// load config
 	var config struct {
-		MySQLURL      string `envconfig:"MYSQL_URL" required:"true"`
-		MigrationsURL string `envconfig:"MIGRATIONS_URL" required:"true"`
+		MySQLURL       string `envconfig:"MYSQL_URL" required:"true"`
+		MigrationsPath string `envconfig:"MIGRATIONS_PATH" required:"true"`
 	}
 	if err := envconfig.Process("", &config); err != nil {
 		log.Fatal(err)
@@ -87,7 +81,8 @@ func TestMain(m *testing.M) {
 	}
 
 	// setup db connection
-	db, err = mysqldb.ConnectAndMigrate(config.MySQLURL, config.MigrationsURL, l)
+	migrationsURL := fmt.Sprintf("file://%s/%s", projectRootDir, config.MigrationsPath)
+	db, err = mysqldb.ConnectAndMigrate(config.MySQLURL, migrationsURL, l)
 	if err != nil {
 		switch {
 		case errors.Is(err, migrate.ErrNoChange):
@@ -123,22 +118,26 @@ func TestMain(m *testing.M) {
 	}
 
 	// load templates
-	tpl, err = domain.ParseTemplates(svcParent + "/service/views")
+	tpl, err = domain.ParseTemplates(projectRootDir + "/service/views")
 	if err != nil {
 		log.Fatalf("cannot parse templates: %s", err.Error())
 	}
 
-	rlm = newTestRealm()
+	realm = newTestRealm()
 	rc = domain.RealmCollection{
-		rlm.Name: rlm,
+		realm,
 	}
 
-	// set testSeason to first entity in season collection
+	// set testSeason to fake season
 	tc = domain.GetTeamCollection()
 	sc = mustGetSeasonCollection()
-	for _, s := range sc {
-		testSeason = s
-		break
+	testSeason, err = sc.GetByID(domain.FakeSeasonID)
+	if err != nil {
+		log.Fatalf("cannot get season with id '%s': %s", domain.FakeSeasonID, err.Error())
+	}
+
+	if badDB, err = sql.Open("mysql", "connectionString/dbName"); err != nil {
+		log.Fatal(err)
 	}
 
 	// run tests
@@ -151,7 +150,7 @@ func mustGetSeasonCollection() domain.SeasonCollection {
 		log.Fatalf("cannot get seasons collection: %s", err.Error())
 	}
 	if len(sc) == 0 {
-		log.Fatal("must have at least one season collection")
+		log.Fatal("must have at least one season in collection")
 	}
 	return sc
 }
@@ -166,11 +165,10 @@ func mustLoadTestEnvFromPaths(paths ...string) {
 }
 
 // truncate clears our test tables of all previous data between tests
-func truncate(t *testing.T) {
-	t.Helper()
-	for _, tableName := range []string{"token", "scored_entry_prediction", "entry_prediction", "standings", "entry"} {
+func truncate() {
+	for _, tableName := range []string{"mw_result_modifier", "mw_result", "mw_submission", "token", "scored_entry_prediction", "entry_prediction", "standings", "entry"} {
 		if _, err := db.Exec(fmt.Sprintf("DELETE FROM %s", tableName)); err != nil {
-			t.Fatal(err)
+			log.Fatalf("cannot truncate table '%s': %s", tableName, err.Error())
 		}
 	}
 }
@@ -213,8 +211,8 @@ func testContextWithGuardAttempt(t *testing.T, attempt string) (context.Context,
 	ctx, cancel := domain.NewContext()
 
 	realm := domain.RealmFromContext(ctx)
-	realm.Name = testRealmName
-	realm.PIN = testRealmPIN
+	realm.Config.Name = testRealmName
+	realm.Config.PIN = testRealmPIN
 
 	domain.GuardFromContext(ctx).SetAttempt(attempt)
 
@@ -323,6 +321,9 @@ func insertEntry(t *testing.T, entry domain.Entry) domain.Entry {
 
 // generateTestEntryPrediction generates a new EntryPrediction entity for use within the testsuite
 func generateTestEntryPrediction(t *testing.T, entryID uuid.UUID) domain.EntryPrediction {
+	t.Helper()
+
+	// TODO: accept predetermined uuid
 	id, err := uuid.NewRandom()
 	if err != nil {
 		t.Fatal(err)
@@ -378,10 +379,12 @@ func insertScoredEntryPrediction(t *testing.T, scoredEntryPrediction domain.Scor
 
 func newTestRealm() domain.Realm {
 	return domain.Realm{
-		Name:     "TEST_REALM",
-		Origin:   "http://test_realm.org",
-		PIN:      "12345",
-		SeasonID: testSeason.ID,
+		Config: domain.RealmConfig{
+			Name:     "TEST_REALM",
+			GameName: "The Test Game",
+			PIN:      "12345",
+			SeasonID: testSeason.ID,
+		},
 		EntryFee: domain.RealmEntryFee{
 			Amount: 12.34,
 			Label:  "£12.34",
@@ -391,15 +394,23 @@ func newTestRealm() domain.Realm {
 			},
 		},
 		Contact: domain.RealmContact{
-			Name:            "Harry R and the PL Team",
+			SignOffName:     "Harry R and the PL Team",
 			EmailProper:     "hello@world.net",
 			EmailSanitised:  "hello (at) world (dot) net",
 			EmailDoNotReply: "do_not_reply@world.net",
+			SenderName:      "Mr Do Not Reply",
+			SenderDomain:    "configured_with_mailgun.com",
+		},
+		Site: domain.RealmSite{
+			Origin: "http://test_realm.org",
+			Paths:  domain.NewRealmSitePaths(),
 		},
 	}
 }
 
 func checkStringPtrMatch(t *testing.T, exp *string, got *string) {
+	t.Helper()
+
 	if exp == nil {
 		t.Fatal("exp is nil")
 	}

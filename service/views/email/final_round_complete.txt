@@ -1,13 +1,10 @@
-{{define "email_txt_final_round_complete"}}Final Round complete
-==================
+{{define "email_txt_final_round_complete"}}Hey {{.RecipientName}},
 
-Hey {{.Name}},
-
-All {{.RoundNumber}} rounds are now complete!
+All {{.RoundNumber}} Match Weeks are now complete!
 
 Check out the leaderboard to see where you've finished the season:
 {{.LeaderBoardURL}}
 
-Thank you for taking part in Prediction League - see you next season! 🧙🔮
+Thank you for taking part in {{.GameName}}. See you next season! 🦁⚽️
 {{- template "email_txt_footer" .}}
 {{end}}

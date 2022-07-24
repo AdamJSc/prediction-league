@@ -6,10 +6,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2022-07-24
+
+### Added
+- Demo data seeder cmd entrypoint
+- Introduced new entities `MatchWeekSubmission`, `MatchWeekStandings` and `MatchWeekResult`.
+- Config for 2022/23 Premier League season
+- Improve test coverage for transactional email templates
+
+### Changed
+- Amended scoring mechanism:
+    - Players still acquire 1 point for every position they have placed each team incorrectly in the rankings.
+    - However, instead of this tally representing the player's full Match Week score, each player now starts the
+      Match Week with 100 points and their calculated tally is **deducted** from this starting value
+      (essentially taking a points "hit").
+    - The aim of the game is now to accrue the **MOST** points across a season, not the fewest.
+- Inverted leaderboard logic to reflect new aim of the game outlined above.
+- Explicitly disable Mailgun URL rewrites
+- Revise copy and tweak layout
+- General tidy up
+    - Reconfigure Realm object
+    - Amend site copy
+    - Remove unused constants/symbols
+
+### Fixed
+- Team logos/crests render with consistent height
+
+### Removed
+- Requirement to enter Realm PIN on signup
+- Legacy data seeder component
+
+### Security
+- Bump Go from 1.16 to 1.18
+
 ## [2.2.1] - 2022-06-15
 
 ### Changed
-
 - Update colour scheme and branding
 - Amend config to take running version and timestamp from build flags instead of env vars
 - Update CI build
@@ -80,7 +112,7 @@ through user's previous game week results within the same view.
 
 ### Changed
 - Replace sequence of Season prediction windows, with a single window/timeframe.
-- Implement ranking limit: permit a maximum of two teams to be swapped per Round/Game Week.
+- Implement ranking limit: permit a maximum of two teams to be swapped per Round/Match Week.
 - Replace email/short code login with magic link
 
 ### Removed
@@ -134,7 +166,7 @@ Perform this filter explicitly, by iterating over response payload and checking 
 
 ### Fixed
 - Bug where the most recently created Scored Entry Prediction was not necessarily being retrieved for each specified
-combination of Entry/Round Number (Game Week) when building the Leaderboard, due to spurious behaviour of MySQL's
+combination of Entry/Round Number (Match Week) when building the Leaderboard, due to spurious behaviour of MySQL's
 Group/Order By functions.
 - Amended the sub-queries that are used to select Entries' cumulative scores by Realm, such that the order of records
 produced when descending by Scored Entry Prediction's `created_at` field is guaranteed to be retained by the parent query. 
@@ -173,7 +205,8 @@ Standings object that has just been received from data client.
 ### Added
 - This project to the Open Source "dimension"...
 
-[Unreleased]: https://github.com/AdamJSc/prediction-league/compare/v2.2.1...HEAD
+[Unreleased]: https://github.com/AdamJSc/prediction-league/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/AdamJSc/prediction-league/compare/v2.2.1...v2.3.0
 [2.2.1]: https://github.com/AdamJSc/prediction-league/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/AdamJSc/prediction-league/compare/v2.1.5...v2.2.0
 [2.1.5]: https://github.com/AdamJSc/prediction-league/compare/v2.1.4...v2.1.5

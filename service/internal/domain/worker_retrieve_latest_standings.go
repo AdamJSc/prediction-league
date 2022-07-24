@@ -8,6 +8,10 @@ import (
 	"sync"
 )
 
+// baseScore is the number of points that each match week result begins with
+// prior to deducting any "hits" based on standings/rankings (or applying any subsequent modifiers)
+const baseScore = 100
+
 // RoundCompleteEmailIssuer defines behaviours required to issue a Round Complete email
 type RoundCompleteEmailIssuer interface {
 	IssueRoundCompleteEmail(ctx context.Context, sep ScoredEntryPrediction, isFinalRound bool) error
@@ -15,21 +19,23 @@ type RoundCompleteEmailIssuer interface {
 
 // RetrieveLatestStandingsWorker performs the work required to retrieve the latest standings for a provided Season
 type RetrieveLatestStandingsWorker struct {
-	s    Season
-	tc   TeamCollection
-	cl   Clock
-	l    Logger
-	ea   *EntryAgent
-	sa   *StandingsAgent
-	sepa *ScoredEntryPredictionAgent
-	rcei RoundCompleteEmailIssuer
-	fds  FootballDataSource
+	season                     Season
+	teamCollection             TeamCollection
+	clock                      Clock
+	logger                     Logger
+	entryAgent                 *EntryAgent
+	standingsAgent             *StandingsAgent
+	scoredEntryPredictionAgent *ScoredEntryPredictionAgent
+	matchWeekSubmissionAgent   *MatchWeekSubmissionAgent
+	matchWeekResultAgent       *MatchWeekResultAgent
+	emailIssuer                RoundCompleteEmailIssuer
+	footballClient             FootballDataSource
 }
 
 // DoWork implements domain.Worker
 func (r *RetrieveLatestStandingsWorker) DoWork(ctx context.Context) error {
 	// retrieve entry predictions for provided season
-	eps, err := r.ea.RetrieveEntryPredictionsForActiveSeasonByTimestamp(ctx, r.s, r.cl.Now())
+	entryPredictions, err := r.entryAgent.RetrieveEntryPredictionsForActiveSeasonByTimestamp(ctx, r.season, r.clock.Now())
 	if err != nil {
 		switch {
 		case errors.As(err, &NotFoundError{}):
@@ -37,7 +43,7 @@ func (r *RetrieveLatestStandingsWorker) DoWork(ctx context.Context) error {
 			return fmt.Errorf("no entry predictions")
 		case errors.As(err, &ConflictError{}):
 			// season is not active, so exit early
-			r.l.Debugf("season is not active: %s", r.s.ID)
+			r.logger.Debugf("season is not active: %s", r.season.ID)
 			return nil
 		default:
 			// something else went wrong, so exit early
@@ -46,72 +52,72 @@ func (r *RetrieveLatestStandingsWorker) DoWork(ctx context.Context) error {
 	}
 
 	// get latest standings from client
-	clientStnd, err := r.fds.RetrieveLatestStandingsBySeason(ctx, r.s)
+	latestStandings, err := r.footballClient.RetrieveLatestStandingsBySeason(ctx, r.season)
 	if err != nil {
 		return fmt.Errorf("cannot retrieve latest standings: %w", err)
 	}
 
 	// validate and sort
-	if err := ValidateAndSortStandings(&clientStnd, r.tc); err != nil {
+	if err := ValidateAndSortStandings(&latestStandings, r.teamCollection); err != nil {
 		return fmt.Errorf("cannot validate and sort client standings: %w", err)
 	}
 
 	// if standings retrieved from client represents a completed season, ensure that round number reflects the season's
 	// max rounds - standings data from upstream client was stuck on round 37 for a 38-round PL season in 2019/20
 	// so this check safeguards against that
-	if r.s.IsCompletedByStandings(clientStnd) {
-		clientStnd.RoundNumber = r.s.MaxRounds
+	if r.season.IsCompletedByStandings(latestStandings) {
+		latestStandings.RoundNumber = r.season.MaxRounds
 	}
 
-	var jobStnd Standings
+	var jobStandings Standings
 
-	existStnd, err := r.sa.RetrieveStandingsBySeasonAndRoundNumber(ctx, r.s.ID, clientStnd.RoundNumber)
+	existingStandings, err := r.standingsAgent.RetrieveStandingsBySeasonAndRoundNumber(ctx, r.season.ID, latestStandings.RoundNumber)
 	switch {
 	case err == nil:
 		// we have existing standings
-		jobStnd, err = r.ProcessExistingStandings(ctx, existStnd, clientStnd)
+		jobStandings, err = r.ProcessExistingStandings(ctx, existingStandings, latestStandings)
 		if err != nil {
 			return fmt.Errorf("cannot process existing standings: %w", err)
 		}
 	case errors.As(err, &NotFoundError{}):
 		// we have new standings
-		jobStnd, err = r.ProcessNewStandings(ctx, clientStnd)
+		jobStandings, err = r.ProcessNewStandings(ctx, latestStandings)
 		if err != nil {
 			return fmt.Errorf("cannot process new standings: %w", err)
 		}
 	default:
 		// something went wrong...
-		return fmt.Errorf("cannot retrieve standings by round number %d: %w", clientStnd.RoundNumber, err)
+		return fmt.Errorf("cannot retrieve standings by round number %d: %w", latestStandings.RoundNumber, err)
 	}
 
-	if r.HasFinalisedLastRound(jobStnd) {
+	if r.HasFinalisedLastRound(jobStandings) {
 		// we've already finalised the last round of our season so just exit early
 		return nil
 	}
 
-	seps := make([]ScoredEntryPrediction, 0)
+	scoredEntryPredictions := make([]ScoredEntryPrediction, 0)
 
 	// calculate and save ranking scores for each entry prediction based on the standings
-	for _, entryPrediction := range eps {
-		sep, err := GenerateScoredEntryPrediction(entryPrediction, jobStnd)
+	for _, entryPrediction := range entryPredictions {
+		sep, err := r.GenerateScoredEntryPrediction(ctx, entryPrediction, jobStandings)
 		if err != nil {
 			return fmt.Errorf("cannot generate scored entry prediction: %w", err)
 		}
 		if err := r.upsertScoredEntryPrediction(ctx, sep); err != nil {
 			return fmt.Errorf("cannot upsert scored entry prediction: %w", err)
 		}
-		seps = append(seps, *sep)
+		scoredEntryPredictions = append(scoredEntryPredictions, *sep)
 	}
 
-	if r.s.IsCompletedByStandings(jobStnd) {
+	if r.season.IsCompletedByStandings(jobStandings) {
 		// last round of season!
-		jobStnd.Finalised = true
-		if _, err := r.sa.UpdateStandings(ctx, jobStnd); err != nil {
+		jobStandings.Finalised = true
+		if _, err := r.standingsAgent.UpdateStandings(ctx, jobStandings); err != nil {
 			return fmt.Errorf("cannot update finalised standings: %w", err)
 		}
 	}
 
-	return r.IssueEmails(ctx, jobStnd, seps)
+	return r.IssueEmails(ctx, jobStandings, scoredEntryPredictions)
 }
 
 // ProcessExistingStandings updates the rankings of the provided existing standings then updates them
@@ -122,7 +128,7 @@ func (r *RetrieveLatestStandingsWorker) ProcessExistingStandings(
 ) (Standings, error) {
 	// update rankings
 	existStnd.Rankings = clientStnd.Rankings
-	return r.sa.UpdateStandings(ctx, existStnd)
+	return r.standingsAgent.UpdateStandings(ctx, existStnd)
 }
 
 // ProcessNewStandings processes the provided Standings as a new entity
@@ -133,11 +139,11 @@ func (r *RetrieveLatestStandingsWorker) ProcessNewStandings(
 	if stnd.RoundNumber == 1 {
 		// this is the first time we've scraped our first round
 		// just save it!
-		return r.sa.CreateStandings(ctx, stnd)
+		return r.standingsAgent.CreateStandings(ctx, stnd)
 	}
 
 	// check whether we have a previous round of standings that still needs to be finalised
-	rtrvdStnd, err := r.sa.RetrieveStandingsIfNotFinalised(ctx, r.s.ID, stnd.RoundNumber-1, stnd)
+	rtrvdStnd, err := r.standingsAgent.RetrieveStandingsIfNotFinalised(ctx, r.season.ID, stnd.RoundNumber-1, stnd)
 	if err != nil {
 		return Standings{}, fmt.Errorf("cannot retrieve existing standings: %w", err)
 	}
@@ -146,16 +152,54 @@ func (r *RetrieveLatestStandingsWorker) ProcessNewStandings(
 		// looks like we have unfinished business with our previous standings round
 		// let's finalise and update it, then continue with this one
 		rtrvdStnd.Finalised = true
-		return r.sa.UpdateStandings(ctx, rtrvdStnd)
+		return r.standingsAgent.UpdateStandings(ctx, rtrvdStnd)
 	}
 
 	// previous round's standings has already been finalised, so let's create a new one and continue with this
-	return r.sa.CreateStandings(ctx, stnd)
+	return r.standingsAgent.CreateStandings(ctx, stnd)
 }
 
 // HasFinalisedLastRound returns true if the provided Standings represents the worker's Season having been finalised, otherwise false
 func (r *RetrieveLatestStandingsWorker) HasFinalisedLastRound(stnd Standings) bool {
-	return r.s.IsCompletedByStandings(stnd) && stnd.Finalised
+	return r.season.IsCompletedByStandings(stnd) && stnd.Finalised
+}
+
+// GenerateScoredEntryPrediction generates a scored entry prediction from the provided entry prediction and standings
+func (r *RetrieveLatestStandingsWorker) GenerateScoredEntryPrediction(ctx context.Context, ep EntryPrediction, s Standings) (*ScoredEntryPrediction, error) {
+	// TODO: migrate to MatchWeekSubmission entity + deprecate EntryPrediction
+
+	mwSubmission := newMatchWeekSubmissionFromEntryPredictionAndStandings(ep, s)
+
+	// TODO: migrate to MatchWeekStandings entity + deprecate Standings
+	// TODO: migrate to MatchWeekResult entity + deprecate ScoredEntryPrediction
+
+	mwStandings := newMatchWeekStandingsFromStandings(s)
+	mwResult, err := NewMatchWeekResult(
+		mwSubmission.ID,
+		BaseScoreModifier(baseScore),
+		TeamRankingsHitModifier(mwSubmission, mwStandings),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := r.matchWeekSubmissionAgent.UpsertByLegacy(ctx, mwSubmission); err != nil {
+		return nil, err
+	}
+
+	mwResult.MatchWeekSubmissionID = mwSubmission.ID
+	if err := r.matchWeekResultAgent.UpsertBySubmissionID(ctx, mwResult); err != nil {
+		return nil, err
+	}
+
+	sep := ScoredEntryPrediction{
+		EntryPredictionID: ep.ID,
+		StandingsID:       s.ID,
+		Rankings:          newRankingsWithScoreFromResultTeamRankings(mwResult.TeamRankings),
+		Score:             int(mwResult.Score),
+	}
+
+	return &sep, nil
 }
 
 // IssueEmails issues emails to entrants based on the provided Standings and ScoredEntryPredictions
@@ -164,7 +208,7 @@ func (r *RetrieveLatestStandingsWorker) IssueEmails(ctx context.Context, stnd St
 	chErr := make(chan error, 1)
 
 	switch {
-	case r.s.IsCompletedByStandings(stnd):
+	case r.season.IsCompletedByStandings(stnd):
 		go func() {
 			defer func() { chDone <- struct{}{} }()
 			r.issueRoundCompleteEmails(ctx, seps, true, chErr)
@@ -200,7 +244,7 @@ func (r *RetrieveLatestStandingsWorker) IssueEmails(ctx context.Context, stnd St
 // upsertScoredEntryPrediction creates or updates the provided ScoredEntryPrediction depending on whether or not it already exists
 func (r *RetrieveLatestStandingsWorker) upsertScoredEntryPrediction(ctx context.Context, sep *ScoredEntryPrediction) error {
 	// see if we have an existing scored entry prediction that matches our provided sep
-	existSep, err := r.sepa.RetrieveScoredEntryPredictionByIDs(
+	existSep, err := r.scoredEntryPredictionAgent.RetrieveScoredEntryPredictionByIDs(
 		ctx,
 		sep.EntryPredictionID.String(),
 		sep.StandingsID.String(),
@@ -210,7 +254,7 @@ func (r *RetrieveLatestStandingsWorker) upsertScoredEntryPrediction(ctx context.
 		case errors.As(err, &NotFoundError{}):
 			// we have a new scored entry prediction!
 			// let's create it...
-			crSep, crErr := r.sepa.CreateScoredEntryPrediction(ctx, *sep)
+			crSep, crErr := r.scoredEntryPredictionAgent.CreateScoredEntryPrediction(ctx, *sep)
 			if crErr != nil {
 				return fmt.Errorf("cannot created scored entry prediction: %w", crErr)
 			}
@@ -227,7 +271,7 @@ func (r *RetrieveLatestStandingsWorker) upsertScoredEntryPrediction(ctx context.
 	// let's update it...
 	existSep.Rankings = sep.Rankings
 	existSep.Score = sep.Score
-	updSep, err := r.sepa.UpdateScoredEntryPrediction(ctx, existSep)
+	updSep, err := r.scoredEntryPredictionAgent.UpdateScoredEntryPrediction(ctx, existSep)
 	if err != nil {
 		return fmt.Errorf("cannot update existing scored entry prediction: %w", err)
 	}
@@ -256,7 +300,7 @@ func (r *RetrieveLatestStandingsWorker) issueRoundCompleteEmails(
 				<-sem
 			}()
 
-			if err := r.rcei.IssueRoundCompleteEmail(ctx, sep, isFinalRound); err != nil {
+			if err := r.emailIssuer.IssueRoundCompleteEmail(ctx, sep, isFinalRound); err != nil {
 				chErr <- err
 			}
 		}(sep)
@@ -265,76 +309,64 @@ func (r *RetrieveLatestStandingsWorker) issueRoundCompleteEmails(
 	wg.Wait()
 }
 
-func NewRetrieveLatestStandingsWorker(
-	s Season,
-	tc TeamCollection,
-	cl Clock,
-	l Logger,
-	ea *EntryAgent,
-	sa *StandingsAgent,
-	sepa *ScoredEntryPredictionAgent,
-	ca *CommunicationsAgent,
-	fds FootballDataSource,
-) (*RetrieveLatestStandingsWorker, error) {
-	if tc == nil {
+type RetrieveLatestStandingsWorkerParams struct {
+	Season                     Season
+	TeamCollection             TeamCollection
+	Clock                      Clock
+	Logger                     Logger
+	EntryAgent                 *EntryAgent
+	StandingsAgent             *StandingsAgent
+	ScoredEntryPredictionAgent *ScoredEntryPredictionAgent
+	MatchWeekSubmissionAgent   *MatchWeekSubmissionAgent
+	MatchWeekResultAgent       *MatchWeekResultAgent
+	EmailIssuer                RoundCompleteEmailIssuer
+	FootballClient             FootballDataSource
+}
+
+func NewRetrieveLatestStandingsWorker(params RetrieveLatestStandingsWorkerParams) (*RetrieveLatestStandingsWorker, error) {
+	if params.TeamCollection == nil {
 		return nil, fmt.Errorf("team collection: %w", ErrIsNil)
 	}
-	if cl == nil {
+	if params.Clock == nil {
 		return nil, fmt.Errorf("clock: %w", ErrIsNil)
 	}
-	if l == nil {
+	if params.Logger == nil {
 		return nil, fmt.Errorf("logger: %w", ErrIsNil)
 	}
-	if ea == nil {
+	if params.EntryAgent == nil {
 		return nil, fmt.Errorf("entry agent: %w", ErrIsNil)
 	}
-	if sa == nil {
+	if params.StandingsAgent == nil {
 		return nil, fmt.Errorf("standings agent: %w", ErrIsNil)
 	}
-	if sepa == nil {
+	if params.ScoredEntryPredictionAgent == nil {
 		return nil, fmt.Errorf("scored entry predictions agent: %w", ErrIsNil)
 	}
-	if ca == nil {
-		return nil, fmt.Errorf("communications agent: %w", ErrIsNil)
+	if params.MatchWeekSubmissionAgent == nil {
+		return nil, fmt.Errorf("match week submission agent: %w", ErrIsNil)
 	}
-	if fds == nil {
-		return nil, fmt.Errorf("football data source: %w", ErrIsNil)
+	if params.MatchWeekResultAgent == nil {
+		return nil, fmt.Errorf("match week result agent: %w", ErrIsNil)
 	}
-	return &RetrieveLatestStandingsWorker{s, tc, cl, l, ea, sa, sepa, ca, fds}, nil
-}
-
-// TODO - tests: move to domain package and remove this constructor
-func NewTestRetrieveLatestStandingsWorker(
-	s Season,
-	tc TeamCollection,
-	cl Clock,
-	l Logger,
-	ea *EntryAgent,
-	sa *StandingsAgent,
-	sepa *ScoredEntryPredictionAgent,
-	rcei RoundCompleteEmailIssuer,
-	fds FootballDataSource,
-) *RetrieveLatestStandingsWorker {
-	return &RetrieveLatestStandingsWorker{s, tc, cl, l, ea, sa, sepa, rcei, fds}
-}
-
-// GenerateScoredEntryPrediction generates a scored entry prediction from the provided entry prediction and standings
-func GenerateScoredEntryPrediction(ep EntryPrediction, s Standings) (*ScoredEntryPrediction, error) {
-	standingsRankingCollection := NewRankingCollectionFromRankingWithMetas(s.Rankings)
-
-	rws, err := CalculateRankingsScores(ep.Rankings, standingsRankingCollection)
-	if err != nil {
-		return nil, err
+	if params.EmailIssuer == nil {
+		return nil, fmt.Errorf("email issuer: %w", ErrIsNil)
 	}
-
-	sep := ScoredEntryPrediction{
-		EntryPredictionID: ep.ID,
-		StandingsID:       s.ID,
-		Rankings:          *rws,
-		Score:             rws.GetTotal(),
+	if params.FootballClient == nil {
+		return nil, fmt.Errorf("football data client: %w", ErrIsNil)
 	}
-
-	return &sep, nil
+	return &RetrieveLatestStandingsWorker{
+		season:                     params.Season,
+		teamCollection:             params.TeamCollection,
+		clock:                      params.Clock,
+		logger:                     params.Logger,
+		entryAgent:                 params.EntryAgent,
+		standingsAgent:             params.StandingsAgent,
+		scoredEntryPredictionAgent: params.ScoredEntryPredictionAgent,
+		matchWeekSubmissionAgent:   params.MatchWeekSubmissionAgent,
+		matchWeekResultAgent:       params.MatchWeekResultAgent,
+		emailIssuer:                params.EmailIssuer,
+		footballClient:             params.FootballClient,
+	}, nil
 }
 
 // ValidateAndSortStandings sorts and validates the provided standings

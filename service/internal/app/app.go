@@ -118,36 +118,25 @@ func isLoggedIn(r *http.Request) bool {
 }
 
 // newPage creates a new base page from the provided arguments
-func newPage(r *http.Request, c *container, title, activePage, bannerTitle string, data interface{}) *view.Base {
+func newPage(r *http.Request, c *container, pageTitle, activePage, bannerTitle string, data interface{}) *view.Base {
 	// ignore error because if the realm doesn't exist the other agent methods will prevent core functionality anyway
 	// we only need the realm for populating a couple of trivial attributes which will be the least of our worries if any issues...
 	ctx, cancel, _ := contextFromRequest(r, c)
 	defer cancel()
 
 	realm := domain.RealmFromContext(ctx)
-	s, _ := c.seasons.GetByID(realm.SeasonID)
+	s, _ := c.seasons.GetByID(realm.Config.SeasonID)
 
 	return &view.Base{
-		Title:                 title,
-		BannerTitle:           template.HTML(bannerTitle),
-		ActivePage:            activePage,
-		IsLoggedIn:            isLoggedIn(r),
-		SupportEmailPlainText: realm.Contact.EmailSanitised,
-		SupportEmailFormatted: realm.Contact.EmailProper,
-		RealmName:             realm.Name,
-		RealmImage:            realm.Image,
-		RealmOrigin:           realm.Origin,
-		SeasonName:            s.ShortName,
-		HomePageURL:           domain.GetHomeURL(realm),
-		LeaderBoardPageURL:    domain.GetLeaderBoardURL(realm),
-		JoinPageURL:           domain.GetJoinURL(realm),
-		FAQPageURL:            domain.GetFAQURL(realm),
-		PredictionPageURL:     domain.GetPredictionURL(realm),
-		LoginPageURL:          domain.GetLoginURL(realm),
-		BuildVersion:          c.config.BuildVersion,
-		BuildTimestamp:        c.config.BuildTimestamp,
-		AnalyticsCode:         realm.AnalyticsCode,
-		Data:                  data,
+		PageTitle:      pageTitle,
+		BannerTitle:    template.HTML(bannerTitle),
+		ActivePage:     activePage,
+		IsLoggedIn:     isLoggedIn(r),
+		Realm:          realm,
+		SeasonName:     s.ShortName,
+		BuildVersion:   c.config.BuildVersion,
+		BuildTimestamp: c.config.BuildTimestamp,
+		Data:           data,
 	}
 }
 

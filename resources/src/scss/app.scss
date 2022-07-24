@@ -26,6 +26,10 @@ h1 {
   font-size: 2rem;
 }
 
+h2 {
+  font-size: 1.5rem;
+}
+
 h1, h2, h3, h4 {
   font-family: $heading-font-family;
   color: $primary-dark;
@@ -61,6 +65,12 @@ a {
     padding-bottom: 100px; /* 40px height of footer + an extra 60px whitespace */
   }
 
+  .pre-footer-message {
+    font-size: 11px;
+    padding-top: 2rem;
+    text-align: center;
+  }
+
   .footer {
     font-size: 40px;
     position: absolute;
@@ -92,9 +102,36 @@ a {
       font-size: 0.3em;
     }
 
-    .repo-link {
+    .social-icons {
       display: inline-block;
       font-size: 0.7em;
+
+      a {
+        text-decoration: none;
+      }
+    }
+  }
+}
+
+.menu-bar {
+  .brand-container {
+    .icon-container {
+      display: inline-block;
+      height: 30px;
+      overflow: hidden;
+      padding-bottom: 5px;
+      vertical-align: middle;
+      width: 30px;
+
+      img {
+        vertical-align: top;
+        width: 100%;
+      }
+    }
+
+    .title-container {
+      display: inline-block;
+      vertical-align: middle;
     }
   }
 }
@@ -125,23 +162,47 @@ a {
   }
 }
 
+.home-page-banner {
+  display: block;
+  margin: 0 auto;
+  max-width: 300px;
+  width: 100%;
+
+  img {
+    width: 100%;
+  }
+}
+
+.trailer-container {
+  display: none;
+  height: 100%;
+  margin: 1rem auto 0;
+  width: 100%;
+
+  iframe {
+    border: 0;
+    height: 100%;
+    width: 100%;
+  }
+}
+
 .accented-component {
   max-width: 400px;
   margin: 0 auto;
   border: 2px solid $primary-dark;
-  border-radius: 5px;
+  border-radius: $border-radius;
   padding: 0.5rem;
 }
 
 .page-section {
   padding: 1.5rem;
+}
 
-  .icon {
-    height: 70px;
-    font-weight: bold;
-    font-size: 3rem;
-    color: $primary-dark;
-  }
+.icon {
+  height: 70px;
+  font-weight: bold;
+  font-size: 3rem;
+  color: $primary-dark;
 }
 
 .intro-cta {
@@ -199,7 +260,7 @@ a {
 .highlight-container {
     background: $primary-dark;
     color: $text-light;
-    border-radius: 5px;
+    border-radius: $border-radius;
     padding: 0.5rem;
     font-family: $heading-font-family;
 
@@ -209,7 +270,10 @@ a {
 }
 
 .payment-info {
-  margin-bottom: 2rem;
+  background: $primary-light;
+  border-radius: $border-radius;
+  color: $primary-dark;
+  padding: 1rem;
 
   ul {
     margin-bottom: 1rem;
@@ -224,6 +288,12 @@ a {
     color: $primary-dark;
     font-family: $heading-font-family;
     font-size: 1.7rem;
+  }
+}
+
+a.registration-form-toggle {
+  &:hover{
+    color: $primary-dark;
   }
 }
 
@@ -285,7 +355,7 @@ a {
 
   input {
     height: auto;
-    border-radius: 1rem;
+    border-radius: $border-radius;
 
     &::-webkit-input-placeholder {
       color: transparent;
@@ -460,20 +530,19 @@ table.rankings, table.round, table.teams-reorder-admin {
   margin: 0 auto;
 
   .crest-outer {
-    width: 50px;
+    height: 100%;
+    padding: 10px 0;
     text-align: center;
-
-    .crest {
-      display: inline-block;
-      width: 40px;
-      padding: 0.25rem 0;
-      overflow: hidden;
-
-      img {
-        width: 100%;
-      }
-    }
+    width: 50px;
   }
+}
+
+.bg-img-fill {
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: 50% 50%;
+  height: 100%;
+  width: 100%;
 }
 
 table.round-navigation-container {
@@ -529,7 +598,26 @@ table.round-navigation-container {
   color: $text-light-tint-dark;
 }
 
+@media screen and (min-width: 280px) {
+  .trailer-container {
+    display: block;
+    height: 196.25px;
+    width: 260px;
+  }
+}
+
+@media screen and (min-width: 360px) {
+  .trailer-container {
+    height: 210px;
+    width: 350px;
+  }
+}
+
 @media screen and (min-width: 576px) {
+  h2 {
+    font-size: 2rem;
+  }
+
   .left-section {
     text-align: left!important;
   }
@@ -537,9 +625,20 @@ table.round-navigation-container {
   .right-section {
     text-align: right!important;
   }
+
+  .trailer-container {
+    display: block;
+    height: 308.4px;
+    width: 550px;
+  }
 }
 
 @media screen and (min-width: 768px) {
+  .trailer-container {
+    height: 392.6px;
+    width: 700px;
+  }
+
   table.rankings:not(.full-width), table.round, table.teams-reorder-admin {
     width: 75%;
   }
@@ -564,6 +663,12 @@ table.round-navigation-container {
 
   .highlight-container {
     font-size: 1.2rem;
+  }
+
+  .main-wrapper {
+    .content-wrapper {
+      padding-bottom: 70px; /* 40px height of footer + an extra 30px whitespace */
+    }
   }
 }
 

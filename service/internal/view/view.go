@@ -7,26 +7,15 @@ import (
 )
 
 type Base struct {
-	Title                 string
-	BannerTitle           template.HTML
-	ActivePage            string
-	IsLoggedIn            bool
-	SupportEmailPlainText string
-	SupportEmailFormatted string
-	RealmName             string
-	RealmImage            string
-	RealmOrigin           string
-	SeasonName            string
-	HomePageURL           string
-	LeaderBoardPageURL    string
-	JoinPageURL           string
-	FAQPageURL            string
-	PredictionPageURL     string
-	LoginPageURL          string
-	BuildVersion          string
-	BuildTimestamp        string
-	AnalyticsCode         string
-	Data                  interface{}
+	PageTitle      string
+	BannerTitle    template.HTML
+	ActivePage     string
+	IsLoggedIn     bool
+	Realm          *domain.Realm
+	SeasonName     string
+	BuildVersion   string
+	BuildTimestamp string
+	Data           interface{}
 }
 
 type PredictionPageData struct {
@@ -74,12 +63,7 @@ type JoinPageData struct {
 
 type FAQPageData struct {
 	Err  error
-	FAQs []FAQItem
-}
-
-type FAQItem struct {
-	Question string
-	Answer   template.HTML
+	FAQs []domain.RealmFAQ
 }
 
 type GenerateMagicLoginPageData struct {

@@ -1,0 +1,17 @@
+{
+  "From": {
+    "Name": "Mr Do Not Reply",
+    "Address": "do_not_reply@world.net"
+  },
+  "To": {
+    "Name": "Harry Redknapp",
+    "Address": "harry.redknapp@football.net"
+  },
+  "ReplyTo": {
+    "Name": "Mr Do Not Reply",
+    "Address": "hello@world.net"
+  },
+  "SenderDomain": "configured_with_mailgun.com",
+  "Subject": "You're In!",
+  "PlainText": "Great news Harry Redknapp - you're in! 🎉\n\nIt's lovely to have you on-board for the Localhost Season season ⚽️\n\nYour payment of £12.34 will show on your bank statement as MERCHANT_NAME.\n\nYour PayPal reference is PAYMENT_REFERENCE\n\nTo submit your initial table, go to:\nhttp://test_realm.org/prediction\n\nLet us know if you get stuck - we're here to help 🙂\n\nEnjoy! 🦁⚽️\n- Harry R and the PL Team\n\n---------------------------------------------\n\nYou have received this email because you have entered The Test Game for the Localhost Season season (http://test_realm.org/)\n\nIf you have any questions, issues or concerns, please email hello@world.net\n\n"
+}

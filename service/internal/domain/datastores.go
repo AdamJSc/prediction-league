@@ -2,17 +2,15 @@ package domain
 
 import (
 	"fmt"
-	"io/ioutil"
 	"time"
-
-	"gopkg.in/yaml.v2"
 )
 
 const (
-	// fakeSeasonID defines the ID of the fake Season for running on localhost
-	fakeSeasonID = "FakeSeason"
+	// FakeSeasonID defines the ID of the fake Season for running on localhost
+	FakeSeasonID = "FakeSeason"
+
 	// fakeSeasonKey defines the key of the real-world Season to replicate as fake season
-	fakeSeasonKey = "201920_1"
+	fakeSeasonKey = "202223_1"
 )
 
 // GetTeamCollection returns the required TeamCollection
@@ -121,7 +119,7 @@ func GetTeamCollection() TeamCollection {
 			ClientID:  TeamIdentifier{TeamID: 354},
 			Name:      "Crystal Palace",
 			ShortName: "Palace",
-			CrestURL:  "https://upload.wikimedia.org/wikipedia/en/0/0c/Crystal_Palace_FC_logo.svg",
+			CrestURL:  "https://upload.wikimedia.org/wikipedia/en/thumb/a/a2/Crystal_Palace_FC_logo_%282022%29.svg/385px-Crystal_Palace_FC_logo_%282022%29.svg.png",
 		},
 		"DCFC": {
 			ID:        "DCFC",
@@ -225,8 +223,8 @@ func GetTeamCollection() TeamCollection {
 			ID:        "NFFC",
 			ClientID:  TeamIdentifier{TeamID: 351},
 			Name:      "Nottingham Forest",
-			ShortName: "Notts Forest",
-			CrestURL:  "https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Nottingham_Forest_FC_Logo.png/227px-Nottingham_Forest_FC_Logo.png",
+			ShortName: "Nottm Forest",
+			CrestURL:  "https://upload.wikimedia.org/wikipedia/en/thumb/e/e5/Nottingham_Forest_F.C._logo.svg/225px-Nottingham_Forest_F.C._logo.svg.png",
 		},
 		"NUFC": {
 			ID:        "NUFC",
@@ -359,6 +357,49 @@ func GetSeasonCollection() (SeasonCollection, error) {
 
 	// define seasons using location
 	sc := SeasonCollection{
+
+		// Premier League 2022/23
+		"202223_1": {
+			ID:        "202223_1",
+			ClientID:  SeasonIdentifier{SeasonID: "PL"},
+			Name:      "Premier League 2022/23",
+			ShortName: "Prem 22/23",
+			Live: TimeFrame{
+				From:  time.Date(2022, 8, 5, 20, 0, 0, 0, loc),    // opening day kick-off
+				Until: time.Date(2023, 5, 28, 23, 59, 59, 0, loc), // end of final day (regular season)
+			},
+			EntriesAccepted: TimeFrame{
+				From:  time.Date(2022, 7, 22, 12, 0, 0, 0, loc), // competition opens
+				Until: time.Date(2023, 5, 28, 16, 0, 0, 0, loc), // final day kick-off
+			},
+			PredictionsAccepted: TimeFrame{
+				From:  time.Date(2022, 7, 22, 12, 0, 0, 0, loc),   // competition opens
+				Until: time.Date(2023, 5, 28, 23, 59, 59, 0, loc), // end of final day (regular season)
+			},
+			TeamIDs: []string{
+				"AFC",   // arsenal
+				"AVFC",  // aston villa
+				"AFCB",  // bournemouth
+				"BFC3",  // brentford
+				"BHAFC", // brighton
+				"CFC",   // chelsea
+				"CPFC",  // crystal palace
+				"EFC",   // everton
+				"FFC",   // fulham
+				"LUFC",  // leeds united
+				"LCFC",  // leicester city
+				"LFC",   // liverpool
+				"MCFC",  // man city
+				"MUFC",  // man united
+				"NFFC",  // nottm forest
+				"NUFC",  // newcastle
+				"SFC",   // southampton
+				"THFC",  // tottenham hotspur
+				"WHUFC", // west ham
+				"WWFC",  // wolves
+			},
+			MaxRounds: 38,
+		},
 
 		// Premier League 2021/22
 		"202122_1": {
@@ -537,8 +578,8 @@ func GetSeasonCollection() (SeasonCollection, error) {
 	}
 
 	// define fake season
-	sc[fakeSeasonID] = Season{
-		ID:       fakeSeasonID,
+	sc[FakeSeasonID] = Season{
+		ID:       FakeSeasonID,
 		ClientID: nil, // will not invoke requests to client when running in retrieve latest standings job
 		Name:     "Localhost Season",
 		Live: TimeFrame{
@@ -558,35 +599,4 @@ func GetSeasonCollection() (SeasonCollection, error) {
 	}
 
 	return sc, nil
-}
-
-// GetRealmCollection returns the required RealmCollection
-func GetRealmCollection() (RealmCollection, error) {
-	return parseRealmsFromPath(fmt.Sprintf("./data/realms.yml"))
-}
-
-// parseRealmsFromPath parses the realms from the contents of the YAML file at the provided path
-func parseRealmsFromPath(yamlPath string) (RealmCollection, error) {
-	contents, err := ioutil.ReadFile(yamlPath)
-	if err != nil {
-		return nil, fmt.Errorf("cannot read file '%s': %w", yamlPath, err)
-	}
-
-	var payload struct {
-		Realms RealmCollection `yaml:"realms"`
-	}
-
-	// parse file contents
-	if err := yaml.Unmarshal(contents, &payload); err != nil {
-		return nil, fmt.Errorf("cannot unmarshal yaml at path '%s': %w", yamlPath, err)
-	}
-
-	// populate names of realms with map key
-	for key := range payload.Realms {
-		r := payload.Realms[key]
-		r.Name = key
-		payload.Realms[key] = r
-	}
-
-	return payload.Realms, nil
 }
