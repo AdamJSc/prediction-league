@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       (essentially taking a points "hit").
     - The aim of the game is now to accrue the **MOST** points across a season, not the fewest.
 - Inverted leaderboard logic to reflect new aim of the game outlined above.
+- Explicitly disable Mailgun URL rewrites
 - Revise copy and tweak layout
 - General tidy up
     - Reconfigure Realm object

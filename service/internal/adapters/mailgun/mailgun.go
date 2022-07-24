@@ -27,7 +27,7 @@ func (c *Client) SendEmail(ctx context.Context, msg domain.Email) error {
 		msg.PlainText,
 		fmt.Sprintf("%s <%s>", msg.To.Name, msg.To.Address),
 	)
-	mgMsg.SetTracking(true)
+	mgMsg.SetTracking(false)
 	mgMsg.SetReplyTo(fmt.Sprintf("%s <%s>", msg.ReplyTo.Name, msg.ReplyTo.Address))
 
 	result, id, err := mg.Send(ctx, mgMsg)
