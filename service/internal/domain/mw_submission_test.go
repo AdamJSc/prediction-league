@@ -172,7 +172,7 @@ func TestMatchWeekSubmissionAgent_UpsertByLegacy(t *testing.T) {
 		submission := cloneMatchWeekSubmission(seed)
 		submission.EntryID = uuid.New() // change to non-existent entry id in order to fail foreign key constraint
 
-		wantErrMsg := "cannot update submission: Error 1452: Cannot add or update a child row: a foreign key constraint fails (`prediction-league-test`.`mw_submission`, CONSTRAINT `mw_submission_ibfk_1` FOREIGN KEY (`entry_id`) REFERENCES `entry` (`id`))"
+		wantErrMsg := "cannot update submission: Error 1452: Cannot add or update a child row: a foreign key constraint fails (`test-db-name`.`mw_submission`, CONSTRAINT `mw_submission_ibfk_1` FOREIGN KEY (`entry_id`) REFERENCES `entry` (`id`))"
 		gotErr := agent.UpsertByLegacy(ctx, submission)
 		cmpErrorMsg(t, wantErrMsg, gotErr)
 	})

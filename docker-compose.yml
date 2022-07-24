@@ -46,9 +46,9 @@ services:
       - 33070:3306
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: prediction-league-test
-      MYSQL_USER: pl_test_user
-      MYSQL_PASSWORD: pl_test_pwd
+      MYSQL_DATABASE: test-db-name
+      MYSQL_USER: test-db-user
+      MYSQL_PASSWORD: test-db-pwd
 
   app_test:
     image: golang:1.16
