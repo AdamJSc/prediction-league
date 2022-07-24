@@ -24,7 +24,7 @@ services:
     command: bash -c "npm install && npm run watch"
 
   app:
-    image: golang:1.16
+    image: golang:1.18
     container_name: prediction-league-app
     env_file: ${PWD}/infra/app.docker.env
     depends_on:
@@ -51,7 +51,7 @@ services:
       MYSQL_PASSWORD: test-db-pwd
 
   app_test:
-    image: golang:1.16
+    image: golang:1.18
     container_name: prediction-league-app-test
     env_file: ${PWD}/infra/test.docker.env
     depends_on:

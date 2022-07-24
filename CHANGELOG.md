@@ -9,14 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.3.0] - 2022-07-24
 
 ### Added
-
 - Demo data seeder cmd entrypoint
 - Introduced new entities `MatchWeekSubmission`, `MatchWeekStandings` and `MatchWeekResult`.
 - Config for 2022/23 Premier League season
 - Improve test coverage for transactional email templates
 
 ### Changed
-
 - Amended scoring mechanism:
     - Players still acquire 1 point for every position they have placed each team incorrectly in the rankings.
     - However, instead of this tally representing the player's full Match Week score, each player now starts the
@@ -31,18 +29,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Remove unused constants/symbols
 
 ### Fixed
-
 - Team logos/crests render with consistent height
 
 ### Removed
-
 - Requirement to enter Realm PIN on signup
 - Legacy data seeder component
+
+### Security
+- Bump Go from 1.16 to 1.18
 
 ## [2.2.1] - 2022-06-15
 
 ### Changed
-
 - Update colour scheme and branding
 - Amend config to take running version and timestamp from build flags instead of env vars
 - Update CI build
