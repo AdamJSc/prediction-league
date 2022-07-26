@@ -261,7 +261,7 @@ func frontendRedeemMagicLoginHandler(c *container) func(w http.ResponseWriter, r
 			w.WriteHeader(http.StatusFound)
 		}
 
-		redirFail := "/failed"
+		redirFail := "/login/failed"
 
 		// get context from request
 		ctx, cancel, err := contextFromRequest(r, c)
