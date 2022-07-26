@@ -75,6 +75,15 @@ a {
     opacity: 1;
     text-shadow: none;
   }
+
+  a {
+    font-weight: bold;
+
+    &:hover {
+      color: $primary-dark-tint-light;
+      text-decoration: none;
+    }
+  }
 }
 
 .form-control {
