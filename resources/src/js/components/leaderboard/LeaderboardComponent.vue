@@ -15,7 +15,7 @@
       <div v-if="isWorking" class="loader-container">
         <img alt="loader" src="/assets/img/loader-light-bg.svg" />
       </div>
-      <div v-if="!isWorking && leaderboardToShow.lastUpdated" class="last-updated text-center">Updated {{lastUpdatedVerbose}}</div>
+      <div v-if="shouldShowLeaderboard" class="last-updated text-center">Updated {{lastUpdatedVerbose}}</div>
       <table class="leaderboard-render rankings clickable">
         <thead>
         <tr>
@@ -174,6 +174,12 @@
       },
       leaderboardToShow: function() {
         return this.getLeaderboardToShow(this.showRoundNumber)
+      },
+      shouldShowLeaderboard: function() {
+        const leaderboard = this.getLeaderboardToShow(this.roundNumber)
+        const defaultDateISO = "1970-01-01T00:00:00.000Z"
+        const updatedDateIsDefault = leaderboard.lastUpdated.toISOString() === defaultDateISO
+        return !this.isWorking && !updatedDateIsDefault
       }
     },
     watch: {
