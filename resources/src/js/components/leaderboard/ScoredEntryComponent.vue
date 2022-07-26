@@ -17,7 +17,7 @@
     <div v-if="isWorking" class="loader-container">
       <img alt="loader" src="/assets/img/loader-light-bg.svg" />
     </div>
-    <div v-if="!isWorking && errorMessages.length == 0">
+    <div v-if="!isWorking && errorMessages.length == 0 && scoredEntryToShow.rankings">
       <div class="scores-container text-center">
         <div class="round-score-container">
           <div class="subheading">Score</div>
@@ -140,10 +140,18 @@
           component.setScoredEntry(entryId, roundNumber, component.entryNickname, rankings, roundScore)
           showIfForeground()
         }).catch(function(error) {
-          if (isForeground) {
-            console.log(error)
-            component.errorMessages = ['Something went wrong :(<br />Please try again later']
+          if (!isForeground) {
+            return
           }
+          let message = 'Something went wrong :(<br />Please try again later'
+          switch (error.response.status) {
+            case 404:
+              message = 'Coming soon...'
+              break
+            default:
+              console.log(error)
+          }
+          component.errorMessages = [message]
         }).finally(function() {
           component.isWorking = false
         })
