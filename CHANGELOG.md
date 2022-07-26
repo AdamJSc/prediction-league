@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.1] - 2022-07-26
+
+### Fixed
+- Hide default Epoch last updated date for Leaderboard before season begins
+- Render friendly message if scored entry request receives 404
+- Redirect URL for failed login attempt (from `/failed` to `/login/failed`)
+- Mouseover colour clash when link is inside `alert-danger` element
+
 ## [2.3.0] - 2022-07-24
 
 ### Added
@@ -205,7 +213,8 @@ Standings object that has just been received from data client.
 ### Added
 - This project to the Open Source "dimension"...
 
-[Unreleased]: https://github.com/AdamJSc/prediction-league/compare/v2.3.0...HEAD
+[Unreleased]: https://github.com/AdamJSc/prediction-league/compare/v2.3.1...HEAD
+[2.3.1]: https://github.com/AdamJSc/prediction-league/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/AdamJSc/prediction-league/compare/v2.2.1...v2.3.0
 [2.2.1]: https://github.com/AdamJSc/prediction-league/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/AdamJSc/prediction-league/compare/v2.1.5...v2.2.0
