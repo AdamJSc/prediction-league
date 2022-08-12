@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.2] - 2022-08-12
+
+### Fixed
+- Resolved issue with generating match week results
+    - Initial lookup of match week submission is performed on associated "legacy" entry prediction ID and match week number
+    - If this exists already it is updated, otherwise a new one is inserted.
+    - When a new entry prediction is created, its ID will not match any existing match week submissions during the lookup
+    and so this will be considered a new match week submission to be inserted.
+    - However, this insert operation would fail based on a separate uniqueness constraint on entry ID/match week number.
+    This is due to the fact that the submission's associated entry would more than likely have already been processed as
+    part of the current match week by association with its previous entry prediction.
+    - This fix amends the initial lookup to be performed on the submission's match week number and entry ID rather than
+    entry prediction ID, in order to ensure the correct insert/update operation is performed and does not fail due to the
+    constraint.
+
 ## [2.3.1] - 2022-07-26
 
 ### Fixed
@@ -213,7 +228,8 @@ Standings object that has just been received from data client.
 ### Added
 - This project to the Open Source "dimension"...
 
-[Unreleased]: https://github.com/AdamJSc/prediction-league/compare/v2.3.1...HEAD
+[Unreleased]: https://github.com/AdamJSc/prediction-league/compare/v2.3.2...HEAD
+[2.3.2]: https://github.com/AdamJSc/prediction-league/compare/v2.3.1...v2.3.2
 [2.3.1]: https://github.com/AdamJSc/prediction-league/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/AdamJSc/prediction-league/compare/v2.2.1...v2.3.0
 [2.2.1]: https://github.com/AdamJSc/prediction-league/compare/v2.2.0...v2.2.1
