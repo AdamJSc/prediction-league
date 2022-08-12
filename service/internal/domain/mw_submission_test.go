@@ -46,9 +46,11 @@ func TestMatchWeekSubmissionAgent_UpsertByLegacy(t *testing.T) {
 	seedCreatedAt := testDate.Add(-24 * time.Hour)
 	seed := seedMatchWeekSubmission(t, generateMatchWeekSubmission(t, seedID, seedCreatedAt))
 
+	noSubsSeededEntry := seedEntry(t, generateEntry()) // seed entry that has no submissions attached so that we can reference an existent entry that doesn't have any submissions
+
 	ctx := context.Background()
 
-	t.Run("upsert submission that does not exist by legacy id should be inserted", func(t *testing.T) {
+	t.Run("upsert submission that does not exist by entry id should be inserted", func(t *testing.T) {
 		repoID := uuid.New() // id to insert new submission with
 		repoDate := testDate // createdAt date to insert new submission with
 		repo := newMatchWeekSubmissionRepo(t, repoID, repoDate)
@@ -56,7 +58,7 @@ func TestMatchWeekSubmissionAgent_UpsertByLegacy(t *testing.T) {
 
 		toUpsert := generateMatchWeekSubmission(t, uuid.UUID{}, time.Time{})
 		toUpsert.MatchWeekNumber = seed.MatchWeekNumber
-		toUpsert.LegacyEntryPredictionID = uuid.New() // will not be found by legacy id, so should insert a new entry
+		toUpsert.EntryID = noSubsSeededEntry.ID // will not be found by entry id, so should be inserted as a new submission
 
 		wantUpserted := cloneMatchWeekSubmission(toUpsert) // capture state prior to upsert
 		wantUpserted.ID = repoID                           // should be overridden on insert
@@ -89,8 +91,8 @@ func TestMatchWeekSubmissionAgent_UpsertByLegacy(t *testing.T) {
 		agent := newMatchWeekSubmissionAgent(t, repo)
 
 		toUpsert := generateMatchWeekSubmission(t, uuid.UUID{}, time.Time{})
-		toUpsert.MatchWeekNumber = 9999 // will not be found by match week number, so should insert a new entry
-		toUpsert.LegacyEntryPredictionID = seed.LegacyEntryPredictionID
+		toUpsert.MatchWeekNumber = 9999 // will not be found by match week number, so should be inserted as a new submission
+		toUpsert.EntryID = seed.EntryID
 
 		wantUpserted := cloneMatchWeekSubmission(toUpsert) // capture state prior to upsert
 		wantUpserted.ID = repoID                           // should be overridden on insert
@@ -116,7 +118,7 @@ func TestMatchWeekSubmissionAgent_UpsertByLegacy(t *testing.T) {
 		cmpDiff(t, "upserted match week submission", wantUpserted, gotUpserted)
 	})
 
-	t.Run("upsert submission that exists by legacy id and match week number should be updated", func(t *testing.T) {
+	t.Run("upsert submission that exists by entry id and match week number should be updated", func(t *testing.T) {
 		repoDate := testDate // updatedAt date to update existing submission with
 		repo := newMatchWeekSubmissionRepo(t, uuid.UUID{}, repoDate)
 		agent := newMatchWeekSubmissionAgent(t, repo)
@@ -155,24 +157,6 @@ func TestMatchWeekSubmissionAgent_UpsertByLegacy(t *testing.T) {
 
 		// new submission will be inserted but uuid function will return error
 		wantErrMsg := "cannot insert submission: cannot get uuid: sad times :'("
-		gotErr := agent.UpsertByLegacy(ctx, submission)
-		cmpErrorMsg(t, wantErrMsg, gotErr)
-	})
-
-	t.Run("update failure must return the expected error", func(t *testing.T) {
-		idFn := func() (uuid.UUID, error) {
-			return uuid.UUID{}, errors.New("sad times :'(")
-		}
-		repo, err := mysqldb.NewMatchWeekSubmissionRepo(db, idFn, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		agent := newMatchWeekSubmissionAgent(t, repo)
-
-		submission := cloneMatchWeekSubmission(seed)
-		submission.EntryID = uuid.New() // change to non-existent entry id in order to fail foreign key constraint
-
-		wantErrMsg := "cannot update submission: Error 1452: Cannot add or update a child row: a foreign key constraint fails (`test-db-name`.`mw_submission`, CONSTRAINT `mw_submission_ibfk_1` FOREIGN KEY (`entry_id`) REFERENCES `entry` (`id`))"
 		gotErr := agent.UpsertByLegacy(ctx, submission)
 		cmpErrorMsg(t, wantErrMsg, gotErr)
 	})
