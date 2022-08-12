@@ -63,8 +63,8 @@ func (m *MatchWeekSubmissionRepo) GetByID(ctx context.Context, id uuid.UUID) (*d
 	return submission, nil
 }
 
-// GetByLegacyIDAndMatchWeekNumber returns the MatchWeekSubmission that matches the provided entry prediction id and match week number
-func (m *MatchWeekSubmissionRepo) GetByLegacyIDAndMatchWeekNumber(ctx context.Context, entryPredictionID uuid.UUID, mwNumber uint16) (*domain.MatchWeekSubmission, error) {
+// GetByEntryIDAndMatchWeekNumber returns the MatchWeekSubmission that matches the provided entry id and match week number
+func (m *MatchWeekSubmissionRepo) GetByEntryIDAndMatchWeekNumber(ctx context.Context, entryID uuid.UUID, mwNumber uint16) (*domain.MatchWeekSubmission, error) {
 	stmt := `
 	SELECT
     	id,
@@ -77,14 +77,14 @@ func (m *MatchWeekSubmissionRepo) GetByLegacyIDAndMatchWeekNumber(ctx context.Co
 	FROM
 		mw_submission
 	WHERE
-		legacy_entry_prediction_id = ?
+		entry_id = ?
 	AND
 	    mw_number = ?
 	ORDER BY created_at DESC
 	LIMIT 1
 	`
 
-	row := m.db.QueryRowContext(ctx, stmt, entryPredictionID, mwNumber)
+	row := m.db.QueryRowContext(ctx, stmt, entryID, mwNumber)
 	submission := &domain.MatchWeekSubmission{}
 	var teamRankingsRaw []byte
 

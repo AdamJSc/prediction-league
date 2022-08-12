@@ -447,8 +447,8 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 		seededSubmission := seedMatchWeekSubmission(t, &domain.MatchWeekSubmission{
 			ID:                      submissionRepoID,
 			EntryID:                 seededEntry.ID,
-			MatchWeekNumber:         uint16(standings.RoundNumber), // match GetByLegacyIDAndMatchWeekNumber
-			LegacyEntryPredictionID: entryPrediction.ID,            // match GetByLegacyIDAndMatchWeekNumber
+			MatchWeekNumber:         uint16(standings.RoundNumber), // match GetByEntryIDAndMatchWeekNumber
+			LegacyEntryPredictionID: entryPrediction.ID,            // match GetByEntryIDAndMatchWeekNumber
 			CreatedAt:               testDate,
 		})
 

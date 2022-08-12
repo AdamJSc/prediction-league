@@ -161,7 +161,7 @@ func TestMatchWeekSubmissionRepo_GetByID(t *testing.T) {
 	})
 }
 
-func TestMatchWeekSubmissionRepo_GetByLegacyIDAndMatchWeekNumber(t *testing.T) {
+func TestMatchWeekSubmissionRepo_GetByEntryIDAndMatchWeekNumber(t *testing.T) {
 	t.Cleanup(truncate)
 
 	ctx := context.Background()
@@ -175,7 +175,7 @@ func TestMatchWeekSubmissionRepo_GetByLegacyIDAndMatchWeekNumber(t *testing.T) {
 
 	t.Run("match week submission that exists must be returned successfully", func(t *testing.T) {
 		want := seed
-		got, err := repo.GetByLegacyIDAndMatchWeekNumber(ctx, seed.LegacyEntryPredictionID, seed.MatchWeekNumber)
+		got, err := repo.GetByEntryIDAndMatchWeekNumber(ctx, seed.EntryID, seed.MatchWeekNumber)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -185,7 +185,7 @@ func TestMatchWeekSubmissionRepo_GetByLegacyIDAndMatchWeekNumber(t *testing.T) {
 
 	t.Run("match week submission that does not exist by legacy id must return the expected error", func(t *testing.T) {
 		nonExistentID := newUUID(t)
-		_, err := repo.GetByLegacyIDAndMatchWeekNumber(ctx, nonExistentID, seed.MatchWeekNumber)
+		_, err := repo.GetByEntryIDAndMatchWeekNumber(ctx, nonExistentID, seed.MatchWeekNumber)
 		if !errors.As(err, &domain.MissingDBRecordError{}) {
 			t.Fatalf("want missing db record error, got %+v (%T)", err, err)
 		}
@@ -193,7 +193,7 @@ func TestMatchWeekSubmissionRepo_GetByLegacyIDAndMatchWeekNumber(t *testing.T) {
 
 	t.Run("match week submission that does not exist by match week number must return the expected error", func(t *testing.T) {
 		nonExistentMWNumber := uint16(5678)
-		_, err := repo.GetByLegacyIDAndMatchWeekNumber(ctx, seed.LegacyEntryPredictionID, nonExistentMWNumber)
+		_, err := repo.GetByEntryIDAndMatchWeekNumber(ctx, seed.EntryID, nonExistentMWNumber)
 		if !errors.As(err, &domain.MissingDBRecordError{}) {
 			t.Fatalf("want missing db record error, got %+v (%T)", err, err)
 		}
