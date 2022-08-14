@@ -398,7 +398,8 @@ func GetSeasonCollection() (SeasonCollection, error) {
 				"WHUFC", // west ham
 				"WWFC",  // wolves
 			},
-			MaxRounds: 38,
+			BasePoints: 200, // prevents any player from scoring less than 0 in a single match week, worst possible score for 20 teams is 200 (19+17+15+13+11+9+7+5+3+1+1+3+5+7+9+11+13+15+17+19)
+			MaxRounds:  38,
 		},
 
 		// Premier League 2021/22

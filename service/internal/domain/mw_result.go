@@ -67,12 +67,12 @@ func NewMatchWeekResult(mwSubmissionID uuid.UUID, modifiers ...MatchWeekResultMo
 }
 
 // BaseScoreModifier overrides the match week result's score with the provided value
-func BaseScoreModifier(score int64) MatchWeekResultModifier {
+func BaseScoreModifier(season Season) MatchWeekResultModifier {
 	return func(result *MatchWeekResult) error {
-		result.Score = score
+		result.Score = season.BasePoints
 		result.Modifiers = append(result.Modifiers, ModifierSummary{
 			Code:  BaseScoreModifierCode,
-			Value: score,
+			Value: season.BasePoints,
 		})
 
 		return nil
