@@ -314,7 +314,7 @@ Also consider replacing the in-memory queue with a hosted instance of RabbitMQ/P
 
 ### Adding a new Season
 
-To add a new [Season](#season), define an additional `Season` struct within the map provided by the function `domain.GetSeasonsColection()`.
+To add a new [Season](#season), define an additional `Season` struct within the map provided by the function `domain.GetSeasonColection()`.
 
 This struct must adhere to the validation rules found within `domain.ValidateSeason()`.
 

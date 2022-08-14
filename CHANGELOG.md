@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.3] - 2022-08-14
+
+### Fixed
+- Resolved scoring issue
+    - All players begin each match week with a given base score, which their ranking "hits" are deducted from each match week.
+    - This base score was originally set to a default of 100 points, which - for a 20-team competition (like the EPL) - means
+    that players could potentially achieve a negative score (less than 0) in a single match week.
+    - This causes issues when a new player joins in a subsequent week - their initial score of 0 could potentially be
+    "higher" than the score of any existing player that has previously received a negative score, so the new player is
+    given a distinct advantage and technically "rewarded" for joining the game later than the other players (which is
+    against the spirit of the game!)
+    - Fixed this by allowing each season to define its own number of base points. This number can now be based on the number
+    of teams in the season's table to ensure that no player will score less than 0 in a single match week.
+
 ## [2.3.2] - 2022-08-12
 
 ### Fixed

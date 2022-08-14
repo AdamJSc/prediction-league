@@ -27,6 +27,7 @@ type Season struct {
 	EntriesAccepted     TimeFrame          // timeframe within which new entries will be accepted
 	PredictionsAccepted TimeFrame          // timeframe within which changes to entry predictions will be accepted
 	TeamIDs             []string           // slice of strings representing valid team IDs that exist within TeamsCollection
+	BasePoints          int64              // score that each player begins each match week with (before any hits are applied)
 	MaxRounds           int                // number of rounds after which season is considered completed (maximum number of games to be played by each team)
 }
 

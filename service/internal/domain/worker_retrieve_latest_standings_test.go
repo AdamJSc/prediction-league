@@ -335,7 +335,7 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 		{Ranking: domain.Ranking{Position: 7, ID: branksomeUnitedTeamID}, Score: 6},
 	}
 
-	t.Run("valid entry prediction and standings must generate the expected scored entry prediction", func(t *testing.T) {
+	t.Run("valid entry prediction and standings must generate the expected scored entry prediction with inserted mw submission", func(t *testing.T) {
 		submissionRepoID := newUUID(t)
 		submissionRepoDate := testDate.Add(-2 * time.Hour)
 		mwSubmissionRepo := newMatchWeekSubmissionRepo(t, submissionRepoID, submissionRepoDate)
@@ -345,9 +345,12 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 		mwResultRepo := newMatchWeekResultRepo(t, resultRepoDate)
 		mwResultAgent := newMatchWeekResultAgent(t, mwResultRepo)
 
+		workerSeason := domain.Season{BasePoints: 100}
+
 		worker := newTestRetrieveLatestStandingsWorker(t, domain.RetrieveLatestStandingsWorkerParams{
 			MatchWeekSubmissionAgent: mwSubmissionAgent,
 			MatchWeekResultAgent:     mwResultAgent,
+			Season:                   workerSeason,
 		})
 
 		seededEntry := seedEntry(t, generateEntry())
@@ -367,7 +370,7 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 			EntryPredictionID: entryPrediction.ID,
 			StandingsID:       standings.ID,
 			Rankings:          wantRankingsWithScore,
-			Score:             76, // 100 base points, minus 24 total hits (all of the above ranking scores added together)
+			Score:             76, // workerSeason.BasePoints (100), minus 24 total hits (all of the above ranking scores added together)
 		}
 
 		gotScoredEntryPrediction, err := worker.GenerateScoredEntryPrediction(ctx, entryPrediction, standings)
@@ -414,7 +417,7 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 		cmpDiff(t, "inserted match week result", wantMWResult, gotMWResult)
 	})
 
-	t.Run("valid entry prediction and standings must generate the expected scored entry prediction", func(t *testing.T) {
+	t.Run("valid entry prediction and standings must generate the expected scored entry prediction with updated mw submission", func(t *testing.T) {
 		submissionRepoID := newUUID(t)
 		submissionRepoDate := testDate.Add(-2 * time.Hour)
 		mwSubmissionRepo := newMatchWeekSubmissionRepo(t, submissionRepoID, submissionRepoDate)
@@ -424,9 +427,12 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 		mwResultRepo := newMatchWeekResultRepo(t, resultRepoDate)
 		mwResultAgent := newMatchWeekResultAgent(t, mwResultRepo)
 
+		workerSeason := domain.Season{BasePoints: 100}
+
 		worker := newTestRetrieveLatestStandingsWorker(t, domain.RetrieveLatestStandingsWorkerParams{
 			MatchWeekSubmissionAgent: mwSubmissionAgent,
 			MatchWeekResultAgent:     mwResultAgent,
+			Season:                   workerSeason,
 		})
 
 		seededEntry := seedEntry(t, generateEntry())
@@ -462,7 +468,7 @@ func TestRetrieveLatestStandingsWorker_GenerateScoredEntryPrediction(t *testing.
 			EntryPredictionID: entryPrediction.ID,
 			StandingsID:       standings.ID,
 			Rankings:          wantRankingsWithScore,
-			Score:             76, // 100 base points, minus 24 total hits (all of the above ranking scores added together)
+			Score:             76, // workerSeason.BasePoints (100), minus 24 total hits (all of the above ranking scores added together)
 		}
 
 		gotScoredEntryPrediction, err := worker.GenerateScoredEntryPrediction(ctx, entryPrediction, standings)
