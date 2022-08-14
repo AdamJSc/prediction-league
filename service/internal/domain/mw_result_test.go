@@ -132,7 +132,9 @@ func TestNewMatchWeekResult(t *testing.T) {
 
 func TestBaseScoreModifier(t *testing.T) {
 	t.Run("setting base score must produce the expected match week result", func(t *testing.T) {
-		modifier := domain.BaseScoreModifier(5678)
+		season := domain.Season{BasePoints: 5678}
+
+		modifier := domain.BaseScoreModifier(season)
 
 		wantMWResult := &domain.MatchWeekResult{
 			Score: 5678,
@@ -145,7 +147,7 @@ func TestBaseScoreModifier(t *testing.T) {
 		}
 
 		gotMWResult := &domain.MatchWeekResult{
-			Score: 1234, // should override value
+			Score: 1234, // should be overridden
 		}
 		if err := modifier(gotMWResult); err != nil {
 			t.Fatal(err)
