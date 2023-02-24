@@ -13,7 +13,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/mailgun/mailgun-go/v3 v3.6.4
 	github.com/robfig/cron/v3 v3.0.0
-	golang.org/x/net v0.0.0-20190930134127-c5a3c61f89f3
+	golang.org/x/net v0.7.0
 	gopkg.in/yaml.v2 v2.2.7
 	gotest.tools v2.2.0+incompatible
 )
@@ -24,6 +24,5 @@ require (
 	github.com/mailru/easyjson v0.0.0-20180823135443-60711f1a8329 // indirect
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
-	golang.org/x/sys v0.0.0-20190801041406-cbf593c0f2f3 // indirect
 	google.golang.org/appengine v1.4.0 // indirect
 )
